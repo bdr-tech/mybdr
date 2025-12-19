@@ -1,0 +1,69 @@
+<%# locals: (application:, game:) %>
+<div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+  <div class="flex items-center gap-3">
+    <img src="<%= avatar_url(application.user) %>" alt="<%= application.user.display_name %>" class="w-10 h-10 rounded-full">
+    <div>
+      <p class="font-medium text-gray-900"><%= application.user.display_name %></p>
+      <div class="flex items-center gap-2 text-sm text-gray-500">
+        <% if application.position.present? %>
+          <span><%= application.position_name %></span>
+          <span>·</span>
+        <% end %>
+        <span><%= time_ago(application.created_at) %></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <!-- 상태 표시 -->
+    <span class="badge badge-<%= application.status %>">
+      <%= application.status_name %>
+    </span>
+
+    <!-- 결제 상태 (참가비가 있는 경우) -->
+    <% if game.has_fee? && application.status_approved? %>
+      <span class="badge badge-<%= application.payment_status %>">
+        <%= application.payment_status_name %>
+      </span>
+    <% end %>
+
+    <!-- 액션 버튼 -->
+    <% if application.status_pending? %>
+      <div class="flex gap-1">
+        <%= button_to approve_game_game_application_path(game, application),
+            method: :post,
+            form: { data: { turbo_confirm: nil } },
+            class: "p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors",
+            title: "승인" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+        <% end %>
+
+        <%= button_to reject_game_game_application_path(game, application),
+            method: :post,
+            form: { data: { turbo_confirm: "정말 거절하시겠습니까?" } },
+            class: "p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors",
+            title: "거절" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        <% end %>
+      </div>
+    <% end %>
+
+    <!-- 결제 확인 버튼 -->
+    <% if application.status_approved? && game.has_fee? && application.payment_status_unpaid? %>
+      <%= button_to "결제 확인", mark_paid_game_game_application_path(game, application),
+          method: :post,
+          class: "btn btn-sm btn-secondary",
+          title: "결제 확인" %>
+    <% end %>
+  </div>
+</div>
+
+<% if application.message.present? %>
+  <div class="ml-13 pl-4 mt-2 text-sm text-gray-600 italic">
+    "<%= application.message %>"
+  </div>
+<% end %>

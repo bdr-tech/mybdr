@@ -1,0 +1,38 @@
+<%# FAQ section %>
+<% faqs = section.items %>
+
+<section class="<%= section.padding_classes %>" style="<%= section.style_attributes.map { |k, v| "#{k}: #{v};" }.join(' ') %>">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-8">
+      <h2 class="text-2xl md:text-3xl font-bold text-gray-900"><%= section.title || '자주 묻는 질문' %></h2>
+      <% if section.subtitle.present? %>
+        <p class="text-gray-600 mt-2"><%= section.subtitle %></p>
+      <% end %>
+    </div>
+
+    <% if faqs.any? %>
+      <div class="space-y-4" data-controller="accordion">
+        <% faqs.each_with_index do |faq, index| %>
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <button type="button"
+                    class="w-full flex items-center justify-between p-6 text-left"
+                    data-action="click->accordion#toggle"
+                    data-accordion-index="<%= index %>">
+              <span class="font-semibold text-gray-900"><%= faq['question'] %></span>
+              <svg class="w-5 h-5 text-gray-500 transition-transform" data-accordion-target="icon<%= index %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+            <div class="hidden px-6 pb-6" data-accordion-target="content<%= index %>">
+              <p class="text-gray-600"><%= faq['answer'] %></p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="bg-gray-100 rounded-xl p-12 text-center">
+        <p class="text-gray-500">등록된 FAQ가 없습니다.</p>
+      </div>
+    <% end %>
+  </div>
+</section>

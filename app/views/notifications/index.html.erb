@@ -1,0 +1,55 @@
+<% content_for :title, "알림" %>
+
+<div class="max-w-4xl mx-auto px-4 py-8">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">알림</h1>
+      <p class="mt-1 text-sm text-gray-500">
+        읽지 않은 알림 <span class="font-medium text-indigo-600"><%= @unread_count %>개</span>
+      </p>
+    </div>
+    <% if @unread_count > 0 %>
+      <%= button_to mark_all_as_read_notifications_path, method: :post, class: "inline-flex items-center px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition" do %>
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        모두 읽음 처리
+      <% end %>
+    <% end %>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
+    <%= link_to "전체", notifications_path, class: "px-4 py-2 text-sm font-medium rounded-full #{params[:type].blank? ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} transition whitespace-nowrap" %>
+    <%= link_to "팀", notifications_path(type: "team"), class: "px-4 py-2 text-sm font-medium rounded-full #{params[:type] == 'team' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} transition whitespace-nowrap" %>
+    <%= link_to "경기", notifications_path(type: "game"), class: "px-4 py-2 text-sm font-medium rounded-full #{params[:type] == 'game' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} transition whitespace-nowrap" %>
+    <%= link_to "대회", notifications_path(type: "tournament"), class: "px-4 py-2 text-sm font-medium rounded-full #{params[:type] == 'tournament' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} transition whitespace-nowrap" %>
+    <%= link_to "결제", notifications_path(type: "payment"), class: "px-4 py-2 text-sm font-medium rounded-full #{params[:type] == 'payment' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} transition whitespace-nowrap" %>
+    <%= link_to "시스템", notifications_path(type: "system"), class: "px-4 py-2 text-sm font-medium rounded-full #{params[:type] == 'system' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} transition whitespace-nowrap" %>
+  </div>
+
+  <!-- Notification List -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
+    <% if @notifications.any? %>
+      <% @notifications.each do |notification| %>
+        <%= render partial: "notifications/notification_item", locals: { notification: notification } %>
+      <% end %>
+    <% else %>
+      <div class="py-16 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        </svg>
+        <h3 class="mt-4 text-lg font-medium text-gray-900">알림이 없습니다</h3>
+        <p class="mt-2 text-sm text-gray-500">새로운 알림이 오면 여기에 표시됩니다.</p>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Pagination -->
+  <% if @notifications.any? %>
+    <div class="mt-6">
+      <%== pagy_nav(@pagy) if @pagy.pages > 1 %>
+    </div>
+  <% end %>
+</div>

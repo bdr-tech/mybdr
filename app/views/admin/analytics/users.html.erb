@@ -1,0 +1,132 @@
+<% content_for :title, '사용자 분석' %>
+
+<div class="px-4 sm:px-6 lg:px-8">
+  <!-- Header -->
+  <div class="mb-6">
+    <%= link_to admin_analytics_path, class: "inline-flex items-center text-sm text-gray-500 hover:text-gray-700" do %>
+      <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      분석 대시보드
+    <% end %>
+  </div>
+
+  <div class="sm:flex sm:items-center sm:justify-between">
+    <div class="sm:flex-auto">
+      <h1 class="text-2xl font-semibold text-gray-900">사용자 분석</h1>
+      <p class="mt-2 text-sm text-gray-700">사용자 가입 및 활동 현황을 분석합니다.</p>
+    </div>
+    <div class="mt-4 sm:mt-0">
+      <%= form_with url: admin_analytics_users_path, method: :get, class: "flex items-center space-x-2" do |f| %>
+        <%= f.select :period, options_for_select([["오늘", "today"], ["이번 주", "week"], ["이번 달", "month"], ["이번 분기", "quarter"], ["올해", "year"]], @period), {}, class: "rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+        <%= f.submit "조회", class: "inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 cursor-pointer" %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+    <div class="bg-blue-50 rounded-lg shadow p-4">
+      <p class="text-sm text-blue-600">신규 가입</p>
+      <p class="text-2xl font-semibold text-blue-700"><%= @user_data[:new_users] %>명</p>
+    </div>
+    <div class="bg-green-50 rounded-lg shadow p-4">
+      <p class="text-sm text-green-600">활성 사용자</p>
+      <p class="text-2xl font-semibold text-green-700"><%= @user_data[:active_users] %>명</p>
+    </div>
+    <div class="bg-purple-50 rounded-lg shadow p-4">
+      <p class="text-sm text-purple-600">리텐션율</p>
+      <p class="text-2xl font-semibold text-purple-700"><%= @user_data[:retention_rate] %>%</p>
+    </div>
+    <div class="bg-red-50 rounded-lg shadow p-4">
+      <p class="text-sm text-red-600">이탈율</p>
+      <p class="text-2xl font-semibold text-red-700"><%= @user_data[:churn_rate] %>%</p>
+    </div>
+  </div>
+
+  <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <!-- Membership Distribution -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-medium text-gray-900">멤버십 분포</h2>
+      </div>
+      <div class="px-6 py-4">
+        <% if @user_data[:by_membership].present? %>
+          <% total_users = @user_data[:by_membership].values.sum %>
+          <dl class="space-y-4">
+            <% @user_data[:by_membership].each do |membership, count| %>
+              <%
+                percentage = total_users > 0 ? (count.to_f / total_users * 100).round(1) : 0
+                color = case membership
+                        when 'free' then 'gray'
+                        when 'premium' then 'purple'
+                        when 'pro' then 'yellow'
+                        else 'gray'
+                        end
+              %>
+              <div>
+                <div class="flex items-center justify-between">
+                  <dt class="text-sm text-gray-500">
+                    <%= case membership
+                        when 'free' then '일반'
+                        when 'premium' then '프리미엄'
+                        when 'pro' then '프로'
+                        else membership
+                        end %>
+                  </dt>
+                  <dd class="text-sm font-medium text-gray-900"><%= count %>명 (<%= percentage %>%)</dd>
+                </div>
+                <div class="mt-1 w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-<%= color %>-600 h-2 rounded-full" style="width: <%= percentage %>%"></div>
+                </div>
+              </div>
+            <% end %>
+          </dl>
+        <% else %>
+          <p class="text-center text-gray-500 py-8">데이터가 없습니다.</p>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- User Growth Chart Placeholder -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-medium text-gray-900">가입자 추이</h2>
+      </div>
+      <div class="p-6">
+        <div class="h-64 flex items-center justify-center bg-gray-50 rounded">
+          <p class="text-gray-500">차트 영역 (Chart.js 통합 필요)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Daily Signups Table -->
+  <div class="mt-8 bg-white shadow rounded-lg overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h2 class="text-lg font-medium text-gray-900">일별 가입자</h2>
+    </div>
+    <% if @user_data[:by_day].present? %>
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">날짜</th>
+            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">가입자 수</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% @user_data[:by_day].sort.reverse.each do |date, count| %>
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= date %></td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900"><%= count %>명</td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <div class="px-6 py-12 text-center text-gray-500">
+        해당 기간의 가입 데이터가 없습니다.
+      </div>
+    <% end %>
+  </div>
+</div>

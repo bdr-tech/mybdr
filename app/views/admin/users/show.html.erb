@@ -1,0 +1,247 @@
+<% content_for :title, "사용자 상세 - #{@user.display_name}" %>
+
+<div class="px-4 sm:px-6 lg:px-8">
+  <!-- Header -->
+  <div class="mb-6">
+    <%= link_to admin_users_path, class: "inline-flex items-center text-sm text-gray-500 hover:text-gray-700" do %>
+      <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      목록으로
+    <% end %>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- User Info Card -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+              <div class="h-16 w-16 rounded-full bg-indigo-100 flex items-center justify-center">
+                <span class="text-2xl text-indigo-600 font-medium"><%= @user.display_name&.first || "?" %></span>
+              </div>
+              <div>
+                <h1 class="text-xl font-semibold text-gray-900"><%= @user.display_name %></h1>
+                <p class="text-sm text-gray-500"><%= @user.email %></p>
+              </div>
+            </div>
+            <div class="flex flex-col items-end space-y-2">
+              <% if @user.is_admin? %>
+                <span class="inline-flex rounded-full px-3 py-1 text-sm font-semibold bg-red-100 text-red-800">관리자</span>
+              <% end %>
+              <span class="inline-flex rounded-full px-3 py-1 text-sm font-semibold
+                <%= case @user.status
+                    when 'active' then 'bg-green-100 text-green-800'
+                    when 'suspended' then 'bg-red-100 text-red-800'
+                    when 'withdrawn' then 'bg-gray-100 text-gray-800'
+                    else 'bg-gray-100 text-gray-800'
+                    end %>">
+                <%= @user.status %>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-6 py-4">
+          <dl class="grid grid-cols-2 gap-4">
+            <div>
+              <dt class="text-sm font-medium text-gray-500">닉네임</dt>
+              <dd class="mt-1 text-gray-900"><%= @user.nickname || "-" %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">이름</dt>
+              <dd class="mt-1 text-gray-900"><%= @user.name || "-" %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">전화번호</dt>
+              <dd class="mt-1 text-gray-900"><%= @user.phone || "-" %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">멤버십</dt>
+              <dd class="mt-1">
+                <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5
+                  <%= case @user.membership_type
+                      when 'premium' then 'bg-purple-100 text-purple-800'
+                      when 'pro' then 'bg-yellow-100 text-yellow-800'
+                      else 'bg-gray-100 text-gray-800'
+                      end %>">
+                  <%= @user.membership_type %>
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">지역</dt>
+              <dd class="mt-1 text-gray-900"><%= [@user.city, @user.district].compact.join(" ") || "-" %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">포지션</dt>
+              <dd class="mt-1 text-gray-900"><%= @user.position || "-" %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">신장 / 체중</dt>
+              <dd class="mt-1 text-gray-900">
+                <%= @user.height.present? ? "#{@user.height}cm" : "-" %> / <%= @user.weight.present? ? "#{@user.weight}kg" : "-" %>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">가입일</dt>
+              <dd class="mt-1 text-gray-900"><%= l(@user.created_at, format: :long) %></dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <!-- Recent Payments -->
+      <% if @payments.present? %>
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-medium text-gray-900">최근 결제 내역</h2>
+          </div>
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결제코드</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">금액</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">일시</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <% @payments.each do |payment| %>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <%= link_to payment.payment_code, admin_payment_path(payment), class: "text-indigo-600 hover:text-indigo-900" %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <%= number_to_currency(payment.final_amount, unit: '', precision: 0) %>원
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5
+                      <%= case payment.status
+                          when 'done' then 'bg-green-100 text-green-800'
+                          when 'pending', 'ready' then 'bg-yellow-100 text-yellow-800'
+                          when 'cancelled', 'refunded' then 'bg-red-100 text-red-800'
+                          else 'bg-gray-100 text-gray-800'
+                          end %>">
+                      <%= payment.status %>
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <%= payment.paid_at ? l(payment.paid_at, format: :short) : l(payment.created_at, format: :short) %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+
+      <!-- Recent Notifications -->
+      <% if @notifications.present? %>
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-medium text-gray-900">최근 알림</h2>
+          </div>
+          <ul class="divide-y divide-gray-200">
+            <% @notifications.each do |notification| %>
+              <li class="px-6 py-4 hover:bg-gray-50">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <p class="text-sm font-medium text-gray-900"><%= notification.title %></p>
+                    <p class="text-sm text-gray-500"><%= truncate(notification.content, length: 80) %></p>
+                  </div>
+                  <span class="text-xs text-gray-400"><%= l(notification.created_at, format: :short) %></span>
+                </div>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- Actions -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">관리 작업</h2>
+        </div>
+        <div class="px-6 py-4 space-y-3">
+          <%= link_to "수정", edit_admin_user_path(@user), class: "w-full inline-flex justify-center items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500" %>
+
+          <% if @user.status == "active" %>
+            <div x-data="{ showSuspend: false }">
+              <button @click="showSuspend = !showSuspend" class="w-full inline-flex justify-center items-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500">
+                정지
+              </button>
+              <div x-show="showSuspend" x-cloak class="mt-2 space-y-2">
+                <%= form_with url: suspend_admin_user_path(@user), method: :post, local: true do |f| %>
+                  <%= f.text_area :reason, placeholder: "정지 사유", rows: 2, class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" %>
+                  <%= f.submit "정지 실행", class: "w-full inline-flex justify-center items-center rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-600 cursor-pointer", data: { confirm: "정말 이 사용자를 정지하시겠습니까?" } %>
+                <% end %>
+              </div>
+            </div>
+          <% else %>
+            <%= button_to "활성화", activate_admin_user_path(@user), method: :post, class: "w-full inline-flex justify-center items-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500", data: { confirm: "이 사용자를 활성화하시겠습니까?" } %>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Admin Rights -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">관리자 권한</h2>
+        </div>
+        <div class="px-6 py-4 space-y-3">
+          <% if @user.is_admin? %>
+            <p class="text-sm text-gray-600">현재 관리자 권한이 있습니다.</p>
+            <% unless @user == current_user %>
+              <%= button_to "관리자 권한 제거", remove_admin_admin_user_path(@user), method: :post, class: "w-full inline-flex justify-center items-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500", data: { confirm: "정말 관리자 권한을 제거하시겠습니까?" } %>
+            <% else %>
+              <p class="text-xs text-gray-500">자신의 관리자 권한은 제거할 수 없습니다.</p>
+            <% end %>
+          <% else %>
+            <p class="text-sm text-gray-600">일반 사용자입니다.</p>
+            <%= button_to "관리자로 지정", make_admin_admin_user_path(@user), method: :post, class: "w-full inline-flex justify-center items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500", data: { confirm: "이 사용자를 관리자로 지정하시겠습니까?" } %>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Membership -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">멤버십 변경</h2>
+        </div>
+        <div class="px-6 py-4">
+          <%= form_with url: change_membership_admin_user_path(@user), method: :post, local: true, class: "space-y-3" do |f| %>
+            <%= f.select :membership_type, options_for_select([["일반", "free"], ["프리미엄", "premium"], ["프로", "pro"]], @user.membership_type), {}, class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+            <%= f.submit "변경", class: "w-full inline-flex justify-center items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 cursor-pointer" %>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Admin Logs -->
+      <% if @admin_logs.present? %>
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-medium text-gray-900">관리 로그</h2>
+          </div>
+          <div class="px-6 py-4">
+            <ul class="space-y-3">
+              <% @admin_logs.each do |log| %>
+                <li class="text-sm">
+                  <p class="text-gray-900"><%= log.description %></p>
+                  <p class="text-xs text-gray-500">
+                    <%= log.admin&.display_name %> | <%= l(log.created_at, format: :short) %>
+                  </p>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

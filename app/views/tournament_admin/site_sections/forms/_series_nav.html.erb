@@ -1,0 +1,65 @@
+<%# Series Navigation Section Form Fields %>
+
+<div class="bg-blue-50 text-blue-800 p-4 rounded-lg">
+  <p class="text-sm">
+    <strong>시리즈 네비게이션:</strong> 같은 시리즈의 다른 대회로 연결되는 링크를 자동으로 생성합니다.
+  </p>
+</div>
+
+<% if @tournament.series.present? %>
+  <div>
+    <%= f.label :series_id, "시리즈 선택", class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.select :series_id,
+                options_for_select([[(@tournament.series.name), @tournament.series_id]], @tournament.series_id),
+                {},
+                class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" %>
+  </div>
+<% else %>
+  <div class="bg-yellow-50 text-yellow-800 p-4 rounded-lg">
+    <p class="text-sm">
+      <strong>참고:</strong> 이 대회가 속한 시리즈가 없습니다.
+      시리즈 네비게이션을 사용하려면 먼저 대회를 시리즈에 연결하세요.
+    </p>
+  </div>
+<% end %>
+
+<div class="space-y-3">
+  <div class="flex items-center gap-3">
+    <%= f.check_box :show_thumbnails,
+                   class: "w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500",
+                   checked: true %>
+    <%= f.label :show_thumbnails, "썸네일 표시", class: "text-sm text-gray-700" %>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <%= f.check_box :show_dates,
+                   class: "w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500",
+                   checked: true %>
+    <%= f.label :show_dates, "날짜 표시", class: "text-sm text-gray-700" %>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <%= f.check_box :highlight_current,
+                   class: "w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500",
+                   checked: true %>
+    <%= f.label :highlight_current, "현재 대회 강조", class: "text-sm text-gray-700" %>
+  </div>
+</div>
+
+<div>
+  <label class="block text-sm font-medium text-gray-700 mb-2">레이아웃</label>
+  <div class="flex gap-4">
+    <label class="flex items-center gap-2">
+      <%= f.radio_button :layout, "horizontal", class: "text-primary-600", checked: true %>
+      <span class="text-sm">가로</span>
+    </label>
+    <label class="flex items-center gap-2">
+      <%= f.radio_button :layout, "vertical", class: "text-primary-600" %>
+      <span class="text-sm">세로</span>
+    </label>
+    <label class="flex items-center gap-2">
+      <%= f.radio_button :layout, "timeline", class: "text-primary-600" %>
+      <span class="text-sm">타임라인</span>
+    </label>
+  </div>
+</div>

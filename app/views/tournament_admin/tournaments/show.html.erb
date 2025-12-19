@@ -1,0 +1,378 @@
+<% content_for :title do %><%= @tournament.name %> - 대회 관리<% end %>
+
+<div class="space-y-6">
+  <%# Header %>
+  <div class="flex items-start justify-between">
+    <div>
+      <div class="flex items-center gap-3 mb-2">
+        <%= link_to tournament_admin_tournaments_path, class: "text-gray-400 hover:text-gray-600" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        <% end %>
+        <h1 class="text-2xl font-bold text-gray-900"><%= @tournament.name %></h1>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                     <%= @tournament.status_in_progress? ? 'bg-green-100 text-green-800' :
+                         @tournament.status_draft? ? 'bg-gray-100 text-gray-800' :
+                         @tournament.status_completed? ? 'bg-blue-100 text-blue-800' :
+                         @tournament.status_registration_open? ? 'bg-yellow-100 text-yellow-800' :
+                         'bg-gray-100 text-gray-800' %>">
+          <%= @tournament.status_name %>
+        </span>
+      </div>
+      <p class="text-gray-500">
+        <% if @tournament.start_date.present? %>
+          <%= @tournament.date_range %>
+        <% else %>
+          일정 미정
+        <% end %>
+        <% if @tournament.location_display.present? %>
+          &middot; <%= @tournament.location_display %>
+        <% end %>
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <% if @site&.is_published %>
+        <%= link_to "사이트 보기", @site.full_url, target: "_blank",
+                    class: "inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors" %>
+      <% end %>
+      <%= link_to edit_tournament_admin_tournament_path(@tournament),
+                  class: "inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors" do %>
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+        대회 정보 수정
+      <% end %>
+    </div>
+  </div>
+
+  <%# Draft Tournament Banner - 임시저장 대회 안내 %>
+  <% if @tournament.status_draft? %>
+    <div class="bg-orange-50 border border-orange-200 rounded-xl p-5">
+      <div class="flex items-start gap-4">
+        <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h3 class="font-semibold text-orange-800 mb-1">임시저장 상태입니다</h3>
+          <% if @site.nil? %>
+            <p class="text-sm text-orange-700 mb-3">대회 사이트를 만들어야 참가 신청을 받을 수 있습니다. 위자드를 계속 진행해주세요.</p>
+            <%= link_to wizard_tournament_admin_tournament_path(@tournament),
+                        class: "inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors" do %>
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              위자드 계속하기
+            <% end %>
+          <% elsif !@site.is_published %>
+            <p class="text-sm text-orange-700 mb-3">사이트가 아직 발행되지 않았습니다. 발행 후 등록을 시작할 수 있습니다.</p>
+            <div class="flex gap-2">
+              <%= button_to publish_tournament_admin_tournament_path(@tournament), method: :post,
+                          class: "inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors" do %>
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                사이트 발행하기
+              <% end %>
+              <%= link_to tournament_admin_tournament_site_path(@tournament),
+                          class: "inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors" do %>
+                사이트 편집
+              <% end %>
+            </div>
+          <% else %>
+            <p class="text-sm text-orange-700 mb-3">사이트가 발행되었습니다. 등록을 시작하여 참가 신청을 받으세요.</p>
+            <%= button_to open_registration_tournament_admin_tournament_path(@tournament), method: :post,
+                        class: "inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors" do %>
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              등록 시작하기
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <%# Stats Cards %>
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-white rounded-xl p-5 shadow-sm">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-500">참가팀</p>
+          <p class="text-2xl font-bold text-gray-900"><%= @stats[:teams_count] %> <span class="text-sm font-normal text-gray-400">/ <%= @tournament.max_teams %></span></p>
+        </div>
+        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl p-5 shadow-sm">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-500">경기 수</p>
+          <p class="text-2xl font-bold text-gray-900"><%= @stats[:matches_count] %></p>
+        </div>
+        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+          <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl p-5 shadow-sm">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-500">사이트 조회수</p>
+          <p class="text-2xl font-bold text-gray-900"><%= number_with_delimiter(@stats[:views_count]) %></p>
+        </div>
+        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+          <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl p-5 shadow-sm">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-500">참가비</p>
+          <p class="text-2xl font-bold text-gray-900">
+            <% if @tournament.has_fee? %>
+              <%= number_to_currency(@tournament.entry_fee, unit: "₩", precision: 0) %>
+            <% else %>
+              무료
+            <% end %>
+          </p>
+        </div>
+        <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+          <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <%# Left Column - Main Actions %>
+    <div class="lg:col-span-2 space-y-6">
+      <%# Site Status %>
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="p-5 border-b">
+          <h2 class="text-lg font-semibold text-gray-900">사이트 상태</h2>
+        </div>
+        <div class="p-5">
+          <% if @site %>
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                  <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                  </svg>
+                </div>
+                <div>
+                  <p class="font-medium text-gray-900"><%= @site.subdomain %>.mybdr.kr</p>
+                  <p class="text-sm text-gray-500">
+                    <% if @site.is_published %>
+                      <span class="text-green-600">발행됨</span>
+                    <% else %>
+                      <span class="text-gray-400">미발행</span>
+                    <% end %>
+                  </p>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <% if @site.is_published %>
+                  <%= button_to unpublish_tournament_admin_tournament_path(@tournament), method: :post,
+                              class: "px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors" do %>
+                    비공개
+                  <% end %>
+                <% else %>
+                  <%= button_to publish_tournament_admin_tournament_path(@tournament), method: :post,
+                              class: "px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors" do %>
+                    발행하기
+                  <% end %>
+                <% end %>
+                <%= link_to tournament_admin_tournament_site_path(@tournament),
+                            class: "px-3 py-1.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors" do %>
+                  사이트 편집
+                <% end %>
+              </div>
+            </div>
+          <% else %>
+            <div class="text-center py-6">
+              <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <p class="text-gray-500 mb-4">아직 사이트가 생성되지 않았습니다</p>
+              <%= link_to wizard_tournament_admin_tournament_path(@tournament),
+                          class: "inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors" do %>
+                위자드로 사이트 만들기
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <%# Quick Actions %>
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="p-5 border-b">
+          <h2 class="text-lg font-semibold text-gray-900">빠른 메뉴</h2>
+        </div>
+        <div class="p-5">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <%= link_to "#",
+                        class: "flex flex-col items-center p-4 rounded-xl border-2 border-gray-100 hover:border-primary-200 hover:bg-primary-50 transition-colors opacity-50 cursor-not-allowed",
+                        title: "준비 중" do %>
+              <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <span class="text-sm font-medium text-gray-700">참가팀 관리</span>
+              <span class="text-xs text-gray-400">준비 중</span>
+            <% end %>
+
+            <%= link_to "#",
+                        class: "flex flex-col items-center p-4 rounded-xl border-2 border-gray-100 hover:border-primary-200 hover:bg-primary-50 transition-colors opacity-50 cursor-not-allowed",
+                        title: "준비 중" do %>
+              <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-2">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                </svg>
+              </div>
+              <span class="text-sm font-medium text-gray-700">경기 관리</span>
+              <span class="text-xs text-gray-400">준비 중</span>
+            <% end %>
+
+            <%= link_to "#",
+                        class: "flex flex-col items-center p-4 rounded-xl border-2 border-gray-100 hover:border-primary-200 hover:bg-primary-50 transition-colors opacity-50 cursor-not-allowed",
+                        title: "준비 중" do %>
+              <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-2">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                </svg>
+              </div>
+              <span class="text-sm font-medium text-gray-700">대진표</span>
+              <span class="text-xs text-gray-400">준비 중</span>
+            <% end %>
+
+            <% if @site %>
+              <%= link_to tournament_admin_tournament_site_path(@tournament),
+                          class: "flex flex-col items-center p-4 rounded-xl border-2 border-gray-100 hover:border-primary-200 hover:bg-primary-50 transition-colors" do %>
+                <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-2">
+                  <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </div>
+                <span class="text-sm font-medium text-gray-700">사이트 편집</span>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <%# Right Column - Info %>
+    <div class="space-y-6">
+      <%# Tournament Info %>
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="p-5 border-b">
+          <h2 class="text-lg font-semibold text-gray-900">대회 정보</h2>
+        </div>
+        <div class="p-5 space-y-4">
+          <div>
+            <p class="text-sm text-gray-500">대회 형식</p>
+            <p class="font-medium text-gray-900"><%= @tournament.format_name %></p>
+          </div>
+
+          <div>
+            <p class="text-sm text-gray-500">팀 규모</p>
+            <p class="font-medium text-gray-900"><%= @tournament.team_size %>인</p>
+          </div>
+
+          <% if @tournament.has_divisions? %>
+            <div>
+              <p class="text-sm text-gray-500">부별</p>
+              <p class="font-medium text-gray-900"><%= @tournament.divisions_display %></p>
+            </div>
+          <% end %>
+
+          <% if @tournament.has_division_tiers? %>
+            <div>
+              <p class="text-sm text-gray-500">조별</p>
+              <p class="font-medium text-gray-900"><%= @tournament.division_tiers_display %></p>
+            </div>
+          <% end %>
+
+          <% if @tournament.registration_start_at.present? || @tournament.registration_end_at.present? %>
+            <div>
+              <p class="text-sm text-gray-500">등록 기간</p>
+              <p class="font-medium text-gray-900">
+                <% if @tournament.registration_start_at && @tournament.registration_end_at %>
+                  <%= @tournament.registration_start_at.strftime("%m/%d") %> ~ <%= @tournament.registration_end_at.strftime("%m/%d") %>
+                <% elsif @tournament.registration_end_at %>
+                  ~ <%= @tournament.registration_end_at.strftime("%Y.%m.%d") %>
+                <% end %>
+              </p>
+            </div>
+          <% end %>
+
+          <% if @tournament.has_bank_info? %>
+            <div>
+              <p class="text-sm text-gray-500">입금 계좌</p>
+              <p class="font-medium text-gray-900"><%= @tournament.bank_info_display %></p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <%# Actions %>
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="p-5 border-b">
+          <h2 class="text-lg font-semibold text-gray-900">대회 상태 변경</h2>
+        </div>
+        <div class="p-5 space-y-2">
+          <% if @tournament.status_draft? && @site&.is_published %>
+            <%= button_to open_registration_tournament_admin_tournament_path(@tournament), method: :post,
+                          class: "w-full px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors" do %>
+              등록 시작하기
+            <% end %>
+          <% elsif @tournament.status_registration_open? %>
+            <%= button_to close_registration_tournament_admin_tournament_path(@tournament), method: :post,
+                          class: "w-full px-4 py-2 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors" do %>
+              등록 마감하기
+            <% end %>
+          <% elsif @tournament.status_registration_closed? %>
+            <%= button_to start_tournament_tournament_admin_tournament_path(@tournament), method: :post,
+                          class: "w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors" do %>
+              대회 시작하기
+            <% end %>
+          <% elsif @tournament.status_in_progress? %>
+            <%= button_to complete_tournament_tournament_admin_tournament_path(@tournament), method: :post,
+                          class: "w-full px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors" do %>
+              대회 완료하기
+            <% end %>
+          <% end %>
+
+          <%= button_to clone_tournament_admin_tournament_path(@tournament), method: :post,
+                        class: "w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors" do %>
+            대회 복제하기
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

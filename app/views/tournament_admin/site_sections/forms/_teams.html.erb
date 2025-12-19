@@ -1,0 +1,64 @@
+<%# Teams Section Form Fields %>
+
+<div class="bg-blue-50 text-blue-800 p-4 rounded-lg">
+  <p class="text-sm">
+    <strong>자동 데이터:</strong> 이 섹션은 대회의 참가팀 데이터를 자동으로 표시합니다.
+  </p>
+</div>
+
+<div class="space-y-3">
+  <div class="flex items-center gap-3">
+    <%= f.check_box :show_logos,
+                   class: "w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500",
+                   checked: true %>
+    <%= f.label :show_logos, "팀 로고 표시", class: "text-sm text-gray-700" %>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <%= f.check_box :show_records,
+                   class: "w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500" %>
+    <%= f.label :show_records, "전적 표시", class: "text-sm text-gray-700" %>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <%= f.check_box :show_roster,
+                   class: "w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500" %>
+    <%= f.label :show_roster, "로스터 표시", class: "text-sm text-gray-700" %>
+  </div>
+</div>
+
+<div>
+  <label class="block text-sm font-medium text-gray-700 mb-2">레이아웃</label>
+  <div class="grid grid-cols-3 gap-3">
+    <label class="flex flex-col items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+      <%= f.radio_button :layout, "grid", class: "sr-only", checked: true %>
+      <div class="w-12 h-8 grid grid-cols-3 gap-1 mb-2">
+        <% 6.times do %><div class="bg-gray-300 rounded"></div><% end %>
+      </div>
+      <span class="text-sm">그리드</span>
+    </label>
+    <label class="flex flex-col items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+      <%= f.radio_button :layout, "list", class: "sr-only" %>
+      <div class="w-12 h-8 flex flex-col gap-1 mb-2">
+        <% 3.times do %><div class="h-2 bg-gray-300 rounded"></div><% end %>
+      </div>
+      <span class="text-sm">리스트</span>
+    </label>
+    <label class="flex flex-col items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+      <%= f.radio_button :layout, "carousel", class: "sr-only" %>
+      <div class="w-12 h-8 flex items-center gap-1 mb-2">
+        <div class="w-6 h-6 bg-gray-300 rounded"></div>
+        <div class="w-4 h-4 bg-gray-200 rounded"></div>
+      </div>
+      <span class="text-sm">캐러셀</span>
+    </label>
+  </div>
+</div>
+
+<div>
+  <%= f.label :columns, "열 개수 (그리드)", class: "block text-sm font-medium text-gray-700 mb-1" %>
+  <%= f.select :columns,
+              [[2, 2], [3, 3], [4, 4], [6, 6]],
+              { selected: 4 },
+              class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" %>
+</div>

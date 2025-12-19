@@ -1,0 +1,64 @@
+<% content_for :title, "경기 목록" %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- 헤더 -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">경기 목록</h1>
+      <p class="text-gray-600 mt-1">참여할 수 있는 경기를 찾아보세요</p>
+    </div>
+    <% if logged_in? %>
+      <%= link_to new_game_path, class: "btn btn-primary" do %>
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        경기 만들기
+      <% end %>
+    <% end %>
+  </div>
+
+  <!-- 필터 -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+    <%= form_with url: games_path, method: :get, local: true, class: "flex flex-wrap gap-4" do |f| %>
+      <div class="flex-1 min-w-[150px]">
+        <%= f.select :game_type,
+            options_for_select([["모든 타입", ""], ["픽업게임", "pickup"], ["게스트 모집", "guest_recruit"], ["팀 대 팀", "team_vs_team"]], params[:game_type]),
+            {}, class: "form-select w-full" %>
+      </div>
+      <div class="flex-1 min-w-[150px]">
+        <%= f.select :city,
+            options_for_select([["모든 지역", ""]] + Game.distinct.pluck(:city).compact.map { |c| [c, c] }, params[:city]),
+            {}, class: "form-select w-full" %>
+      </div>
+      <div class="flex-1 min-w-[150px]">
+        <%= f.date_field :date, value: params[:date], class: "form-input w-full", placeholder: "날짜 선택" %>
+      </div>
+      <%= f.submit "검색", class: "btn btn-secondary" %>
+    <% end %>
+  </div>
+
+  <!-- 경기 목록 -->
+  <% if @games.any? %>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <% @games.each do |game| %>
+        <%= render "games/game_card", game: game %>
+      <% end %>
+    </div>
+
+    <!-- 페이지네이션 -->
+    <div class="mt-8">
+      <%== pagy_nav(@pagy) if @pagy %>
+    </div>
+  <% else %>
+    <div class="text-center py-16">
+      <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <h3 class="mt-4 text-lg font-medium text-gray-900">등록된 경기가 없습니다</h3>
+      <p class="mt-2 text-gray-600">첫 번째 경기를 만들어보세요!</p>
+      <% if logged_in? %>
+        <%= link_to "경기 만들기", new_game_path, class: "btn btn-primary mt-4" %>
+      <% end %>
+    </div>
+  <% end %>
+</div>

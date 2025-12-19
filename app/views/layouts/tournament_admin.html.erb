@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="<%= I18n.locale %>">
+  <head>
+    <title><%= content_for(:title) || "대회관리자 콘솔 - BDR" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1F2937">
+    <meta name="robots" content="noindex">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+
+    <%# Includes all stylesheet files in app/assets/stylesheets %>
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="min-h-screen bg-gray-100 antialiased">
+    <%# Admin Navigation %>
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-gray-900 text-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <%# Logo %>
+          <div class="flex items-center gap-4">
+            <%= link_to tournament_admin_root_path, class: "flex items-center gap-2 font-bold text-lg" do %>
+              <span class="text-2xl">🏀</span>
+              <span>BDR 대회관리자</span>
+            <% end %>
+          </div>
+
+          <%# Nav Links %>
+          <div class="hidden md:flex items-center gap-6">
+            <%= link_to "대시보드", tournament_admin_root_path,
+                        class: "text-gray-300 hover:text-white transition-colors" %>
+            <%= link_to "내 대회", tournament_admin_tournaments_path,
+                        class: "text-gray-300 hover:text-white transition-colors" %>
+            <%= link_to "시리즈", tournament_admin_series_index_path,
+                        class: "text-gray-300 hover:text-white transition-colors" %>
+            <%= link_to "템플릿", tournament_admin_templates_path,
+                        class: "text-gray-300 hover:text-white transition-colors" %>
+          </div>
+
+          <%# User Menu %>
+          <div class="flex items-center gap-4">
+            <span class="text-gray-400 text-sm hidden sm:block">
+              <%= current_user.nickname || current_user.name %> 님
+            </span>
+            <%= link_to "메인사이트", root_path,
+                        class: "text-gray-400 hover:text-white text-sm transition-colors",
+                        target: "_blank" %>
+            <%= link_to "로그아웃", logout_path,
+                        data: { turbo_method: :delete },
+                        class: "text-gray-400 hover:text-white text-sm transition-colors" %>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <%# Flash Messages %>
+    <% if notice.present? %>
+      <div class="fixed top-20 right-4 z-50 max-w-sm">
+        <div class="bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3"
+             data-controller="auto-dismiss" data-auto-dismiss-delay-value="5000">
+          <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          <span><%= notice %></span>
+        </div>
+      </div>
+    <% end %>
+
+    <% if alert.present? %>
+      <div class="fixed top-20 right-4 z-50 max-w-sm">
+        <div class="bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3"
+             data-controller="auto-dismiss" data-auto-dismiss-delay-value="5000">
+          <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          <span><%= alert %></span>
+        </div>
+      </div>
+    <% end %>
+
+    <%# Main Content %>
+    <main class="pt-20 pb-8 min-h-screen">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <%= yield %>
+      </div>
+    </main>
+
+    <%# Footer %>
+    <footer class="bg-white border-t py-6">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-500 text-sm">
+        &copy; <%= Date.current.year %> BDR Platform. 대회관리자 콘솔
+      </div>
+    </footer>
+  </body>
+</html>

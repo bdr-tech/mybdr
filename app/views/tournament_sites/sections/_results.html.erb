@@ -1,0 +1,62 @@
+<%# Results section %>
+<% data = section.dynamic_data %>
+<% matches = data[:matches] || [] %>
+
+<section class="<%= section.padding_classes %>" style="<%= section.style_attributes.map { |k, v| "#{k}: #{v};" }.join(' ') %>">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-8">
+      <h2 class="text-2xl md:text-3xl font-bold text-gray-900"><%= section.title || '경기결과' %></h2>
+      <% if section.subtitle.present? %>
+        <p class="text-gray-600 mt-2"><%= section.subtitle %></p>
+      <% end %>
+    </div>
+
+    <% if matches.any? %>
+      <div class="space-y-4">
+        <% matches.each do |match| %>
+          <div class="bg-white rounded-xl shadow-sm p-6">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-4 flex-1">
+                <%# Home Team %>
+                <div class="text-right flex-1">
+                  <p class="font-semibold <%= match.home_score > match.away_score ? 'text-primary' : 'text-gray-900' %>">
+                    <%= match.home_team&.team&.name || 'TBD' %>
+                  </p>
+                </div>
+
+                <%# Score %>
+                <div class="flex-shrink-0 text-center px-4">
+                  <p class="text-2xl font-bold">
+                    <span class="<%= match.home_score > match.away_score ? 'text-primary' : 'text-gray-900' %>"><%= match.home_score %></span>
+                    <span class="text-gray-400 mx-1">:</span>
+                    <span class="<%= match.away_score > match.home_score ? 'text-primary' : 'text-gray-900' %>"><%= match.away_score %></span>
+                  </p>
+                </div>
+
+                <%# Away Team %>
+                <div class="text-left flex-1">
+                  <p class="font-semibold <%= match.away_score > match.home_score ? 'text-primary' : 'text-gray-900' %>">
+                    <%= match.away_team&.team&.name || 'TBD' %>
+                  </p>
+                </div>
+              </div>
+
+              <%# Date %>
+              <div class="hidden md:block text-right text-sm text-gray-500 ml-4">
+                <p><%= match.scheduled_at&.strftime("%m/%d") %></p>
+                <p><%= match.round_name %></p>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <%= link_to "전체 결과 보기 →", site_path("/results"),
+                  class: "block text-center text-primary font-medium mt-6 hover:underline" %>
+    <% else %>
+      <div class="bg-white rounded-xl p-12 text-center">
+        <p class="text-gray-500">아직 완료된 경기가 없습니다.</p>
+      </div>
+    <% end %>
+  </div>
+</section>

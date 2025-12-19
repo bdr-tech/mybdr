@@ -1,0 +1,215 @@
+<% content_for :title, @game.title.presence || @game.game_type_name %>
+
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- 뒤로가기 -->
+  <%= link_to games_path, class: "inline-flex items-center text-gray-600 hover:text-gray-900 mb-6" do %>
+    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    목록으로
+  <% end %>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- 메인 정보 -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- 헤더 카드 -->
+      <div class="card p-6">
+        <div class="flex items-start justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span class="badge badge-<%= @game.game_type %>"><%= @game.game_type_name %></span>
+            <span class="badge badge-<%= @game.status %>"><%= @game.status_name %></span>
+            <% if @game.is_recurring? %>
+              <span class="badge badge-info">반복</span>
+            <% end %>
+          </div>
+          <% if @game.host?(current_user) %>
+            <div class="relative" data-controller="dropdown">
+              <button type="button" data-action="click->dropdown#toggle" class="p-2 hover:bg-gray-100 rounded-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+                </svg>
+              </button>
+              <div data-dropdown-target="menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-10">
+                <%= link_to "수정하기", edit_game_path(@game), class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" %>
+                <%= button_to "복제하기", clone_game_path(@game), method: :post, class: "block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" %>
+                <% if @game.status_draft? %>
+                  <%= button_to "공개하기", publish_game_path(@game), method: :post, class: "block w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-gray-50" %>
+                <% end %>
+                <% unless @game.status_cancelled? %>
+                  <%= button_to "취소하기", cancel_game_path(@game), method: :post, form: { data: { turbo_confirm: "정말 취소하시겠습니까?" } }, class: "block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50" %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <h1 class="text-2xl font-bold text-gray-900 mb-4">
+          <%= @game.title.presence || "#{@game.game_type_name} - #{@game.location_display}" %>
+        </h1>
+
+        <!-- 일정 정보 -->
+        <div class="space-y-3">
+          <div class="flex items-center text-gray-600">
+            <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span><%= l(@game.scheduled_at, format: :long) %></span>
+            <span class="mx-2">·</span>
+            <span><%= @game.duration_hours %>시간</span>
+          </div>
+
+          <div class="flex items-center text-gray-600">
+            <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+            </svg>
+            <span><%= @game.full_location.presence || @game.location_display %></span>
+          </div>
+
+          <% if @game.is_recurring? %>
+            <div class="flex items-center text-gray-600">
+              <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+              <span><%= @game.recurrence_rule_name %></span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- 설명 -->
+      <% if @game.description.present? %>
+        <div class="card p-6">
+          <h2 class="font-semibold text-gray-900 mb-3">경기 설명</h2>
+          <p class="text-gray-600 whitespace-pre-line"><%= @game.description %></p>
+        </div>
+      <% end %>
+
+      <!-- 추가 정보 -->
+      <div class="card p-6">
+        <h2 class="font-semibold text-gray-900 mb-4">경기 정보</h2>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <span class="text-sm text-gray-500">난이도</span>
+            <p class="font-medium"><%= @game.skill_level_name %></p>
+          </div>
+          <div>
+            <span class="text-sm text-gray-500">유니폼</span>
+            <div class="flex items-center gap-2 mt-1">
+              <span class="w-6 h-6 rounded-full border-2 border-gray-200" style="background-color: <%= @game.uniform_home_color %>"></span>
+              <span class="text-gray-400">vs</span>
+              <span class="w-6 h-6 rounded-full border-2 border-gray-200" style="background-color: <%= @game.uniform_away_color %>"></span>
+            </div>
+          </div>
+        </div>
+
+        <% if @game.requirements.present? %>
+          <div class="mt-4 pt-4 border-t border-gray-100">
+            <span class="text-sm text-gray-500">참가 조건</span>
+            <p class="text-gray-600 mt-1"><%= @game.requirements %></p>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- 호스트 전용: 신청자 목록 -->
+      <% if @game.host?(current_user) && @applications.present? %>
+        <div class="card p-6">
+          <h2 class="font-semibold text-gray-900 mb-4">신청자 목록 (<%= @applications.count %>명)</h2>
+          <div class="space-y-3">
+            <% @applications.each do |application| %>
+              <%= render "game_applications/application_row", application: application, game: @game %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- 사이드바 -->
+    <div class="space-y-6">
+      <!-- 참가 정보 카드 -->
+      <div class="card p-6">
+        <div class="text-center mb-6">
+          <% if @game.has_fee? %>
+            <p class="text-3xl font-bold text-primary-600">
+              <%= number_to_currency(@game.fee_per_person, unit: "₩", precision: 0) %>
+            </p>
+            <p class="text-sm text-gray-500">1인당 참가비</p>
+          <% else %>
+            <p class="text-3xl font-bold text-green-600">무료</p>
+          <% end %>
+        </div>
+
+        <!-- 참가 현황 -->
+        <div class="mb-6">
+          <div class="flex justify-between text-sm mb-2">
+            <span class="text-gray-500">참가 현황</span>
+            <span class="font-medium"><%= @game.current_participants %>/<%= @game.max_participants %>명</span>
+          </div>
+          <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <% progress = (@game.current_participants.to_f / @game.max_participants * 100).round %>
+            <div class="h-full bg-primary-600 rounded-full transition-all" style="width: <%= progress %>%"></div>
+          </div>
+          <% if @game.remaining_spots > 0 %>
+            <p class="text-sm text-gray-500 mt-2"><%= @game.remaining_spots %>자리 남음</p>
+          <% else %>
+            <p class="text-sm text-red-600 mt-2">마감되었습니다</p>
+          <% end %>
+        </div>
+
+        <!-- 신청 버튼 -->
+        <% if logged_in? %>
+          <% if @game.host?(current_user) %>
+            <div class="text-center text-gray-500 text-sm py-3 bg-gray-50 rounded-lg">
+              내가 개최한 경기입니다
+            </div>
+          <% elsif @my_application %>
+            <div class="text-center">
+              <p class="text-sm text-gray-600 mb-2">신청 상태: <span class="font-medium"><%= @my_application.status_name %></span></p>
+              <% if @my_application.status_pending? || @my_application.status_approved? %>
+                <%= button_to "신청 취소", cancel_game_game_application_path(@game, @my_application),
+                    method: :post,
+                    data: { turbo_confirm: "정말 취소하시겠습니까?" },
+                    class: "btn btn-secondary w-full" %>
+              <% end %>
+            </div>
+          <% elsif @game.can_apply?(current_user) %>
+            <%= form_with model: [@game, GameApplication.new], local: true do |f| %>
+              <div class="space-y-4 mb-4">
+                <%= f.select :position,
+                    options_for_select([["포지션 선택 (선택)", ""], ["포인트가드", "point_guard"], ["슈팅가드", "shooting_guard"], ["스몰포워드", "small_forward"], ["파워포워드", "power_forward"], ["센터", "center"]]),
+                    {}, class: "form-select w-full" %>
+                <%= f.text_area :message, placeholder: "신청 메시지 (선택)", rows: 2, class: "form-input w-full" %>
+              </div>
+              <%= f.submit "참가 신청하기", class: "btn btn-primary w-full" %>
+            <% end %>
+          <% else %>
+            <div class="text-center text-gray-500 text-sm py-3 bg-gray-50 rounded-lg">
+              현재 신청할 수 없습니다
+            </div>
+          <% end %>
+        <% else %>
+          <%= link_to "로그인하고 신청하기", login_path, class: "btn btn-primary w-full" %>
+        <% end %>
+      </div>
+
+      <!-- 결제 안내 (참가비가 있고, 승인된 경우) -->
+      <% if @my_application&.status_approved? && @game.has_fee? && @my_application.needs_payment? %>
+        <div class="card p-6">
+          <h3 class="font-semibold text-gray-900 mb-4">결제 안내</h3>
+          <%= render "shared/payment_buttons", user: @game.organizer, amount: @game.fee_per_person, message: "#{current_user.display_name}/#{@game.game_id}" %>
+        </div>
+      <% end %>
+
+      <!-- 호스트 정보 -->
+      <div class="card p-6">
+        <h3 class="font-semibold text-gray-900 mb-4">호스트</h3>
+        <div class="flex items-center">
+          <img src="<%= avatar_url(@game.organizer) %>" alt="<%= @game.organizer.display_name %>" class="w-12 h-12 rounded-full mr-3">
+          <div>
+            <p class="font-medium text-gray-900"><%= @game.organizer.display_name %></p>
+            <p class="text-sm text-gray-500"><%= @game.organizer.membership_label %></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,38 @@
+# frozen_string_literal: true
+
+# =============================================================================
+# Team Fixtures
+# =============================================================================
+
+bdr_allstars:
+  name: "BDR 올스타즈"
+  slug: "bdr-allstars"
+  city: "서울"
+  district: "강남구"
+  description: "BDR 플랫폼 대표 테스트팀입니다."
+  captain: host_user
+  manager: host_user
+  status: active
+  team_code: "BDRAS001"
+
+seoul_ballers:
+  name: "서울 볼러즈"
+  slug: "seoul-ballers"
+  city: "서울"
+  district: "마포구"
+  description: "서울을 대표하는 농구팀입니다."
+  captain: regular_user
+  manager: regular_user
+  status: active
+  team_code: "SBLRS002"
+
+inactive_team:
+  name: "휴면팀"
+  slug: "inactive-team"
+  city: "부산"
+  district: "해운대구"
+  description: "현재 활동하지 않는 팀입니다."
+  captain: regular_user
+  manager: regular_user
+  status: inactive
+  team_code: "INACT003"

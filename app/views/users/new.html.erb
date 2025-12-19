@@ -1,0 +1,164 @@
+<% content_for :title do %>회원가입 - BDR<% end %>
+
+<div class="container-narrow py-8">
+  <div class="card max-w-md mx-auto">
+    <%# Header %>
+    <div class="text-center mb-8">
+      <div class="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+        <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-900">회원가입</h1>
+      <p class="mt-2 text-gray-500">BDR과 함께 농구 라이프를 시작하세요</p>
+    </div>
+
+    <%# Error Messages %>
+    <% if @user.errors.any? %>
+      <div class="alert-error mb-6">
+        <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+        </svg>
+        <div>
+          <p class="font-medium">입력 정보를 확인해주세요</p>
+          <ul class="mt-1 text-sm list-disc list-inside">
+            <% @user.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    <% end %>
+
+    <%# Signup Form %>
+    <%= form_with model: @user, url: signup_path, method: :post, class: "space-y-5" do |f| %>
+      <%# Email %>
+      <div>
+        <%= f.label :email, "이메일", class: "form-label" %>
+        <%= f.email_field :email,
+            class: "form-input #{@user.errors[:email].any? ? 'form-input-error' : ''}",
+            placeholder: "example@email.com",
+            autocomplete: "email",
+            autofocus: true,
+            required: true %>
+        <% if @user.errors[:email].any? %>
+          <p class="form-error"><%= @user.errors[:email].first %></p>
+        <% end %>
+      </div>
+
+      <%# Password %>
+      <div>
+        <%= f.label :password, "비밀번호", class: "form-label" %>
+        <%= f.password_field :password,
+            class: "form-input #{@user.errors[:password].any? ? 'form-input-error' : ''}",
+            placeholder: "8자 이상 입력하세요",
+            autocomplete: "new-password",
+            required: true %>
+        <% if @user.errors[:password].any? %>
+          <p class="form-error"><%= @user.errors[:password].first %></p>
+        <% else %>
+          <p class="form-hint">8자 이상의 영문, 숫자 조합을 권장합니다</p>
+        <% end %>
+      </div>
+
+      <%# Password Confirmation %>
+      <div>
+        <%= f.label :password_confirmation, "비밀번호 확인", class: "form-label" %>
+        <%= f.password_field :password_confirmation,
+            class: "form-input #{@user.errors[:password_confirmation].any? ? 'form-input-error' : ''}",
+            placeholder: "비밀번호를 다시 입력하세요",
+            autocomplete: "new-password",
+            required: true %>
+        <% if @user.errors[:password_confirmation].any? %>
+          <p class="form-error"><%= @user.errors[:password_confirmation].first %></p>
+        <% end %>
+      </div>
+
+      <%# Name %>
+      <div>
+        <%= f.label :name, "이름", class: "form-label" %>
+        <%= f.text_field :name,
+            class: "form-input",
+            placeholder: "실명을 입력하세요",
+            autocomplete: "name" %>
+        <p class="form-hint">경기 참가 시 본인 확인에 사용됩니다</p>
+      </div>
+
+      <%# Nickname %>
+      <div>
+        <%= f.label :nickname, "닉네임", class: "form-label" %>
+        <%= f.text_field :nickname,
+            class: "form-input #{@user.errors[:nickname].any? ? 'form-input-error' : ''}",
+            placeholder: "2-20자 이내",
+            autocomplete: "nickname" %>
+        <% if @user.errors[:nickname].any? %>
+          <p class="form-error"><%= @user.errors[:nickname].first %></p>
+        <% else %>
+          <p class="form-hint">커뮤니티에서 사용할 닉네임입니다</p>
+        <% end %>
+      </div>
+
+      <%# Phone %>
+      <div>
+        <%= f.label :phone, "전화번호", class: "form-label" %>
+        <%= f.tel_field :phone,
+            class: "form-input #{@user.errors[:phone].any? ? 'form-input-error' : ''}",
+            placeholder: "010-1234-5678",
+            autocomplete: "tel" %>
+        <% if @user.errors[:phone].any? %>
+          <p class="form-error"><%= @user.errors[:phone].first %></p>
+        <% end %>
+      </div>
+
+      <%# Terms %>
+      <div class="space-y-3 py-2">
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" name="terms" class="form-checkbox mt-0.5" required>
+          <span class="text-sm text-gray-600">
+            <a href="#" class="text-primary-600 hover:underline">이용약관</a> 및
+            <a href="#" class="text-primary-600 hover:underline">개인정보처리방침</a>에 동의합니다
+            <span class="text-primary-600">*</span>
+          </span>
+        </label>
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" name="marketing" class="form-checkbox mt-0.5">
+          <span class="text-sm text-gray-600">
+            마케팅 정보 수신에 동의합니다 (선택)
+          </span>
+        </label>
+      </div>
+
+      <%# Submit %>
+      <div class="pt-2">
+        <%= f.submit "가입하기", class: "btn-primary w-full btn-lg cursor-pointer" %>
+      </div>
+    <% end %>
+
+    <%# Divider %>
+    <div class="relative my-8">
+      <div class="absolute inset-0 flex items-center">
+        <div class="w-full border-t border-gray-200"></div>
+      </div>
+      <div class="relative flex justify-center">
+        <span class="bg-white px-4 text-sm text-gray-400">또는</span>
+      </div>
+    </div>
+
+    <%# Social Signup (placeholder) %>
+    <div class="space-y-3">
+      <button type="button" class="btn-outline w-full justify-center gap-3">
+        <svg class="w-5 h-5" viewBox="0 0 24 24">
+          <path fill="#FEE500" d="M12 3c5.799 0 10.5 3.664 10.5 8.185 0 4.52-4.701 8.184-10.5 8.184a13.5 13.5 0 0 1-1.727-.11l-4.408 2.883c-.501.265-.678.236-.472-.413l.892-3.678c-2.88-1.46-4.785-3.99-4.785-6.866C1.5 6.665 6.201 3 12 3z"/>
+          <path fill="#3C1E1E" d="M9.764 9.77a.35.35 0 0 0-.348.35v3.696a.35.35 0 0 0 .348.35h.894a.35.35 0 0 0 .348-.35v-3.696a.35.35 0 0 0-.348-.35h-.894zm4.578 0a.35.35 0 0 0-.348.35v1.818l-1.46-2.05a.35.35 0 0 0-.287-.118h-.894a.35.35 0 0 0-.348.35v3.696a.35.35 0 0 0 .348.35h.894a.35.35 0 0 0 .348-.35v-1.818l1.46 2.05a.35.35 0 0 0 .287.118h.894a.35.35 0 0 0 .348-.35v-3.696a.35.35 0 0 0-.348-.35h-.894z"/>
+        </svg>
+        카카오로 시작하기
+      </button>
+    </div>
+
+    <%# Login Link %>
+    <p class="mt-8 text-center text-sm text-gray-500">
+      이미 계정이 있으신가요?
+      <%= link_to "로그인", login_path, class: "font-semibold text-primary-600 hover:text-primary-700" %>
+    </p>
+  </div>
+</div>

@@ -1,0 +1,297 @@
+<% content_for :title, "대회 상세 - #{@tournament.name}" %>
+
+<div class="px-4 sm:px-6 lg:px-8">
+  <!-- Header -->
+  <div class="mb-6">
+    <%= link_to admin_tournaments_path, class: "inline-flex items-center text-sm text-gray-500 hover:text-gray-700" do %>
+      <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      목록으로
+    <% end %>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Tournament Info Card -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-xl font-semibold text-gray-900"><%= @tournament.name %></h1>
+              <% if @tournament.series.present? %>
+                <p class="text-sm text-gray-500"><%= @tournament.series.name %></p>
+              <% end %>
+            </div>
+            <span class="inline-flex rounded-full px-3 py-1 text-sm font-semibold
+              <%= case @tournament.status
+                  when 'pending' then 'bg-yellow-100 text-yellow-800'
+                  when 'active' then 'bg-green-100 text-green-800'
+                  when 'completed' then 'bg-blue-100 text-blue-800'
+                  when 'cancelled' then 'bg-red-100 text-red-800'
+                  else 'bg-gray-100 text-gray-800'
+                  end %>">
+              <%= @tournament.status %>
+            </span>
+          </div>
+        </div>
+
+        <div class="px-6 py-4">
+          <dl class="grid grid-cols-2 gap-4">
+            <div>
+              <dt class="text-sm font-medium text-gray-500">주최자</dt>
+              <dd class="mt-1 text-gray-900">
+                <% if @tournament.organizer.present? %>
+                  <%= link_to @tournament.organizer.display_name, admin_user_path(@tournament.organizer), class: "text-indigo-600 hover:text-indigo-900" %>
+                <% else %>
+                  -
+                <% end %>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">대회 형식</dt>
+              <dd class="mt-1 text-gray-900"><%= @tournament.format_name || "-" %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">시작일</dt>
+              <dd class="mt-1 text-gray-900"><%= @tournament.start_date&.strftime("%Y-%m-%d") || "-" %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">종료일</dt>
+              <dd class="mt-1 text-gray-900"><%= @tournament.end_date&.strftime("%Y-%m-%d") || "-" %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">참가비</dt>
+              <dd class="mt-1 text-gray-900"><%= @tournament.entry_fee.to_i > 0 ? number_to_currency(@tournament.entry_fee, unit: '', precision: 0) + "원" : "무료" %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">참가 팀 수</dt>
+              <dd class="mt-1 text-gray-900"><%= @tournament.tournament_teams.approved.count %> / <%= @tournament.max_teams || "무제한" %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">장소</dt>
+              <dd class="mt-1 text-gray-900"><%= @tournament.location_display %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">등록일</dt>
+              <dd class="mt-1 text-gray-900"><%= l(@tournament.created_at, format: :long) %></dd>
+            </div>
+          </dl>
+
+          <% if @tournament.description.present? %>
+            <div class="mt-4 pt-4 border-t border-gray-200">
+              <dt class="text-sm font-medium text-gray-500">설명</dt>
+              <dd class="mt-1 text-gray-900 whitespace-pre-wrap"><%= @tournament.description %></dd>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Participating Teams -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">참가 팀 (<%= @tournament.tournament_teams.count %>)</h2>
+        </div>
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">팀명</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">신청일</th>
+              <th scope="col" class="relative px-6 py-3"><span class="sr-only">액션</span></th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% @teams.each do |tournament_team| %>
+              <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-gray-900"><%= tournament_team.team.name %></div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5
+                    <%= case tournament_team.status
+                        when 'pending' then 'bg-yellow-100 text-yellow-800'
+                        when 'approved' then 'bg-green-100 text-green-800'
+                        when 'rejected' then 'bg-red-100 text-red-800'
+                        else 'bg-gray-100 text-gray-800'
+                        end %>">
+                    <%= tournament_team.status %>
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <%= l(tournament_team.created_at, format: :short) %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <% if tournament_team.status == "pending" %>
+                    <%= button_to "승인", approve_team_admin_tournament_path(@tournament, team_id: tournament_team.id), method: :post, class: "text-green-600 hover:text-green-900 mr-2", data: { confirm: "이 팀을 승인하시겠습니까?" } %>
+                    <%= button_to "거절", reject_team_admin_tournament_path(@tournament, team_id: tournament_team.id), method: :post, class: "text-red-600 hover:text-red-900", data: { confirm: "이 팀을 거절하시겠습니까?" } %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+
+            <% if @teams.empty? %>
+              <tr>
+                <td colspan="4" class="px-6 py-12 text-center text-gray-500">
+                  참가 팀이 없습니다.
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+
+        <% if @teams_pagy && @teams_pagy.pages > 1 %>
+          <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+            <%== pagy_nav(@teams_pagy) %>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Matches -->
+      <% if @matches.present? %>
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-medium text-gray-900">경기 일정</h2>
+          </div>
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">홈팀</th>
+                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">점수</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">원정팀</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">일시</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <% @matches.each do |match| %>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <%= match.home_team&.name || "-" %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-900">
+                    <%= match.home_score || "-" %> : <%= match.away_score || "-" %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <%= match.away_team&.name || "-" %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <%= match.scheduled_at&.strftime("%Y-%m-%d %H:%M") || "-" %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5
+                      <%= case match.status
+                          when 'scheduled' then 'bg-blue-100 text-blue-800'
+                          when 'in_progress' then 'bg-yellow-100 text-yellow-800'
+                          when 'completed' then 'bg-green-100 text-green-800'
+                          when 'cancelled' then 'bg-red-100 text-red-800'
+                          else 'bg-gray-100 text-gray-800'
+                          end %>">
+                      <%= match.status %>
+                    </span>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- Actions -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">관리 작업</h2>
+        </div>
+        <div class="px-6 py-4 space-y-3">
+          <%= link_to "수정", edit_admin_tournament_path(@tournament), class: "w-full inline-flex justify-center items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500" %>
+
+          <% if @tournament.status == "pending" %>
+            <%= button_to "승인", approve_admin_tournament_path(@tournament), method: :post, class: "w-full inline-flex justify-center items-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500", data: { confirm: "이 대회를 승인하시겠습니까?" } %>
+
+            <div x-data="{ showReject: false }">
+              <button @click="showReject = !showReject" class="w-full inline-flex justify-center items-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500">
+                거절
+              </button>
+              <div x-show="showReject" x-cloak class="mt-2 space-y-2">
+                <%= form_with url: reject_admin_tournament_path(@tournament), method: :post, local: true do |f| %>
+                  <%= f.text_area :reason, placeholder: "거절 사유", rows: 2, class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" %>
+                  <%= f.submit "거절 실행", class: "w-full inline-flex justify-center items-center rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-600 cursor-pointer" %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <% if @tournament.status == "active" %>
+            <%= button_to "종료 처리", complete_admin_tournament_path(@tournament), method: :post, class: "w-full inline-flex justify-center items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500", data: { confirm: "이 대회를 종료 처리하시겠습니까?" } %>
+
+            <div x-data="{ showCancel: false }">
+              <button @click="showCancel = !showCancel" class="w-full inline-flex justify-center items-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500">
+                취소
+              </button>
+              <div x-show="showCancel" x-cloak class="mt-2 space-y-2">
+                <%= form_with url: cancel_admin_tournament_path(@tournament), method: :post, local: true do |f| %>
+                  <%= f.text_area :reason, placeholder: "취소 사유", rows: 2, class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" %>
+                  <%= f.submit "취소 실행", class: "w-full inline-flex justify-center items-center rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-600 cursor-pointer", data: { confirm: "정말 이 대회를 취소하시겠습니까?" } %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <% if @tournament.status.in?(["completed", "cancelled"]) %>
+            <%= button_to "다시 활성화", activate_admin_tournament_path(@tournament), method: :post, class: "w-full inline-flex justify-center items-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500", data: { confirm: "이 대회를 다시 활성화하시겠습니까?" } %>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">통계</h2>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-500">대기 팀</span>
+            <span class="text-sm font-medium text-yellow-600"><%= @tournament.tournament_teams.where(status: "pending").count %></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-500">승인 팀</span>
+            <span class="text-sm font-medium text-green-600"><%= @tournament.tournament_teams.where(status: "approved").count %></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-500">거절 팀</span>
+            <span class="text-sm font-medium text-red-600"><%= @tournament.tournament_teams.where(status: "rejected").count %></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-500">경기 수</span>
+            <span class="text-sm font-medium text-gray-900"><%= @tournament.tournament_matches.count %></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Logs -->
+      <% if @admin_logs.present? %>
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-medium text-gray-900">관리 로그</h2>
+          </div>
+          <div class="px-6 py-4">
+            <ul class="space-y-3">
+              <% @admin_logs.each do |log| %>
+                <li class="text-sm">
+                  <p class="text-gray-900"><%= log.description %></p>
+                  <p class="text-xs text-gray-500">
+                    <%= log.admin&.display_name %> | <%= l(log.created_at, format: :short) %>
+                  </p>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,40 @@
+<%# Series navigation section %>
+<% data = section.dynamic_data %>
+<% series = data[:series] %>
+<% tournaments = data[:tournaments] || [] %>
+<% current_edition = data[:current_edition] %>
+
+<section class="<%= section.padding_classes %> bg-gray-100" style="<%= section.style_attributes.map { |k, v| "#{k}: #{v};" }.join(' ') %>">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <% if series %>
+      <div class="text-center mb-6">
+        <h2 class="text-xl font-bold text-gray-900"><%= series.name %></h2>
+        <% if section.subtitle.present? %>
+          <p class="text-gray-600 mt-1"><%= section.subtitle %></p>
+        <% end %>
+      </div>
+
+      <% if tournaments.any? %>
+        <div class="flex flex-wrap justify-center gap-2">
+          <% tournaments.each do |t| %>
+            <% is_current = t.edition_number == current_edition %>
+            <% if t.tournament_site&.is_published? %>
+              <%= link_to t.tournament_site.full_url,
+                          class: "px-4 py-2 rounded-lg font-medium transition-colors #{is_current ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}" do %>
+                <%= t.edition_number %>회
+              <% end %>
+            <% else %>
+              <span class="px-4 py-2 rounded-lg font-medium <%= is_current ? 'bg-primary text-white' : 'bg-white text-gray-400' %>">
+                <%= t.edition_number %>회
+              </span>
+            <% end %>
+          <% end %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="text-center text-gray-500">
+        <p>시리즈 정보가 없습니다.</p>
+      </div>
+    <% end %>
+  </div>
+</section>

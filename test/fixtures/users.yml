@@ -1,0 +1,55 @@
+# frozen_string_literal: true
+
+# =============================================================================
+# User Fixtures
+# =============================================================================
+
+super_admin:
+  email: "admin@bdr.com"
+  password_digest: <%= BCrypt::Password.create("password123!") %>
+  nickname: "슈퍼관리자"
+  phone: "01000000001"
+  name: "관리자"
+  status: active
+  membership_type: super_admin
+  is_admin: true
+
+tournament_admin:
+  email: "tournament@bdr.com"
+  password_digest: <%= BCrypt::Password.create("password123!") %>
+  nickname: "대회관리자"
+  phone: "01000000002"
+  name: "대회관리자"
+  status: active
+  membership_type: premium
+  is_admin: false
+
+host_user:
+  email: "host@bdr.com"
+  password_digest: <%= BCrypt::Password.create("password123!") %>
+  nickname: "호스트"
+  phone: "01000000003"
+  name: "호스트유저"
+  status: active
+  membership_type: premium
+  is_admin: false
+
+regular_user:
+  email: "user@bdr.com"
+  password_digest: <%= BCrypt::Password.create("password123!") %>
+  nickname: "일반유저"
+  phone: "01000000004"
+  name: "일반유저"
+  status: active
+  membership_type: free
+  is_admin: false
+
+suspended_user:
+  email: "suspended@bdr.com"
+  password_digest: <%= BCrypt::Password.create("password123!") %>
+  nickname: "정지유저"
+  phone: "01000000005"
+  name: "정지유저"
+  status: suspended
+  membership_type: free
+  is_admin: false

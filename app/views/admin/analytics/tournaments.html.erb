@@ -1,0 +1,129 @@
+<% content_for :title, '대회 분석' %>
+
+<div class="px-4 sm:px-6 lg:px-8">
+  <!-- Header -->
+  <div class="mb-6">
+    <%= link_to admin_analytics_path, class: "inline-flex items-center text-sm text-gray-500 hover:text-gray-700" do %>
+      <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      분석 대시보드
+    <% end %>
+  </div>
+
+  <div class="sm:flex sm:items-center sm:justify-between">
+    <div class="sm:flex-auto">
+      <h1 class="text-2xl font-semibold text-gray-900">대회 분석</h1>
+      <p class="mt-2 text-sm text-gray-700">대회 현황 및 통계를 분석합니다.</p>
+    </div>
+    <div class="mt-4 sm:mt-0">
+      <%= form_with url: admin_analytics_tournaments_path, method: :get, class: "flex items-center space-x-2" do |f| %>
+        <%= f.select :period, options_for_select([["오늘", "today"], ["이번 주", "week"], ["이번 달", "month"], ["이번 분기", "quarter"], ["올해", "year"]], @period), {}, class: "rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+        <%= f.submit "조회", class: "inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 cursor-pointer" %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+    <div class="bg-purple-50 rounded-lg shadow p-4">
+      <p class="text-sm text-purple-600">총 대회</p>
+      <p class="text-2xl font-semibold text-purple-700"><%= @tournament_data[:total] %>개</p>
+    </div>
+    <div class="bg-blue-50 rounded-lg shadow p-4">
+      <p class="text-sm text-blue-600">평균 참가 팀</p>
+      <p class="text-2xl font-semibold text-blue-700"><%= @tournament_data[:average_teams] %>팀</p>
+    </div>
+    <div class="bg-green-50 rounded-lg shadow p-4">
+      <p class="text-sm text-green-600">완료율</p>
+      <p class="text-2xl font-semibold text-green-700"><%= @tournament_data[:completion_rate] %>%</p>
+    </div>
+    <div class="bg-gray-50 rounded-lg shadow p-4">
+      <p class="text-sm text-gray-600">기간</p>
+      <p class="text-lg font-semibold text-gray-700">
+        <%= case @period
+            when "today" then "오늘"
+            when "week" then "이번 주"
+            when "month" then "이번 달"
+            when "quarter" then "이번 분기"
+            when "year" then "올해"
+            else "이번 달"
+            end %>
+      </p>
+    </div>
+  </div>
+
+  <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <!-- Status Distribution -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-medium text-gray-900">상태별 분포</h2>
+      </div>
+      <div class="px-6 py-4">
+        <% if @tournament_data[:by_status].present? %>
+          <% total = @tournament_data[:by_status].values.sum %>
+          <dl class="space-y-4">
+            <% @tournament_data[:by_status].each do |status, count| %>
+              <%
+                percentage = total > 0 ? (count.to_f / total * 100).round(1) : 0
+                color = case status
+                        when 'pending' then 'yellow'
+                        when 'active' then 'green'
+                        when 'completed' then 'blue'
+                        when 'cancelled' then 'red'
+                        else 'gray'
+                        end
+                label = case status
+                        when 'pending' then '대기중'
+                        when 'active' then '진행중'
+                        when 'completed' then '완료'
+                        when 'cancelled' then '취소'
+                        else status
+                        end
+              %>
+              <div>
+                <div class="flex items-center justify-between">
+                  <dt class="text-sm text-gray-500"><%= label %></dt>
+                  <dd class="text-sm font-medium text-gray-900"><%= count %>개 (<%= percentage %>%)</dd>
+                </div>
+                <div class="mt-1 w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-<%= color %>-600 h-2 rounded-full" style="width: <%= percentage %>%"></div>
+                </div>
+              </div>
+            <% end %>
+          </dl>
+        <% else %>
+          <p class="text-center text-gray-500 py-8">데이터가 없습니다.</p>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Tournament Types -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-medium text-gray-900">대회 유형별 분포</h2>
+      </div>
+      <div class="px-6 py-4">
+        <% if @tournament_data[:popular_types].present? %>
+          <% total = @tournament_data[:popular_types].values.sum %>
+          <dl class="space-y-4">
+            <% @tournament_data[:popular_types].each do |type, count| %>
+              <% percentage = total > 0 ? (count.to_f / total * 100).round(1) : 0 %>
+              <div>
+                <div class="flex items-center justify-between">
+                  <dt class="text-sm text-gray-500"><%= type || '기타' %></dt>
+                  <dd class="text-sm font-medium text-gray-900"><%= count %>개 (<%= percentage %>%)</dd>
+                </div>
+                <div class="mt-1 w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-indigo-600 h-2 rounded-full" style="width: <%= percentage %>%"></div>
+                </div>
+              </div>
+            <% end %>
+          </dl>
+        <% else %>
+          <p class="text-center text-gray-500 py-8">데이터가 없습니다.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

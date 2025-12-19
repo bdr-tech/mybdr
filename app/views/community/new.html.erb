@@ -1,0 +1,221 @@
+<% content_for :title, "글쓰기" %>
+
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">글쓰기</h1>
+
+    <%= form_with model: @post, url: community_path, local: true, class: "space-y-6", data: { controller: "category-fields" } do |f| %>
+      <% if @post.errors.any? %>
+        <div class="bg-red-50 text-red-600 p-4 rounded-lg">
+          <ul class="list-disc list-inside">
+            <% @post.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <div>
+        <%= f.label :category, "카테고리", class: "form-label" %>
+        <%= f.select :category,
+            CommunityPost::CATEGORIES.map { |c| [CommunityPost.category_label(c), c] },
+            { prompt: "카테고리 선택", selected: @post.category },
+            class: "form-select w-full",
+            data: { action: "change->category-fields#toggle", category_fields_target: "select" } %>
+      </div>
+
+      <!-- 팀원 모집 전용 필드 -->
+      <div id="team-recruit-fields" class="hidden space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200" data-category-fields-target="teamRecruit">
+        <h3 class="font-medium text-blue-800 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+          </svg>
+          팀원 모집 정보
+        </h3>
+        <div>
+          <%= f.label :team_id, "소속 팀 (선택)", class: "form-label" %>
+          <%= f.select :team_id,
+              Team.order(:name).map { |t| [t.name, t.id] },
+              { prompt: "팀을 선택하세요 (선택사항)", include_blank: true },
+              class: "form-select w-full" %>
+          <p class="text-sm text-gray-500 mt-1">팀을 선택하면 팀 정보가 함께 표시됩니다.</p>
+        </div>
+      </div>
+
+      <!-- 농구장 정보 전용 필드 -->
+      <div id="court-info-fields" class="hidden space-y-4 p-4 bg-green-50 rounded-lg border border-green-200" data-category-fields-target="courtInfo">
+        <h3 class="font-medium text-green-800 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          위치 정보
+        </h3>
+        <div>
+          <%= f.label :location_name, "장소명", class: "form-label" %>
+          <%= f.text_field :location_name, class: "form-input w-full", placeholder: "예: 잠실 실내체육관" %>
+        </div>
+        <div>
+          <%= f.label :location_address, "주소", class: "form-label" %>
+          <div class="flex gap-2">
+            <%= f.text_field :location_address, class: "form-input flex-1", placeholder: "주소를 입력하세요", id: "location-address-input" %>
+            <button type="button" onclick="searchAddress()" class="btn btn-secondary whitespace-nowrap">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              주소 검색
+            </button>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <%= f.label :latitude, "위도", class: "form-label" %>
+            <%= f.text_field :latitude, class: "form-input w-full bg-gray-50", placeholder: "자동 입력", readonly: true, id: "latitude-input" %>
+          </div>
+          <div>
+            <%= f.label :longitude, "경도", class: "form-label" %>
+            <%= f.text_field :longitude, class: "form-input w-full bg-gray-50", placeholder: "자동 입력", readonly: true, id: "longitude-input" %>
+          </div>
+        </div>
+        <div id="map-container" class="h-64 bg-gray-100 rounded-lg hidden">
+          <div id="location-map" class="w-full h-full rounded-lg"></div>
+        </div>
+      </div>
+
+      <!-- 장터 전용 필드 -->
+      <div id="trade-fields" class="hidden space-y-4 p-4 bg-orange-50 rounded-lg border border-orange-200" data-category-fields-target="trade">
+        <h3 class="font-medium text-orange-800 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          거래 정보
+        </h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <%= f.label :price, "판매 가격", class: "form-label" %>
+            <div class="flex items-center">
+              <%= f.number_field :price, class: "form-input flex-1", placeholder: "0", min: 0 %>
+              <span class="ml-2 text-gray-600 text-sm">원</span>
+            </div>
+          </div>
+          <div>
+            <%= f.label :trade_status, "거래 상태", class: "form-label" %>
+            <%= f.select :trade_status,
+                CommunityPost::TRADE_STATUSES.map { |s| [CommunityPost.trade_status_label(s), s] },
+                {},
+                class: "form-select w-full" %>
+          </div>
+        </div>
+        <div class="flex items-center gap-6">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <%= f.check_box :negotiable, class: "form-checkbox" %>
+            <span class="text-sm text-gray-700">가격 협의 가능</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <%= f.check_box :share_contact, class: "form-checkbox" %>
+            <span class="text-sm text-gray-700">연락처 공개</span>
+          </label>
+        </div>
+        <p class="text-sm text-gray-500">
+          연락처 공개 시 마스킹 처리되어 표시됩니다. (예: 010-12**-5678, 홍*동)
+        </p>
+      </div>
+
+      <div>
+        <%= f.label :title, "제목", class: "form-label" %>
+        <%= f.text_field :title, class: "form-input w-full", placeholder: "제목을 입력하세요", required: true %>
+      </div>
+
+      <div>
+        <%= f.label :content, "내용", class: "form-label" %>
+        <%= render "shared/rich_text_editor", form: f, field: :content, value: @post.content, rows: 12 %>
+      </div>
+
+      <div class="flex gap-3 pt-4">
+        <%= f.submit "등록", class: "btn btn-primary" %>
+        <%= link_to "취소", community_path, class: "btn btn-ghost" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+  // 카테고리 필드 토글
+  document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.querySelector('[data-category-fields-target="select"]');
+    const teamRecruitFields = document.getElementById('team-recruit-fields');
+    const courtInfoFields = document.getElementById('court-info-fields');
+    const tradeFields = document.getElementById('trade-fields');
+
+    function toggleFields() {
+      const category = categorySelect.value;
+
+      // 모든 필드 숨기기
+      teamRecruitFields.classList.add('hidden');
+      courtInfoFields.classList.add('hidden');
+      tradeFields.classList.add('hidden');
+
+      // 선택된 카테고리에 따라 필드 표시
+      if (category === 'team_recruit') {
+        teamRecruitFields.classList.remove('hidden');
+      } else if (category === 'court_info') {
+        courtInfoFields.classList.remove('hidden');
+      } else if (category === 'trade') {
+        tradeFields.classList.remove('hidden');
+      }
+    }
+
+    if (categorySelect) {
+      categorySelect.addEventListener('change', toggleFields);
+      // 초기 로드 시에도 실행
+      toggleFields();
+    }
+  });
+
+  // 주소 검색 (카카오 주소 API 사용)
+  function searchAddress() {
+    new daum.Postcode({
+      oncomplete: function(data) {
+        document.getElementById('location-address-input').value = data.roadAddress || data.jibunAddress;
+
+        // 좌표 검색 (카카오 맵 API)
+        if (window.kakao && kakao.maps && kakao.maps.services) {
+          const geocoder = new kakao.maps.services.Geocoder();
+          geocoder.addressSearch(data.roadAddress || data.jibunAddress, function(result, status) {
+            if (status === kakao.maps.services.Status.OK) {
+              document.getElementById('latitude-input').value = result[0].y;
+              document.getElementById('longitude-input').value = result[0].x;
+
+              // 지도 표시
+              showMap(result[0].y, result[0].x);
+            }
+          });
+        }
+      }
+    }).open();
+  }
+
+  // 지도 표시
+  function showMap(lat, lng) {
+    const mapContainer = document.getElementById('map-container');
+    const mapElement = document.getElementById('location-map');
+
+    mapContainer.classList.remove('hidden');
+
+    if (window.kakao && kakao.maps) {
+      const position = new kakao.maps.LatLng(lat, lng);
+      const map = new kakao.maps.Map(mapElement, {
+        center: position,
+        level: 3
+      });
+
+      new kakao.maps.Marker({
+        position: position,
+        map: map
+      });
+    }
+  }
+</script>
+
+<!-- 카카오 주소 검색 API -->
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>

@@ -1,0 +1,111 @@
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <!-- 헤더 -->
+  <div class="bg-zinc-800 rounded-xl overflow-hidden mb-8">
+    <% if @series.logo_url.present? %>
+      <div class="h-48 bg-zinc-900">
+        <img src="<%= @series.logo_url %>" alt="<%= @series.name %>" class="w-full h-full object-cover opacity-50">
+      </div>
+    <% else %>
+      <div class="h-48 bg-gradient-to-r from-orange-500 to-red-600"></div>
+    <% end %>
+
+    <div class="p-6 -mt-16 relative">
+      <div class="flex items-end justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-white mb-2"><%= @series.name %></h1>
+          <p class="text-zinc-400">
+            주최: <%= @series.organizer.display_name %> |
+            총 <%= @series.tournaments_count %>회 개최
+          </p>
+        </div>
+
+        <% if logged_in? && @series.organizer_id == current_user.id %>
+          <div class="flex gap-2">
+            <%= link_to edit_tournament_series_path(@series), class: "btn-secondary" do %>
+              수정
+            <% end %>
+            <%= button_to create_next_edition_tournament_series_path(@series),
+                          method: :post,
+                          class: "btn-primary",
+                          data: { turbo_confirm: "다음 회차 대회를 생성하시겠습니까?" } do %>
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+              다음 회차 생성
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <% if @series.description.present? %>
+        <p class="text-zinc-300 mt-4"><%= @series.description %></p>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- 시리즈 통계 -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-zinc-800 rounded-xl p-4 text-center">
+      <div class="text-3xl font-bold text-white"><%= @series.tournaments_count %></div>
+      <div class="text-zinc-400 text-sm">총 대회</div>
+    </div>
+    <div class="bg-zinc-800 rounded-xl p-4 text-center">
+      <div class="text-3xl font-bold text-white"><%= @series.completed_tournaments_count %></div>
+      <div class="text-zinc-400 text-sm">완료된 대회</div>
+    </div>
+    <div class="bg-zinc-800 rounded-xl p-4 text-center">
+      <div class="text-3xl font-bold text-white"><%= @series.total_teams_count %></div>
+      <div class="text-zinc-400 text-sm">총 참가팀</div>
+    </div>
+    <div class="bg-zinc-800 rounded-xl p-4 text-center">
+      <div class="text-3xl font-bold text-white"><%= @series.total_matches_count %></div>
+      <div class="text-zinc-400 text-sm">총 경기</div>
+    </div>
+  </div>
+
+  <!-- 역대 대회 목록 -->
+  <div class="bg-zinc-800 rounded-xl overflow-hidden">
+    <div class="p-4 border-b border-zinc-700">
+      <h2 class="text-xl font-bold text-white">역대 대회</h2>
+    </div>
+
+    <% if @tournaments.any? %>
+      <div class="divide-y divide-zinc-700">
+        <% @tournaments.each do |tournament| %>
+          <%= link_to tournament_path(tournament), class: "block p-4 hover:bg-zinc-700 transition-colors" do %>
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-orange-500 font-bold"><%= tournament.edition_number %>회</span>
+                  <h3 class="text-white font-semibold"><%= tournament.name %></h3>
+                  <span class="px-2 py-0.5 text-xs rounded-full
+                    <%= tournament.status_completed? ? 'bg-green-500/20 text-green-400' :
+                        tournament.status_in_progress? ? 'bg-yellow-500/20 text-yellow-400' :
+                        tournament.status_registration_open? ? 'bg-blue-500/20 text-blue-400' :
+                        'bg-zinc-600 text-zinc-300' %>">
+                    <%= tournament.status_name %>
+                  </span>
+                </div>
+                <div class="text-sm text-zinc-400 mt-1">
+                  <%= tournament.date_range %> |
+                  <%= tournament.teams_count %>팀 참가
+                  <% if tournament.champion_team.present? %>
+                    | 우승: <%= tournament.champion_team.name %>
+                  <% end %>
+                </div>
+              </div>
+
+              <svg class="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              </svg>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="p-8 text-center text-zinc-400">
+        아직 등록된 대회가 없습니다.
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,155 @@
+<% content_for :title, "대회" %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="flex justify-between items-center mb-8">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">대회</h1>
+      <p class="text-gray-600 mt-1">참가 가능한 대회를 찾아보세요</p>
+    </div>
+    <% if logged_in? && current_user.can_create_tournament? %>
+      <%= link_to new_tournament_path, class: "btn btn-primary" do %>
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        새 대회 만들기
+      <% end %>
+    <% end %>
+  </div>
+
+  <!-- 필터 -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
+    <div class="flex overflow-x-auto scrollbar-hide">
+      <%= link_to tournaments_path, class: "px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 #{params[:status].blank? ? 'text-primary-600 border-primary-600' : 'text-gray-500 border-transparent hover:text-gray-700'}" do %>
+        전체
+      <% end %>
+      <%= link_to tournaments_path(status: :registration_open), class: "px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 #{params[:status] == 'registration_open' ? 'text-primary-600 border-primary-600' : 'text-gray-500 border-transparent hover:text-gray-700'}" do %>
+        모집중
+      <% end %>
+      <%= link_to tournaments_path(status: :in_progress), class: "px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 #{params[:status] == 'in_progress' ? 'text-primary-600 border-primary-600' : 'text-gray-500 border-transparent hover:text-gray-700'}" do %>
+        진행중
+      <% end %>
+      <%= link_to tournaments_path(status: :completed), class: "px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 #{params[:status] == 'completed' ? 'text-primary-600 border-primary-600' : 'text-gray-500 border-transparent hover:text-gray-700'}" do %>
+        완료
+      <% end %>
+    </div>
+  </div>
+
+  <% if @tournaments.any? %>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <% @tournaments.each do |tournament| %>
+        <div class="relative bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md hover:border-primary-200 transition-all group">
+          <!-- 링크 복사 버튼 (우측 상단) -->
+          <button type="button"
+                  data-controller="clipboard"
+                  data-clipboard-text-value="<%= request.base_url %><%= tournament_path(tournament) %>"
+                  data-action="click->clipboard#copy"
+                  class="absolute top-2 right-2 z-10 p-2 bg-black/60 hover:bg-black/80 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-all text-white"
+                  title="링크 복사">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+            </svg>
+          </button>
+
+          <%= link_to tournament_path(tournament), class: "block" do %>
+            <% if tournament.banner_url.present? %>
+              <div class="aspect-video bg-gray-100">
+                <img src="<%= tournament.banner_url %>" alt="" class="w-full h-full object-cover">
+              </div>
+            <% else %>
+              <div class="aspect-video bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
+                <span class="text-4xl font-bold text-white/80"><%= tournament.name.first(2) %></span>
+              </div>
+            <% end %>
+
+            <div class="p-4">
+              <div class="flex items-center gap-2 mb-2">
+                <%
+                  status_class = case
+                    when tournament.status_registration_open? then "bg-blue-100 text-blue-700"
+                    when tournament.status_in_progress? then "bg-yellow-100 text-yellow-700"
+                    when tournament.status_completed? then "bg-green-100 text-green-700"
+                    else "bg-gray-100 text-gray-600"
+                  end
+                %>
+                <span class="px-2 py-0.5 text-xs font-medium rounded-full <%= status_class %>">
+                  <%= tournament.status_name %>
+                </span>
+                <% if tournament.series.present? %>
+                  <span class="text-xs text-primary-600"><%= tournament.series.name %> <%= tournament.edition_number %>회</span>
+                <% end %>
+              </div>
+
+              <h3 class="text-lg font-bold text-gray-900 mb-2"><%= tournament.name %></h3>
+
+              <div class="space-y-1 text-sm text-gray-500">
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                  <span><%= tournament.date_range %></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  <span><%= tournament.location_display %></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                  </svg>
+                  <span><%= tournament.teams_count %>/<%= tournament.max_teams %>팀</span>
+                  <% if tournament.full? %>
+                    <span class="text-red-500 font-medium">(마감)</span>
+                  <% end %>
+                </div>
+              </div>
+
+              <% if tournament.has_fee? %>
+                <div class="mt-3 text-primary-600 font-bold">
+                  참가비 <%= number_with_delimiter(tournament.entry_fee) %>원
+                </div>
+              <% else %>
+                <div class="mt-3 text-green-600 font-bold">무료 참가</div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- 페이지네이션 -->
+    <% if @pagy && @pagy.pages > 1 %>
+      <div class="mt-8 flex items-center justify-center gap-2">
+        <% if @pagy.prev %>
+          <%= link_to tournaments_path(page: @pagy.prev, status: params[:status]), class: "px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" do %>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          <% end %>
+        <% end %>
+
+        <% @pagy.series.each do |item| %>
+          <% if item.is_a?(Integer) %>
+            <%= link_to item, tournaments_path(page: item, status: params[:status]), class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors #{item == @pagy.page ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-gray-100'}" %>
+          <% elsif item == :gap %>
+            <span class="px-2 text-gray-400">...</span>
+          <% end %>
+        <% end %>
+
+        <% if @pagy.next %>
+          <%= link_to tournaments_path(page: @pagy.next, status: params[:status]), class: "px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" do %>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-100">
+      <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+      </svg>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">등록된 대회가 없습니다</h3>
+      <p class="text-gray-600">새로운 대회를 기다려주세요!</p>
+    </div>
+  <% end %>
+</div>

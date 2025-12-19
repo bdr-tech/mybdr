@@ -1,0 +1,78 @@
+<%# Teams section - Modern minimalist style with mobile optimization %>
+<% data = section.dynamic_data %>
+<% teams = data[:teams] || [] %>
+<% primary_color = @tournament_site.primary_color || '#7C3AED' %>
+
+<section class="bg-white py-12 sm:py-16 md:py-20 lg:py-24">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <%# Section Header %>
+    <div class="text-center mb-8 sm:mb-10 md:mb-12">
+      <span class="inline-block px-3 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm font-semibold rounded-full mb-3 sm:mb-4"
+            style="color: <%= primary_color %>; background-color: <%= primary_color %>15;">
+        Teams
+      </span>
+      <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 break-keep">
+        <%= section.title || '참가팀' %>
+      </h2>
+      <% if section.subtitle.present? %>
+        <p class="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-2">
+          <%= section.subtitle %>
+        </p>
+      <% end %>
+    </div>
+
+    <% if teams.any? %>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
+        <% teams.each do |tournament_team| %>
+          <% team = tournament_team.team %>
+          <div class="text-center group">
+            <%# Team Icon/Logo %>
+            <div class="mb-3 sm:mb-4 flex justify-center">
+              <% if team.logo_url.present? %>
+                <div class="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-xl sm:rounded-2xl bg-gray-50 p-2 sm:p-3 flex items-center justify-center group-hover:shadow-md transition-shadow">
+                  <img src="<%= team.logo_url %>" alt="<%= team.name %>" class="w-full h-full object-contain">
+                </div>
+              <% else %>
+                <div class="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-xl sm:rounded-2xl flex items-center justify-center group-hover:shadow-md transition-shadow"
+                     style="background-color: <%= primary_color %>15;">
+                  <svg class="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10" style="color: <%= primary_color %>;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                  </svg>
+                </div>
+              <% end %>
+            </div>
+
+            <%# Team Name %>
+            <h3 class="text-sm sm:text-base font-semibold text-gray-900 mb-0.5 sm:mb-1 truncate px-1"><%= team.name %></h3>
+
+            <%# Seed Number %>
+            <% if tournament_team.seed_number.present? %>
+              <p class="text-xs sm:text-sm text-gray-500">시드 #<%= tournament_team.seed_number %></p>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="text-center mt-8 sm:mt-10">
+        <%= link_to site_path("/teams"),
+                    class: "inline-flex items-center gap-2 text-sm sm:text-base font-semibold transition-colors hover:opacity-80",
+                    style: "color: #{primary_color};" do %>
+          전체 참가팀 보기
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="bg-gray-50 rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center">
+        <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl mx-auto mb-3 sm:mb-4 flex items-center justify-center"
+             style="background-color: <%= primary_color %>15;">
+          <svg class="w-6 h-6 sm:w-8 sm:h-8" style="color: <%= primary_color %>;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+        </div>
+        <p class="text-sm sm:text-base text-gray-600">아직 확정된 참가팀이 없습니다.</p>
+      </div>
+    <% end %>
+  </div>
+</section>

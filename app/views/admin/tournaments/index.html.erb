@@ -1,0 +1,113 @@
+<% content_for :title, '대회 관리' %>
+
+<div class="px-4 sm:px-6 lg:px-8">
+  <div class="sm:flex sm:items-center">
+    <div class="sm:flex-auto">
+      <h1 class="text-2xl font-semibold text-gray-900">대회 관리</h1>
+      <p class="mt-2 text-sm text-gray-700">등록된 모든 대회를 관리합니다.</p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-5">
+    <div class="bg-white rounded-lg shadow p-4">
+      <p class="text-sm text-gray-500">전체</p>
+      <p class="text-2xl font-semibold text-gray-900"><%= @stats[:total] %></p>
+    </div>
+    <div class="bg-gray-50 rounded-lg shadow p-4">
+      <p class="text-sm text-gray-600">임시저장</p>
+      <p class="text-2xl font-semibold text-gray-700"><%= @stats[:draft] %></p>
+    </div>
+    <div class="bg-green-50 rounded-lg shadow p-4">
+      <p class="text-sm text-green-600">참가 모집중</p>
+      <p class="text-2xl font-semibold text-green-700"><%= @stats[:registration_open] %></p>
+    </div>
+    <div class="bg-blue-50 rounded-lg shadow p-4">
+      <p class="text-sm text-blue-600">진행중</p>
+      <p class="text-2xl font-semibold text-blue-700"><%= @stats[:in_progress] %></p>
+    </div>
+    <div class="bg-indigo-50 rounded-lg shadow p-4">
+      <p class="text-sm text-indigo-600">완료</p>
+      <p class="text-2xl font-semibold text-indigo-700"><%= @stats[:completed] %></p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="mt-6 bg-white rounded-lg shadow p-4">
+    <%= form_with url: admin_tournaments_path, method: :get, class: "flex items-center gap-3" do |f| %>
+      <div class="flex-[2]">
+        <%= f.text_field :q, value: params[:q], placeholder: "대회명, 설명 검색...", class: "w-full h-10 px-3 text-sm rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 focus:ring-1" %>
+      </div>
+      <div class="flex-1">
+        <%= f.select :status, options_for_select([["모든 상태", ""], ["임시저장", "draft"], ["참가 모집중", "registration_open"], ["등록 마감", "registration_closed"], ["진행중", "in_progress"], ["완료", "completed"], ["취소됨", "cancelled"]], params[:status]), {}, class: "w-full h-10 pl-3 pr-8 text-sm rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 focus:ring-1" %>
+      </div>
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <%= f.submit "검색", class: "h-10 w-20 inline-flex items-center justify-center rounded-md bg-indigo-600 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 cursor-pointer transition-colors" %>
+        <%= link_to "초기화", admin_tournaments_path, class: "h-10 w-20 inline-flex items-center justify-center rounded-md bg-gray-100 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-200 transition-colors" %>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Tournaments List -->
+  <div class="mt-6 bg-white shadow rounded-lg overflow-hidden">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">대회명</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">주최자</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">일정</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">등록일</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <% @tournaments.each do |tournament| %>
+          <tr class="hover:bg-indigo-50 cursor-pointer transition-colors" onclick="window.location='<%= admin_tournament_path(tournament) %>'">
+            <td class="px-6 py-4">
+              <div class="text-sm font-medium text-gray-900"><%= tournament.name %></div>
+              <div class="text-sm text-gray-500"><%= tournament.series&.name %></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900"><%= tournament.organizer&.display_name %></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900"><%= tournament.start_date&.strftime("%Y-%m-%d") %></div>
+              <div class="text-sm text-gray-500"><%= tournament.end_date&.strftime("%Y-%m-%d") %></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5
+                <%= case tournament.status
+                    when 'draft' then 'bg-gray-100 text-gray-800'
+                    when 'registration_open' then 'bg-green-100 text-green-800'
+                    when 'registration_closed' then 'bg-yellow-100 text-yellow-800'
+                    when 'in_progress' then 'bg-blue-100 text-blue-800'
+                    when 'completed' then 'bg-indigo-100 text-indigo-800'
+                    when 'cancelled' then 'bg-red-100 text-red-800'
+                    else 'bg-gray-100 text-gray-800'
+                    end %>">
+                <%= tournament.status_name %>
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <%= l(tournament.created_at, format: :short) %>
+            </td>
+          </tr>
+        <% end %>
+
+        <% if @tournaments.empty? %>
+          <tr>
+            <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+              대회가 없습니다.
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+
+    <% if @pagy && @pagy.pages > 1 %>
+      <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+        <%== pagy_nav(@pagy) %>
+      </div>
+    <% end %>
+  </div>
+</div>

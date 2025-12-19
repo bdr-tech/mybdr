@@ -1,0 +1,346 @@
+<%# Rich Text Editor Partial %>
+<%# Usage: <%= render "shared/rich_text_editor", form: f, field: :content, value: @post.content %>
+
+<% form ||= nil %>
+<% field ||= :content %>
+<% value ||= "" %>
+<% placeholder ||= "내용을 입력하세요..." %>
+<% rows ||= 12 %>
+
+<div data-controller="rich-text-editor" data-rich-text-editor-placeholder-value="<%= placeholder %>" class="rich-text-editor-container">
+  <!-- Toolbar -->
+  <div data-rich-text-editor-target="toolbar" class="rich-text-toolbar">
+    <!-- Text Style -->
+    <div class="toolbar-group">
+      <button type="button" data-action="click->rich-text-editor#bold" class="toolbar-btn" title="굵게 (Ctrl+B)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+          <path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"/>
+        </svg>
+      </button>
+      <button type="button" data-action="click->rich-text-editor#italic" class="toolbar-btn" title="기울임 (Ctrl+I)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M19 4h-9 M14 20H5 M15 4L9 20"/>
+        </svg>
+      </button>
+      <button type="button" data-action="click->rich-text-editor#underline" class="toolbar-btn" title="밑줄 (Ctrl+U)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M6 3v7a6 6 0 006 6 6 6 0 006-6V3 M4 21h16"/>
+        </svg>
+      </button>
+      <button type="button" data-action="click->rich-text-editor#strikethrough" class="toolbar-btn" title="취소선">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M16 4H9a3 3 0 00-3 3v0a3 3 0 003 3h6a3 3 0 013 3v0a3 3 0 01-3 3H7 M4 12h16"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Font Size -->
+    <div class="toolbar-group">
+      <button type="button" data-action="click->rich-text-editor#fontSize" data-size="2" class="toolbar-btn text-xs" title="작은 글씨">
+        <span class="font-bold">A</span><span class="text-[10px]">-</span>
+      </button>
+      <button type="button" data-action="click->rich-text-editor#fontSize" data-size="4" class="toolbar-btn" title="보통 글씨">
+        <span class="font-bold">A</span>
+      </button>
+      <button type="button" data-action="click->rich-text-editor#fontSize" data-size="6" class="toolbar-btn text-lg" title="큰 글씨">
+        <span class="font-bold">A</span><span class="text-[10px]">+</span>
+      </button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Text Color -->
+    <div class="toolbar-group">
+      <div class="relative">
+        <button type="button" class="toolbar-btn color-picker-btn" title="글자 색상">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 3v0a4 4 0 014 4v8a4 4 0 01-8 0V7a4 4 0 014-4z M8 21h8"/>
+          </svg>
+          <span class="color-indicator" style="background: #000;"></span>
+        </button>
+        <div class="color-palette">
+          <% %w[#000000 #e53e3e #dd6b20 #d69e2e #38a169 #3182ce #805ad5 #d53f8c #718096].each do |color| %>
+            <button type="button" data-action="click->rich-text-editor#textColor" data-color="<%= color %>"
+                    class="color-swatch" style="background: <%= color %>;" title="<%= color %>"></button>
+          <% end %>
+        </div>
+      </div>
+      <div class="relative">
+        <button type="button" class="toolbar-btn color-picker-btn" title="배경 색상">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20.71 5.63l-2.34-2.34a1 1 0 00-1.41 0l-12 12a1 1 0 000 1.41l2.34 2.34a1 1 0 001.41 0l12-12a1 1 0 000-1.41zM4 19h5v2H4v-2z"/>
+          </svg>
+          <span class="color-indicator" style="background: #fef3c7;"></span>
+        </button>
+        <div class="color-palette">
+          <% %w[transparent #fef3c7 #fed7d7 #c6f6d5 #bee3f8 #e9d8fd #fbb6ce #e2e8f0].each do |color| %>
+            <button type="button" data-action="click->rich-text-editor#bgColor" data-color="<%= color %>"
+                    class="color-swatch <%= color == 'transparent' ? 'transparent-swatch' : '' %>"
+                    style="background: <%= color == 'transparent' ? 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)' : color %>; background-size: 8px 8px;"
+                    title="<%= color == 'transparent' ? '없음' : color %>"></button>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Alignment -->
+    <div class="toolbar-group">
+      <button type="button" data-action="click->rich-text-editor#alignLeft" class="toolbar-btn" title="왼쪽 정렬">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16 M4 12h10 M4 18h14"/>
+        </svg>
+      </button>
+      <button type="button" data-action="click->rich-text-editor#alignCenter" class="toolbar-btn" title="가운데 정렬">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16 M7 12h10 M5 18h14"/>
+        </svg>
+      </button>
+      <button type="button" data-action="click->rich-text-editor#alignRight" class="toolbar-btn" title="오른쪽 정렬">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16 M10 12h10 M6 18h14"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Lists -->
+    <div class="toolbar-group">
+      <button type="button" data-action="click->rich-text-editor#bulletList" class="toolbar-btn" title="글머리 기호">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M9 6h11 M9 12h11 M9 18h11 M5 6h.01 M5 12h.01 M5 18h.01"/>
+        </svg>
+      </button>
+      <button type="button" data-action="click->rich-text-editor#numberedList" class="toolbar-btn" title="번호 매기기">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M10 6h11 M10 12h11 M10 18h11 M4 6h1v4 M4 10h2 M4 16c.5-.4 1.2-.8 2-1 .5.9.5 1.5 0 2.5-.5.5-1.5 1.5-2 1.5h2"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Link & Clear -->
+    <div class="toolbar-group">
+      <button type="button" data-action="click->rich-text-editor#insertLink" class="toolbar-btn" title="링크 삽입">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71 M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+        </svg>
+      </button>
+      <button type="button" data-action="click->rich-text-editor#removeFormat" class="toolbar-btn" title="서식 제거">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M17 10l-4 4m0-4l4 4 M8 6l4 12 M4 6h8"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Undo/Redo -->
+    <div class="toolbar-group">
+      <button type="button" data-action="click->rich-text-editor#undo" class="toolbar-btn" title="실행 취소 (Ctrl+Z)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M3 10h10a5 5 0 015 5v2M3 10l6 6M3 10l6-6"/>
+        </svg>
+      </button>
+      <button type="button" data-action="click->rich-text-editor#redo" class="toolbar-btn" title="다시 실행 (Ctrl+Y)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M21 10H11a5 5 0 00-5 5v2M21 10l-6 6M21 10l-6-6"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Editor Area -->
+  <div data-rich-text-editor-target="editor"
+       class="rich-text-content"
+       style="min-height: <%= rows * 1.5 %>rem;"></div>
+
+  <!-- Hidden Input for Form -->
+  <% if form %>
+    <%= form.hidden_field field, data: { rich_text_editor_target: "hiddenInput" }, value: value %>
+  <% else %>
+    <input type="hidden" name="<%= field %>" data-rich-text-editor-target="hiddenInput" value="<%= value %>">
+  <% end %>
+
+  <!-- Help Text -->
+  <div class="mt-2 p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
+    <p class="font-medium text-gray-700 mb-2">📹 동영상/SNS 임베딩 지원</p>
+    <p class="mb-1">URL을 한 줄에 붙여넣으면 자동으로 임베딩됩니다:</p>
+    <ul class="list-disc list-inside space-y-1 text-xs">
+      <li><span class="text-red-600">YouTube</span> - youtube.com/watch?v=..., youtu.be/...</li>
+      <li><span class="text-red-600">YouTube Shorts</span> - youtube.com/shorts/...</li>
+      <li><span class="text-pink-600">Instagram</span> - instagram.com/p/..., instagram.com/reel/...</li>
+      <li><span class="text-gray-800">X (Twitter)</span> - x.com/.../status/..., twitter.com/.../status/...</li>
+      <li><span class="text-black">TikTok</span> - tiktok.com/...</li>
+    </ul>
+  </div>
+</div>
+
+<style>
+  .rich-text-editor-container {
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: white;
+  }
+
+  .rich-text-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+  }
+
+  .toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.375rem;
+    color: #374151;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .toolbar-btn:hover {
+    background: #e5e7eb;
+    color: #111827;
+  }
+
+  .toolbar-btn:active {
+    background: #d1d5db;
+  }
+
+  .toolbar-divider {
+    width: 1px;
+    height: 1.5rem;
+    background: #d1d5db;
+    margin: 0 0.375rem;
+  }
+
+  .color-picker-btn {
+    position: relative;
+  }
+
+  .color-indicator {
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 14px;
+    height: 3px;
+    border-radius: 1px;
+  }
+
+  .color-palette {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 50;
+    padding: 0.5rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.25rem;
+  }
+
+  .color-picker-btn:hover .color-palette,
+  .color-picker-btn:focus-within .color-palette {
+    display: grid;
+  }
+
+  .color-swatch {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #d1d5db;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  .color-swatch:hover {
+    transform: scale(1.1);
+    border-color: #6366f1;
+  }
+
+  .transparent-swatch {
+    background-position: 0 0, 4px 0, 4px -4px, 0px 4px !important;
+  }
+
+  .rich-text-content {
+    padding: 1rem;
+    outline: none;
+    overflow-y: auto;
+    max-height: 500px;
+  }
+
+  .rich-text-content:focus {
+    background: #fefefe;
+  }
+
+  .rich-text-content:empty:before {
+    content: attr(data-placeholder);
+    color: #9ca3af;
+    pointer-events: none;
+  }
+
+  .rich-text-content p {
+    margin-bottom: 0.5rem;
+  }
+
+  .rich-text-content ul,
+  .rich-text-content ol {
+    margin-left: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .rich-text-content ul {
+    list-style-type: disc;
+  }
+
+  .rich-text-content ol {
+    list-style-type: decimal;
+  }
+
+  .rich-text-content a {
+    color: #4f46e5;
+    text-decoration: underline;
+  }
+
+  /* Mobile responsive */
+  @media (max-width: 640px) {
+    .rich-text-toolbar {
+      gap: 0.125rem;
+      padding: 0.375rem;
+    }
+
+    .toolbar-btn {
+      width: 1.75rem;
+      height: 1.75rem;
+    }
+
+    .toolbar-divider {
+      margin: 0 0.25rem;
+    }
+  }
+</style>

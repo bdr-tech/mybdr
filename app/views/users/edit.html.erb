@@ -1,0 +1,223 @@
+<% content_for :title do %>프로필 수정 - BDR<% end %>
+
+<div class="max-w-2xl mx-auto">
+  <div class="page-header">
+    <h1 class="page-title">프로필 수정</h1>
+    <p class="page-description">개인 정보와 농구 프로필을 수정하세요</p>
+  </div>
+
+  <%# Error Messages %>
+  <% if @user.errors.any? %>
+    <div class="alert-error mb-6">
+      <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+      </svg>
+      <div>
+        <p class="font-medium">수정할 수 없습니다</p>
+        <ul class="mt-1 text-sm list-disc list-inside">
+          <% @user.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+  <% end %>
+
+  <%= form_with model: @user, url: profile_path, method: :patch, class: "space-y-6" do |f| %>
+    <%# Basic Info %>
+    <div class="card">
+      <h2 class="text-lg font-semibold text-gray-900 mb-6">기본 정보</h2>
+
+      <div class="space-y-5">
+        <%# Profile Image %>
+        <div>
+          <label class="form-label">프로필 이미지</label>
+          <div class="flex items-center gap-4">
+            <div class="avatar-lg">
+              <% if @user.avatar.attached? %>
+                <%= image_tag @user.avatar, alt: @user.display_name, class: "w-full h-full object-cover rounded-full" %>
+              <% elsif @user.profile_image.present? %>
+                <img src="<%= @user.profile_image %>" alt="<%= @user.display_name %>" class="w-full h-full object-cover rounded-full">
+              <% else %>
+                <%= @user.display_name[0].upcase %>
+              <% end %>
+            </div>
+            <div class="flex-1">
+              <%= f.file_field :avatar,
+                  accept: "image/png,image/jpeg,image/jpg,image/svg+xml",
+                  class: "form-input file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" %>
+              <p class="form-hint">PNG, JPG, SVG 형식 (1MB 이하)</p>
+              <% if @user.errors[:avatar].any? %>
+                <p class="form-error"><%= @user.errors[:avatar].first %></p>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <%# Name %>
+        <div>
+          <%= f.label :name, "이름", class: "form-label" %>
+          <%= f.text_field :name, class: "form-input", placeholder: "실명을 입력하세요" %>
+        </div>
+
+        <%# Nickname %>
+        <div>
+          <%= f.label :nickname, "닉네임", class: "form-label" %>
+          <%= f.text_field :nickname,
+              class: "form-input #{@user.errors[:nickname].any? ? 'form-input-error' : ''}",
+              placeholder: "2-20자 이내" %>
+          <% if @user.errors[:nickname].any? %>
+            <p class="form-error"><%= @user.errors[:nickname].first %></p>
+          <% end %>
+        </div>
+
+        <%# Phone %>
+        <div>
+          <%= f.label :phone, "전화번호", class: "form-label" %>
+          <%= f.telephone_field :phone,
+              class: "form-input #{@user.errors[:phone].any? ? 'form-input-error' : ''}",
+              placeholder: "010-1234-5678" %>
+          <% if @user.errors[:phone].any? %>
+            <p class="form-error"><%= @user.errors[:phone].first %></p>
+          <% end %>
+        </div>
+
+        <%# Bio %>
+        <div>
+          <%= f.label :bio, "자기소개", class: "form-label" %>
+          <%= f.text_area :bio,
+              class: "form-input",
+              rows: 3,
+              placeholder: "간단한 자기소개를 입력하세요" %>
+        </div>
+      </div>
+    </div>
+
+    <%# Basketball Profile %>
+    <div class="card">
+      <h2 class="text-lg font-semibold text-gray-900 mb-6">농구 프로필</h2>
+
+      <div class="space-y-5">
+        <%# Position %>
+        <div>
+          <%= f.label :position, "포지션", class: "form-label" %>
+          <%= f.select :position,
+              options_for_select([
+                ["선택하세요", ""],
+                ["포인트 가드 (PG)", "point_guard"],
+                ["슈팅 가드 (SG)", "shooting_guard"],
+                ["스몰 포워드 (SF)", "small_forward"],
+                ["파워 포워드 (PF)", "power_forward"],
+                ["센터 (C)", "center"]
+              ], @user.position),
+              {},
+              { class: "form-select" } %>
+        </div>
+
+        <%# Height & Weight %>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <%= f.label :height, "키 (cm)", class: "form-label" %>
+            <%= f.number_field :height,
+                class: "form-input #{@user.errors[:height].any? ? 'form-input-error' : ''}",
+                min: 100,
+                max: 250,
+                placeholder: "180" %>
+            <% if @user.errors[:height].any? %>
+              <p class="form-error"><%= @user.errors[:height].first %></p>
+            <% end %>
+          </div>
+          <div>
+            <%= f.label :weight, "몸무게 (kg)", class: "form-label" %>
+            <%= f.number_field :weight,
+                class: "form-input #{@user.errors[:weight].any? ? 'form-input-error' : ''}",
+                min: 30,
+                max: 200,
+                placeholder: "75" %>
+            <% if @user.errors[:weight].any? %>
+              <p class="form-error"><%= @user.errors[:weight].first %></p>
+            <% end %>
+          </div>
+        </div>
+
+        <%# Birth Date %>
+        <div>
+          <%= f.label :birth_date, "생년월일", class: "form-label" %>
+          <%= f.date_field :birth_date, class: "form-input" %>
+        </div>
+
+        <%# Location %>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <%= f.label :city, "시/도", class: "form-label" %>
+            <%= f.select :city,
+                options_for_select([
+                  ["선택하세요", ""],
+                  "서울특별시", "부산광역시", "대구광역시", "인천광역시",
+                  "광주광역시", "대전광역시", "울산광역시", "세종특별자치시",
+                  "경기도", "강원도", "충청북도", "충청남도",
+                  "전라북도", "전라남도", "경상북도", "경상남도", "제주특별자치도"
+                ], @user.city),
+                {},
+                { class: "form-select" } %>
+          </div>
+          <div>
+            <%= f.label :district, "구/군", class: "form-label" %>
+            <%= f.text_field :district, class: "form-input", placeholder: "강남구" %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <%# Payment Info %>
+    <div class="card">
+      <h2 class="text-lg font-semibold text-gray-900 mb-6">결제 정보</h2>
+      <p class="text-sm text-gray-500 mb-6">경기 참가비 환불 등에 사용됩니다</p>
+
+      <div class="space-y-5">
+        <%# Bank Info %>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <%= f.label :bank_name, "은행", class: "form-label" %>
+            <%= f.select :bank_name,
+                options_for_select([
+                  ["선택하세요", ""],
+                  "카카오뱅크", "토스뱅크", "케이뱅크",
+                  "국민은행", "신한은행", "하나은행", "우리은행",
+                  "농협은행", "기업은행", "SC제일은행", "씨티은행"
+                ], @user.bank_name),
+                {},
+                { class: "form-select" } %>
+          </div>
+          <div>
+            <%= f.label :account_number, "계좌번호", class: "form-label" %>
+            <%= f.text_field :account_number,
+                class: "form-input",
+                placeholder: "- 없이 입력" %>
+          </div>
+        </div>
+
+        <%# Account Holder %>
+        <div>
+          <%= f.label :account_holder, "예금주", class: "form-label" %>
+          <%= f.text_field :account_holder, class: "form-input", placeholder: "예금주명" %>
+        </div>
+
+        <%# Toss ID %>
+        <div>
+          <%= f.label :toss_id, "토스 아이디", class: "form-label" %>
+          <%= f.text_field :toss_id,
+              class: "form-input",
+              placeholder: "토스 송금 받기 아이디 (선택)" %>
+          <p class="form-hint">토스 간편 송금 기능에 사용됩니다</p>
+        </div>
+      </div>
+    </div>
+
+    <%# Actions %>
+    <div class="flex justify-end gap-3">
+      <%= link_to "취소", profile_path, class: "btn-secondary" %>
+      <%= f.submit "저장하기", class: "btn-primary cursor-pointer" %>
+    </div>
+  <% end %>
+</div>

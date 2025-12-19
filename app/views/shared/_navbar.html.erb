@@ -1,0 +1,291 @@
+<%# Navigation Bar %>
+<nav class="fixed top-0 inset-x-0 bg-white border-b border-gray-100 z-30">
+  <div class="container-app">
+    <div class="flex items-center justify-between h-16">
+      <%# Logo %>
+      <%= link_to root_path, class: "flex items-center gap-2" do %>
+        <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+            <path d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/>
+          </svg>
+        </div>
+        <span class="text-xl font-bold text-gray-900">BDR</span>
+      <% end %>
+
+      <%# Mobile Menu Button %>
+      <button type="button" class="lg:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" data-action="click->mobile-menu#toggle" data-mobile-menu-target="button">
+        <svg class="w-6 h-6 hamburger-icon transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-mobile-menu-target="hamburger">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+        <svg class="w-6 h-6 close-icon hidden transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-mobile-menu-target="close">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+
+      <%# Desktop Navigation with sliding indicator %>
+      <div class="hidden lg:flex items-center gap-1 relative" data-controller="nav-indicator">
+        <% nav_items = [
+          { name: "홈", path: root_path, active: controller_name == 'home' },
+          { name: "경기", path: games_path, active: controller_name == 'games' },
+          { name: "팀", path: teams_path, active: controller_name == 'teams' },
+          { name: "대회", path: tournaments_path, active: controller_name == 'tournaments' },
+          { name: "커뮤니티", path: community_path, active: controller_name == 'community' }
+        ] %>
+        <% nav_items.each_with_index do |item, index| %>
+          <%= link_to item[:name], item[:path],
+              class: "nav-link relative w-20 text-center py-2 text-sm font-medium rounded-lg transition-all duration-300 #{item[:active] ? 'text-primary-600 bg-primary-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}",
+              data: { nav_indicator_target: "link", index: index, active: item[:active] } %>
+        <% end %>
+      </div>
+
+      <%# Auth Buttons / User Menu %>
+      <div class="flex items-center gap-3">
+        <% if logged_in? %>
+          <%# Notifications Dropdown %>
+          <% unread_count = current_user.notifications.unread.count %>
+          <div class="relative" data-controller="dropdown">
+            <button type="button"
+                    class="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
+                    data-action="click->dropdown#toggle">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              </svg>
+              <% if unread_count > 0 %>
+                <span class="absolute -top-0.5 -right-0.5 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                  <%= unread_count > 9 ? '9+' : unread_count %>
+                </span>
+              <% end %>
+            </button>
+
+            <div class="dropdown-menu hidden w-80" data-dropdown-target="menu">
+              <%= render partial: "notifications/dropdown", locals: {
+                notifications: current_user.notifications.recent.not_expired.limit(10),
+                unread_count: unread_count
+              } %>
+            </div>
+          </div>
+
+          <%# User Dropdown %>
+          <div class="relative" data-controller="dropdown">
+            <button type="button"
+                    class="flex items-center gap-2 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                    data-action="click->dropdown#toggle">
+              <div class="avatar-sm">
+                <% if current_user.profile_image.present? %>
+                  <img src="<%= current_user.profile_image %>" alt="<%= current_user.display_name %>" class="w-full h-full object-cover rounded-full">
+                <% else %>
+                  <%= current_user.display_name[0].upcase %>
+                <% end %>
+              </div>
+              <svg class="w-4 h-4 text-gray-500 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+
+            <div class="dropdown-menu hidden" data-dropdown-target="menu">
+              <div class="px-4 py-3 border-b border-gray-100">
+                <p class="text-sm font-medium text-gray-900"><%= current_user.display_name %></p>
+                <p class="text-xs text-gray-500"><%= current_user.email %></p>
+                <span class="<%= current_user.membership_badge_class %> mt-2">
+                  <%= current_user.membership_label %>
+                </span>
+              </div>
+
+              <%= link_to profile_path, class: "dropdown-item" do %>
+                <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+                프로필
+              <% end %>
+
+              <%= link_to "#", class: "dropdown-item" do %>
+                <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                설정
+              <% end %>
+
+              <% if current_user.admin? %>
+                <div class="border-t border-gray-100 my-1"></div>
+                <%= link_to admin_root_path, class: "dropdown-item" do %>
+                  <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                  </svg>
+                  관리자
+                <% end %>
+              <% end %>
+
+              <div class="border-t border-gray-100 my-1"></div>
+              <%= button_to logout_path, method: :delete, class: "dropdown-item-danger w-full text-left" do %>
+                <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                로그아웃
+              <% end %>
+            </div>
+          </div>
+        <% else %>
+          <%= link_to "로그인", login_path, class: "btn-ghost" %>
+          <%= link_to "회원가입", signup_path, class: "btn-primary" %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <%# Mobile Navigation Menu %>
+  <div class="lg:hidden mobile-menu hidden" data-controller="mobile-menu" data-mobile-menu-target="menu">
+    <div class="mobile-menu-backdrop fixed inset-0 bg-black/50 opacity-0 transition-opacity duration-300" data-action="click->mobile-menu#close" data-mobile-menu-target="backdrop"></div>
+    <div class="mobile-menu-panel fixed top-16 left-0 right-0 bg-white border-b border-gray-200 shadow-lg transform -translate-y-full transition-transform duration-300 ease-out" data-mobile-menu-target="panel">
+      <div class="container-app py-4 space-y-1">
+        <% [
+          { name: "홈", path: root_path, active: controller_name == 'home' },
+          { name: "경기", path: games_path, active: controller_name == 'games' },
+          { name: "팀", path: teams_path, active: controller_name == 'teams' },
+          { name: "대회", path: tournaments_path, active: controller_name == 'tournaments' },
+          { name: "커뮤니티", path: community_path, active: controller_name == 'community' }
+        ].each_with_index do |item, index| %>
+          <%= link_to item[:name], item[:path],
+              class: "mobile-nav-link block px-4 py-3 text-base font-medium rounded-lg transition-all duration-200 transform #{item[:active] ? 'text-primary-600 bg-primary-50' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'}",
+              style: "animation-delay: #{index * 50}ms",
+              data: { mobile_menu_target: "item" } %>
+        <% end %>
+
+        <% unless logged_in? %>
+          <div class="pt-4 mt-4 border-t border-gray-100 space-y-2">
+            <%= link_to "로그인", login_path, class: "block w-full text-center py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition-colors" %>
+            <%= link_to "회원가입", signup_path, class: "block w-full text-center py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<style>
+  /* Mobile menu animations */
+  .mobile-menu.open .mobile-menu-backdrop {
+    opacity: 1;
+  }
+
+  .mobile-menu.open .mobile-menu-panel {
+    transform: translateY(0);
+  }
+
+  .mobile-menu.open .mobile-nav-link {
+    animation: slideInFromTop 0.3s ease-out forwards;
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  @keyframes slideInFromTop {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Nav link hover effect */
+  .nav-link {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: currentColor;
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+  }
+
+  .nav-link:hover::after {
+    width: 80%;
+  }
+
+  .nav-link[data-active="true"]::after {
+    width: 80%;
+  }
+
+  /* Hamburger to X animation */
+  .hamburger-icon.rotate {
+    transform: rotate(90deg);
+    opacity: 0;
+  }
+
+  .close-icon.rotate {
+    transform: rotate(-90deg);
+  }
+</style>
+
+<script>
+  // Mobile menu controller
+  document.addEventListener('DOMContentLoaded', function() {
+    const mobileMenuButton = document.querySelector('[data-action="click->mobile-menu#toggle"]');
+    const mobileMenu = document.querySelector('[data-mobile-menu-target="menu"]');
+    const hamburgerIcon = document.querySelector('[data-mobile-menu-target="hamburger"]');
+    const closeIcon = document.querySelector('[data-mobile-menu-target="close"]');
+    const backdrop = document.querySelector('[data-mobile-menu-target="backdrop"]');
+
+    if (!mobileMenuButton || !mobileMenu) return;
+
+    let isOpen = false;
+
+    function toggleMenu() {
+      isOpen = !isOpen;
+
+      if (isOpen) {
+        mobileMenu.classList.remove('hidden');
+        // Force reflow
+        mobileMenu.offsetHeight;
+        mobileMenu.classList.add('open');
+        hamburgerIcon.classList.add('hidden');
+        closeIcon.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      } else {
+        mobileMenu.classList.remove('open');
+        hamburgerIcon.classList.remove('hidden');
+        closeIcon.classList.add('hidden');
+        document.body.style.overflow = '';
+
+        setTimeout(() => {
+          if (!isOpen) {
+            mobileMenu.classList.add('hidden');
+          }
+        }, 300);
+      }
+    }
+
+    function closeMenu() {
+      if (isOpen) {
+        toggleMenu();
+      }
+    }
+
+    mobileMenuButton.addEventListener('click', toggleMenu);
+
+    if (backdrop) {
+      backdrop.addEventListener('click', closeMenu);
+    }
+
+    // Close on escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && isOpen) {
+        closeMenu();
+      }
+    });
+
+    // Close on window resize to desktop
+    window.addEventListener('resize', function() {
+      if (window.innerWidth >= 1024 && isOpen) {
+        closeMenu();
+      }
+    });
+  });
+</script>

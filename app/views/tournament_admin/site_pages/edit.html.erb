@@ -1,0 +1,87 @@
+<% content_for :title do %>페이지 편집 - <%= @page.title %><% end %>
+
+<div class="space-y-6" data-controller="page-editor"
+     data-page-editor-page-id-value="<%= @page.id %>"
+     data-page-editor-sections-url-value="<%= tournament_admin_tournament_site_page_site_sections_path(@tournament, @page) %>"
+     data-page-editor-reorder-url-value="<%= reorder_tournament_admin_tournament_site_page_site_sections_path(@tournament, @page) %>">
+
+  <%# Header %>
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <%= link_to tournament_admin_tournament_site_path(@tournament), class: "text-gray-500 hover:text-gray-700" do %>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+      <% end %>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900"><%= @page.title %></h1>
+        <p class="text-gray-500 text-sm">/<%= @page.slug %></p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <% if @tournament.tournament_site&.is_published %>
+        <%= link_to "미리보기", "https://#{@tournament.tournament_site.subdomain}.mybdr.kr#{@page.url_path}",
+                    target: "_blank",
+                    class: "px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors" %>
+      <% end %>
+      <%= link_to "페이지 설정", edit_tournament_admin_tournament_site_page_path(@tournament, @page),
+                  class: "px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors" %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <%# Section Palette %>
+    <div class="lg:col-span-1">
+      <div class="bg-white rounded-xl shadow-sm p-4 sticky top-24">
+        <h3 class="font-semibold text-gray-900 mb-4">섹션 추가</h3>
+        <p class="text-sm text-gray-500 mb-4">드래그하여 페이지에 추가하세요</p>
+
+        <div class="space-y-2" data-page-editor-target="sectionPalette">
+          <% SiteSection.section_types.keys.each do |section_type| %>
+            <div class="section-palette-item flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-move hover:bg-gray-100 transition-colors"
+                 data-section-type="<%= section_type %>">
+              <span class="text-xl"><%= section_icon(section_type) %></span>
+              <div>
+                <p class="font-medium text-sm text-gray-900"><%= section_type_name(section_type) %></p>
+                <p class="text-xs text-gray-500"><%= section_type_description(section_type) %></p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <%# Section List %>
+    <div class="lg:col-span-3">
+      <div class="bg-white rounded-xl shadow-sm">
+        <div class="p-4 border-b flex items-center justify-between">
+          <h3 class="font-semibold text-gray-900">페이지 섹션</h3>
+          <span class="text-sm text-gray-500"><%= @page.site_sections.count %>개 섹션</span>
+        </div>
+
+        <% if @page.site_sections.any? %>
+          <div class="divide-y" data-page-editor-target="sectionList">
+            <% @page.site_sections.ordered.each do |section| %>
+              <%= render "section_item", section: section %>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="p-12 text-center" data-page-editor-target="sectionList">
+            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+              </svg>
+            </div>
+            <h4 class="font-semibold text-gray-900 mb-2">섹션이 없습니다</h4>
+            <p class="text-gray-500 text-sm mb-4">왼쪽 팔레트에서 섹션을 드래그하여 추가하세요</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <%# Section Modal (Turbo Frame) %>
+  <turbo-frame id="section_modal" data-page-editor-target="sectionModal" class="hidden">
+  </turbo-frame>
+</div>

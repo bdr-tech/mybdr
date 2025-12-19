@@ -1,0 +1,78 @@
+<% content_for :title, '새 설정 추가' %>
+
+<div class="px-4 sm:px-6 lg:px-8">
+  <!-- Header -->
+  <div class="mb-6">
+    <%= link_to admin_system_settings_path, class: "inline-flex items-center text-sm text-gray-500 hover:text-gray-700" do %>
+      <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      목록으로
+    <% end %>
+  </div>
+
+  <div class="max-w-2xl">
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h1 class="text-xl font-semibold text-gray-900">새 설정 추가</h1>
+      </div>
+
+      <div class="px-6 py-4">
+        <%= form_with model: [:admin, @setting], local: true, class: "space-y-6" do |f| %>
+          <% if @setting.errors.any? %>
+            <div class="bg-red-50 border border-red-200 rounded-md p-4">
+              <ul class="list-disc list-inside text-sm text-red-600">
+                <% @setting.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <div>
+            <%= f.label :key, "키", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.text_field :key, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500", placeholder: "예: site_name, max_upload_size" %>
+            <p class="mt-1 text-xs text-gray-500">고유한 설정 식별자 (영문, 숫자, 언더스코어만 사용)</p>
+          </div>
+
+          <div>
+            <%= f.label :value, "값", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.text_area :value, rows: 3, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <%= f.label :value_type, "값 타입", class: "block text-sm font-medium text-gray-700" %>
+              <%= f.select :value_type, options_for_select([["문자열", "string"], ["정수", "integer"], ["예/아니오", "boolean"], ["JSON", "json"], ["배열", "array"]], @setting.value_type || "string"), {}, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+            </div>
+            <div>
+              <%= f.label :category, "카테고리", class: "block text-sm font-medium text-gray-700" %>
+              <%= f.select :category, options_for_select([["일반", "general"], ["시스템", "system"], ["팀", "team"], ["결제", "payment"], ["멤버십", "membership"], ["알림", "notification"], ["마케팅", "marketing"], ["법률", "legal"]], @setting.category || "general"), {}, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+            </div>
+          </div>
+
+          <div>
+            <%= f.label :description, "설명", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.text_area :description, rows: 2, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500", placeholder: "이 설정이 무엇을 위한 것인지 설명해주세요" %>
+          </div>
+
+          <div class="flex items-center space-x-6">
+            <div class="flex items-center">
+              <%= f.check_box :is_public, class: "h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" %>
+              <%= f.label :is_public, "공개", class: "ml-2 text-sm text-gray-700" %>
+            </div>
+            <div class="flex items-center">
+              <%= f.check_box :is_editable, checked: true, class: "h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" %>
+              <%= f.label :is_editable, "수정 가능", class: "ml-2 text-sm text-gray-700" %>
+            </div>
+          </div>
+
+          <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+            <%= link_to "취소", admin_system_settings_path, class: "inline-flex items-center rounded-md bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-200" %>
+            <%= f.submit "저장", class: "inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 cursor-pointer" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

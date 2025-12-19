@@ -1,0 +1,232 @@
+<%# locals: (game:) %>
+<%= form_with model: game, local: true, class: "space-y-6" do |f| %>
+  <% if game.errors.any? %>
+    <div class="alert alert-error">
+      <ul class="list-disc list-inside">
+        <% game.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <!-- 기본 정보 -->
+  <div class="space-y-4">
+    <h2 class="text-lg font-semibold text-gray-900 pb-2 border-b border-gray-200">기본 정보</h2>
+
+    <div class="form-group">
+      <%= f.label :game_type, "경기 타입", class: "form-label required" %>
+      <%= f.select :game_type,
+          options_for_select([
+            ["픽업게임", "pickup"],
+            ["게스트 모집", "guest_recruit"],
+            ["팀 대 팀", "team_vs_team"]
+          ], game.game_type),
+          {}, class: "form-select", required: true %>
+    </div>
+
+    <div class="form-group">
+      <%= f.label :title, "경기 제목", class: "form-label" %>
+      <%= f.text_field :title, class: "form-input", placeholder: "예: 매주 화요일 픽업게임" %>
+      <p class="form-hint">비워두면 자동으로 생성됩니다</p>
+    </div>
+
+    <div class="form-group">
+      <%= f.label :description, "경기 설명", class: "form-label" %>
+      <%= f.text_area :description, rows: 3, class: "form-input", placeholder: "경기에 대한 상세 설명을 입력해주세요" %>
+    </div>
+  </div>
+
+  <!-- 일정 -->
+  <div class="space-y-4">
+    <h2 class="text-lg font-semibold text-gray-900 pb-2 border-b border-gray-200">일정</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="form-group">
+        <%= f.label :scheduled_at, "경기 일시", class: "form-label required" %>
+        <%= f.datetime_local_field :scheduled_at, class: "form-input", required: true %>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :duration_hours, "경기 시간 (시간)", class: "form-label required" %>
+        <%= f.select :duration_hours,
+            options_for_select((1..5).map { |h| ["#{h}시간", h] }, game.duration_hours || 2),
+            {}, class: "form-select" %>
+      </div>
+    </div>
+
+    <!-- 반복 경기 -->
+    <div class="form-group">
+      <div class="flex items-center gap-3">
+        <%= f.check_box :is_recurring, class: "form-checkbox", id: "is_recurring" %>
+        <%= f.label :is_recurring, "반복 경기로 설정", class: "form-label mb-0" %>
+      </div>
+    </div>
+
+    <div id="recurrence_options" class="<%= 'hidden' unless game.is_recurring? %>">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="form-group">
+          <%= f.label :recurrence_rule, "반복 주기", class: "form-label" %>
+          <%= f.select :recurrence_rule,
+              options_for_select([
+                ["매주", "weekly"],
+                ["격주", "biweekly"],
+                ["매월", "monthly"]
+              ], game.recurrence_rule),
+              { include_blank: "선택하세요" }, class: "form-select" %>
+        </div>
+
+        <% if game.new_record? %>
+          <div class="form-group">
+            <label class="form-label">자동 생성 횟수</label>
+            <select name="recurring_count" class="form-select">
+              <% (1..12).each do |n| %>
+                <option value="<%= n %>" <%= 'selected' if n == 4 %>><%= n %>회</option>
+              <% end %>
+            </select>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- 장소 -->
+  <div class="space-y-4">
+    <h2 class="text-lg font-semibold text-gray-900 pb-2 border-b border-gray-200">장소</h2>
+
+    <% courts = Court.active.order(:name) %>
+    <% if courts.any? %>
+      <div class="form-group">
+        <%= f.label :court_id, "등록된 경기장 선택", class: "form-label" %>
+        <%= f.select :court_id,
+            options_for_select(courts.map { |c| [c.display_name, c.id] }, game.court_id),
+            { include_blank: "직접 입력" }, class: "form-select" %>
+      </div>
+    <% end %>
+
+    <div id="manual_venue" class="<%= 'hidden' if game.court_id.present? %>">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="form-group">
+          <%= f.label :city, "시/도", class: "form-label" %>
+          <%= f.select :city,
+              options_for_select(["서울특별시", "부산광역시", "대구광역시", "인천광역시", "광주광역시", "대전광역시", "울산광역시", "세종특별자치시", "경기도", "강원도", "충청북도", "충청남도", "전라북도", "전라남도", "경상북도", "경상남도", "제주특별자치도"], game.city),
+              { include_blank: "선택하세요" }, class: "form-select" %>
+        </div>
+
+        <div class="form-group">
+          <%= f.label :district, "구/군", class: "form-label" %>
+          <%= f.text_field :district, class: "form-input", placeholder: "예: 강남구" %>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="form-group">
+          <%= f.label :venue_name, "장소명", class: "form-label" %>
+          <%= f.text_field :venue_name, class: "form-input", placeholder: "예: 올림픽공원 농구장" %>
+        </div>
+
+        <div class="form-group">
+          <%= f.label :venue_address, "상세 주소", class: "form-label" %>
+          <%= f.text_field :venue_address, class: "form-input", placeholder: "예: A코트" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 참가 설정 -->
+  <div class="space-y-4">
+    <h2 class="text-lg font-semibold text-gray-900 pb-2 border-b border-gray-200">참가 설정</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="form-group">
+        <%= f.label :max_participants, "최대 인원", class: "form-label required" %>
+        <%= f.number_field :max_participants, min: 2, max: 50, class: "form-input", required: true %>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :min_participants, "최소 인원", class: "form-label required" %>
+        <%= f.number_field :min_participants, min: 1, max: 50, class: "form-input", required: true %>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :fee_per_person, "참가비 (원)", class: "form-label" %>
+        <%= f.number_field :fee_per_person, min: 0, step: 1000, class: "form-input", placeholder: "0 = 무료" %>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <%= f.label :skill_level, "난이도", class: "form-label" %>
+      <%= f.select :skill_level,
+          options_for_select([
+            ["모든 레벨", "all"],
+            ["초급", "beginner"],
+            ["중급", "intermediate"],
+            ["상급", "advanced"]
+          ], game.skill_level),
+          {}, class: "form-select" %>
+    </div>
+
+    <div class="form-group">
+      <%= f.label :requirements, "참가 조건", class: "form-label" %>
+      <%= f.text_area :requirements, rows: 2, class: "form-input", placeholder: "예: 농구화 필수, 초급자 환영" %>
+    </div>
+  </div>
+
+  <!-- 유니폼 설정 -->
+  <div class="space-y-4">
+    <h2 class="text-lg font-semibold text-gray-900 pb-2 border-b border-gray-200">유니폼 색상</h2>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div class="form-group">
+        <%= f.label :uniform_home_color, "홈팀 색상", class: "form-label" %>
+        <div class="flex items-center gap-3">
+          <%= f.color_field :uniform_home_color, class: "w-12 h-12 rounded-lg border border-gray-300 cursor-pointer" %>
+          <span class="text-sm text-gray-500"><%= game.uniform_home_color %></span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :uniform_away_color, "원정팀 색상", class: "form-label" %>
+        <div class="flex items-center gap-3">
+          <%= f.color_field :uniform_away_color, class: "w-12 h-12 rounded-lg border border-gray-300 cursor-pointer" %>
+          <span class="text-sm text-gray-500"><%= game.uniform_away_color %></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 제출 버튼 -->
+  <div class="flex items-center justify-end gap-4 pt-6 border-t border-gray-200">
+    <%= link_to "취소", game.persisted? ? game_path(game) : games_path, class: "btn btn-secondary" %>
+
+    <% if game.new_record? && game.is_recurring? %>
+      <input type="hidden" name="create_recurring" value="1">
+    <% end %>
+
+    <%= f.submit game.persisted? ? "저장하기" : "경기 만들기", class: "btn btn-primary" %>
+  </div>
+<% end %>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // 반복 경기 토글
+    const recurringCheckbox = document.getElementById('is_recurring');
+    const recurrenceOptions = document.getElementById('recurrence_options');
+
+    if (recurringCheckbox && recurrenceOptions) {
+      recurringCheckbox.addEventListener('change', function() {
+        recurrenceOptions.classList.toggle('hidden', !this.checked);
+      });
+    }
+
+    // 경기장 선택 토글
+    const courtSelect = document.querySelector('select[name="game[court_id]"]');
+    const manualVenue = document.getElementById('manual_venue');
+
+    if (courtSelect && manualVenue) {
+      courtSelect.addEventListener('change', function() {
+        manualVenue.classList.toggle('hidden', this.value !== '');
+      });
+    }
+  });
+</script>

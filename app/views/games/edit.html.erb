@@ -1,0 +1,36 @@
+<% content_for :title, "경기 수정" %>
+
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- 뒤로가기 -->
+  <%= link_to game_path(@game), class: "inline-flex items-center text-gray-600 hover:text-gray-900 mb-6" do %>
+    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    경기로 돌아가기
+  <% end %>
+
+  <div class="card p-6 md:p-8">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold text-gray-900">경기 수정</h1>
+      <span class="badge badge-<%= @game.status %>"><%= @game.status_name %></span>
+    </div>
+
+    <%= render "form", game: @game %>
+
+    <!-- 위험한 작업 -->
+    <div class="mt-8 pt-6 border-t border-gray-200">
+      <h3 class="text-lg font-medium text-red-600 mb-4">위험 영역</h3>
+      <div class="flex flex-wrap gap-4">
+        <% unless @game.game_applications.exists? %>
+          <%= link_to "경기 삭제",
+              game_path(@game),
+              method: :delete,
+              data: { confirm: "정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다." },
+              class: "btn btn-danger" %>
+        <% else %>
+          <span class="text-sm text-gray-500">신청자가 있어 삭제할 수 없습니다.</span>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

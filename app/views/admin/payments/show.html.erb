@@ -1,0 +1,244 @@
+<% content_for :title, "결제 상세 - #{@payment.payment_code}" %>
+
+<div class="px-4 sm:px-6 lg:px-8">
+  <!-- Header -->
+  <div class="mb-6">
+    <%= link_to admin_payments_path, class: "inline-flex items-center text-sm text-gray-500 hover:text-gray-700" do %>
+      <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      목록으로
+    <% end %>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Payment Info Card -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <h1 class="text-xl font-semibold text-gray-900"><%= @payment.payment_code %></h1>
+            <span class="inline-flex rounded-full px-3 py-1 text-sm font-semibold
+              <%= case @payment.status
+                  when 'pending', 'ready', 'in_progress' then 'bg-yellow-100 text-yellow-800'
+                  when 'done' then 'bg-green-100 text-green-800'
+                  when 'cancelled', 'aborted' then 'bg-red-100 text-red-800'
+                  when 'refunded', 'partial_cancelled' then 'bg-orange-100 text-orange-800'
+                  else 'bg-gray-100 text-gray-800'
+                  end %>">
+              <%= @payment.status_label %>
+            </span>
+          </div>
+          <p class="mt-1 text-sm text-gray-500">주문 ID: <%= @payment.order_id %></p>
+        </div>
+
+        <div class="px-6 py-4">
+          <dl class="grid grid-cols-2 gap-4">
+            <div>
+              <dt class="text-sm font-medium text-gray-500">결제 금액</dt>
+              <dd class="mt-1 text-2xl font-bold text-gray-900"><%= number_to_currency(@payment.final_amount, unit: '', precision: 0) %>원</dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">결제 방법</dt>
+              <dd class="mt-1 text-lg text-gray-900"><%= @payment.payment_method_label %></dd>
+            </div>
+            <% if @payment.amount != @payment.final_amount %>
+              <div>
+                <dt class="text-sm font-medium text-gray-500">원래 금액</dt>
+                <dd class="mt-1 text-gray-900"><%= number_to_currency(@payment.amount, unit: '', precision: 0) %>원</dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-gray-500">할인 금액</dt>
+                <dd class="mt-1 text-red-600">-<%= number_to_currency(@payment.discount_amount, unit: '', precision: 0) %>원</dd>
+              </div>
+            <% end %>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">결제 일시</dt>
+              <dd class="mt-1 text-gray-900"><%= @payment.paid_at ? l(@payment.paid_at, format: :long) : "-" %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">생성 일시</dt>
+              <dd class="mt-1 text-gray-900"><%= l(@payment.created_at, format: :long) %></dd>
+            </div>
+          </dl>
+        </div>
+
+        <% if @payment.card_company.present? %>
+          <div class="px-6 py-4 border-t border-gray-200">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">카드 정보</h3>
+            <dl class="grid grid-cols-2 gap-4">
+              <div>
+                <dt class="text-sm text-gray-500">카드사</dt>
+                <dd class="text-gray-900"><%= @payment.card_company %></dd>
+              </div>
+              <div>
+                <dt class="text-sm text-gray-500">카드번호</dt>
+                <dd class="text-gray-900"><%= @payment.card_number %></dd>
+              </div>
+              <% if @payment.installment_months.to_i > 0 %>
+                <div>
+                  <dt class="text-sm text-gray-500">할부</dt>
+                  <dd class="text-gray-900"><%= @payment.installment_months %>개월</dd>
+                </div>
+              <% end %>
+            </dl>
+          </div>
+        <% end %>
+
+        <% if @payment.receipt_url.present? %>
+          <div class="px-6 py-4 border-t border-gray-200">
+            <%= link_to "영수증 보기", @payment.receipt_url, target: "_blank", class: "text-indigo-600 hover:text-indigo-500" %>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Refund Info -->
+      <% if @payment.refund_amount.to_i > 0 %>
+        <div class="bg-orange-50 shadow rounded-lg overflow-hidden">
+          <div class="px-6 py-4 border-b border-orange-200">
+            <h2 class="text-lg font-medium text-orange-800">환불 정보</h2>
+          </div>
+          <div class="px-6 py-4">
+            <dl class="grid grid-cols-2 gap-4">
+              <div>
+                <dt class="text-sm font-medium text-orange-600">환불 금액</dt>
+                <dd class="mt-1 text-xl font-bold text-orange-900"><%= number_to_currency(@payment.refund_amount, unit: '', precision: 0) %>원</dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-orange-600">환불 일시</dt>
+                <dd class="mt-1 text-orange-900"><%= @payment.refunded_at ? l(@payment.refunded_at, format: :long) : "-" %></dd>
+              </div>
+              <% if @payment.refund_reason.present? %>
+                <div class="col-span-2">
+                  <dt class="text-sm font-medium text-orange-600">환불 사유</dt>
+                  <dd class="mt-1 text-orange-900"><%= @payment.refund_reason %></dd>
+                </div>
+              <% end %>
+            </dl>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Payable Info -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">결제 대상 정보</h2>
+        </div>
+        <div class="px-6 py-4">
+          <dl class="space-y-3">
+            <div>
+              <dt class="text-sm font-medium text-gray-500">대상 유형</dt>
+              <dd class="mt-1 text-gray-900"><%= @payment.payable_type %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">대상 ID</dt>
+              <dd class="mt-1 text-gray-900"><%= @payment.payable_id %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">설명</dt>
+              <dd class="mt-1 text-gray-900"><%= @payment.payable_description rescue @payment.description %></dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- User Info -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">결제자 정보</h2>
+        </div>
+        <div class="px-6 py-4">
+          <div class="flex items-center space-x-3">
+            <div class="flex-shrink-0">
+              <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                <span class="text-indigo-600 font-medium"><%= @payment.user&.display_name&.first || "?" %></span>
+              </div>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-900"><%= @payment.user&.display_name || "알 수 없음" %></p>
+              <p class="text-sm text-gray-500"><%= @payment.user&.email %></p>
+            </div>
+          </div>
+          <% if @payment.user %>
+            <div class="mt-4">
+              <%= link_to "사용자 상세보기", admin_user_path(@payment.user), class: "text-indigo-600 hover:text-indigo-500 text-sm" %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">관리 작업</h2>
+        </div>
+        <div class="px-6 py-4 space-y-3">
+          <% if @payment.can_refund? %>
+            <div x-data="{ showRefund: false }">
+              <button @click="showRefund = !showRefund" class="w-full inline-flex justify-center items-center rounded-md bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-500">
+                환불 처리
+              </button>
+              <div x-show="showRefund" x-cloak class="mt-3 space-y-2">
+                <%= form_with url: refund_admin_payment_path(@payment), method: :post, local: true do |f| %>
+                  <div>
+                    <%= f.number_field :amount, placeholder: "환불 금액 (전액: #{@payment.final_amount})", class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" %>
+                  </div>
+                  <div>
+                    <%= f.text_area :reason, placeholder: "환불 사유", rows: 2, class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" %>
+                  </div>
+                  <%= f.submit "환불 실행", class: "w-full inline-flex justify-center items-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 cursor-pointer", data: { confirm: "정말 환불 처리하시겠습니까?" } %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <% if @payment.can_cancel? %>
+            <%= button_to "결제 취소", cancel_admin_payment_path(@payment), method: :post, class: "w-full inline-flex justify-center items-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500", data: { confirm: "정말 결제를 취소하시겠습니까?" } %>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- TossPayments Info -->
+      <% if @payment.toss_payment_key.present? %>
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-medium text-gray-900">TossPayments 정보</h2>
+          </div>
+          <div class="px-6 py-4">
+            <dl class="space-y-2 text-sm">
+              <div>
+                <dt class="text-gray-500">Payment Key</dt>
+                <dd class="text-gray-900 font-mono text-xs break-all"><%= @payment.toss_payment_key %></dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Admin Logs -->
+      <% if @admin_logs.present? %>
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-medium text-gray-900">관리 로그</h2>
+          </div>
+          <div class="px-6 py-4">
+            <ul class="space-y-3">
+              <% @admin_logs.each do |log| %>
+                <li class="text-sm">
+                  <p class="text-gray-900"><%= log.description %></p>
+                  <p class="text-xs text-gray-500">
+                    <%= log.admin&.display_name %> | <%= l(log.created_at, format: :short) %>
+                  </p>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

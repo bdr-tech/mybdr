@@ -1,0 +1,44 @@
+<%# YouTube embed section %>
+<% video_id = section.content['video_id'] %>
+<% playlist_id = section.content['playlist_id'] %>
+
+<section class="<%= section.padding_classes %>" style="<%= section.style_attributes.map { |k, v| "#{k}: #{v};" }.join(' ') %>">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <% if section.title.present? %>
+      <div class="text-center mb-8">
+        <h2 class="text-2xl md:text-3xl font-bold text-gray-900"><%= section.title %></h2>
+        <% if section.subtitle.present? %>
+          <p class="text-gray-600 mt-2"><%= section.subtitle %></p>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% if video_id.present? %>
+      <div class="aspect-video rounded-xl overflow-hidden shadow-lg">
+        <iframe
+          class="w-full h-full"
+          src="https://www.youtube.com/embed/<%= video_id %>"
+          title="YouTube video player"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen>
+        </iframe>
+      </div>
+    <% elsif playlist_id.present? %>
+      <div class="aspect-video rounded-xl overflow-hidden shadow-lg">
+        <iframe
+          class="w-full h-full"
+          src="https://www.youtube.com/embed/videoseries?list=<%= playlist_id %>"
+          title="YouTube playlist"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen>
+        </iframe>
+      </div>
+    <% else %>
+      <div class="bg-gray-100 rounded-xl p-12 text-center">
+        <p class="text-gray-500">영상이 등록되지 않았습니다.</p>
+      </div>
+    <% end %>
+  </div>
+</section>

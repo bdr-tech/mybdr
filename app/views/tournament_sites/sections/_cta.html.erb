@@ -1,0 +1,27 @@
+<%# Call to Action section %>
+<section class="<%= section.padding_classes %>" style="background: linear-gradient(135deg, <%= @tournament_site.primary_color || '#E53E3E' %>, <%= @tournament_site.secondary_color || '#ED8936' %>);">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+    <h2 class="text-2xl md:text-4xl font-bold mb-4"><%= section.title || '참가 신청하기' %></h2>
+    <% if section.subtitle.present? %>
+      <p class="text-lg opacity-90 mb-8"><%= section.subtitle %></p>
+    <% end %>
+
+    <% if section.content['buttons'].present? %>
+      <div class="flex flex-wrap justify-center gap-4">
+        <% section.content['buttons'].each do |button| %>
+          <%= link_to button['text'], button['url'],
+                      class: button['style'] == 'primary' ?
+                        "px-8 py-3 bg-white text-gray-900 font-bold rounded-lg hover:bg-gray-100 transition-colors" :
+                        "px-8 py-3 border-2 border-white text-white font-bold rounded-lg hover:bg-white/10 transition-colors" %>
+        <% end %>
+      </div>
+    <% else %>
+      <% if @tournament_site.tournament.registration_period_active? %>
+        <%= link_to "지금 참가 신청하기", tournament_path(@tournament_site.tournament),
+                    class: "inline-block px-8 py-4 bg-white text-gray-900 font-bold rounded-lg hover:bg-gray-100 transition-colors text-lg" %>
+      <% else %>
+        <p class="text-white/80">참가 신청 기간이 아닙니다.</p>
+      <% end %>
+    <% end %>
+  </div>
+</section>

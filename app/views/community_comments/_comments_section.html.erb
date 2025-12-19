@@ -1,0 +1,42 @@
+<section id="comments-section" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-6">
+  <div class="p-6 border-b border-gray-100">
+    <h2 class="text-lg font-bold text-gray-900">
+      댓글 <span id="comments-count" class="text-orange-500"><%= post.comments_count %></span>
+    </h2>
+  </div>
+
+  <!-- 댓글 작성 폼 -->
+  <div class="p-6 border-b border-gray-100 bg-gray-50">
+    <% if logged_in? %>
+      <%= render partial: "community_comments/form", locals: { post: post, comment: Comment.new } %>
+    <% else %>
+      <div class="text-center py-4">
+        <p class="text-gray-500 mb-3">댓글을 작성하려면 로그인이 필요합니다.</p>
+        <%= link_to "로그인", login_path, class: "btn btn-primary btn-sm" %>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- 댓글 목록 -->
+  <div id="comments-list" class="divide-y divide-gray-100">
+    <% comments = post.comments.published.root_comments.includes(:user, replies: :user).oldest_first %>
+    <% if comments.any? %>
+      <div class="px-6">
+        <% comments.each do |comment| %>
+          <%= render partial: "community_comments/comment", locals: { comment: comment, post: post } %>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="p-6 text-center">
+        <p class="text-gray-500">첫 번째 댓글을 작성해보세요!</p>
+      </div>
+    <% end %>
+  </div>
+</section>
+
+<script>
+  function toggleReplyForm(commentId) {
+    const form = document.getElementById(`reply-form-${commentId}`);
+    form.classList.toggle('hidden');
+  }
+</script>

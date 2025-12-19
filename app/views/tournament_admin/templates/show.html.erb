@@ -1,0 +1,149 @@
+<div class="max-w-6xl mx-auto">
+  <%# Header %>
+  <div class="flex justify-between items-start mb-8">
+    <div class="flex items-center gap-4">
+      <% if @template.thumbnail_url.present? %>
+        <img src="<%= @template.thumbnail_url %>" alt="<%= @template.name %>" class="w-24 h-24 rounded-xl object-cover">
+      <% else %>
+        <div class="w-24 h-24 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
+          <span class="text-4xl font-bold text-white/50"><%= @template.name.first.upcase %></span>
+        </div>
+      <% end %>
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <h1 class="text-2xl font-bold text-gray-900"><%= @template.name %></h1>
+          <% if @template.is_premium? %>
+            <span class="px-2 py-0.5 bg-amber-500 text-white text-xs font-medium rounded-full">
+              프리미엄
+            </span>
+          <% end %>
+        </div>
+        <div class="flex items-center gap-3 text-sm text-gray-500">
+          <span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">
+            <%= { 'general' => '일반', 'university' => '대학', 'corporate' => '기업', 'community' => '커뮤니티' }[@template.category] %>
+          </span>
+          <span>사용 횟수: <%= @template.usage_count %></span>
+          <span>적용 사이트: <%= @template.tournament_sites.count %></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <% if @template.preview_url.present? %>
+        <%= link_to @template.preview_url,
+                    target: "_blank",
+                    class: "px-4 py-2 text-primary-600 border border-primary-200 rounded-lg font-medium hover:bg-primary-50 transition-colors" do %>
+          미리보기
+        <% end %>
+      <% end %>
+      <%= link_to tournament_admin_templates_path,
+                  class: "px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" do %>
+        목록으로
+      <% end %>
+    </div>
+  </div>
+
+  <% if @template.description.present? %>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+      <h2 class="text-sm font-medium text-gray-500 mb-2">설명</h2>
+      <p class="text-gray-700"><%= @template.description %></p>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <%# Default Theme %>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div class="p-6 border-b border-gray-100">
+        <h2 class="text-lg font-semibold text-gray-900">기본 테마</h2>
+      </div>
+      <div class="p-6">
+        <div class="space-y-4">
+          <% theme = @template.theme %>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">주요 색상</span>
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded border border-gray-200" style="background-color: <%= theme['primary_color'] || '#E53E3E' %>"></div>
+              <span class="text-sm font-mono text-gray-700"><%= theme['primary_color'] || '#E53E3E' %></span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">보조 색상</span>
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded border border-gray-200" style="background-color: <%= theme['secondary_color'] || '#ED8936' %>"></div>
+              <span class="text-sm font-mono text-gray-700"><%= theme['secondary_color'] || '#ED8936' %></span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">폰트</span>
+            <span class="text-sm text-gray-700"><%= theme['font_family'] || 'Pretendard' %></span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">모서리 스타일</span>
+            <span class="text-sm text-gray-700"><%= theme['border_radius'] || 'lg' %></span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">그림자 스타일</span>
+            <span class="text-sm text-gray-700"><%= theme['shadow_style'] || 'soft' %></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <%# Default Pages %>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div class="p-6 border-b border-gray-100">
+        <h2 class="text-lg font-semibold text-gray-900">기본 페이지 구성</h2>
+      </div>
+      <div class="p-6">
+        <div class="space-y-3">
+          <% @template.default_page_structure.each do |page| %>
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div class="flex items-center gap-3">
+                <span class="w-6 h-6 bg-primary-100 text-primary-600 rounded flex items-center justify-center text-xs font-medium">
+                  <%= (page[:position] || page['position']).to_i + 1 %>
+                </span>
+                <span class="font-medium text-gray-900"><%= page[:title] || page['title'] %></span>
+              </div>
+              <span class="text-sm text-gray-500"><%= page[:page_type] || page['page_type'] %></span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%# Applied Sites %>
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+    <div class="p-6 border-b border-gray-100">
+      <h2 class="text-lg font-semibold text-gray-900">이 템플릿을 사용하는 사이트</h2>
+    </div>
+    <% if @template.tournament_sites.any? %>
+      <div class="divide-y divide-gray-100">
+        <% @template.tournament_sites.includes(:tournament).limit(10).each do |site| %>
+          <div class="p-4 hover:bg-gray-50 transition-colors">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-medium text-gray-900"><%= site.tournament&.name || site.site_name %></h3>
+                <p class="text-sm text-gray-500"><%= site.full_url %></p>
+              </div>
+              <%= link_to site.full_url,
+                          target: "_blank",
+                          class: "px-3 py-1.5 text-sm text-primary-600 hover:bg-primary-50 rounded-lg transition-colors" do %>
+                방문하기
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      <% if @template.tournament_sites.count > 10 %>
+        <div class="p-4 text-center text-sm text-gray-500">
+          외 <%= @template.tournament_sites.count - 10 %>개 사이트
+        </div>
+      <% end %>
+    <% else %>
+      <div class="p-12 text-center">
+        <p class="text-gray-500">아직 이 템플릿을 사용하는 사이트가 없습니다.</p>
+      </div>
+    <% end %>
+  </div>
+</div>

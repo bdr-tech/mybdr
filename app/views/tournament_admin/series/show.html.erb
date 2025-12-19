@@ -1,0 +1,114 @@
+<div class="max-w-6xl mx-auto">
+  <%# Header %>
+  <div class="flex justify-between items-start mb-8">
+    <div class="flex items-center gap-4">
+      <% if @series.logo_url.present? %>
+        <img src="<%= @series.logo_url %>" alt="<%= @series.name %>" class="w-20 h-20 rounded-xl object-cover">
+      <% else %>
+        <div class="w-20 h-20 bg-primary-100 rounded-xl flex items-center justify-center">
+          <span class="text-3xl font-bold text-primary-600"><%= @series.name.first.upcase %></span>
+        </div>
+      <% end %>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900"><%= @series.name %></h1>
+        <p class="mt-1 text-gray-600">
+          총 <span class="font-medium text-primary-600"><%= @tournaments.count %></span>개 대회
+          <% unless @series.status_active? %>
+            <span class="mx-2">|</span>
+            <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-sm rounded-full"><%= @series.status == 'inactive' ? '비활성' : '보관됨' %></span>
+          <% end %>
+        </p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <%= link_to edit_tournament_admin_series_path(@series),
+                  class: "px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" do %>
+        편집
+      <% end %>
+      <%= button_to create_next_edition_tournament_admin_series_path(@series),
+                    method: :post,
+                    class: "inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors",
+                    data: { turbo_confirm: "다음 회차 대회를 생성하시겠습니까?" } do %>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        다음 회차 생성
+      <% end %>
+    </div>
+  </div>
+
+  <% if @series.description.present? %>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+      <h2 class="text-sm font-medium text-gray-500 mb-2">설명</h2>
+      <p class="text-gray-700"><%= @series.description %></p>
+    </div>
+  <% end %>
+
+  <%# Tournaments List %>
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+    <div class="p-6 border-b border-gray-100">
+      <h2 class="text-lg font-semibold text-gray-900">대회 목록</h2>
+    </div>
+
+    <% if @tournaments.any? %>
+      <div class="divide-y divide-gray-100">
+        <% @tournaments.each do |tournament| %>
+          <div class="p-6 hover:bg-gray-50 transition-colors">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
+                  <span class="text-lg font-bold text-primary-600">#<%= tournament.edition_number || 1 %></span>
+                </div>
+                <div>
+                  <h3 class="font-medium text-gray-900"><%= tournament.name %></h3>
+                  <div class="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                    <% if tournament.start_date %>
+                      <span><%= tournament.start_date.strftime("%Y.%m.%d") %></span>
+                    <% end %>
+                    <span class="px-2 py-0.5 rounded-full text-xs <%= tournament.status == 'published' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' %>">
+                      <%= tournament.status == 'published' ? '발행됨' : '초안' %>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <%= link_to tournament_admin_tournament_path(tournament),
+                            class: "px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" do %>
+                  관리
+                <% end %>
+                <% if tournament.tournament_site %>
+                  <%= link_to tournament.tournament_site.full_url,
+                              target: "_blank",
+                              class: "px-3 py-1.5 text-sm text-primary-600 hover:bg-primary-50 rounded-lg transition-colors" do %>
+                    사이트 보기
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="p-12 text-center">
+        <p class="text-gray-500 mb-4">아직 대회가 없습니다.</p>
+        <%= button_to create_next_edition_tournament_admin_series_path(@series),
+                      method: :post,
+                      class: "inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          첫 번째 대회 생성
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <%# Back Link %>
+  <div class="mt-6">
+    <%= link_to tournament_admin_series_index_path, class: "text-gray-500 hover:text-gray-700 text-sm" do %>
+      &larr; 시리즈 목록으로
+    <% end %>
+  </div>
+</div>

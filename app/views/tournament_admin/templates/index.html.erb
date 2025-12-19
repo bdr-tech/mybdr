@@ -1,0 +1,92 @@
+<div class="max-w-6xl mx-auto">
+  <%# Header %>
+  <div class="flex justify-between items-center mb-8">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">템플릿 관리</h1>
+      <p class="mt-1 text-gray-600">이전 대회의 설정을 템플릿으로 저장하고 재사용하세요</p>
+    </div>
+  </div>
+
+  <%# Category Filter %>
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+    <div class="flex flex-wrap gap-2">
+      <%= link_to tournament_admin_templates_path,
+                  class: "px-4 py-2 rounded-lg text-sm font-medium transition-colors #{params[:category].blank? ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" do %>
+        전체
+      <% end %>
+      <% [['general', '일반'], ['university', '대학'], ['corporate', '기업'], ['community', '커뮤니티']].each do |code, name| %>
+        <%= link_to tournament_admin_templates_path(category: code),
+                    class: "px-4 py-2 rounded-lg text-sm font-medium transition-colors #{params[:category] == code ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" do %>
+          <%= name %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <% if @templates.any? %>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <% @templates.each do |template| %>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+          <%# Thumbnail %>
+          <div class="h-40 bg-gradient-to-br from-primary-500 to-primary-600 relative">
+            <% if template.thumbnail_url.present? %>
+              <img src="<%= template.thumbnail_url %>" alt="<%= template.name %>" class="w-full h-full object-cover">
+            <% else %>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-4xl font-bold text-white/30"><%= template.name.first.upcase %></span>
+              </div>
+            <% end %>
+            <% if template.is_premium? %>
+              <span class="absolute top-3 right-3 px-2 py-1 bg-amber-500 text-white text-xs font-medium rounded-full">
+                프리미엄
+              </span>
+            <% end %>
+          </div>
+
+          <%# Info %>
+          <div class="p-4">
+            <div class="flex items-start justify-between mb-2">
+              <h3 class="text-lg font-semibold text-gray-900"><%= template.name %></h3>
+              <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                <%= { 'general' => '일반', 'university' => '대학', 'corporate' => '기업', 'community' => '커뮤니티' }[template.category] %>
+              </span>
+            </div>
+
+            <% if template.description.present? %>
+              <p class="text-sm text-gray-500 line-clamp-2 mb-3"><%= template.description %></p>
+            <% end %>
+
+            <div class="flex items-center justify-between text-sm text-gray-500">
+              <span>사용 횟수: <%= template.usage_count %></span>
+              <span>적용 사이트: <%= template.tournament_sites.count %></span>
+            </div>
+
+            <div class="mt-4 flex gap-2">
+              <%= link_to tournament_admin_template_path(template),
+                          class: "flex-1 text-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors" do %>
+                상세보기
+              <% end %>
+              <% if template.preview_url.present? %>
+                <%= link_to template.preview_url,
+                            target: "_blank",
+                            class: "px-3 py-2 text-primary-600 border border-primary-200 rounded-lg text-sm font-medium hover:bg-primary-50 transition-colors" do %>
+                  미리보기
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+      <div class="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+        </svg>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">템플릿이 없습니다</h3>
+      <p class="text-gray-500">등록된 템플릿이 없습니다.</p>
+    </div>
+  <% end %>
+</div>

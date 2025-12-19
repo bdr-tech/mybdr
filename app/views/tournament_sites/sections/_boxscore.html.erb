@@ -1,0 +1,102 @@
+<%# Boxscore section %>
+<% data = section.dynamic_data %>
+<% match = data[:match] %>
+<% home_stats = data[:home_stats] || [] %>
+<% away_stats = data[:away_stats] || [] %>
+
+<section class="<%= section.padding_classes %>" style="<%= section.style_attributes.map { |k, v| "#{k}: #{v};" }.join(' ') %>">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <% if section.title.present? %>
+      <div class="text-center mb-8">
+        <h2 class="text-2xl md:text-3xl font-bold text-gray-900"><%= section.title %></h2>
+      </div>
+    <% end %>
+
+    <% if match %>
+      <%# Score Header %>
+      <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <div class="flex items-center justify-center gap-8">
+          <div class="text-center">
+            <p class="font-bold text-xl text-gray-900"><%= match.home_team&.team&.name %></p>
+          </div>
+          <div class="text-center">
+            <p class="text-4xl font-bold">
+              <span class="<%= match.home_score > match.away_score ? 'text-primary' : 'text-gray-900' %>"><%= match.home_score %></span>
+              <span class="text-gray-400 mx-2">:</span>
+              <span class="<%= match.away_score > match.home_score ? 'text-primary' : 'text-gray-900' %>"><%= match.away_score %></span>
+            </p>
+            <p class="text-sm text-gray-500 mt-1"><%= match.scheduled_at&.strftime("%Y.%m.%d") %></p>
+          </div>
+          <div class="text-center">
+            <p class="font-bold text-xl text-gray-900"><%= match.away_team&.team&.name %></p>
+          </div>
+        </div>
+      </div>
+
+      <%# Stats Tables %>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <%# Home Team Stats %>
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div class="bg-primary text-white p-4">
+            <h3 class="font-bold"><%= match.home_team&.team&.name %></h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-3 py-2 text-left">선수</th>
+                  <th class="px-3 py-2 text-center">득점</th>
+                  <th class="px-3 py-2 text-center">리바</th>
+                  <th class="px-3 py-2 text-center">어시</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                <% home_stats.each do |stat| %>
+                  <tr>
+                    <td class="px-3 py-2"><%= stat.player&.name %></td>
+                    <td class="px-3 py-2 text-center font-semibold"><%= stat.points %></td>
+                    <td class="px-3 py-2 text-center"><%= stat.rebounds %></td>
+                    <td class="px-3 py-2 text-center"><%= stat.assists %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <%# Away Team Stats %>
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div class="bg-gray-800 text-white p-4">
+            <h3 class="font-bold"><%= match.away_team&.team&.name %></h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-3 py-2 text-left">선수</th>
+                  <th class="px-3 py-2 text-center">득점</th>
+                  <th class="px-3 py-2 text-center">리바</th>
+                  <th class="px-3 py-2 text-center">어시</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                <% away_stats.each do |stat| %>
+                  <tr>
+                    <td class="px-3 py-2"><%= stat.player&.name %></td>
+                    <td class="px-3 py-2 text-center font-semibold"><%= stat.points %></td>
+                    <td class="px-3 py-2 text-center"><%= stat.rebounds %></td>
+                    <td class="px-3 py-2 text-center"><%= stat.assists %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    <% else %>
+      <div class="bg-gray-100 rounded-xl p-12 text-center">
+        <p class="text-gray-500">경기 정보가 없습니다.</p>
+      </div>
+    <% end %>
+  </div>
+</section>

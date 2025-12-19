@@ -1,0 +1,49 @@
+<%# Hero Section Form Fields %>
+
+<div>
+  <%= f.label :subtitle, "서브 타이틀", class: "block text-sm font-medium text-gray-700 mb-1" %>
+  <%= f.text_field :subtitle,
+                  class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500",
+                  placeholder: "예: 2024년 12월 15일 개최" %>
+</div>
+
+<div>
+  <%= f.label :background_image, "배경 이미지 URL", class: "block text-sm font-medium text-gray-700 mb-1" %>
+  <%= f.url_field :background_image,
+                 class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500",
+                 placeholder: "https://example.com/image.jpg" %>
+  <p class="mt-1 text-sm text-gray-500">권장 크기: 1920x600px</p>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+  <div>
+    <%= f.label :cta_text, "버튼 텍스트", class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.text_field :cta_text,
+                    class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500",
+                    placeholder: "참가 신청하기" %>
+  </div>
+  <div>
+    <%= f.label :cta_url, "버튼 링크", class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.url_field :cta_url,
+                   class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500",
+                   placeholder: "/register" %>
+  </div>
+</div>
+
+<div>
+  <label class="block text-sm font-medium text-gray-700 mb-2">오버레이 효과</label>
+  <div class="flex gap-4">
+    <label class="flex items-center gap-2">
+      <%= f.radio_button :overlay, "none", class: "text-primary-600" %>
+      <span class="text-sm">없음</span>
+    </label>
+    <label class="flex items-center gap-2">
+      <%= f.radio_button :overlay, "dark", class: "text-primary-600", checked: true %>
+      <span class="text-sm">어둡게</span>
+    </label>
+    <label class="flex items-center gap-2">
+      <%= f.radio_button :overlay, "gradient", class: "text-primary-600" %>
+      <span class="text-sm">그라데이션</span>
+    </label>
+  </div>
+</div>

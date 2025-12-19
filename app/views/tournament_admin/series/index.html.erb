@@ -1,0 +1,95 @@
+<div class="max-w-6xl mx-auto">
+  <%# Header %>
+  <div class="flex justify-between items-center mb-8">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">시리즈 관리</h1>
+      <p class="mt-1 text-gray-600">연속 대회를 시리즈로 묶어 관리하세요</p>
+    </div>
+    <%= link_to new_tournament_admin_series_path,
+                class: "inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors" do %>
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      새 시리즈
+    <% end %>
+  </div>
+
+  <% if @series.any? %>
+    <div class="grid gap-6">
+      <% @series.each do |series| %>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+          <div class="p-6">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-4">
+                <% if series.logo_url.present? %>
+                  <img src="<%= series.logo_url %>" alt="<%= series.name %>" class="w-16 h-16 rounded-lg object-cover">
+                <% else %>
+                  <div class="w-16 h-16 bg-primary-100 rounded-lg flex items-center justify-center">
+                    <span class="text-2xl font-bold text-primary-600"><%= series.name.first.upcase %></span>
+                  </div>
+                <% end %>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900"><%= series.name %></h3>
+                  <p class="text-sm text-gray-500 mt-1">
+                    총 <span class="font-medium text-primary-600"><%= series.tournaments.count %></span>개 대회
+                    <% unless series.status_active? %>
+                      <span class="mx-2">|</span>
+                      <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full"><%= series.status == 'inactive' ? '비활성' : '보관됨' %></span>
+                    <% end %>
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <%= link_to tournament_admin_series_path(series),
+                            class: "px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" do %>
+                  상세보기
+                <% end %>
+                <%= link_to edit_tournament_admin_series_path(series),
+                            class: "px-3 py-1.5 text-sm text-primary-600 hover:bg-primary-50 rounded-lg transition-colors" do %>
+                  편집
+                <% end %>
+              </div>
+            </div>
+
+            <% if series.description.present? %>
+              <p class="mt-4 text-gray-600 text-sm line-clamp-2"><%= series.description %></p>
+            <% end %>
+
+            <% if series.tournaments.any? %>
+              <div class="mt-4 pt-4 border-t border-gray-100">
+                <p class="text-xs text-gray-500 mb-2">최근 대회</p>
+                <div class="flex flex-wrap gap-2">
+                  <% series.tournaments.order(edition_number: :desc).limit(3).each do |tournament| %>
+                    <%= link_to tournament_admin_tournament_path(tournament),
+                                class: "inline-flex items-center gap-1 px-3 py-1 bg-gray-50 hover:bg-gray-100 rounded-full text-sm text-gray-700 transition-colors" do %>
+                      <span class="text-primary-600 font-medium">#<%= tournament.edition_number || 1 %></span>
+                      <%= tournament.name %>
+                    <% end %>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+      <div class="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+        </svg>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">시리즈가 없습니다</h3>
+      <p class="text-gray-500 mb-6">첫 번째 시리즈를 만들어 연속 대회를 효율적으로 관리하세요.</p>
+      <%= link_to new_tournament_admin_series_path,
+                  class: "inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors" do %>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        새 시리즈 만들기
+      <% end %>
+    </div>
+  <% end %>
+</div>

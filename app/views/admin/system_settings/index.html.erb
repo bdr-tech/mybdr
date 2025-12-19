@@ -1,0 +1,127 @@
+<% content_for :title, '시스템 설정' %>
+
+<div class="px-4 sm:px-6 lg:px-8">
+  <!-- Header -->
+  <div class="sm:flex sm:items-center sm:justify-between">
+    <div class="sm:flex-auto">
+      <h1 class="text-2xl font-semibold text-gray-900">시스템 설정</h1>
+      <p class="mt-2 text-sm text-gray-700">애플리케이션 설정을 관리합니다.</p>
+    </div>
+    <div class="mt-4 sm:mt-0 sm:flex sm:space-x-3">
+      <%= button_to "캐시 클리어", clear_cache_admin_system_settings_path, method: :post, class: "inline-flex items-center rounded-md bg-yellow-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yellow-500", data: { confirm: "정말 캐시를 클리어하시겠습니까?" } %>
+      <%= link_to "내보내기", export_admin_system_settings_path(format: :json), class: "inline-flex items-center rounded-md bg-gray-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-500" %>
+      <%= link_to "새 설정 추가", new_admin_system_setting_path, class: "inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500" %>
+    </div>
+  </div>
+
+  <!-- Maintenance Mode Toggle -->
+  <div class="mt-6 bg-white rounded-lg shadow p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-medium text-gray-900">점검 모드</h3>
+        <p class="text-sm text-gray-500">활성화하면 사용자가 서비스에 접근할 수 없습니다.</p>
+      </div>
+      <% maintenance_enabled = SystemSetting.enabled?("maintenance_mode") %>
+      <%= button_to toggle_maintenance_admin_system_settings_path, method: :post, class: "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 #{maintenance_enabled ? 'bg-red-600' : 'bg-gray-200'}", data: { confirm: maintenance_enabled ? "점검 모드를 비활성화하시겠습니까?" : "점검 모드를 활성화하시겠습니까? 사용자가 서비스에 접근할 수 없게 됩니다." } do %>
+        <span class="sr-only">점검 모드 토글</span>
+        <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out <%= maintenance_enabled ? 'translate-x-5' : 'translate-x-0' %>"></span>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Import Form -->
+  <div class="mt-6 bg-white rounded-lg shadow p-4">
+    <h3 class="text-lg font-medium text-gray-900 mb-3">설정 가져오기</h3>
+    <%= form_with url: import_admin_system_settings_path, method: :post, multipart: true, class: "flex items-center space-x-4" do |f| %>
+      <%= f.file_field :file, accept: ".json", class: "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" %>
+      <%= f.submit "가져오기", class: "inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 cursor-pointer" %>
+    <% end %>
+  </div>
+
+  <!-- Category Filter -->
+  <div class="mt-6 bg-white rounded-lg shadow p-4">
+    <div class="flex flex-wrap gap-2">
+      <%= link_to "전체", admin_system_settings_path, class: "inline-flex items-center rounded-md px-3 py-1 text-sm font-medium #{params[:category].blank? ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" %>
+      <% SystemSetting::CATEGORIES.each do |category| %>
+        <% label = { "general" => "일반", "system" => "시스템", "team" => "팀", "payment" => "결제", "membership" => "멤버십", "notification" => "알림", "marketing" => "마케팅", "legal" => "법률" }[category] || category %>
+        <%= link_to label, admin_system_settings_path(category: category), class: "inline-flex items-center rounded-md px-3 py-1 text-sm font-medium #{params[:category] == category ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Settings by Category -->
+  <div class="mt-6 space-y-6">
+    <% @settings_by_category.each do |category, settings| %>
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <h2 class="text-lg font-medium text-gray-900">
+            <%= { "general" => "일반", "system" => "시스템", "team" => "팀", "payment" => "결제", "membership" => "멤버십", "notification" => "알림", "marketing" => "마케팅", "legal" => "법률" }[category] || category %>
+          </h2>
+        </div>
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">키</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">값</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">타입</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+              <th scope="col" class="relative px-6 py-3"><span class="sr-only">액션</span></th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% settings.each do |setting| %>
+              <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4">
+                  <div class="text-sm font-medium text-gray-900"><%= setting.key %></div>
+                  <% if setting.description.present? %>
+                    <div class="text-xs text-gray-500"><%= setting.description %></div>
+                  <% end %>
+                </td>
+                <td class="px-6 py-4">
+                  <% if setting.value_type == "boolean" %>
+                    <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5 <%= setting.typed_value ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+                      <%= setting.typed_value ? "예" : "아니오" %>
+                    </span>
+                  <% elsif setting.value_type.in?(["json", "array"]) %>
+                    <code class="text-xs bg-gray-100 px-2 py-1 rounded"><%= truncate(setting.value.to_s, length: 50) %></code>
+                  <% else %>
+                    <span class="text-sm text-gray-900"><%= truncate(setting.typed_value.to_s, length: 50) %></span>
+                  <% end %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5 bg-gray-100 text-gray-800">
+                    <%= setting.value_type_label %>
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex space-x-2">
+                    <% if setting.is_public? %>
+                      <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5 bg-blue-100 text-blue-800">공개</span>
+                    <% end %>
+                    <% if setting.is_editable? %>
+                      <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5 bg-green-100 text-green-800">수정가능</span>
+                    <% else %>
+                      <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5 bg-gray-100 text-gray-600">읽기전용</span>
+                    <% end %>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <%= link_to "상세", admin_system_setting_path(setting), class: "text-indigo-600 hover:text-indigo-900 mr-3" %>
+                  <% if setting.is_editable? %>
+                    <%= link_to "수정", edit_admin_system_setting_path(setting), class: "text-indigo-600 hover:text-indigo-900" %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+
+    <% if @settings_by_category.empty? %>
+      <div class="bg-white shadow rounded-lg p-12 text-center">
+        <p class="text-gray-500">설정이 없습니다.</p>
+      </div>
+    <% end %>
+  </div>
+</div>

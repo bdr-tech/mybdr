@@ -1,0 +1,388 @@
+<% content_for :title, "#{@tournament.name} - 순위표" %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- 헤더 -->
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <%= link_to tournament_path(@tournament), class: "text-primary-600 hover:underline text-sm mb-2 inline-block" do %>
+        &larr; <%= @tournament.name %>
+      <% end %>
+      <h1 class="text-2xl font-bold text-gray-900">순위표</h1>
+    </div>
+    <div class="flex gap-2">
+      <%= link_to bracket_tournament_path(@tournament), class: "btn btn-secondary" do %>
+        대진표
+      <% end %>
+      <%= link_to schedule_tournament_path(@tournament), class: "btn btn-secondary" do %>
+        일정
+      <% end %>
+    </div>
+  </div>
+
+  <% if @teams.any? %>
+    <!-- 상위 3팀 포디엄 -->
+    <% top_teams = @teams.first(3) %>
+    <% if top_teams.size >= 3 %>
+      <div class="mb-8 hidden md:block">
+        <div class="flex items-end justify-center gap-4 h-64">
+          <!-- 2위 -->
+          <div class="flex flex-col items-center">
+            <div class="relative mb-2">
+              <div class="w-20 h-20 rounded-full bg-gradient-to-br from-gray-300 to-gray-400 p-1 shadow-lg">
+                <div class="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                  <% second = top_teams[1] %>
+                  <% if second&.team&.logo_url.present? %>
+                    <img src="<%= second.team.logo_url %>" alt="" class="w-full h-full object-cover">
+                  <% else %>
+                    <span class="text-xl font-bold text-gray-600"><%= second&.team&.name&.first(2) || '?' %></span>
+                  <% end %>
+                </div>
+              </div>
+              <div class="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center text-white font-bold text-sm shadow">2</div>
+            </div>
+            <div class="bg-gradient-to-t from-gray-200 to-gray-300 w-28 h-32 rounded-t-lg flex flex-col items-center justify-end pb-3 shadow-lg">
+              <span class="text-sm font-bold text-gray-800 text-center px-2 truncate w-full"><%= second&.team&.name || 'TBD' %></span>
+              <span class="text-xs text-gray-600"><%= second&.wins || 0 %>승 <%= second&.losses || 0 %>패</span>
+            </div>
+          </div>
+
+          <!-- 1위 -->
+          <div class="flex flex-col items-center -mt-8">
+            <div class="relative mb-2">
+              <div class="w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 p-1 shadow-xl animate-pulse">
+                <div class="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                  <% first = top_teams[0] %>
+                  <% if first&.team&.logo_url.present? %>
+                    <img src="<%= first.team.logo_url %>" alt="" class="w-full h-full object-cover">
+                  <% else %>
+                    <span class="text-2xl font-bold text-amber-600"><%= first&.team&.name&.first(2) || '?' %></span>
+                  <% end %>
+                </div>
+              </div>
+              <div class="absolute -bottom-1 -right-1 w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center text-white font-bold shadow-lg">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+            </div>
+            <div class="bg-gradient-to-t from-yellow-400 to-amber-300 w-32 h-44 rounded-t-lg flex flex-col items-center justify-end pb-3 shadow-xl">
+              <span class="text-sm font-bold text-amber-900 text-center px-2 truncate w-full"><%= first&.team&.name || 'TBD' %></span>
+              <span class="text-xs text-amber-800"><%= first&.wins || 0 %>승 <%= first&.losses || 0 %>패</span>
+              <span class="mt-1 px-2 py-0.5 bg-amber-600 text-white text-xs rounded-full font-medium">1위</span>
+            </div>
+          </div>
+
+          <!-- 3위 -->
+          <div class="flex flex-col items-center">
+            <div class="relative mb-2">
+              <div class="w-20 h-20 rounded-full bg-gradient-to-br from-orange-300 to-orange-500 p-1 shadow-lg">
+                <div class="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                  <% third = top_teams[2] %>
+                  <% if third&.team&.logo_url.present? %>
+                    <img src="<%= third.team.logo_url %>" alt="" class="w-full h-full object-cover">
+                  <% else %>
+                    <span class="text-xl font-bold text-orange-600"><%= third&.team&.name&.first(2) || '?' %></span>
+                  <% end %>
+                </div>
+              </div>
+              <div class="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-sm shadow">3</div>
+            </div>
+            <div class="bg-gradient-to-t from-orange-200 to-orange-300 w-28 h-24 rounded-t-lg flex flex-col items-center justify-end pb-3 shadow-lg">
+              <span class="text-sm font-bold text-orange-800 text-center px-2 truncate w-full"><%= third&.team&.name || 'TBD' %></span>
+              <span class="text-xs text-orange-700"><%= third&.wins || 0 %>승 <%= third&.losses || 0 %>패</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- 순위표 테이블 -->
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+      <!-- 테이블 헤더 -->
+      <div class="bg-gradient-to-r from-gray-900 to-gray-800 text-white px-6 py-4">
+        <h2 class="text-lg font-bold">전체 순위</h2>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th class="px-4 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-16">#</th>
+              <th class="px-4 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">팀</th>
+              <th class="px-4 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider w-16">경기</th>
+              <th class="px-4 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider w-16">승</th>
+              <th class="px-4 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider w-16">패</th>
+              <th class="px-4 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider w-28">승률</th>
+              <th class="px-4 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider w-20">득점</th>
+              <th class="px-4 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider w-20">실점</th>
+              <th class="px-4 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider w-20">+/-</th>
+              <th class="px-4 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider w-24">폼</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <% @teams.each_with_index do |team, index| %>
+              <%
+                rank = index + 1
+                rank_class = case rank
+                  when 1 then "bg-gradient-to-r from-amber-50 to-yellow-50 border-l-4 border-amber-400"
+                  when 2 then "bg-gradient-to-r from-gray-50 to-slate-50 border-l-4 border-gray-400"
+                  when 3 then "bg-gradient-to-r from-orange-50 to-amber-50 border-l-4 border-orange-400"
+                  else "hover:bg-gray-50"
+                end
+                rank_badge = case rank
+                  when 1 then "bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-md"
+                  when 2 then "bg-gradient-to-br from-gray-300 to-gray-400 text-white shadow"
+                  when 3 then "bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow"
+                  else "bg-gray-100 text-gray-600"
+                end
+              %>
+              <tr class="<%= rank_class %> transition-all duration-200">
+                <!-- 순위 -->
+                <td class="px-4 py-4 whitespace-nowrap">
+                  <div class="w-8 h-8 rounded-lg <%= rank_badge %> flex items-center justify-center font-bold text-sm">
+                    <%= rank %>
+                  </div>
+                </td>
+
+                <!-- 팀 정보 -->
+                <td class="px-4 py-4 whitespace-nowrap">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 overflow-hidden border border-gray-100">
+                      <% if team.team&.logo_url.present? %>
+                        <img src="<%= team.team.logo_url %>" alt="" class="w-full h-full object-cover">
+                      <% else %>
+                        <span class="text-sm font-bold text-gray-400"><%= team.team&.name&.first(2) || '?' %></span>
+                      <% end %>
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-gray-900 font-semibold"><%= team.team&.name || 'Unknown Team' %></span>
+                        <% if team.seed_number.present? %>
+                          <span class="text-xs text-gray-400 font-medium">[시드 <%= team.seed_number %>]</span>
+                        <% end %>
+                        <% if rank == 1 && @tournament.status == 'completed' %>
+                          <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full font-semibold">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd"/>
+                            </svg>
+                            우승
+                          </span>
+                        <% end %>
+                      </div>
+                      <% if team.group_name.present? %>
+                        <span class="text-xs text-gray-500"><%= team.group_name %> 조</span>
+                      <% end %>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- 경기 수 -->
+                <td class="px-4 py-4 text-center">
+                  <span class="text-gray-700 font-medium"><%= team.games_played %></span>
+                </td>
+
+                <!-- 승 -->
+                <td class="px-4 py-4 text-center">
+                  <span class="text-green-600 font-bold"><%= team.wins %></span>
+                </td>
+
+                <!-- 패 -->
+                <td class="px-4 py-4 text-center">
+                  <span class="text-red-500 font-bold"><%= team.losses %></span>
+                </td>
+
+                <!-- 승률 (프로그레스 바) -->
+                <td class="px-4 py-4">
+                  <% win_pct = team.games_played > 0 ? (team.win_percentage * 100).round(1) : 0 %>
+                  <div class="flex items-center gap-2">
+                    <div class="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div class="h-full rounded-full transition-all duration-500 <%= win_pct >= 70 ? 'bg-green-500' : win_pct >= 50 ? 'bg-blue-500' : win_pct >= 30 ? 'bg-yellow-500' : 'bg-red-400' %>" style="width: <%= win_pct %>%"></div>
+                    </div>
+                    <span class="text-sm font-bold text-gray-700 w-12 text-right"><%= win_pct %>%</span>
+                  </div>
+                </td>
+
+                <!-- 득점 -->
+                <td class="px-4 py-4 text-center">
+                  <span class="text-gray-700"><%= team.points_for %></span>
+                </td>
+
+                <!-- 실점 -->
+                <td class="px-4 py-4 text-center">
+                  <span class="text-gray-700"><%= team.points_against %></span>
+                </td>
+
+                <!-- 점수차 -->
+                <td class="px-4 py-4 text-center">
+                  <% diff = team.point_differential %>
+                  <%
+                    diff_class = if diff > 20
+                      "bg-green-100 text-green-700"
+                    elsif diff > 0
+                      "bg-green-50 text-green-600"
+                    elsif diff < -20
+                      "bg-red-100 text-red-700"
+                    elsif diff < 0
+                      "bg-red-50 text-red-600"
+                    else
+                      "bg-gray-100 text-gray-600"
+                    end
+                  %>
+                  <span class="inline-block px-2 py-1 rounded-lg text-sm font-bold <%= diff_class %>">
+                    <%= diff > 0 ? '+' : '' %><%= diff %>
+                  </span>
+                </td>
+
+                <!-- 연속/폼 -->
+                <td class="px-4 py-4 text-center">
+                  <% streak = team.current_streak rescue 0 %>
+                  <% if streak.present? && streak != 0 %>
+                    <% if streak > 0 %>
+                      <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full font-bold bg-green-100 text-green-700">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <%= streak %>연승
+                      </span>
+                    <% else %>
+                      <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full font-bold bg-red-100 text-red-600">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <%= streak.abs %>연패
+                      </span>
+                    <% end %>
+                  <% else %>
+                    <span class="text-gray-400">-</span>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 팀별 통계 리더 -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- 최다 득점 -->
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-3">
+          <div class="flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+            </svg>
+            <h3 class="font-bold">평균 득점</h3>
+          </div>
+        </div>
+        <div class="p-4 space-y-3">
+          <% @teams.select { |t| t.games_played > 0 }.sort_by { |t| -(t.points_for.to_f / t.games_played) }.first(5).each_with_index do |team, idx| %>
+            <div class="flex items-center gap-3">
+              <span class="w-6 h-6 rounded-full <%= idx == 0 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600' %> flex items-center justify-center text-xs font-bold"><%= idx + 1 %></span>
+              <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <% if team.team&.logo_url.present? %>
+                  <img src="<%= team.team.logo_url %>" alt="" class="w-full h-full object-cover">
+                <% else %>
+                  <span class="text-xs font-bold text-gray-400"><%= team.team&.name&.first(1) || '?' %></span>
+                <% end %>
+              </div>
+              <span class="flex-1 text-sm font-medium text-gray-900 truncate"><%= team.team&.name || 'Unknown' %></span>
+              <span class="text-lg font-bold text-blue-600"><%= (team.points_for.to_f / team.games_played).round(1) %></span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- 최소 실점 -->
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="bg-gradient-to-r from-green-600 to-green-700 text-white px-5 py-3">
+          <div class="flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+            <h3 class="font-bold">평균 실점 (수비)</h3>
+          </div>
+        </div>
+        <div class="p-4 space-y-3">
+          <% @teams.select { |t| t.games_played > 0 }.sort_by { |t| t.points_against.to_f / t.games_played }.first(5).each_with_index do |team, idx| %>
+            <div class="flex items-center gap-3">
+              <span class="w-6 h-6 rounded-full <%= idx == 0 ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600' %> flex items-center justify-center text-xs font-bold"><%= idx + 1 %></span>
+              <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <% if team.team&.logo_url.present? %>
+                  <img src="<%= team.team.logo_url %>" alt="" class="w-full h-full object-cover">
+                <% else %>
+                  <span class="text-xs font-bold text-gray-400"><%= team.team&.name&.first(1) || '?' %></span>
+                <% end %>
+              </div>
+              <span class="flex-1 text-sm font-medium text-gray-900 truncate"><%= team.team&.name || 'Unknown' %></span>
+              <span class="text-lg font-bold text-green-600"><%= (team.points_against.to_f / team.games_played).round(1) %></span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- 최고 점수차 -->
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-3">
+          <div class="flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            <h3 class="font-bold">점수차</h3>
+          </div>
+        </div>
+        <div class="p-4 space-y-3">
+          <% @teams.sort_by { |t| -t.point_differential }.first(5).each_with_index do |team, idx| %>
+            <div class="flex items-center gap-3">
+              <span class="w-6 h-6 rounded-full <%= idx == 0 ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600' %> flex items-center justify-center text-xs font-bold"><%= idx + 1 %></span>
+              <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <% if team.team&.logo_url.present? %>
+                  <img src="<%= team.team.logo_url %>" alt="" class="w-full h-full object-cover">
+                <% else %>
+                  <span class="text-xs font-bold text-gray-400"><%= team.team&.name&.first(1) || '?' %></span>
+                <% end %>
+              </div>
+              <span class="flex-1 text-sm font-medium text-gray-900 truncate"><%= team.team&.name || 'Unknown' %></span>
+              <span class="text-lg font-bold <%= team.point_differential >= 0 ? 'text-purple-600' : 'text-red-500' %>">
+                <%= team.point_differential >= 0 ? '+' : '' %><%= team.point_differential %>
+              </span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- 범례 -->
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500">
+      <div class="flex items-center gap-2">
+        <div class="w-4 h-4 rounded bg-gradient-to-br from-yellow-400 to-amber-500"></div>
+        <span>1위</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-4 h-4 rounded bg-gradient-to-br from-gray-300 to-gray-400"></div>
+        <span>2위</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-4 h-4 rounded bg-gradient-to-br from-orange-400 to-orange-500"></div>
+        <span>3위</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+        <span>연승중</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+        <span>연패중</span>
+      </div>
+    </div>
+
+  <% else %>
+    <div class="text-center py-16 bg-white rounded-2xl shadow-lg border border-gray-100">
+      <svg class="w-20 h-20 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+      </svg>
+      <h3 class="text-xl font-semibold text-gray-900 mb-2">참가팀이 없습니다</h3>
+      <p class="text-gray-500">대회에 참가한 팀이 없어 순위표를 표시할 수 없습니다.</p>
+    </div>
+  <% end %>
+</div>

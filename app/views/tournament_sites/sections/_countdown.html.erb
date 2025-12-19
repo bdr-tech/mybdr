@@ -1,0 +1,56 @@
+<%# Countdown section - Modern minimalist style with mobile optimization %>
+<%
+  raw_date = section.content['target_date'] || @tournament_site.tournament.start_date
+  target_date = raw_date.is_a?(String) ? Time.zone.parse(raw_date) : raw_date
+  primary_color = @tournament_site.primary_color || '#7C3AED'
+%>
+
+<section class="bg-white py-12 sm:py-16 md:py-20 lg:py-24">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <%# Section Header %>
+    <div class="mb-6 sm:mb-8 md:mb-10">
+      <span class="inline-block px-3 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm font-semibold rounded-full mb-3 sm:mb-4"
+            style="color: <%= primary_color %>; background-color: <%= primary_color %>15;">
+        Countdown
+      </span>
+      <% if section.title.present? %>
+        <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 break-keep"><%= section.title %></h2>
+      <% else %>
+        <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 break-keep">대회 시작까지</h2>
+      <% end %>
+    </div>
+
+    <%# Countdown Timer %>
+    <div class="flex justify-center gap-2 sm:gap-3 md:gap-6" data-controller="countdown" data-countdown-target="<%= target_date&.iso8601 %>">
+      <div class="bg-gray-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 min-w-[60px] sm:min-w-[70px] md:min-w-[90px] lg:min-w-[100px]">
+        <span class="text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold text-gray-900" data-countdown-target="days">--</span>
+        <p class="text-[10px] sm:text-xs md:text-sm text-gray-500 mt-1 sm:mt-2 font-medium">일</p>
+      </div>
+      <div class="bg-gray-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 min-w-[60px] sm:min-w-[70px] md:min-w-[90px] lg:min-w-[100px]">
+        <span class="text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold text-gray-900" data-countdown-target="hours">--</span>
+        <p class="text-[10px] sm:text-xs md:text-sm text-gray-500 mt-1 sm:mt-2 font-medium">시간</p>
+      </div>
+      <div class="bg-gray-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 min-w-[60px] sm:min-w-[70px] md:min-w-[90px] lg:min-w-[100px]">
+        <span class="text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold text-gray-900" data-countdown-target="minutes">--</span>
+        <p class="text-[10px] sm:text-xs md:text-sm text-gray-500 mt-1 sm:mt-2 font-medium">분</p>
+      </div>
+      <div class="bg-gray-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 min-w-[60px] sm:min-w-[70px] md:min-w-[90px] lg:min-w-[100px]">
+        <span class="text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold text-gray-900" data-countdown-target="seconds">--</span>
+        <p class="text-[10px] sm:text-xs md:text-sm text-gray-500 mt-1 sm:mt-2 font-medium">초</p>
+      </div>
+    </div>
+
+    <% if section.subtitle.present? %>
+      <p class="mt-6 sm:mt-8 text-sm sm:text-base text-gray-600 px-2"><%= section.subtitle %></p>
+    <% end %>
+
+    <%# Optional CTA %>
+    <% if @tournament_site.tournament.registration_period_active? %>
+      <div class="mt-6 sm:mt-8 md:mt-10">
+        <%= link_to "지금 참가 신청하기", tournament_path(@tournament_site.tournament),
+                    class: "inline-flex items-center gap-2 w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all justify-center",
+                    style: "background-color: #{primary_color};" %>
+      </div>
+    <% end %>
+  </div>
+</section>

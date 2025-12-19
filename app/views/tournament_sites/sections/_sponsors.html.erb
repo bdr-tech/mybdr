@@ -1,0 +1,31 @@
+<%# Sponsors section %>
+<% sponsors = section.items %>
+
+<section class="<%= section.padding_classes %> bg-gray-50" style="<%= section.style_attributes.map { |k, v| "#{k}: #{v};" }.join(' ') %>">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-8">
+      <h2 class="text-2xl md:text-3xl font-bold text-gray-900"><%= section.title || '후원사' %></h2>
+      <% if section.subtitle.present? %>
+        <p class="text-gray-600 mt-2"><%= section.subtitle %></p>
+      <% end %>
+    </div>
+
+    <% if sponsors.any? %>
+      <div class="flex flex-wrap justify-center items-center gap-8 md:gap-12">
+        <% sponsors.each do |sponsor| %>
+          <% if sponsor['url'].present? %>
+            <%= link_to sponsor['link'] || '#', target: "_blank", class: "block grayscale hover:grayscale-0 transition-all" do %>
+              <img src="<%= sponsor['url'] %>" alt="<%= sponsor['name'] %>" class="h-12 md:h-16 object-contain">
+            <% end %>
+          <% else %>
+            <span class="text-gray-400 font-semibold"><%= sponsor['name'] %></span>
+          <% end %>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="text-center text-gray-500">
+        <p>후원사 정보가 없습니다.</p>
+      </div>
+    <% end %>
+  </div>
+</section>

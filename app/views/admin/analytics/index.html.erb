@@ -1,0 +1,167 @@
+<% content_for :title, '분석 대시보드' %>
+
+<div class="px-4 sm:px-6 lg:px-8">
+  <!-- Header -->
+  <div class="sm:flex sm:items-center sm:justify-between">
+    <div class="sm:flex-auto">
+      <h1 class="text-2xl font-semibold text-gray-900">분석 대시보드</h1>
+      <p class="mt-2 text-sm text-gray-700">서비스 현황을 한눈에 확인합니다.</p>
+    </div>
+    <div class="mt-4 sm:mt-0">
+      <%= form_with url: admin_analytics_path, method: :get, class: "flex items-center space-x-2" do |f| %>
+        <%= f.select :period, options_for_select([["오늘", "today"], ["이번 주", "week"], ["이번 달", "month"], ["이번 분기", "quarter"], ["올해", "year"]], @period), {}, class: "rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+        <%= f.submit "조회", class: "inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 cursor-pointer" %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Quick Links -->
+  <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+    <%= link_to admin_analytics_revenue_path(period: @period), class: "bg-green-50 rounded-lg shadow p-4 hover:bg-green-100 transition" do %>
+      <p class="text-sm text-green-600">매출 분석</p>
+      <p class="text-2xl font-semibold text-green-700"><%= number_to_currency(@revenue_analytics[:total], unit: '', precision: 0) %>원</p>
+    <% end %>
+    <%= link_to admin_analytics_users_path(period: @period), class: "bg-blue-50 rounded-lg shadow p-4 hover:bg-blue-100 transition" do %>
+      <p class="text-sm text-blue-600">사용자 분석</p>
+      <p class="text-2xl font-semibold text-blue-700"><%= @user_analytics[:new_users] %>명 신규</p>
+    <% end %>
+    <%= link_to admin_analytics_tournaments_path(period: @period), class: "bg-purple-50 rounded-lg shadow p-4 hover:bg-purple-100 transition" do %>
+      <p class="text-sm text-purple-600">대회 분석</p>
+      <p class="text-2xl font-semibold text-purple-700"><%= @game_analytics[:total] %>경기</p>
+    <% end %>
+    <div class="bg-yellow-50 rounded-lg shadow p-4">
+      <p class="text-sm text-yellow-600">문의 응답</p>
+      <p class="text-2xl font-semibold text-yellow-700"><%= @engagement_analytics[:resolved_suggestions] %>건</p>
+    </div>
+  </div>
+
+  <!-- Main Stats Grid -->
+  <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <!-- User Analytics -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-medium text-gray-900">사용자 현황</h2>
+      </div>
+      <div class="px-6 py-4">
+        <dl class="grid grid-cols-2 gap-4">
+          <div>
+            <dt class="text-sm font-medium text-gray-500">신규 가입</dt>
+            <dd class="mt-1 text-2xl font-semibold text-gray-900"><%= @user_analytics[:new_users] %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">활성 사용자</dt>
+            <dd class="mt-1 text-2xl font-semibold text-green-600"><%= @user_analytics[:active_users] %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">정지 사용자</dt>
+            <dd class="mt-1 text-2xl font-semibold text-red-600"><%= @user_analytics[:suspended_users] %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">프로 전환</dt>
+            <dd class="mt-1 text-2xl font-semibold text-purple-600"><%= @user_analytics[:pro_conversions] %></dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
+    <!-- Revenue Analytics -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-medium text-gray-900">매출 현황</h2>
+      </div>
+      <div class="px-6 py-4">
+        <dl class="grid grid-cols-2 gap-4">
+          <div>
+            <dt class="text-sm font-medium text-gray-500">총 매출</dt>
+            <dd class="mt-1 text-2xl font-semibold text-gray-900"><%= number_to_currency(@revenue_analytics[:total], unit: '', precision: 0) %>원</dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">평균 결제액</dt>
+            <dd class="mt-1 text-2xl font-semibold text-blue-600"><%= number_to_currency(@revenue_analytics[:average], unit: '', precision: 0) %>원</dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">결제 건수</dt>
+            <dd class="mt-1 text-2xl font-semibold text-green-600"><%= @revenue_analytics[:count] %>건</dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">환불액</dt>
+            <dd class="mt-1 text-2xl font-semibold text-red-600"><%= number_to_currency(@revenue_analytics[:refunded], unit: '', precision: 0) %>원</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
+    <!-- Game Analytics -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-medium text-gray-900">경기 현황</h2>
+      </div>
+      <div class="px-6 py-4">
+        <dl class="grid grid-cols-3 gap-4">
+          <div>
+            <dt class="text-sm font-medium text-gray-500">총 경기</dt>
+            <dd class="mt-1 text-2xl font-semibold text-gray-900"><%= @game_analytics[:total] %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">완료 경기</dt>
+            <dd class="mt-1 text-2xl font-semibold text-green-600"><%= @game_analytics[:completed] %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">일 평균</dt>
+            <dd class="mt-1 text-2xl font-semibold text-blue-600"><%= @game_analytics[:average_per_day] %></dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
+    <!-- Engagement Analytics -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-medium text-gray-900">고객 참여</h2>
+      </div>
+      <div class="px-6 py-4">
+        <dl class="grid grid-cols-3 gap-4">
+          <div>
+            <dt class="text-sm font-medium text-gray-500">건의사항</dt>
+            <dd class="mt-1 text-2xl font-semibold text-gray-900"><%= @engagement_analytics[:suggestions] %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">해결됨</dt>
+            <dd class="mt-1 text-2xl font-semibold text-green-600"><%= @engagement_analytics[:resolved_suggestions] %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">평균 응답시간</dt>
+            <dd class="mt-1 text-2xl font-semibold text-blue-600"><%= @engagement_analytics[:average_response_time] %>h</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Section -->
+  <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <!-- Revenue Chart Placeholder -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-medium text-gray-900">매출 추이</h2>
+      </div>
+      <div class="p-6">
+        <div class="h-64 flex items-center justify-center bg-gray-50 rounded">
+          <p class="text-gray-500">차트 영역 (Chart.js 통합 필요)</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Growth Chart Placeholder -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-medium text-gray-900">사용자 증가 추이</h2>
+      </div>
+      <div class="p-6">
+        <div class="h-64 flex items-center justify-center bg-gray-50 rounded">
+          <p class="text-gray-500">차트 영역 (Chart.js 통합 필요)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,85 @@
+<%# Contact section %>
+<section class="<%= section.padding_classes %> bg-gray-50" style="<%= section.style_attributes.map { |k, v| "#{k}: #{v};" }.join(' ') %>">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-8">
+      <h2 class="text-2xl md:text-3xl font-bold text-gray-900"><%= section.title || '문의하기' %></h2>
+      <% if section.subtitle.present? %>
+        <p class="text-gray-600 mt-2"><%= section.subtitle %></p>
+      <% end %>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm p-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <%# Contact Info %>
+        <div class="space-y-6">
+          <% if section.content['email'].present? %>
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span class="text-lg">📧</span>
+              </div>
+              <div>
+                <p class="font-medium text-gray-900">이메일</p>
+                <a href="mailto:<%= section.content['email'] %>" class="text-primary hover:underline">
+                  <%= section.content['email'] %>
+                </a>
+              </div>
+            </div>
+          <% end %>
+
+          <% if section.content['phone'].present? %>
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span class="text-lg">📞</span>
+              </div>
+              <div>
+                <p class="font-medium text-gray-900">전화</p>
+                <a href="tel:<%= section.content['phone'] %>" class="text-primary hover:underline">
+                  <%= section.content['phone'] %>
+                </a>
+              </div>
+            </div>
+          <% end %>
+
+          <% if section.content['address'].present? %>
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span class="text-lg">📍</span>
+              </div>
+              <div>
+                <p class="font-medium text-gray-900">주소</p>
+                <p class="text-gray-600"><%= section.content['address'] %></p>
+              </div>
+            </div>
+          <% end %>
+
+          <% if section.content['kakao'].present? %>
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span class="text-lg">💬</span>
+              </div>
+              <div>
+                <p class="font-medium text-gray-900">카카오톡</p>
+                <a href="<%= section.content['kakao'] %>" target="_blank" class="text-primary hover:underline">
+                  카카오톡 문의하기
+                </a>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <%# Additional Info or Map %>
+        <div>
+          <% if section.body.present? %>
+            <div class="prose prose-sm">
+              <%= simple_format(section.body) %>
+            </div>
+          <% else %>
+            <div class="bg-gray-100 rounded-lg h-full min-h-[200px] flex items-center justify-center">
+              <p class="text-gray-500">대회 관련 문의는 위 연락처로 부탁드립니다.</p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

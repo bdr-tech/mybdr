@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="<%= I18n.locale %>">
+  <head>
+    <title><%= content_for(:title) || "BDR - Basketball Daily Routine" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#DC2626">
+    <meta name="description" content="<%= content_for(:description) || 'BDR - 농구를 사랑하는 모든 사람들을 위한 종합 경기 매칭 플랫폼' %>">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
+    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%# Includes all stylesheet files in app/assets/stylesheets %>
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="min-h-screen bg-gray-50 antialiased">
+    <%# Navigation %>
+    <%= render "shared/navbar" %>
+
+    <%# Flash Messages %>
+    <%= render "shared/flash" %>
+
+    <%# Main Content %>
+    <main class="pt-16 pb-20 lg:pb-8">
+      <% if content_for?(:full_width) %>
+        <%= yield %>
+      <% else %>
+        <div class="container-app py-6">
+          <%= yield %>
+        </div>
+      <% end %>
+    </main>
+
+    <%# Footer %>
+    <%= render "shared/footer" %>
+
+    <%# Mobile Bottom Navigation %>
+    <%= render "shared/bottom_nav" if logged_in? %>
+  </body>
+</html>

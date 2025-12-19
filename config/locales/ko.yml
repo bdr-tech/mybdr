@@ -1,0 +1,295 @@
+ko:
+  # Pagy Pagination
+  pagy:
+    item_name: "항목"
+    nav:
+      prev: "&lsaquo; 이전"
+      next: "다음 &rsaquo;"
+      gap: "&hellip;"
+    info:
+      no_items: "항목이 없습니다"
+      single_page: "<b>%{count}</b>개 항목"
+      multiple_pages: "<b>%{from}-%{to}</b> / 전체 <b>%{count}</b>개"
+
+  # Application
+  app_name: "BDR"
+  app_full_name: "Basketball Daily Routine"
+
+  # Navigation
+  nav:
+    home: "홈"
+    games: "경기"
+    teams: "팀"
+    tournaments: "대회"
+    community: "커뮤니티"
+    profile: "프로필"
+    settings: "설정"
+    login: "로그인"
+    logout: "로그아웃"
+    signup: "회원가입"
+
+  # Common Actions
+  actions:
+    save: "저장"
+    cancel: "취소"
+    delete: "삭제"
+    edit: "수정"
+    create: "생성"
+    update: "업데이트"
+    confirm: "확인"
+    back: "뒤로"
+    next: "다음"
+    previous: "이전"
+    search: "검색"
+    filter: "필터"
+    sort: "정렬"
+    view: "보기"
+    view_all: "전체보기"
+    loading: "로딩 중..."
+    submit: "제출"
+    apply: "적용"
+    reset: "초기화"
+    copy: "복사"
+    share: "공유"
+    download: "다운로드"
+    upload: "업로드"
+
+  # Common Messages
+  messages:
+    success: "성공적으로 처리되었습니다."
+    error: "오류가 발생했습니다. 다시 시도해주세요."
+    not_found: "찾을 수 없습니다."
+    unauthorized: "접근 권한이 없습니다."
+    login_required: "로그인이 필요합니다."
+    confirm_delete: "정말 삭제하시겠습니까?"
+    saved: "저장되었습니다."
+    deleted: "삭제되었습니다."
+    updated: "업데이트되었습니다."
+    created: "생성되었습니다."
+    copied: "복사되었습니다."
+
+  # Authentication
+  auth:
+    login: "로그인"
+    logout: "로그아웃"
+    signup: "회원가입"
+    email: "이메일"
+    password: "비밀번호"
+    password_confirmation: "비밀번호 확인"
+    remember_me: "로그인 상태 유지"
+    forgot_password: "비밀번호를 잊으셨나요?"
+    reset_password: "비밀번호 재설정"
+    login_success: "로그인되었습니다."
+    logout_success: "로그아웃되었습니다."
+    signup_success: "회원가입이 완료되었습니다."
+    invalid_credentials: "이메일 또는 비밀번호가 올바르지 않습니다."
+    already_have_account: "이미 계정이 있으신가요?"
+    dont_have_account: "계정이 없으신가요?"
+
+  # User & Profile
+  user:
+    name: "이름"
+    nickname: "닉네임"
+    email: "이메일"
+    phone: "전화번호"
+    profile: "프로필"
+    profile_image: "프로필 이미지"
+    position: "포지션"
+    height: "키"
+    weight: "몸무게"
+    birth_date: "생년월일"
+    city: "시/도"
+    district: "구/군"
+    bio: "자기소개"
+
+  # Positions
+  positions:
+    point_guard: "포인트 가드 (PG)"
+    shooting_guard: "슈팅 가드 (SG)"
+    small_forward: "스몰 포워드 (SF)"
+    power_forward: "파워 포워드 (PF)"
+    center: "센터 (C)"
+
+  # Membership
+  membership:
+    type: "멤버십"
+    free: "무료회원"
+    pro: "유료회원"
+    pickup_host: "픽업게임 개최자"
+    tournament_admin: "대회관리자"
+    super_admin: "슈퍼관리자"
+    status: "구독 상태"
+    active: "활성"
+    inactive: "비활성"
+    expired: "만료됨"
+    expires_at: "만료일"
+    upgrade: "업그레이드"
+    subscribe: "구독하기"
+    manage_subscription: "구독 관리"
+    benefits:
+      free:
+        - "경기/게스트모집 생성 및 참가"
+        - "커뮤니티 사용 (게시판, 댓글)"
+        - "대회 목록 열람"
+        - "대회 결과 2주간 열람"
+      pro:
+        - "무료회원 기능 전체"
+        - "대회 결과 무제한 열람"
+        - "농구 성향 분석 리포트"
+        - "개인 통계 대시보드"
+        - "팀 생성 (최대 2개)"
+      pickup_host:
+        - "유료회원 기능 전체"
+        - "픽업게임 메뉴 접근"
+        - "픽업게임 게시 무제한"
+        - "참가자 관리"
+        - "팀 생성 (최대 10개)"
+      tournament_admin:
+        - "유료회원 기능 전체"
+        - "대회 개최 및 관리"
+        - "대회별 홈페이지 생성"
+        - "No-Code 사이트 빌더"
+        - "시리즈/회차 관리"
+
+  # Teams
+  team:
+    name: "팀명"
+    captain: "팀장"
+    members: "팀원"
+    member_count: "팀원 수"
+    code: "팀 코드"
+    description: "팀 소개"
+    home_court: "홈 코트"
+    recruiting: "모집 중"
+    not_recruiting: "모집 마감"
+    wins: "승"
+    losses: "패"
+    join: "가입 신청"
+    leave: "탈퇴"
+    create: "팀 생성"
+    manage: "팀 관리"
+    invite: "초대하기"
+    roles:
+      captain: "팀장"
+      player: "선수"
+      substitute: "후보"
+      coach: "코치"
+      manager: "매니저"
+
+  # Games
+  game:
+    title: "경기 제목"
+    type: "경기 유형"
+    date: "경기일"
+    time: "시간"
+    location: "장소"
+    fee: "참가비"
+    max_players: "최대 인원"
+    current_players: "현재 인원"
+    status: "상태"
+    apply: "참가 신청"
+    cancel_application: "신청 취소"
+    types:
+      pickup: "픽업게임"
+      practice: "연습경기"
+      friendly: "친선경기"
+      league: "리그전"
+    statuses:
+      draft: "임시저장"
+      open: "모집 중"
+      closed: "모집 마감"
+      in_progress: "진행 중"
+      completed: "완료"
+      cancelled: "취소됨"
+
+  # Tournaments
+  tournament:
+    name: "대회명"
+    series: "시리즈"
+    edition: "회차"
+    organizer: "주최자"
+    start_date: "시작일"
+    end_date: "종료일"
+    entry_fee: "참가비"
+    max_teams: "최대 참가팀"
+    registered_teams: "등록 팀"
+    status: "상태"
+    register: "참가 신청"
+    results: "경기 결과"
+    schedule: "대회 일정"
+    brackets: "대진표"
+    standings: "순위표"
+
+  # Community
+  community:
+    posts: "게시글"
+    comments: "댓글"
+    write: "글쓰기"
+    reply: "답글"
+    like: "좋아요"
+    report: "신고"
+    categories:
+      free: "자유게시판"
+      trade: "중고거래"
+      court: "코트정보"
+      review: "리뷰"
+      mybdr: "MyBDR"
+      lesson: "레슨"
+      news: "농구소식"
+
+  # Payment
+  payment:
+    bank_name: "은행명"
+    account_number: "계좌번호"
+    account_holder: "예금주"
+    toss_id: "토스 아이디"
+    transfer: "송금하기"
+    copy_account: "계좌 복사"
+    amount: "금액"
+    status: "결제 상태"
+    pending: "대기 중"
+    completed: "완료"
+    failed: "실패"
+    refunded: "환불됨"
+
+  # Time & Date
+  time:
+    today: "오늘"
+    yesterday: "어제"
+    tomorrow: "내일"
+    this_week: "이번 주"
+    this_month: "이번 달"
+    ago: "%{time} 전"
+    later: "%{time} 후"
+
+  # Errors
+  errors:
+    format: "%{attribute} %{message}"
+    messages:
+      blank: "을(를) 입력해주세요"
+      taken: "은(는) 이미 사용 중입니다"
+      invalid: "이(가) 올바르지 않습니다"
+      too_short: "은(는) %{count}자 이상이어야 합니다"
+      too_long: "은(는) %{count}자 이하여야 합니다"
+      not_a_number: "은(는) 숫자여야 합니다"
+      confirmation: "이(가) 일치하지 않습니다"
+
+  # ActiveRecord Models
+  activerecord:
+    models:
+      user: "사용자"
+      team: "팀"
+      team_member: "팀원"
+      game: "경기"
+      tournament: "대회"
+      post: "게시글"
+      comment: "댓글"
+      payment: "결제"
+    attributes:
+      user:
+        email: "이메일"
+        password: "비밀번호"
+        password_confirmation: "비밀번호 확인"
+        name: "이름"
+        nickname: "닉네임"
+        phone: "전화번호"

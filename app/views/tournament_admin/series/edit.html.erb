@@ -1,0 +1,19 @@
+<div class="max-w-2xl mx-auto">
+  <div class="mb-8">
+    <h1 class="text-2xl font-bold text-gray-900">시리즈 편집</h1>
+    <p class="mt-1 text-gray-600"><%= @series.name %></p>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <%= render "form" %>
+  </div>
+
+  <div class="mt-6 pt-6 border-t">
+    <%= button_to tournament_admin_series_path(@series),
+                  method: :delete,
+                  class: "text-red-600 hover:text-red-800 text-sm",
+                  data: { turbo_confirm: "정말 이 시리즈를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다." } do %>
+      시리즈 삭제
+    <% end %>
+  </div>
+</div>

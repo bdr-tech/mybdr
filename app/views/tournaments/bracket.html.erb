@@ -1,0 +1,148 @@
+<% content_for :title, "#{@tournament.name} - 대진표" %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- 헤더 -->
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <%= link_to tournament_path(@tournament), class: "text-primary-600 hover:underline text-sm mb-2 inline-block" do %>
+        &larr; <%= @tournament.name %>
+      <% end %>
+      <h1 class="text-2xl font-bold text-gray-900">대진표</h1>
+    </div>
+    <div class="flex gap-2">
+      <%= link_to standings_tournament_path(@tournament), class: "btn btn-secondary" do %>
+        순위표
+      <% end %>
+      <%= link_to schedule_tournament_path(@tournament), class: "btn btn-secondary" do %>
+        일정
+      <% end %>
+    </div>
+  </div>
+
+  <% if @tournament.format_single_elimination? || @tournament.format_double_elimination? %>
+    <!-- 토너먼트 대진표 -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 overflow-x-auto">
+      <% rounds = @matches.group_by(&:round_number).sort %>
+      <% if rounds.any? %>
+        <div class="flex gap-8 min-w-max">
+          <% rounds.each do |round_number, round_matches| %>
+            <div class="flex flex-col justify-around" style="min-width: 280px;">
+              <h3 class="text-center text-gray-500 text-sm mb-4 font-semibold">
+                <%= round_display_name(round_number, rounds.length) %>
+              </h3>
+              <div class="space-y-4 flex-1 flex flex-col justify-around">
+                <% round_matches.sort_by(&:match_number).each do |match| %>
+                  <%= link_to box_score_tournament_tournament_match_path(@tournament, match),
+                      class: "block bg-gray-50 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all border border-gray-200 #{match.status_completed? ? '' : 'opacity-75'}" do %>
+                    <!-- 홈팀 -->
+                    <div class="flex items-center justify-between p-3 border-b border-gray-200 <%= match.winner_team == match.home_team ? 'bg-primary-50' : '' %>">
+                      <div class="flex items-center gap-2">
+                        <% if match.home_team&.seed_number %>
+                          <span class="text-xs text-gray-400 w-5"><%= match.home_team.seed_number %></span>
+                        <% else %>
+                          <span class="w-5"></span>
+                        <% end %>
+                        <div class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                          <% if match.home_team&.team&.logo&.attached? %>
+                            <%= image_tag match.home_team.team.logo, alt: "", class: "w-full h-full rounded-full object-cover" %>
+                          <% elsif match.home_team&.team&.logo_url.present? %>
+                            <img src="<%= match.home_team.team.logo_url %>" alt="" class="w-full h-full rounded-full object-cover">
+                          <% else %>
+                            <span class="text-xs text-gray-500"><%= match.home_team&.team&.name&.first(2) || '?' %></span>
+                          <% end %>
+                        </div>
+                        <span class="text-gray-900 text-sm font-medium truncate max-w-[150px]">
+                          <%= match.home_team&.team&.name || 'TBD' %>
+                        </span>
+                      </div>
+                      <span class="font-bold <%= match.winner_team == match.home_team ? 'text-primary-600' : 'text-gray-900' %>">
+                        <%= match.status_completed? ? match.home_score : '-' %>
+                      </span>
+                    </div>
+                    <!-- 원정팀 -->
+                    <div class="flex items-center justify-between p-3 <%= match.winner_team == match.away_team ? 'bg-primary-50' : '' %>">
+                      <div class="flex items-center gap-2">
+                        <% if match.away_team&.seed_number %>
+                          <span class="text-xs text-gray-400 w-5"><%= match.away_team.seed_number %></span>
+                        <% else %>
+                          <span class="w-5"></span>
+                        <% end %>
+                        <div class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                          <% if match.away_team&.team&.logo&.attached? %>
+                            <%= image_tag match.away_team.team.logo, alt: "", class: "w-full h-full rounded-full object-cover" %>
+                          <% elsif match.away_team&.team&.logo_url.present? %>
+                            <img src="<%= match.away_team.team.logo_url %>" alt="" class="w-full h-full rounded-full object-cover">
+                          <% else %>
+                            <span class="text-xs text-gray-500"><%= match.away_team&.team&.name&.first(2) || '?' %></span>
+                          <% end %>
+                        </div>
+                        <span class="text-gray-900 text-sm font-medium truncate max-w-[150px]">
+                          <%= match.away_team&.team&.name || 'TBD' %>
+                        </span>
+                      </div>
+                      <span class="font-bold <%= match.winner_team == match.away_team ? 'text-primary-600' : 'text-gray-900' %>">
+                        <%= match.status_completed? ? match.away_score : '-' %>
+                      </span>
+                    </div>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="text-center py-16 text-gray-500">
+          <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path>
+          </svg>
+          <p>아직 대진표가 생성되지 않았습니다</p>
+        </div>
+      <% end %>
+    </div>
+
+  <% elsif @tournament.format_round_robin? %>
+    <!-- 리그 대진표 -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-lg font-bold text-gray-900 mb-4">리그 일정</h2>
+
+      <% if @matches.any? %>
+        <% @matches.group_by(&:round_number).sort.each do |round_number, round_matches| %>
+          <div class="mb-6">
+            <h3 class="text-gray-500 font-semibold mb-3"><%= round_number %>라운드</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <% round_matches.each do |match| %>
+                <%= link_to box_score_tournament_tournament_match_path(@tournament, match),
+                    class: "block bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors border border-gray-200" do %>
+                  <div class="flex items-center justify-between">
+                    <span class="text-gray-900 text-sm"><%= match.home_team&.team&.name || 'TBD' %></span>
+                    <span class="text-gray-900 font-bold px-3">
+                      <% if match.status_completed? %>
+                        <%= match.home_score %> - <%= match.away_score %>
+                      <% else %>
+                        vs
+                      <% end %>
+                    </span>
+                    <span class="text-gray-900 text-sm"><%= match.away_team&.team&.name || 'TBD' %></span>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="text-center py-8 text-gray-500">
+          아직 경기 일정이 없습니다
+        </div>
+      <% end %>
+    </div>
+
+  <% else %>
+    <!-- 그룹 스테이지 -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-lg font-bold text-gray-900 mb-4">그룹 스테이지</h2>
+      <p class="text-gray-500 text-center py-8">
+        그룹 스테이지 대진표가 준비 중입니다
+      </p>
+    </div>
+  <% end %>
+</div>

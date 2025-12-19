@@ -1,0 +1,149 @@
+<% content_for :title, @court.name %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- 경기장 헤더 -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+    <!-- 이미지 -->
+    <div class="h-48 sm:h-64 bg-gray-200 relative">
+      <div class="w-full h-full flex items-center justify-center">
+        <svg class="w-24 h-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+        </svg>
+      </div>
+      <div class="absolute top-4 right-4">
+        <span class="px-3 py-1.5 text-sm font-medium rounded-full <%= @court.indoor? ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700' %>">
+          <%= @court.indoor? ? '실내' : '실외' %>
+        </span>
+      </div>
+    </div>
+
+    <!-- 정보 -->
+    <div class="p-6">
+      <div class="flex items-start justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900"><%= @court.name %></h1>
+          <p class="text-gray-600 mt-1 flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            <%= @court.full_address %>
+          </p>
+        </div>
+        <% if @court.rental_fee.present? && @court.rental_fee > 0 %>
+          <div class="text-right">
+            <p class="text-2xl font-bold text-primary-600"><%= number_to_currency(@court.rental_fee, unit: "₩", precision: 0) %></p>
+            <p class="text-sm text-gray-500">/ 시간</p>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- 시설 태그 -->
+      <div class="flex flex-wrap gap-2 mt-4">
+        <% if @court.parking_available? %>
+          <span class="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full">주차 가능</span>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- 메인 컨텐츠 -->
+    <div class="lg:col-span-2 space-y-6">
+      <% if @court.description.present? %>
+        <!-- 소개 -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h2 class="text-lg font-bold text-gray-900 mb-4">경기장 소개</h2>
+          <p class="text-gray-700 whitespace-pre-line"><%= @court.description %></p>
+        </div>
+      <% end %>
+
+      <!-- 예정된 경기 -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">예정된 경기</h2>
+        <% if @upcoming_games&.any? %>
+          <div class="space-y-3">
+            <% @upcoming_games.each do |game| %>
+              <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p class="font-medium text-gray-900"><%= game.title %></p>
+                  <p class="text-sm text-gray-500"><%= game.scheduled_at.strftime("%m월 %d일 %H:%M") %></p>
+                </div>
+                <%= link_to "참여", game, class: "btn btn-sm btn-primary" %>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-gray-500 text-center py-4">예정된 경기가 없습니다</p>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- 사이드바 -->
+    <div class="space-y-6">
+      <!-- 상세 정보 -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">상세 정보</h3>
+        <dl class="space-y-3">
+          <% if @court.contact_phone.present? %>
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+              </svg>
+              <div>
+                <dt class="text-sm text-gray-500">전화번호</dt>
+                <dd class="font-medium text-gray-900"><%= @court.contact_phone %></dd>
+              </div>
+            </div>
+          <% end %>
+
+          <% if @court.opening_hours.present? %>
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <div>
+                <dt class="text-sm text-gray-500">운영 시간</dt>
+                <dd class="font-medium text-gray-900"><%= @court.opening_hours %></dd>
+              </div>
+            </div>
+          <% end %>
+
+          <% if @court.facilities.present? %>
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              <div>
+                <dt class="text-sm text-gray-500">시설</dt>
+                <dd class="font-medium text-gray-900"><%= @court.facilities %></dd>
+              </div>
+            </div>
+          <% end %>
+        </dl>
+      </div>
+
+      <!-- 지도 (위치 정보가 있는 경우) -->
+      <% if @court.has_location? %>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h3 class="text-lg font-bold text-gray-900 mb-4">위치</h3>
+          <div class="aspect-video bg-gray-200 rounded-lg flex items-center justify-center">
+            <a href="https://map.kakao.com/link/map/<%= @court.name %>,<%= @court.latitude %>,<%= @court.longitude %>"
+               target="_blank" rel="noopener"
+               class="btn btn-secondary">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+              </svg>
+              카카오맵에서 보기
+            </a>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- 뒤로 가기 -->
+  <div class="mt-8">
+    <%= link_to "← 목록으로", courts_path, class: "text-gray-600 hover:text-gray-900" %>
+  </div>
+</div>

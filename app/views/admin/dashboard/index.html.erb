@@ -1,0 +1,273 @@
+<% content_for :title, '대시보드' %>
+
+<div class="px-4 sm:px-6 lg:px-8">
+  <div class="sm:flex sm:items-center">
+    <div class="sm:flex-auto">
+      <h1 class="text-2xl font-semibold text-gray-900">대시보드</h1>
+      <p class="mt-2 text-sm text-gray-700">BDR 관리자 대시보드에 오신 것을 환영합니다.</p>
+    </div>
+    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+      <a href="<%= admin_dashboard_refresh_stats_path %>" class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
+        <svg class="-ml-0.5 mr-1.5 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+        </svg>
+        새로고침
+      </a>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <% if @alerts.present? %>
+    <div class="mt-6 space-y-4">
+      <% @alerts.each do |alert| %>
+        <div class="rounded-md <%= alert[:type] == 'error' ? 'bg-red-50' : alert[:type] == 'warning' ? 'bg-yellow-50' : 'bg-blue-50' %> p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <% if alert[:type] == 'error' %>
+                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+                </svg>
+              <% elsif alert[:type] == 'warning' %>
+                <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                </svg>
+              <% else %>
+                <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
+                </svg>
+              <% end %>
+            </div>
+            <div class="ml-3 flex-1 md:flex md:justify-between">
+              <p class="text-sm <%= alert[:type] == 'error' ? 'text-red-700' : alert[:type] == 'warning' ? 'text-yellow-700' : 'text-blue-700' %>">
+                <strong><%= alert[:title] %></strong>: <%= alert[:message] %>
+              </p>
+              <a href="<%= alert[:action_url] %>" class="mt-3 md:mt-0 md:ml-6 text-sm font-medium <%= alert[:type] == 'error' ? 'text-red-700 hover:text-red-600' : alert[:type] == 'warning' ? 'text-yellow-700 hover:text-yellow-600' : 'text-blue-700 hover:text-blue-600' %>">
+                확인하기 &rarr;
+              </a>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <!-- Stats Grid -->
+  <div class="mt-8">
+    <h3 class="text-lg font-medium leading-6 text-gray-900">실시간 통계</h3>
+    <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <!-- Users -->
+      <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6">
+        <dt>
+          <div class="absolute rounded-md bg-indigo-500 p-3">
+            <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+            </svg>
+          </div>
+          <p class="ml-16 truncate text-sm font-medium text-gray-500">전체 사용자</p>
+        </dt>
+        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
+          <p class="text-2xl font-semibold text-gray-900"><%= number_with_delimiter(@stats[:users][:total]) %></p>
+          <p class="ml-2 flex items-baseline text-sm font-semibold text-green-600">
+            +<%= @stats[:users][:new_today] %> 오늘
+          </p>
+        </dd>
+        <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
+          <a href="<%= admin_users_path %>" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">자세히 보기</a>
+        </div>
+      </div>
+
+      <!-- Revenue -->
+      <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6">
+        <dt>
+          <div class="absolute rounded-md bg-green-500 p-3">
+            <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p class="ml-16 truncate text-sm font-medium text-gray-500">이번 달 매출</p>
+        </dt>
+        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
+          <p class="text-2xl font-semibold text-gray-900"><%= number_to_currency(@stats[:payments][:this_month_revenue], unit: '₩', precision: 0) %></p>
+          <p class="ml-2 flex items-baseline text-sm font-semibold text-green-600">
+            +<%= number_to_currency(@stats[:payments][:today_revenue], unit: '₩', precision: 0) %> 오늘
+          </p>
+        </dd>
+        <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
+          <a href="<%= admin_payments_path %>" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">자세히 보기</a>
+        </div>
+      </div>
+
+      <!-- Tournaments -->
+      <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6">
+        <dt>
+          <div class="absolute rounded-md bg-yellow-500 p-3">
+            <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0" />
+            </svg>
+          </div>
+          <p class="ml-16 truncate text-sm font-medium text-gray-500">진행중 대회</p>
+        </dt>
+        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
+          <p class="text-2xl font-semibold text-gray-900"><%= @stats[:tournaments][:active] %></p>
+          <p class="ml-2 flex items-baseline text-sm text-gray-500">
+            / <%= @stats[:tournaments][:total] %> 전체
+          </p>
+        </dd>
+        <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
+          <a href="<%= admin_tournaments_path %>" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">자세히 보기</a>
+        </div>
+      </div>
+
+      <!-- Pending -->
+      <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6">
+        <dt>
+          <div class="absolute rounded-md bg-red-500 p-3">
+            <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p class="ml-16 truncate text-sm font-medium text-gray-500">대기중 항목</p>
+        </dt>
+        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
+          <p class="text-2xl font-semibold text-gray-900"><%= @stats[:payments][:pending_count] + @stats[:tournaments][:registrations_pending] %></p>
+          <p class="ml-2 flex items-baseline text-sm text-gray-500">
+            처리 대기
+          </p>
+        </dd>
+        <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
+          <a href="<%= admin_suggestions_path(status: 'pending') %>" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">처리하기</a>
+        </div>
+      </div>
+    </dl>
+  </div>
+
+  <!-- Recent Suggestions & Activities -->
+  <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <!-- Recent Suggestions -->
+    <div class="rounded-lg bg-white shadow">
+      <div class="border-b border-gray-200 px-4 py-5 sm:px-6">
+        <h3 class="text-lg font-medium leading-6 text-gray-900">최근 건의사항</h3>
+      </div>
+      <ul class="divide-y divide-gray-200">
+        <% @recent_suggestions.each do |suggestion| %>
+          <li class="px-4 py-4 sm:px-6">
+            <div class="flex items-center justify-between">
+              <div class="truncate">
+                <a href="<%= admin_suggestion_path(suggestion[:id]) %>" class="text-sm font-medium text-indigo-600 hover:text-indigo-500"><%= suggestion[:title] %></a>
+                <p class="mt-1 text-sm text-gray-500"><%= suggestion[:user_name] %> · <%= suggestion[:category] %></p>
+              </div>
+              <div class="ml-2 flex flex-shrink-0">
+                <span class="<%= suggestion[:priority] == '긴급' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800' %> inline-flex rounded-full px-2 text-xs font-semibold leading-5"><%= suggestion[:priority] %></span>
+              </div>
+            </div>
+          </li>
+        <% end %>
+        <% if @recent_suggestions.empty? %>
+          <li class="px-4 py-4 sm:px-6 text-center text-gray-500">
+            대기중인 건의사항이 없습니다.
+          </li>
+        <% end %>
+      </ul>
+      <div class="border-t border-gray-200 px-4 py-4 sm:px-6">
+        <a href="<%= admin_suggestions_path %>" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">모든 건의사항 보기 &rarr;</a>
+      </div>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="rounded-lg bg-white shadow">
+      <div class="border-b border-gray-200 px-4 py-5 sm:px-6">
+        <h3 class="text-lg font-medium leading-6 text-gray-900">최근 관리자 활동</h3>
+      </div>
+      <ul class="divide-y divide-gray-200 max-h-80 overflow-y-auto">
+        <% @recent_activities.each do |activity| %>
+          <li class="px-4 py-3 sm:px-6">
+            <div class="flex items-center space-x-3">
+              <span class="<%= activity[:severity] == 'error' ? 'bg-red-100 text-red-800' : activity[:severity] == 'warning' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800' %> inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium">
+                <%= activity[:admin_name].first.upcase %>
+              </span>
+              <div class="flex-1 truncate">
+                <p class="text-sm text-gray-900"><%= activity[:admin_name] %>님이 <%= activity[:resource] %>#<%= activity[:resource_id] %>을 <%= activity[:action] %></p>
+                <p class="text-xs text-gray-500"><%= time_ago_in_words(activity[:created_at]) %> 전</p>
+              </div>
+            </div>
+          </li>
+        <% end %>
+        <% if @recent_activities.empty? %>
+          <li class="px-4 py-4 sm:px-6 text-center text-gray-500">
+            최근 활동이 없습니다.
+          </li>
+        <% end %>
+      </ul>
+      <div class="border-t border-gray-200 px-4 py-4 sm:px-6">
+        <a href="<%= admin_admin_logs_path %>" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">모든 활동 보기 &rarr;</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="mt-8">
+    <h3 class="text-lg font-medium leading-6 text-gray-900">빠른 액션</h3>
+    <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      <a href="<%= admin_users_path %>" class="relative flex items-center space-x-3 rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm hover:border-gray-400">
+        <div class="flex-shrink-0">
+          <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+        </div>
+        <div class="min-w-0 flex-1">
+          <span class="absolute inset-0" aria-hidden="true"></span>
+          <p class="text-sm font-medium text-gray-900">사용자 검색</p>
+        </div>
+      </a>
+
+      <a href="<%= admin_payments_path %>" class="relative flex items-center space-x-3 rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm hover:border-gray-400">
+        <div class="flex-shrink-0">
+          <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+          </svg>
+        </div>
+        <div class="min-w-0 flex-1">
+          <span class="absolute inset-0" aria-hidden="true"></span>
+          <p class="text-sm font-medium text-gray-900">결제 관리</p>
+        </div>
+      </a>
+
+      <a href="<%= admin_suggestions_path(status: 'pending') %>" class="relative flex items-center space-x-3 rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm hover:border-gray-400">
+        <div class="flex-shrink-0">
+          <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+          </svg>
+        </div>
+        <div class="min-w-0 flex-1">
+          <span class="absolute inset-0" aria-hidden="true"></span>
+          <p class="text-sm font-medium text-gray-900">건의사항 검토</p>
+        </div>
+      </a>
+
+      <a href="<%= admin_analytics_path %>" class="relative flex items-center space-x-3 rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm hover:border-gray-400">
+        <div class="flex-shrink-0">
+          <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+          </svg>
+        </div>
+        <div class="min-w-0 flex-1">
+          <span class="absolute inset-0" aria-hidden="true"></span>
+          <p class="text-sm font-medium text-gray-900">통계 분석</p>
+        </div>
+      </a>
+
+      <a href="<%= admin_system_settings_path %>" class="relative flex items-center space-x-3 rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm hover:border-gray-400">
+        <div class="flex-shrink-0">
+          <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </div>
+        <div class="min-w-0 flex-1">
+          <span class="absolute inset-0" aria-hidden="true"></span>
+          <p class="text-sm font-medium text-gray-900">시스템 설정</p>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>

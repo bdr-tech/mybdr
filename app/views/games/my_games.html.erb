@@ -1,0 +1,159 @@
+<% content_for :title, "내 경기" %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="flex items-center justify-between mb-8">
+    <h1 class="text-2xl font-bold text-gray-900">내 경기</h1>
+    <%= link_to new_game_path, class: "btn btn-primary" do %>
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      경기 만들기
+    <% end %>
+  </div>
+
+  <!-- 탭 -->
+  <div class="flex gap-4 mb-6 border-b border-gray-200">
+    <button
+      type="button"
+      class="tab-btn active px-4 py-3 font-medium text-primary-600 border-b-2 border-primary-600"
+      data-tab="organized"
+    >
+      개최한 경기 (<%= @organized.total_count %>)
+    </button>
+    <button
+      type="button"
+      class="tab-btn px-4 py-3 font-medium text-gray-500 hover:text-gray-700"
+      data-tab="applied"
+    >
+      신청한 경기 (<%= @applied.total_count %>)
+    </button>
+  </div>
+
+  <!-- 개최한 경기 -->
+  <div id="tab-organized" class="tab-content">
+    <% if @organized.any? %>
+      <div class="space-y-4">
+        <% @organized.each do |game| %>
+          <div class="card p-4 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="flex flex-col items-center justify-center w-16 h-16 bg-primary-50 rounded-xl">
+                <span class="text-lg font-bold text-primary-600"><%= game.scheduled_at.day %></span>
+                <span class="text-xs text-primary-600"><%= I18n.l(game.scheduled_at, format: "%b") %></span>
+              </div>
+              <div>
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="badge badge-<%= game.status %>"><%= game.status_name %></span>
+                  <span class="badge badge-<%= game.game_type %>"><%= game.game_type_name %></span>
+                </div>
+                <h3 class="font-medium text-gray-900">
+                  <%= game.title.presence || "#{game.game_type_name} - #{game.location_display}" %>
+                </h3>
+                <p class="text-sm text-gray-500">
+                  <%= l(game.scheduled_at, format: :short) %> · <%= game.current_participants %>/<%= game.max_participants %>명
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <%= link_to "관리", game_path(game), class: "btn btn-sm btn-secondary" %>
+              <%= link_to "수정", edit_game_path(game), class: "btn btn-sm btn-outline" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="mt-6">
+        <%== pagy_nav(@pagy_organized) if @pagy_organized %>
+      </div>
+    <% else %>
+      <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p class="mt-4 text-gray-600">아직 개최한 경기가 없습니다</p>
+        <%= link_to "첫 경기 만들기", new_game_path, class: "btn btn-primary mt-4" %>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- 신청한 경기 -->
+  <div id="tab-applied" class="tab-content hidden">
+    <% if @applied.any? %>
+      <div class="space-y-4">
+        <% @applied.each do |game| %>
+          <% application = game.game_applications.find_by(user: current_user) %>
+          <div class="card p-4 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="flex flex-col items-center justify-center w-16 h-16 bg-gray-50 rounded-xl">
+                <span class="text-lg font-bold text-gray-700"><%= game.scheduled_at.day %></span>
+                <span class="text-xs text-gray-500"><%= I18n.l(game.scheduled_at, format: "%b") %></span>
+              </div>
+              <div>
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="badge badge-<%= application.status %>"><%= application.status_name %></span>
+                  <% if game.has_fee? && application.status_approved? %>
+                    <span class="badge badge-<%= application.payment_status %>"><%= application.payment_status_name %></span>
+                  <% end %>
+                </div>
+                <h3 class="font-medium text-gray-900">
+                  <%= game.title.presence || "#{game.game_type_name} - #{game.location_display}" %>
+                </h3>
+                <p class="text-sm text-gray-500">
+                  <%= l(game.scheduled_at, format: :short) %> · 호스트: <%= game.organizer.display_name %>
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <%= link_to "상세", game_path(game), class: "btn btn-sm btn-secondary" %>
+              <% if application.status_pending? || application.status_approved? %>
+                <%= button_to "취소",
+                    cancel_game_game_application_path(game, application),
+                    method: :post,
+                    data: { turbo_confirm: "정말 취소하시겠습니까?" },
+                    class: "btn btn-sm btn-outline text-red-600" %>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="mt-6">
+        <%== pagy_nav(@pagy_applied) if @pagy_applied %>
+      </div>
+    <% else %>
+      <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p class="mt-4 text-gray-600">아직 신청한 경기가 없습니다</p>
+        <%= link_to "경기 찾아보기", games_path, class: "btn btn-primary mt-4" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const targetTab = this.dataset.tab;
+
+        // 버튼 스타일 업데이트
+        tabBtns.forEach(b => {
+          b.classList.remove('active', 'text-primary-600', 'border-b-2', 'border-primary-600');
+          b.classList.add('text-gray-500');
+        });
+        this.classList.add('active', 'text-primary-600', 'border-b-2', 'border-primary-600');
+        this.classList.remove('text-gray-500');
+
+        // 컨텐츠 표시/숨김
+        tabContents.forEach(content => {
+          content.classList.add('hidden');
+        });
+        document.getElementById('tab-' + targetTab).classList.remove('hidden');
+      });
+    });
+  });
+</script>

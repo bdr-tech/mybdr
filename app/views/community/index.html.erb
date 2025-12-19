@@ -1,0 +1,122 @@
+<% content_for :title, "커뮤니티" %>
+
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- 헤더 -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">커뮤니티</h1>
+      <p class="text-gray-600 mt-1">농구인들과 소통하세요</p>
+    </div>
+    <% if logged_in? %>
+      <%= link_to new_community_post_path(category: params[:category]), class: "btn btn-primary" do %>
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        글쓰기
+      <% end %>
+    <% end %>
+  </div>
+
+  <!-- 카테고리 탭 -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
+    <div class="flex overflow-x-auto scrollbar-hide">
+      <%= link_to community_path, class: "px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 #{params[:category].blank? ? 'text-primary-600 border-primary-600' : 'text-gray-500 border-transparent hover:text-gray-700'}" do %>
+        전체
+      <% end %>
+      <% CommunityPost::CATEGORIES.each do |cat| %>
+        <%= link_to community_path(category: cat), class: "px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 #{params[:category] == cat ? 'text-primary-600 border-primary-600' : 'text-gray-500 border-transparent hover:text-gray-700'}" do %>
+          <%= CommunityPost.category_label(cat) %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- 검색 -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+    <%= form_with url: community_path, method: :get, local: true, class: "flex gap-2" do |f| %>
+      <%= f.hidden_field :category, value: params[:category] %>
+      <div class="flex-1">
+        <%= f.text_field :q, value: params[:q], class: "form-input w-full", placeholder: "검색어를 입력하세요..." %>
+      </div>
+      <%= f.submit "검색", class: "btn btn-secondary" %>
+    <% end %>
+  </div>
+
+  <!-- 게시글 목록 -->
+  <% if @posts.any? %>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div class="divide-y divide-gray-100">
+        <% @posts.each do |post| %>
+          <div class="p-4 hover:bg-gray-50 transition-colors">
+            <div class="flex items-start gap-4">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
+                    <%= post.category_label %>
+                  </span>
+                </div>
+                <%= link_to community_post_path(post), class: "block group" do %>
+                  <h3 class="font-medium text-gray-900 group-hover:text-primary-600 truncate">
+                    <%= post.title %>
+                  </h3>
+                <% end %>
+                <div class="flex items-center gap-3 mt-2 text-sm text-gray-500">
+                  <span class="flex items-center gap-1">
+                    <div class="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center text-xs font-medium text-gray-600">
+                      <%= post.user.display_name[0] %>
+                    </div>
+                    <%= post.user.display_name %>
+                  </span>
+                  <span><%= time_ago_in_words(post.created_at) %> 전</span>
+                  <span class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    <%= post.view_count %>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- 페이지네이션 -->
+    <% if @pagy && @pagy.pages > 1 %>
+      <div class="mt-6 flex items-center justify-center gap-2">
+        <% if @pagy.prev %>
+          <%= link_to community_path(page: @pagy.prev, category: params[:category], q: params[:q]), class: "px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" do %>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          <% end %>
+        <% end %>
+
+        <% @pagy.series.each do |item| %>
+          <% if item.is_a?(Integer) %>
+            <%= link_to item, community_path(page: item, category: params[:category], q: params[:q]), class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors #{item == @pagy.page ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-gray-100'}" %>
+          <% elsif item == :gap %>
+            <span class="px-2 text-gray-400">...</span>
+          <% end %>
+        <% end %>
+
+        <% if @pagy.next %>
+          <%= link_to community_path(page: @pagy.next, category: params[:category], q: params[:q]), class: "px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" do %>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+      <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+      </svg>
+      <h3 class="mt-4 text-lg font-medium text-gray-900">게시글이 없습니다</h3>
+      <p class="mt-2 text-gray-600">첫 번째 게시글을 작성해보세요!</p>
+      <% if logged_in? %>
+        <%= link_to "글쓰기", new_community_post_path(category: params[:category]), class: "btn btn-primary mt-4" %>
+      <% end %>
+    </div>
+  <% end %>
+</div>

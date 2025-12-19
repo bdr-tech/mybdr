@@ -1,0 +1,204 @@
+<% content_for :title, "대회 수정 - #{@tournament.name}" %>
+
+<div class="px-4 sm:px-6 lg:px-8">
+  <!-- Header -->
+  <div class="sm:flex sm:items-center">
+    <div class="sm:flex-auto">
+      <nav class="flex mb-2" aria-label="Breadcrumb">
+        <ol class="flex items-center space-x-2">
+          <li>
+            <%= link_to "대회 관리", admin_tournaments_path, class: "text-gray-500 hover:text-gray-700" %>
+          </li>
+          <li class="flex items-center">
+            <svg class="flex-shrink-0 h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+            <%= link_to @tournament.name, admin_tournament_path(@tournament), class: "ml-2 text-gray-500 hover:text-gray-700" %>
+          </li>
+          <li class="flex items-center">
+            <svg class="flex-shrink-0 h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+            <span class="ml-2 text-gray-700 font-medium">수정</span>
+          </li>
+        </ol>
+      </nav>
+      <h1 class="text-2xl font-semibold text-gray-900">대회 수정</h1>
+      <p class="mt-2 text-sm text-gray-700"><%= @tournament.name %>의 정보를 수정합니다.</p>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div class="mt-6 bg-white shadow rounded-lg overflow-hidden">
+    <%= form_with model: [:admin, @tournament], local: true, class: "space-y-6 p-6" do |f| %>
+      <% if @tournament.errors.any? %>
+        <div class="rounded-md bg-red-50 p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800">오류가 발생했습니다</h3>
+              <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
+                <% @tournament.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Basic Info -->
+      <div class="border-b border-gray-200 pb-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">기본 정보</h3>
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div class="sm:col-span-2">
+            <%= f.label :name, "대회명", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.text_field :name, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm", required: true %>
+          </div>
+
+          <div class="sm:col-span-2">
+            <%= f.label :description, "설명", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.text_area :description, rows: 4, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+
+          <div>
+            <%= f.label :format, "대회 형식", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.select :format, Tournament.formats.keys.map { |k| [Tournament.new(format: k).format_name, k] }, {}, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+
+          <div>
+            <%= f.label :status, "상태", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.select :status, Tournament.statuses.keys.map { |k| [Tournament.new(status: k).status_name, k] }, {}, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Schedule -->
+      <div class="border-b border-gray-200 pb-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">일정</h3>
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div>
+            <%= f.label :registration_start_at, "등록 시작일", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.datetime_local_field :registration_start_at, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+
+          <div>
+            <%= f.label :registration_end_at, "등록 마감일", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.datetime_local_field :registration_end_at, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+
+          <div>
+            <%= f.label :start_date, "대회 시작일", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.date_field :start_date, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+
+          <div>
+            <%= f.label :end_date, "대회 종료일", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.date_field :end_date, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Location -->
+      <div class="border-b border-gray-200 pb-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">장소</h3>
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div>
+            <%= f.label :venue_name, "장소명", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.text_field :venue_name, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+
+          <div>
+            <%= f.label :city, "도시", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.text_field :city, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+
+          <div class="sm:col-span-2">
+            <%= f.label :venue_address, "주소", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.text_field :venue_address, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Team Settings -->
+      <div class="border-b border-gray-200 pb-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">팀 설정</h3>
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+          <div>
+            <%= f.label :max_teams, "최대 팀 수", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.number_field :max_teams, min: 2, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+
+          <div>
+            <%= f.label :min_teams, "최소 팀 수", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.number_field :min_teams, min: 2, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+
+          <div>
+            <%= f.label :team_size, "팀당 인원", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.number_field :team_size, min: 1, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+
+          <div>
+            <%= f.label :entry_fee, "참가비 (원)", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.number_field :entry_fee, min: 0, step: 1000, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+
+          <div class="sm:col-span-2">
+            <div class="flex items-center mt-6">
+              <%= f.check_box :auto_approve_teams, class: "h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" %>
+              <%= f.label :auto_approve_teams, "팀 자동 승인", class: "ml-2 block text-sm text-gray-900" %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bank Info -->
+      <div class="border-b border-gray-200 pb-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">입금 정보</h3>
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+          <div>
+            <%= f.label :bank_name, "은행명", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.text_field :bank_name, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+
+          <div>
+            <%= f.label :bank_account, "계좌번호", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.text_field :bank_account, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+
+          <div>
+            <%= f.label :bank_holder, "예금주", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.text_field :bank_holder, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rules -->
+      <div>
+        <h3 class="text-lg font-medium text-gray-900 mb-4">규칙 및 상금</h3>
+        <div class="grid grid-cols-1 gap-6">
+          <div>
+            <%= f.label :rules, "대회 규칙", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.text_area :rules, rows: 6, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+
+          <div>
+            <%= f.label :prize_info, "상금 정보", class: "block text-sm font-medium text-gray-700" %>
+            <%= f.text_area :prize_info, rows: 4, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="flex justify-end space-x-3 pt-6">
+        <%= link_to "취소", admin_tournament_path(@tournament), class: "inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+        <%= f.submit "저장", class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer" %>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,405 @@
+<% content_for :title, "#{@match.home_team&.team&.name || 'TBD'} vs #{@match.away_team&.team&.name || 'TBD'} - 박스스코어" %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- 경기 헤더 -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+    <!-- 대회 정보 & 상태 -->
+    <div class="text-center mb-6">
+      <%= link_to tournament_path(@tournament), class: "text-primary-600 hover:underline text-sm" do %>
+        <%= @tournament.name %>
+      <% end %>
+      <span class="text-gray-400 mx-2">-</span>
+      <span class="text-gray-500 text-sm"><%= @match.round_display %></span>
+      <div class="flex items-center justify-center gap-4 mt-2">
+        <span class="px-3 py-1 rounded-full text-sm font-medium
+          <%= @match.status_completed? ? 'bg-green-100 text-green-700' :
+              @match.status_live? ? 'bg-red-100 text-red-600' :
+              'bg-gray-100 text-gray-600' %>">
+          <%= @match.status_name %>
+          <% if @match.status_live? %>
+            <span class="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse ml-1"></span>
+          <% end %>
+        </span>
+      </div>
+    </div>
+
+    <!-- 스코어보드 (NBA 스타일) -->
+    <div class="flex items-center justify-center gap-6 md:gap-12 lg:gap-20">
+      <!-- 홈팀 -->
+      <div class="text-center flex-1 max-w-xs">
+        <% if @match.home_team.present? %>
+          <div class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3 border-4 <%= @match.winner_team == @match.home_team ? 'border-primary-500' : 'border-gray-200' %>">
+            <% if @match.home_team.team.logo_url.present? %>
+              <img src="<%= @match.home_team.team.logo_url %>" alt="" class="w-14 h-14 md:w-18 md:h-18 rounded-full object-cover">
+            <% else %>
+              <span class="text-2xl font-bold text-gray-600"><%= @match.home_team.team.name.first(2) %></span>
+            <% end %>
+          </div>
+          <h3 class="text-gray-900 font-bold text-lg"><%= @match.home_team.team.name %></h3>
+          <p class="text-gray-500 text-sm"><%= @match.home_team.record_display %></p>
+          <% if @match.winner_team == @match.home_team %>
+            <span class="inline-block mt-1 px-2 py-0.5 text-xs bg-primary-100 text-primary-700 rounded font-medium">WIN</span>
+          <% end %>
+        <% else %>
+          <div class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+            <span class="text-gray-400 text-lg">TBD</span>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- 점수 -->
+      <div class="text-center px-4">
+        <div class="text-5xl md:text-6xl font-bold">
+          <span class="<%= @match.winner_team == @match.home_team ? 'text-gray-900' : 'text-gray-400' %>"><%= @match.home_score %></span>
+          <span class="text-gray-300 mx-3">-</span>
+          <span class="<%= @match.winner_team == @match.away_team ? 'text-gray-900' : 'text-gray-400' %>"><%= @match.away_score %></span>
+        </div>
+        <% if @match.status_completed? %>
+          <div class="text-sm text-gray-500 mt-2 font-medium">
+            FINAL<%= @match.respond_to?(:has_overtime?) && @match.has_overtime? ? "/OT#{@match.overtime_count}" : "" %>
+          </div>
+        <% elsif @match.status_live? %>
+          <div class="text-sm text-red-500 mt-2 font-medium animate-pulse">LIVE</div>
+        <% end %>
+        <% if @match.scheduled_at.present? %>
+          <div class="text-xs text-gray-400 mt-1"><%= @match.scheduled_at.strftime('%Y.%m.%d %H:%M') %></div>
+        <% end %>
+      </div>
+
+      <!-- 어웨이팀 -->
+      <div class="text-center flex-1 max-w-xs">
+        <% if @match.away_team.present? %>
+          <div class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3 border-4 <%= @match.winner_team == @match.away_team ? 'border-primary-500' : 'border-gray-200' %>">
+            <% if @match.away_team.team.logo_url.present? %>
+              <img src="<%= @match.away_team.team.logo_url %>" alt="" class="w-14 h-14 md:w-18 md:h-18 rounded-full object-cover">
+            <% else %>
+              <span class="text-2xl font-bold text-gray-600"><%= @match.away_team.team.name.first(2) %></span>
+            <% end %>
+          </div>
+          <h3 class="text-gray-900 font-bold text-lg"><%= @match.away_team.team.name %></h3>
+          <p class="text-gray-500 text-sm"><%= @match.away_team.record_display %></p>
+          <% if @match.winner_team == @match.away_team %>
+            <span class="inline-block mt-1 px-2 py-0.5 text-xs bg-primary-100 text-primary-700 rounded font-medium">WIN</span>
+          <% end %>
+        <% else %>
+          <div class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+            <span class="text-gray-400 text-lg">TBD</span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- 쿼터별 점수 (Line Score) -->
+    <% if @match.status_completed? || @match.status_live? %>
+      <div class="mt-8 overflow-x-auto">
+        <table class="w-full max-w-lg mx-auto text-center text-sm">
+          <thead>
+            <tr class="text-gray-500 border-b border-gray-200">
+              <th class="py-2 px-3 text-left font-medium">TEAM</th>
+              <th class="py-2 px-3 font-medium">1Q</th>
+              <th class="py-2 px-3 font-medium">2Q</th>
+              <th class="py-2 px-3 font-medium">3Q</th>
+              <th class="py-2 px-3 font-medium">4Q</th>
+              <% if @match.respond_to?(:overtime_count) %>
+                <% @match.overtime_count.times do |i| %>
+                  <th class="py-2 px-3 font-medium">OT<%= i + 1 %></th>
+                <% end %>
+              <% end %>
+              <th class="py-2 px-3 font-bold text-gray-900">TOTAL</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% home_qs = @match.home_quarter_scores || {} %>
+            <% away_qs = @match.away_quarter_scores || {} %>
+            <tr class="border-b border-gray-100 <%= @match.winner_team == @match.home_team ? 'bg-primary-50' : '' %>">
+              <td class="py-3 px-3 text-left">
+                <div class="flex items-center gap-2">
+                  <% if @match.home_team&.team&.logo_url.present? %>
+                    <img src="<%= @match.home_team.team.logo_url %>" alt="" class="w-5 h-5 rounded-full object-cover">
+                  <% end %>
+                  <span class="font-medium text-gray-900"><%= @match.home_team&.team&.name&.truncate(12) || "HOME" %></span>
+                </div>
+              </td>
+              <td class="py-3 px-3 text-gray-600"><%= home_qs["1"] || home_qs["q1"] || "-" %></td>
+              <td class="py-3 px-3 text-gray-600"><%= home_qs["2"] || home_qs["q2"] || "-" %></td>
+              <td class="py-3 px-3 text-gray-600"><%= home_qs["3"] || home_qs["q3"] || "-" %></td>
+              <td class="py-3 px-3 text-gray-600"><%= home_qs["4"] || home_qs["q4"] || "-" %></td>
+              <% (home_qs["ot"] || []).each do |ot_score| %>
+                <td class="py-3 px-3 text-gray-600"><%= ot_score %></td>
+              <% end %>
+              <td class="py-3 px-3 font-bold text-gray-900"><%= @match.home_score %></td>
+            </tr>
+            <tr class="<%= @match.winner_team == @match.away_team ? 'bg-primary-50' : '' %>">
+              <td class="py-3 px-3 text-left">
+                <div class="flex items-center gap-2">
+                  <% if @match.away_team&.team&.logo_url.present? %>
+                    <img src="<%= @match.away_team.team.logo_url %>" alt="" class="w-5 h-5 rounded-full object-cover">
+                  <% end %>
+                  <span class="font-medium text-gray-900"><%= @match.away_team&.team&.name&.truncate(12) || "AWAY" %></span>
+                </div>
+              </td>
+              <td class="py-3 px-3 text-gray-600"><%= away_qs["1"] || away_qs["q1"] || "-" %></td>
+              <td class="py-3 px-3 text-gray-600"><%= away_qs["2"] || away_qs["q2"] || "-" %></td>
+              <td class="py-3 px-3 text-gray-600"><%= away_qs["3"] || away_qs["q3"] || "-" %></td>
+              <td class="py-3 px-3 text-gray-600"><%= away_qs["4"] || away_qs["q4"] || "-" %></td>
+              <% (away_qs["ot"] || []).each do |ot_score| %>
+                <td class="py-3 px-3 text-gray-600"><%= ot_score %></td>
+              <% end %>
+              <td class="py-3 px-3 font-bold text-gray-900"><%= @match.away_score %></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+
+    <!-- MVP -->
+    <% if @match.mvp_player.present? %>
+      <div class="mt-6 text-center">
+        <span class="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-full">
+          <svg class="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+          </svg>
+          <span class="text-amber-700 font-bold text-sm">MVP</span>
+          <span class="text-gray-900 font-medium"><%= @match.mvp_player.display_name %></span>
+        </span>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- NBA 스타일 박스스코어 테이블 -->
+  <% if @match.home_team.present? %>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+      <!-- 팀 헤더 -->
+      <div class="p-4 bg-gray-50 border-b border-gray-200 flex items-center gap-3">
+        <% if @match.home_team.team.logo_url.present? %>
+          <img src="<%= @match.home_team.team.logo_url %>" alt="" class="w-8 h-8 rounded-full object-cover">
+        <% end %>
+        <h2 class="text-lg font-bold text-gray-900"><%= @match.home_team.team.name %></h2>
+        <span class="text-gray-500 text-sm">(<%= @match.home_score %>점)</span>
+      </div>
+
+      <% if @home_stats.present? && @home_stats.any? %>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b border-gray-200">
+              <tr class="text-gray-500 text-xs uppercase tracking-wider">
+                <th class="py-3 px-4 text-left sticky left-0 bg-gray-50 z-10 min-w-[160px]">PLAYER</th>
+                <th class="py-3 px-2 text-center w-12">MIN</th>
+                <th class="py-3 px-2 text-center w-12 font-bold text-gray-700">PTS</th>
+                <th class="py-3 px-2 text-center w-12">REB</th>
+                <th class="py-3 px-2 text-center w-12">AST</th>
+                <th class="py-3 px-2 text-center w-12">STL</th>
+                <th class="py-3 px-2 text-center w-12">BLK</th>
+                <th class="py-3 px-2 text-center w-12">TO</th>
+                <th class="py-3 px-2 text-center w-12">PF</th>
+                <th class="py-3 px-2 text-center w-14">+/-</th>
+                <th class="py-3 px-2 text-center w-20">FG</th>
+                <th class="py-3 px-2 text-center w-20">3PT</th>
+                <th class="py-3 px-2 text-center w-20">FT</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <% @home_stats.each do |stat| %>
+                <tr class="hover:bg-gray-50 <%= stat.is_starter ? 'bg-primary-50/30' : '' %>">
+                  <td class="py-3 px-4 sticky left-0 bg-white z-10 <%= stat.is_starter ? 'bg-primary-50/30' : '' %>">
+                    <div class="flex items-center gap-2">
+                      <% if stat.is_starter %>
+                        <span class="w-4 h-4 rounded-full bg-primary-500 text-white text-xs flex items-center justify-center font-bold">S</span>
+                      <% end %>
+                      <div>
+                        <div class="flex items-center gap-1">
+                          <span class="text-gray-900 font-medium">
+                            <% if stat.tournament_team_player&.jersey_number.present? %>
+                              <span class="text-gray-400">#<%= stat.tournament_team_player.jersey_number %></span>
+                            <% end %>
+                            <%= stat.respond_to?(:user) ? stat.user.display_name : stat.tournament_team_player&.user&.display_name %>
+                          </span>
+                          <% if stat.respond_to?(:double_double?) && stat.double_double? %>
+                            <span class="px-1 text-xs bg-amber-100 text-amber-700 rounded font-medium">DD</span>
+                          <% end %>
+                          <% if stat.respond_to?(:triple_double?) && stat.triple_double? %>
+                            <span class="px-1 text-xs bg-orange-100 text-orange-700 rounded font-medium">TD</span>
+                          <% end %>
+                        </div>
+                        <span class="text-xs text-gray-400"><%= stat.tournament_team_player&.position %></span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-3 px-2 text-center text-gray-600"><%= stat.respond_to?(:minutes_display) ? stat.minutes_display : stat.minutes_played %></td>
+                  <td class="py-3 px-2 text-center font-bold text-gray-900"><%= stat.points %></td>
+                  <td class="py-3 px-2 text-center text-gray-600"><%= stat.total_rebounds %></td>
+                  <td class="py-3 px-2 text-center text-gray-600"><%= stat.assists %></td>
+                  <td class="py-3 px-2 text-center text-gray-600"><%= stat.steals %></td>
+                  <td class="py-3 px-2 text-center text-gray-600"><%= stat.blocks %></td>
+                  <td class="py-3 px-2 text-center text-gray-600"><%= stat.turnovers %></td>
+                  <td class="py-3 px-2 text-center text-gray-600"><%= stat.personal_fouls %></td>
+                  <td class="py-3 px-2 text-center font-medium <%= stat.plus_minus.to_i >= 0 ? 'text-green-600' : 'text-red-500' %>">
+                    <%= stat.plus_minus.to_i >= 0 ? '+' : '' %><%= stat.plus_minus %>
+                  </td>
+                  <td class="py-3 px-2 text-center">
+                    <div class="text-gray-900"><%= stat.field_goals_made %>-<%= stat.field_goals_attempted %></div>
+                    <div class="text-xs text-gray-400"><%= stat.field_goal_percentage %>%</div>
+                  </td>
+                  <td class="py-3 px-2 text-center">
+                    <div class="text-gray-900"><%= stat.three_pointers_made %>-<%= stat.three_pointers_attempted %></div>
+                    <div class="text-xs text-gray-400"><%= stat.three_point_percentage %>%</div>
+                  </td>
+                  <td class="py-3 px-2 text-center">
+                    <div class="text-gray-900"><%= stat.free_throws_made %>-<%= stat.free_throws_attempted %></div>
+                    <div class="text-xs text-gray-400"><%= stat.free_throw_percentage %>%</div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <div class="p-8 text-center text-gray-500">
+          <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <p>선수 통계가 아직 입력되지 않았습니다</p>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if @match.away_team.present? %>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+      <!-- 팀 헤더 -->
+      <div class="p-4 bg-gray-50 border-b border-gray-200 flex items-center gap-3">
+        <% if @match.away_team.team.logo_url.present? %>
+          <img src="<%= @match.away_team.team.logo_url %>" alt="" class="w-8 h-8 rounded-full object-cover">
+        <% end %>
+        <h2 class="text-lg font-bold text-gray-900"><%= @match.away_team.team.name %></h2>
+        <span class="text-gray-500 text-sm">(<%= @match.away_score %>점)</span>
+      </div>
+
+      <% if @away_stats.present? && @away_stats.any? %>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b border-gray-200">
+              <tr class="text-gray-500 text-xs uppercase tracking-wider">
+                <th class="py-3 px-4 text-left sticky left-0 bg-gray-50 z-10 min-w-[160px]">PLAYER</th>
+                <th class="py-3 px-2 text-center w-12">MIN</th>
+                <th class="py-3 px-2 text-center w-12 font-bold text-gray-700">PTS</th>
+                <th class="py-3 px-2 text-center w-12">REB</th>
+                <th class="py-3 px-2 text-center w-12">AST</th>
+                <th class="py-3 px-2 text-center w-12">STL</th>
+                <th class="py-3 px-2 text-center w-12">BLK</th>
+                <th class="py-3 px-2 text-center w-12">TO</th>
+                <th class="py-3 px-2 text-center w-12">PF</th>
+                <th class="py-3 px-2 text-center w-14">+/-</th>
+                <th class="py-3 px-2 text-center w-20">FG</th>
+                <th class="py-3 px-2 text-center w-20">3PT</th>
+                <th class="py-3 px-2 text-center w-20">FT</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <% @away_stats.each do |stat| %>
+                <tr class="hover:bg-gray-50 <%= stat.is_starter ? 'bg-primary-50/30' : '' %>">
+                  <td class="py-3 px-4 sticky left-0 bg-white z-10 <%= stat.is_starter ? 'bg-primary-50/30' : '' %>">
+                    <div class="flex items-center gap-2">
+                      <% if stat.is_starter %>
+                        <span class="w-4 h-4 rounded-full bg-primary-500 text-white text-xs flex items-center justify-center font-bold">S</span>
+                      <% end %>
+                      <div>
+                        <div class="flex items-center gap-1">
+                          <span class="text-gray-900 font-medium">
+                            <% if stat.tournament_team_player&.jersey_number.present? %>
+                              <span class="text-gray-400">#<%= stat.tournament_team_player.jersey_number %></span>
+                            <% end %>
+                            <%= stat.respond_to?(:user) ? stat.user.display_name : stat.tournament_team_player&.user&.display_name %>
+                          </span>
+                          <% if stat.respond_to?(:double_double?) && stat.double_double? %>
+                            <span class="px-1 text-xs bg-amber-100 text-amber-700 rounded font-medium">DD</span>
+                          <% end %>
+                          <% if stat.respond_to?(:triple_double?) && stat.triple_double? %>
+                            <span class="px-1 text-xs bg-orange-100 text-orange-700 rounded font-medium">TD</span>
+                          <% end %>
+                        </div>
+                        <span class="text-xs text-gray-400"><%= stat.tournament_team_player&.position %></span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-3 px-2 text-center text-gray-600"><%= stat.respond_to?(:minutes_display) ? stat.minutes_display : stat.minutes_played %></td>
+                  <td class="py-3 px-2 text-center font-bold text-gray-900"><%= stat.points %></td>
+                  <td class="py-3 px-2 text-center text-gray-600"><%= stat.total_rebounds %></td>
+                  <td class="py-3 px-2 text-center text-gray-600"><%= stat.assists %></td>
+                  <td class="py-3 px-2 text-center text-gray-600"><%= stat.steals %></td>
+                  <td class="py-3 px-2 text-center text-gray-600"><%= stat.blocks %></td>
+                  <td class="py-3 px-2 text-center text-gray-600"><%= stat.turnovers %></td>
+                  <td class="py-3 px-2 text-center text-gray-600"><%= stat.personal_fouls %></td>
+                  <td class="py-3 px-2 text-center font-medium <%= stat.plus_minus.to_i >= 0 ? 'text-green-600' : 'text-red-500' %>">
+                    <%= stat.plus_minus.to_i >= 0 ? '+' : '' %><%= stat.plus_minus %>
+                  </td>
+                  <td class="py-3 px-2 text-center">
+                    <div class="text-gray-900"><%= stat.field_goals_made %>-<%= stat.field_goals_attempted %></div>
+                    <div class="text-xs text-gray-400"><%= stat.field_goal_percentage %>%</div>
+                  </td>
+                  <td class="py-3 px-2 text-center">
+                    <div class="text-gray-900"><%= stat.three_pointers_made %>-<%= stat.three_pointers_attempted %></div>
+                    <div class="text-xs text-gray-400"><%= stat.three_point_percentage %>%</div>
+                  </td>
+                  <td class="py-3 px-2 text-center">
+                    <div class="text-gray-900"><%= stat.free_throws_made %>-<%= stat.free_throws_attempted %></div>
+                    <div class="text-xs text-gray-400"><%= stat.free_throw_percentage %>%</div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <div class="p-8 text-center text-gray-500">
+          <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <p>선수 통계가 아직 입력되지 않았습니다</p>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <!-- 범례 -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+    <h3 class="text-sm font-medium text-gray-700 mb-3">통계 범례</h3>
+    <div class="flex flex-wrap gap-4 text-xs text-gray-500">
+      <span><strong>MIN</strong> 출전시간</span>
+      <span><strong>PTS</strong> 득점</span>
+      <span><strong>REB</strong> 리바운드</span>
+      <span><strong>AST</strong> 어시스트</span>
+      <span><strong>STL</strong> 스틸</span>
+      <span><strong>BLK</strong> 블록</span>
+      <span><strong>TO</strong> 턴오버</span>
+      <span><strong>PF</strong> 파울</span>
+      <span><strong>+/-</strong> 플러스마이너스</span>
+      <span><strong>FG</strong> 야투</span>
+      <span><strong>3PT</strong> 3점슛</span>
+      <span><strong>FT</strong> 자유투</span>
+      <span class="inline-flex items-center gap-1"><span class="w-4 h-4 rounded-full bg-primary-500 text-white text-xs flex items-center justify-center font-bold">S</span> 선발</span>
+      <span class="px-1 bg-amber-100 text-amber-700 rounded">DD</span> 더블더블
+      <span class="px-1 bg-orange-100 text-orange-700 rounded">TD</span> 트리플더블
+    </div>
+  </div>
+
+  <!-- 뒤로가기 -->
+  <div class="flex items-center justify-between">
+    <%= link_to schedule_tournament_path(@tournament), class: "text-primary-600 hover:text-primary-700" do %>
+      <span class="inline-flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        경기 일정
+      </span>
+    <% end %>
+    <%= link_to tournament_path(@tournament), class: "text-primary-600 hover:text-primary-700" do %>
+      <span class="inline-flex items-center gap-2">
+        대회 홈
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </span>
+    <% end %>
+  </div>
+</div>

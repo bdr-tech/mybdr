@@ -1,0 +1,21 @@
+<%= turbo_stream.replace "comment-form" do %>
+  <%= render partial: "community_comments/form", locals: { post: @post, comment: Comment.new } %>
+<% end %>
+
+<% if @comment.parent_id.present? %>
+  <%= turbo_stream.append "comment-#{@comment.parent_id}" do %>
+    <div class="replies">
+      <%= render partial: "community_comments/comment", locals: { comment: @comment, post: @post } %>
+    </div>
+  <% end %>
+<% else %>
+  <%= turbo_stream.prepend "comments-list" do %>
+    <div class="px-6">
+      <%= render partial: "community_comments/comment", locals: { comment: @comment, post: @post } %>
+    </div>
+  <% end %>
+<% end %>
+
+<%= turbo_stream.update "comments-count" do %>
+  <%= @post.reload.comments_count %>
+<% end %>

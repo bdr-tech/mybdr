@@ -1,0 +1,601 @@
+<% content_for :title do %>대회 생성 위자드 - Step <%= @step %>/5<% end %>
+
+<div class="max-w-4xl mx-auto">
+  <%# Progress Bar - Clickable Steps %>
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-2">
+      <% ['템플릿 선택', '기본 정보', 'URL 설정', '디자인', '발행'].each_with_index do |step_name, index| %>
+        <div class="flex items-center">
+          <% step_num = index + 1 %>
+          <% can_navigate = step_num < @step %>
+          <% if can_navigate %>
+            <%= link_to wizard_tournament_admin_tournament_path(@tournament, step: step_num),
+                        class: "flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors" do %>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+            <% end %>
+          <% else %>
+            <div class="flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium
+                        <%= step_num == @step ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600' %>">
+              <%= step_num %>
+            </div>
+          <% end %>
+          <% if can_navigate %>
+            <%= link_to step_name, wizard_tournament_admin_tournament_path(@tournament, step: step_num),
+                        class: "ml-2 text-sm font-medium hidden sm:block text-primary-600 hover:text-primary-700 transition-colors" %>
+          <% else %>
+            <span class="ml-2 text-sm font-medium hidden sm:block
+                         <%= step_num <= @step ? 'text-primary-600' : 'text-gray-500' %>">
+              <%= step_name %>
+            </span>
+          <% end %>
+        </div>
+        <% unless index == 4 %>
+          <div class="flex-1 mx-4 h-0.5 <%= index + 1 < @step ? 'bg-primary-600' : 'bg-gray-200' %>"></div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <%# Step Content %>
+  <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <% case @step %>
+    <% when 1 %>
+      <%# Step 1: Template Selection %>
+      <div class="p-6 md:p-8 border-b">
+        <h2 class="text-xl font-bold text-gray-900 mb-2">🎨 어떤 스타일의 대회 사이트를 만들까요?</h2>
+        <p class="text-gray-600">템플릿을 선택하면 쉽게 시작할 수 있어요. 나중에 자유롭게 수정할 수 있습니다.</p>
+      </div>
+
+      <div class="p-6 md:p-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <% @templates.each do |template| %>
+            <label class="relative cursor-pointer group">
+              <input type="radio" name="template_id" value="<%= template.id %>"
+                     class="peer sr-only"
+                     data-controller="template-preview"
+                     data-action="change->template-preview#select">
+              <div class="border-2 rounded-xl overflow-hidden transition-all
+                          peer-checked:border-primary-600 peer-checked:ring-2 peer-checked:ring-primary-600/20
+                          hover:border-gray-300">
+                <div class="aspect-video bg-gray-100 relative">
+                  <% if template.thumbnail_url.present? %>
+                    <%= image_tag template.thumbnail_url, class: "w-full h-full object-cover" %>
+                  <% else %>
+                    <div class="absolute inset-0 flex items-center justify-center text-4xl">🏆</div>
+                  <% end %>
+                  <div class="absolute top-2 right-2">
+                    <% if template.is_premium %>
+                      <span class="px-2 py-1 bg-yellow-500 text-white text-xs font-medium rounded">프리미엄</span>
+                    <% end %>
+                  </div>
+                </div>
+                <div class="p-4">
+                  <h3 class="font-semibold text-gray-900"><%= template.name %></h3>
+                  <p class="text-sm text-gray-500 mt-1"><%= template.description&.truncate(60) %></p>
+                </div>
+              </div>
+              <div class="absolute top-4 left-4 w-6 h-6 border-2 border-white bg-white rounded-full shadow-sm
+                          hidden peer-checked:flex items-center justify-center">
+                <div class="w-4 h-4 bg-primary-600 rounded-full"></div>
+              </div>
+            </label>
+          <% end %>
+
+          <%# Blank template option %>
+          <label class="relative cursor-pointer group">
+            <input type="radio" name="template_id" value="" class="peer sr-only">
+            <div class="border-2 border-dashed rounded-xl overflow-hidden transition-all
+                        peer-checked:border-primary-600 peer-checked:ring-2 peer-checked:ring-primary-600/20
+                        hover:border-gray-300 h-full">
+              <div class="aspect-video bg-gray-50 flex items-center justify-center">
+                <div class="text-center">
+                  <div class="text-4xl mb-2">📝</div>
+                  <span class="text-gray-500 text-sm">빈 템플릿</span>
+                </div>
+              </div>
+              <div class="p-4">
+                <h3 class="font-semibold text-gray-900">처음부터 만들기</h3>
+                <p class="text-sm text-gray-500 mt-1">원하는대로 자유롭게 구성</p>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="p-6 border-t bg-gray-50 flex justify-between">
+        <%= link_to "취소", tournament_admin_tournaments_path,
+                    class: "px-6 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors" %>
+        <%= form_with url: wizard_update_tournament_admin_tournament_path(@tournament), method: :patch, local: true do |f| %>
+          <%= hidden_field_tag :step, 1 %>
+          <div id="selected-template-field"></div>
+          <%= f.submit "다음", class: "px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors cursor-pointer" %>
+        <% end %>
+      </div>
+
+    <% when 2 %>
+      <%# Step 2: Basic Info %>
+      <div class="p-6 md:p-8 border-b">
+        <h2 class="text-xl font-bold text-gray-900 mb-2">📝 대회 기본 정보를 입력해주세요</h2>
+        <p class="text-gray-600">필수 항목만 입력하면 됩니다. 나머지는 나중에 수정할 수 있어요.</p>
+      </div>
+
+      <%= form_with model: @tournament, url: wizard_update_tournament_admin_tournament_path(@tournament), method: :patch, local: true, class: "p-6 md:p-8 space-y-6" do |f| %>
+        <%= hidden_field_tag :step, 2 %>
+
+        <div>
+          <%= f.label :name, "대회명 *", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.text_field :name, required: true, placeholder: "예: THE PROCESS 2025",
+                           class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-colors" %>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <%= f.label :start_date, "시작일 *", class: "block text-sm font-medium text-gray-700 mb-1" %>
+            <%= f.date_field :start_date, required: true,
+                             class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-colors" %>
+          </div>
+          <div>
+            <%= f.label :end_date, "종료일", class: "block text-sm font-medium text-gray-700 mb-1" %>
+            <%= f.date_field :end_date,
+                             class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-colors" %>
+          </div>
+        </div>
+
+        <div>
+          <%= f.label :venue_name, "개최 장소", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.text_field :venue_name, placeholder: "예: 서울대학교 종합체육관",
+                           class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-colors" %>
+        </div>
+
+        <div>
+          <%= f.label :description, "대회 소개", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.text_area :description, rows: 3, placeholder: "대회에 대한 간단한 소개를 작성해주세요.",
+                          class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-colors resize-none" %>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <%= f.label :max_teams, "최대 참가팀", class: "block text-sm font-medium text-gray-700 mb-1" %>
+            <%= f.number_field :max_teams, value: @tournament.max_teams || 16, min: 2,
+                               class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-colors" %>
+          </div>
+          <div>
+            <%= f.label :team_size, "팀당 인원", class: "block text-sm font-medium text-gray-700 mb-1" %>
+            <%= f.number_field :team_size, value: @tournament.team_size || 5, min: 1,
+                               class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-colors" %>
+          </div>
+          <div>
+            <%= f.label :entry_fee, "참가비 (원)", class: "block text-sm font-medium text-gray-700 mb-1" %>
+            <%= f.number_field :entry_fee, value: @tournament.entry_fee || 0, min: 0, step: 1000,
+                               id: "entry_fee_field",
+                               class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-colors",
+                               onchange: "toggleBankSection(this.value)" %>
+          </div>
+        </div>
+
+        <script>
+          function toggleBankSection(value) {
+            const section = document.getElementById('bank_info_section');
+            if (parseInt(value) > 0) {
+              section.classList.remove('hidden');
+            } else {
+              section.classList.add('hidden');
+            }
+          }
+        </script>
+
+        <%# Division Selection - 2 Step %>
+        <div class="mt-6 pt-6 border-t" id="wizard_division_section">
+          <label class="block text-sm font-medium text-gray-700 mb-3">참가 부별 설정</label>
+
+          <%# Step 1: 부별 선택 %>
+          <div class="mb-4">
+            <p class="text-sm text-gray-600 mb-2"><strong>1단계:</strong> 부별 선택 <span class="text-gray-400">(복수 선택 가능)</span></p>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <% Tournament::DIVISION_CATEGORIES.each do |name, info| %>
+                <label class="division-category flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                       data-category="<%= info[:code] %>">
+                  <input type="checkbox" name="tournament[divisions][]" value="<%= name %>"
+                         class="wizard-category-checkbox rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                         onchange="toggleWizardTierSelection(this)"
+                         <%= 'checked' if @tournament.divisions&.include?(name) %>>
+                  <div>
+                    <span class="font-medium text-gray-900"><%= name %></span>
+                    <p class="text-xs text-gray-500"><%= info[:description] %></p>
+                  </div>
+                </label>
+              <% end %>
+            </div>
+          </div>
+
+          <%# Step 2: 조별/리그 선택 %>
+          <div id="wizard_tier_selection" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
+            <p class="text-sm text-gray-600 mb-2"><strong>2단계:</strong> 조별/리그 선택 <span class="text-gray-400">(선택한 부별에 적용)</span></p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <% Tournament::DIVISION_TIERS.each do |name, info| %>
+                <label class="flex items-center gap-2 p-2 border bg-white rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                  <input type="checkbox" name="tournament[division_tiers][]" value="<%= name %>"
+                         class="wizard-tier-checkbox rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                  <div>
+                    <span class="text-sm font-medium text-gray-900"><%= name %></span>
+                    <span class="text-xs text-gray-500 ml-1">(<%= info[:description] %>)</span>
+                  </div>
+                </label>
+              <% end %>
+            </div>
+            <p class="mt-2 text-xs text-gray-500">예: 일반부 1부, 일반부 2부, 대학부 A조 등으로 구성됩니다.</p>
+          </div>
+
+          <p class="mt-3 text-sm text-gray-500">선택하지 않으면 전체 부로 진행됩니다.</p>
+        </div>
+
+        <script>
+          function toggleWizardTierSelection(checkbox) {
+            const checkedCategories = document.querySelectorAll('.wizard-category-checkbox:checked');
+            const tierSection = document.getElementById('wizard_tier_selection');
+
+            if (checkedCategories.length > 0) {
+              tierSection.classList.remove('hidden');
+            } else {
+              tierSection.classList.add('hidden');
+            }
+          }
+
+          // Initialize on page load for wizard
+          document.addEventListener('DOMContentLoaded', function() {
+            const checkedCategories = document.querySelectorAll('.wizard-category-checkbox:checked');
+            const tierSection = document.getElementById('wizard_tier_selection');
+            if (tierSection && checkedCategories.length > 0) {
+              tierSection.classList.remove('hidden');
+            }
+          });
+        </script>
+
+        <%# Registration Period %>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <div>
+            <%= f.label :registration_start_at, "참가신청 시작일", class: "block text-sm font-medium text-gray-700 mb-1" %>
+            <%= f.datetime_local_field :registration_start_at,
+                             class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-colors" %>
+          </div>
+          <div>
+            <%= f.label :registration_end_at, "참가신청 마감일", class: "block text-sm font-medium text-gray-700 mb-1" %>
+            <%= f.datetime_local_field :registration_end_at,
+                             class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-colors" %>
+          </div>
+        </div>
+
+        <%# Bank Account Info (shown when entry_fee > 0) %>
+        <div id="bank_info_section" class="mt-6 pt-6 border-t <%= @tournament.entry_fee.to_i > 0 ? '' : 'hidden' %>"
+             data-controller="conditional-display"
+             data-conditional-display-target="container">
+          <h4 class="text-sm font-medium text-gray-700 mb-3">💳 참가비 입금 계좌 정보</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <%= f.label :bank_name, "은행명", class: "block text-sm font-medium text-gray-700 mb-1" %>
+              <%= f.select :bank_name,
+                          [["선택하세요", ""], ["카카오뱅크", "카카오뱅크"], ["국민은행", "국민은행"], ["신한은행", "신한은행"],
+                           ["우리은행", "우리은행"], ["하나은행", "하나은행"], ["농협", "농협"], ["기업은행", "기업은행"],
+                           ["SC제일은행", "SC제일은행"], ["토스뱅크", "토스뱅크"], ["케이뱅크", "케이뱅크"]],
+                          {}, class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-colors" %>
+            </div>
+            <div>
+              <%= f.label :bank_account, "계좌번호", class: "block text-sm font-medium text-gray-700 mb-1" %>
+              <%= f.text_field :bank_account, placeholder: "- 없이 입력",
+                               class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-colors" %>
+            </div>
+            <div>
+              <%= f.label :bank_holder, "예금주", class: "block text-sm font-medium text-gray-700 mb-1" %>
+              <%= f.text_field :bank_holder, placeholder: "예금주명",
+                               class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-colors" %>
+            </div>
+          </div>
+          <p class="mt-2 text-sm text-gray-500">참가비가 있는 경우 입금 계좌를 입력해주세요.</p>
+        </div>
+
+        <div class="pt-6 border-t flex justify-between">
+          <%= link_to "이전", wizard_tournament_admin_tournament_path(@tournament, step: 1),
+                      class: "px-6 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors" %>
+          <%= f.submit "다음", class: "px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors cursor-pointer" %>
+        </div>
+      <% end %>
+
+    <% when 3 %>
+      <%# Step 3: URL Setting %>
+      <div class="p-6 md:p-8 border-b">
+        <h2 class="text-xl font-bold text-gray-900 mb-2">🔗 대회 사이트 주소를 설정해주세요</h2>
+        <p class="text-gray-600">방문자들이 쉽게 기억할 수 있는 주소를 선택하세요.</p>
+      </div>
+
+      <%= form_with url: wizard_update_tournament_admin_tournament_path(@tournament), method: :patch, local: true, class: "p-6 md:p-8 space-y-6",
+                    data: { controller: "subdomain-check", subdomain_check_url_value: tournament_admin_check_subdomain_path } do %>
+        <%= hidden_field_tag :step, 3 %>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">서브도메인 *</label>
+          <div class="flex items-center">
+            <%= text_field_tag :subdomain, session[:wizard_subdomain] || @tournament.name&.parameterize,
+                               required: true,
+                               placeholder: "theprocess2025",
+                               class: "flex-1 px-4 py-3 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-colors",
+                               data: { subdomain_check_target: "input", action: "input->subdomain-check#check" } %>
+            <span class="px-4 py-3 bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg text-gray-600">
+              .mybdr.kr
+            </span>
+          </div>
+          <p class="mt-2 text-sm" data-subdomain-check-target="result"></p>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 class="font-medium text-blue-900 mb-2">💡 추천 주소</h4>
+          <div class="space-y-3">
+            <%# Live preview of typed subdomain %>
+            <div class="flex items-center gap-1 text-lg">
+              <span class="text-gray-500">https://</span>
+              <span class="font-bold text-blue-700" data-subdomain-check-target="preview"><%= session[:wizard_subdomain] || @tournament.name&.parameterize || 'your-tournament' %></span>
+              <span class="text-gray-500">.mybdr.kr</span>
+            </div>
+            <%# Suggestion button %>
+            <button type="button" class="text-blue-600 hover:text-blue-800 text-sm underline"
+                    data-action="click->subdomain-check#suggest"
+                    data-value="<%= @tournament.name&.parameterize %>">
+              대회명으로 설정: <%= @tournament.name&.parameterize %>.mybdr.kr
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-6 border-t flex justify-between">
+          <%= link_to "이전", wizard_tournament_admin_tournament_path(@tournament, step: 2),
+                      class: "px-6 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors" %>
+          <button type="submit" class="px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors">
+            다음
+          </button>
+        </div>
+      <% end %>
+
+    <% when 4 %>
+      <%# Step 4: Design Customization %>
+      <div class="p-6 md:p-8 border-b">
+        <h2 class="text-xl font-bold text-gray-900 mb-2">🎨 디자인을 커스터마이징하세요</h2>
+        <p class="text-gray-600">대회 브랜드에 맞게 색상과 이미지를 설정하세요.</p>
+      </div>
+
+      <%= form_with url: wizard_update_tournament_admin_tournament_path(@tournament), method: :patch, local: true, class: "p-6 md:p-8",
+                    data: { controller: "design-preview" } do %>
+        <%= hidden_field_tag :step, 4 %>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <%# Left: Settings %>
+          <div class="space-y-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">로고 업로드</label>
+              <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                <input type="file" name="logo" class="hidden" id="logo_upload" accept="image/*">
+                <label for="logo_upload" class="cursor-pointer">
+                  <div class="text-3xl mb-2">📷</div>
+                  <span class="text-gray-600 text-sm">클릭하여 로고 업로드</span>
+                </label>
+              </div>
+              <%= text_field_tag :logo_url, session.dig(:wizard_design, :logo_url), placeholder: "또는 이미지 URL 입력",
+                                 class: "w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg text-sm" %>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">메인 컬러</label>
+              <div class="flex items-center gap-3">
+                <input type="color" name="primary_color"
+                       value="<%= session.dig(:wizard_design, :primary_color) || '#E53E3E' %>"
+                       class="w-12 h-12 rounded cursor-pointer"
+                       data-action="input->design-preview#updateColor">
+                <div class="flex gap-2">
+                  <% %w[#E53E3E #3B82F6 #10B981 #F59E0B #8B5CF6 #000000].each do |color| %>
+                    <button type="button"
+                            class="w-8 h-8 rounded-full border-2 border-white shadow-sm"
+                            style="background-color: <%= color %>"
+                            data-action="click->design-preview#selectColor"
+                            data-color="<%= color %>">
+                    </button>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">히어로 이미지</label>
+              <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                <input type="file" name="hero_image" class="hidden" id="hero_upload" accept="image/*">
+                <label for="hero_upload" class="cursor-pointer">
+                  <div class="text-3xl mb-2">🖼️</div>
+                  <span class="text-gray-600 text-sm">배경 이미지 업로드</span>
+                </label>
+              </div>
+              <%= text_field_tag :hero_image_url, session.dig(:wizard_design, :hero_image_url), placeholder: "또는 이미지 URL 입력",
+                                 class: "w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg text-sm" %>
+            </div>
+          </div>
+
+          <%# Right: Preview %>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">실시간 미리보기</label>
+            <div class="border rounded-xl overflow-hidden shadow-sm" data-design-preview-target="preview">
+              <div class="aspect-video bg-gray-800 relative p-8 flex flex-col items-center justify-center text-white"
+                   style="background-color: var(--preview-color, #E53E3E)">
+                <h3 class="text-2xl font-bold text-center"><%= @tournament.name %></h3>
+                <p class="text-white/80 mt-2 text-center"><%= @tournament.description&.truncate(50) %></p>
+              </div>
+              <div class="p-4 bg-white">
+                <div class="flex gap-4 justify-center text-sm">
+                  <span class="text-gray-600">경기일정</span>
+                  <span class="text-gray-600">참가팀</span>
+                  <span class="text-gray-600">결과</span>
+                  <span class="text-gray-600">갤러리</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <%# Content Presets Section %>
+        <div class="mt-8 pt-8 border-t">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">
+            <span class="mr-2">📝</span>콘텐츠 프리셋 추가 <span class="text-sm font-normal text-gray-500">(선택)</span>
+          </h3>
+          <p class="text-sm text-gray-600 mb-4">
+            자주 사용하는 콘텐츠를 빠르게 추가할 수 있어요. 나중에 수정할 수 있습니다.
+          </p>
+
+          <div class="space-y-3">
+            <% ContentPreset.active.ordered.group_by(&:category).each do |category, presets| %>
+              <div class="border rounded-lg overflow-hidden">
+                <button type="button"
+                        class="w-full px-4 py-3 flex items-center justify-between text-left bg-gray-50 hover:bg-gray-100 transition-colors"
+                        onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')">
+                  <span class="font-medium text-gray-900"><%= presets.first.category_name %></span>
+                  <svg class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div class="hidden px-4 py-3 space-y-2 bg-white">
+                  <% presets.each do |preset| %>
+                    <label class="flex items-start gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                      <input type="checkbox" name="preset_ids[]" value="<%= preset.id %>"
+                             class="mt-0.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                             <%= 'checked' if session[:wizard_preset_ids]&.include?(preset.id.to_s) %>>
+                      <div class="flex-1">
+                        <span class="font-medium text-gray-900"><%= preset.name %></span>
+                        <% if preset.is_featured %>
+                          <span class="ml-2 px-1.5 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded">추천</span>
+                        <% end %>
+                        <p class="text-sm text-gray-500 mt-0.5"><%= preset.description %></p>
+                      </div>
+                    </label>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="pt-6 mt-6 border-t flex justify-between">
+          <%= link_to "이전", wizard_tournament_admin_tournament_path(@tournament, step: 3),
+                      class: "px-6 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors" %>
+          <button type="submit" class="px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors">
+            다음
+          </button>
+        </div>
+      <% end %>
+
+    <% when 5 %>
+      <%# Step 5: Preview & Publish %>
+      <div class="p-6 md:p-8 border-b">
+        <h2 class="text-xl font-bold text-gray-900 mb-2">🎉 거의 다 됐어요!</h2>
+        <p class="text-gray-600">최종 확인 후 발행해주세요. 발행 후에도 언제든 수정할 수 있습니다.</p>
+      </div>
+
+      <div class="p-6 md:p-8">
+        <%# Preview Frame %>
+        <div class="border rounded-xl overflow-hidden shadow-lg mb-8">
+          <div class="bg-gray-100 px-4 py-2 flex items-center gap-2">
+            <div class="flex gap-1.5">
+              <div class="w-3 h-3 rounded-full bg-red-500"></div>
+              <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+              <div class="w-3 h-3 rounded-full bg-green-500"></div>
+            </div>
+            <div class="flex-1 text-center">
+              <span class="text-sm text-gray-600"><%= session[:wizard_subdomain] %>.mybdr.kr</span>
+            </div>
+          </div>
+          <div class="aspect-video bg-white">
+            <div class="h-full flex flex-col items-center justify-center p-8 text-center"
+                 style="background: linear-gradient(135deg, <%= session.dig(:wizard_design, :primary_color) || '#E53E3E' %>, #1a1a1a)">
+              <h2 class="text-3xl font-bold text-white mb-2"><%= @tournament.name %></h2>
+              <p class="text-white/80"><%= @tournament.description&.truncate(100) %></p>
+              <div class="mt-6 flex gap-4">
+                <span class="px-4 py-2 bg-white/20 rounded-lg text-white text-sm">경기일정</span>
+                <span class="px-4 py-2 bg-white/20 rounded-lg text-white text-sm">참가팀</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <%# Summary %>
+        <div class="bg-gray-50 rounded-xl p-6 mb-8">
+          <h3 class="font-semibold text-gray-900 mb-4">📋 설정 요약</h3>
+          <dl class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <dt class="text-gray-500">대회명</dt>
+              <dd class="font-medium text-gray-900"><%= @tournament.name %></dd>
+            </div>
+            <div>
+              <dt class="text-gray-500">사이트 주소</dt>
+              <dd class="font-medium text-gray-900"><%= session[:wizard_subdomain] %>.mybdr.kr</dd>
+            </div>
+            <div>
+              <dt class="text-gray-500">대회 기간</dt>
+              <dd class="font-medium text-gray-900"><%= @tournament.date_range %></dd>
+            </div>
+            <div>
+              <dt class="text-gray-500">개최 장소</dt>
+              <dd class="font-medium text-gray-900"><%= @tournament.venue_name || '미정' %></dd>
+            </div>
+            <div>
+              <dt class="text-gray-500">참가 부별</dt>
+              <dd class="font-medium text-gray-900"><%= @tournament.divisions_display %></dd>
+            </div>
+            <div>
+              <dt class="text-gray-500">접수 기간</dt>
+              <dd class="font-medium text-gray-900">
+                <% if @tournament.registration_start_at && @tournament.registration_end_at %>
+                  <%= @tournament.registration_start_at.strftime('%m.%d') %> ~ <%= @tournament.registration_end_at.strftime('%m.%d') %>
+                <% else %>
+                  미정
+                <% end %>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-gray-500">최대 참가팀</dt>
+              <dd class="font-medium text-gray-900"><%= @tournament.max_teams %>팀</dd>
+            </div>
+            <div>
+              <dt class="text-gray-500">참가비</dt>
+              <dd class="font-medium text-gray-900"><%= @tournament.entry_fee.to_i > 0 ? number_to_currency(@tournament.entry_fee, unit: '₩', precision: 0) : '무료' %></dd>
+            </div>
+            <% if @tournament.has_bank_info? %>
+              <div class="md:col-span-2">
+                <dt class="text-gray-500">입금 계좌</dt>
+                <dd class="font-medium text-gray-900"><%= @tournament.bank_info_display %></dd>
+              </div>
+            <% end %>
+          </dl>
+        </div>
+
+        <%# Action Buttons %>
+        <div class="flex flex-col sm:flex-row gap-4 justify-between items-center">
+          <%= link_to "이전", wizard_tournament_admin_tournament_path(@tournament, step: 4),
+                      class: "px-6 py-3 text-gray-700 font-medium rounded-xl hover:bg-gray-100 transition-colors" %>
+
+          <div class="flex flex-col sm:flex-row gap-4">
+            <%= form_with url: wizard_update_tournament_admin_tournament_path(@tournament), method: :patch, local: true do %>
+              <%= hidden_field_tag :step, 5 %>
+              <%= hidden_field_tag :publish, false %>
+              <button type="submit" class="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors">
+                임시저장하고 나중에 발행
+              </button>
+            <% end %>
+
+            <%= form_with url: wizard_update_tournament_admin_tournament_path(@tournament), method: :patch, local: true do %>
+              <%= hidden_field_tag :step, 5 %>
+              <%= hidden_field_tag :publish, true %>
+              <button type="submit" class="px-8 py-3 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition-colors flex items-center gap-2">
+                <span>🚀</span>
+                <span>지금 발행!</span>
+              </button>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

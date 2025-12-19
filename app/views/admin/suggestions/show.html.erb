@@ -1,0 +1,308 @@
+<% content_for :title, "건의사항 - #{@suggestion.title}" %>
+
+<div class="px-4 sm:px-6 lg:px-8">
+  <!-- Header -->
+  <div class="mb-6">
+    <%= link_to admin_suggestions_path, class: "inline-flex items-center text-sm text-gray-500 hover:text-gray-700" do %>
+      <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      목록으로
+    <% end %>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Suggestion Info Card -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <h1 class="text-xl font-semibold text-gray-900"><%= @suggestion.title %></h1>
+            <span class="inline-flex rounded-full px-3 py-1 text-sm font-semibold <%= @suggestion.status_badge_class %>">
+              <%= @suggestion.status_label %>
+            </span>
+          </div>
+          <div class="mt-2 flex items-center space-x-4 text-sm text-gray-500">
+            <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5 <%= @suggestion.priority_badge_class %>">
+              <%= @suggestion.priority_label %>
+            </span>
+            <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5
+              <%= case @suggestion.category
+                  when 'feature_request' then 'bg-blue-100 text-blue-800'
+                  when 'bug_report' then 'bg-red-100 text-red-800'
+                  when 'improvement' then 'bg-green-100 text-green-800'
+                  else 'bg-gray-100 text-gray-800'
+                  end %>">
+              <%= @suggestion.category_label %>
+            </span>
+            <span><%= l(@suggestion.created_at, format: :long) %></span>
+          </div>
+        </div>
+
+        <div class="px-6 py-4">
+          <h3 class="text-sm font-medium text-gray-500 mb-2">내용</h3>
+          <div class="prose max-w-none text-gray-900">
+            <%= simple_format(@suggestion.content) %>
+          </div>
+        </div>
+
+        <% if @suggestion.attachments.attached? %>
+          <div class="px-6 py-4 border-t border-gray-200">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">첨부파일</h3>
+            <div class="space-y-2">
+              <% @suggestion.attachments.each do |attachment| %>
+                <div class="flex items-center space-x-2">
+                  <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                  <%= link_to attachment.filename.to_s, rails_blob_path(attachment, disposition: "attachment"), class: "text-indigo-600 hover:text-indigo-500" %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Admin Response Section -->
+      <% if @suggestion.admin_response.present? %>
+        <div class="bg-green-50 shadow rounded-lg overflow-hidden">
+          <div class="px-6 py-4 border-b border-green-200">
+            <h2 class="text-lg font-medium text-green-800">관리자 답변</h2>
+          </div>
+          <div class="px-6 py-4">
+            <div class="prose max-w-none text-green-900">
+              <%= simple_format(@suggestion.admin_response) %>
+            </div>
+            <div class="mt-4 text-sm text-green-600">
+              <% if @suggestion.responded_by %>
+                답변자: <%= @suggestion.responded_by.display_name %>
+              <% end %>
+              <% if @suggestion.responded_at %>
+                | <%= l(@suggestion.responded_at, format: :long) %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Response Form -->
+      <% if @suggestion.can_respond? %>
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-medium text-gray-900">답변 작성</h2>
+          </div>
+          <div class="px-6 py-4">
+            <div class="space-y-4">
+              <div>
+                <label for="response-text" class="block text-sm font-medium text-gray-700">답변 내용</label>
+                <textarea id="response-text" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="답변을 입력하세요..."></textarea>
+              </div>
+              <div class="flex space-x-3">
+                <%= form_with url: resolve_admin_suggestion_path(@suggestion), method: :post, id: "resolve-form", class: "inline" do |f| %>
+                  <%= f.hidden_field :response, id: "resolve-response" %>
+                  <button type="submit" class="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500" data-confirm="이 건의사항을 해결 완료 처리하시겠습니까?">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    해결 완료
+                  </button>
+                <% end %>
+                <%= form_with url: reject_admin_suggestion_path(@suggestion), method: :post, id: "reject-form", class: "inline" do |f| %>
+                  <%= f.hidden_field :response, id: "reject-response" %>
+                  <button type="submit" class="inline-flex items-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500" data-confirm="이 건의사항을 반려 처리하시겠습니까?">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    반려
+                  </button>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          document.addEventListener('DOMContentLoaded', function() {
+            const responseText = document.getElementById('response-text');
+            const resolveResponse = document.getElementById('resolve-response');
+            const rejectResponse = document.getElementById('reject-response');
+
+            // Sync textarea value to hidden fields before form submit
+            responseText.addEventListener('input', function() {
+              resolveResponse.value = responseText.value;
+              rejectResponse.value = responseText.value;
+            });
+
+            // Also sync on form submit
+            document.getElementById('resolve-form').addEventListener('submit', function() {
+              resolveResponse.value = responseText.value;
+            });
+
+            document.getElementById('reject-form').addEventListener('submit', function() {
+              rejectResponse.value = responseText.value;
+            });
+          });
+        </script>
+      <% end %>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- User Info -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">작성자 정보</h2>
+        </div>
+        <div class="px-6 py-4">
+          <div class="flex items-center space-x-3">
+            <div class="flex-shrink-0">
+              <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                <span class="text-indigo-600 font-medium"><%= @suggestion.user&.display_name&.first || "?" %></span>
+              </div>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-900"><%= @suggestion.user&.display_name || "알 수 없음" %></p>
+              <p class="text-sm text-gray-500"><%= @suggestion.user&.email %></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">관리 작업</h2>
+        </div>
+        <div class="px-6 py-4 space-y-3">
+          <% if @suggestion.assigned_to %>
+            <p class="text-sm text-gray-600">
+              담당자: <span class="font-medium text-gray-900"><%= @suggestion.assigned_to.display_name %></span>
+            </p>
+          <% else %>
+            <%= button_to "담당자로 지정", assign_admin_suggestion_path(@suggestion, admin_id: current_user.id),
+                method: :post,
+                class: "w-full inline-flex justify-center items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500" %>
+          <% end %>
+
+          <% if @suggestion.status_pending? || @suggestion.status_in_review? %>
+            <%= button_to "처리 시작", start_progress_admin_suggestion_path(@suggestion),
+                method: :post,
+                class: "w-full inline-flex justify-center items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500" %>
+          <% end %>
+
+          <% if @suggestion.status_resolved? || @suggestion.status_rejected? %>
+            <%= button_to "종료", close_admin_suggestion_path(@suggestion),
+                method: :post,
+                class: "w-full inline-flex justify-center items-center rounded-md bg-gray-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-500" %>
+          <% end %>
+
+          <% if @suggestion.status_closed? %>
+            <%= button_to "다시 열기", reopen_admin_suggestion_path(@suggestion),
+                method: :post,
+                class: "w-full inline-flex justify-center items-center rounded-md bg-yellow-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yellow-500" %>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">처리 이력</h2>
+        </div>
+        <div class="px-6 py-4">
+          <div class="flow-root">
+            <ul class="-mb-8">
+              <li class="relative pb-8">
+                <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"></span>
+                <div class="relative flex space-x-3">
+                  <div>
+                    <span class="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center ring-8 ring-white">
+                      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </span>
+                  </div>
+                  <div class="min-w-0 flex-1 pt-1.5">
+                    <p class="text-sm text-gray-500">
+                      건의사항 등록
+                      <span class="font-medium text-gray-900"><%= @suggestion.user&.display_name %></span>
+                    </p>
+                    <p class="mt-0.5 text-xs text-gray-400"><%= l(@suggestion.created_at, format: :long) %></p>
+                  </div>
+                </div>
+              </li>
+
+              <% if @suggestion.assigned_to %>
+                <li class="relative pb-8">
+                  <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"></span>
+                  <div class="relative flex space-x-3">
+                    <div>
+                      <span class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center ring-8 ring-white">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </span>
+                    </div>
+                    <div class="min-w-0 flex-1 pt-1.5">
+                      <p class="text-sm text-gray-500">
+                        담당자 지정
+                        <span class="font-medium text-gray-900"><%= @suggestion.assigned_to.display_name %></span>
+                      </p>
+                    </div>
+                  </div>
+                </li>
+              <% end %>
+
+              <% if @suggestion.responded_at %>
+                <li class="relative">
+                  <div class="relative flex space-x-3">
+                    <div>
+                      <span class="h-8 w-8 rounded-full <%= @suggestion.status_resolved? ? 'bg-green-500' : 'bg-red-500' %> flex items-center justify-center ring-8 ring-white">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <% if @suggestion.status_resolved? %>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                          <% else %>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                          <% end %>
+                        </svg>
+                      </span>
+                    </div>
+                    <div class="min-w-0 flex-1 pt-1.5">
+                      <p class="text-sm text-gray-500">
+                        <%= @suggestion.status_resolved? ? '해결 완료' : '반려' %>
+                        <span class="font-medium text-gray-900"><%= @suggestion.responded_by&.display_name %></span>
+                      </p>
+                      <p class="mt-0.5 text-xs text-gray-400"><%= l(@suggestion.responded_at, format: :long) %></p>
+                    </div>
+                  </div>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Logs -->
+      <% if @admin_logs.present? %>
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-medium text-gray-900">관리 로그</h2>
+          </div>
+          <div class="px-6 py-4">
+            <ul class="space-y-3">
+              <% @admin_logs.each do |log| %>
+                <li class="text-sm">
+                  <p class="text-gray-900"><%= log.description %></p>
+                  <p class="text-xs text-gray-500">
+                    <%= log.admin&.display_name %> | <%= l(log.created_at, format: :short) %>
+                  </p>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

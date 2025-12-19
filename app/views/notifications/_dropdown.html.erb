@@ -1,0 +1,69 @@
+<%# Notification Dropdown Partial - navbar용 %>
+<div class="py-2">
+  <!-- Header -->
+  <div class="px-4 py-2 border-b border-gray-100">
+    <div class="flex items-center justify-between">
+      <h3 class="text-sm font-semibold text-gray-900">알림</h3>
+      <% if unread_count > 0 %>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+          <%= unread_count %>개 안읽음
+        </span>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Notification List -->
+  <div class="max-h-96 overflow-y-auto">
+    <% if notifications.any? %>
+      <% notifications.each do |notification| %>
+        <a href="<%= visit_notification_path(notification) %>"
+           class="block px-4 py-3 hover:bg-gray-50 transition <%= notification.unread? ? 'bg-indigo-50/30' : '' %>"
+           data-turbo="false"
+           data-action="click->dropdown#close">
+          <div class="flex items-start">
+            <!-- Icon -->
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center <%= notification_icon_bg_class(notification) %>">
+                <%= render_notification_icon(notification, size: "small") %>
+              </div>
+            </div>
+            <!-- Content -->
+            <div class="ml-3 flex-1 min-w-0">
+              <div class="flex items-center">
+                <p class="text-sm font-medium text-gray-900 truncate <%= notification.unread? ? 'font-semibold' : '' %>">
+                  <%= notification.title %>
+                </p>
+                <% if notification.unread? %>
+                  <span class="ml-2 w-2 h-2 bg-indigo-600 rounded-full flex-shrink-0"></span>
+                <% end %>
+              </div>
+              <p class="text-xs text-gray-500 truncate mt-0.5"><%= notification.content %></p>
+              <p class="text-xs text-gray-400 mt-1"><%= time_ago_in_words(notification.created_at) %> 전</p>
+            </div>
+          </div>
+        </a>
+      <% end %>
+    <% else %>
+      <div class="px-4 py-8 text-center">
+        <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        </svg>
+        <p class="mt-2 text-sm text-gray-500">새 알림이 없습니다</p>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Footer -->
+  <div class="px-4 py-2 border-t border-gray-100">
+    <div class="flex items-center justify-between">
+      <%= link_to notifications_path, class: "text-sm text-indigo-600 hover:text-indigo-800 font-medium" do %>
+        전체 보기
+      <% end %>
+      <% if unread_count > 0 %>
+        <%= button_to mark_all_as_read_notifications_path, method: :post, class: "text-xs text-gray-500 hover:text-gray-700", data: { turbo: false } do %>
+          모두 읽음
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>

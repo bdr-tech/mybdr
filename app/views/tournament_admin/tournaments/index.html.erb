@@ -1,0 +1,151 @@
+<% content_for :title do %>내 대회 - 대회관리자 콘솔<% end %>
+
+<div class="space-y-6">
+  <%# Header %>
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">내 대회</h1>
+      <p class="text-gray-500 mt-1">총 <%= @tournaments.count %>개의 대회를 관리하고 있습니다.</p>
+    </div>
+    <%= link_to new_tournament_admin_tournament_path, class: "inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors" do %>
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      새 대회 만들기
+    <% end %>
+  </div>
+
+  <%# Tournament List %>
+  <% if @tournaments.any? %>
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div class="divide-y">
+        <% @tournaments.each do |tournament| %>
+          <div class="p-6 hover:bg-gray-50 transition-colors">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="font-semibold text-gray-900 truncate">
+                    <% if tournament.tournament_site.nil? && tournament.status_draft? %>
+                      <%= link_to tournament.name, wizard_tournament_admin_tournament_path(tournament),
+                                  class: "hover:text-primary-600 transition-colors" %>
+                    <% else %>
+                      <%= link_to tournament.name, tournament_admin_tournament_path(tournament),
+                                  class: "hover:text-primary-600 transition-colors" %>
+                    <% end %>
+                  </h3>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                               <%= tournament.status_in_progress? ? 'bg-green-100 text-green-800' :
+                                   tournament.status_draft? ? 'bg-gray-100 text-gray-800' :
+                                   tournament.status_completed? ? 'bg-blue-100 text-blue-800' :
+                                   'bg-yellow-100 text-yellow-800' %>">
+                    <%= tournament.status_name %>
+                  </span>
+                </div>
+
+                <% if tournament.tournament_site %>
+                  <p class="text-sm text-gray-500 mb-2">
+                    <svg class="inline w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    <%= tournament.tournament_site.subdomain %>.mybdr.kr
+                    <% if tournament.tournament_site.is_published %>
+                      <span class="text-green-600 ml-2">발행됨</span>
+                    <% else %>
+                      <span class="text-gray-400 ml-2">미발행</span>
+                    <% end %>
+                  </p>
+                <% else %>
+                  <p class="text-sm text-gray-400 mb-2">
+                    <svg class="inline w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    사이트 미생성
+                  </p>
+                <% end %>
+
+                <div class="flex items-center gap-4 text-sm text-gray-500">
+                  <% if tournament.start_date.present? %>
+                    <span>
+                      <svg class="inline w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <%= tournament.start_date.strftime("%Y.%m.%d") %>
+                      <% if tournament.end_date.present? && tournament.end_date != tournament.start_date %>
+                        ~ <%= tournament.end_date.strftime("%m.%d") %>
+                      <% end %>
+                    </span>
+                  <% end %>
+                  <span>
+                    <svg class="inline w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <%= tournament.teams_count %>팀
+                  </span>
+                  <% if tournament.tournament_site %>
+                    <span>
+                      <svg class="inline w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      <%= number_with_delimiter(tournament.tournament_site.views_count) %> 조회
+                    </span>
+                  <% end %>
+                  <% if tournament.series.present? %>
+                    <span class="text-primary-600">
+                      <svg class="inline w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      <%= tournament.series.name %>
+                    </span>
+                  <% end %>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <% unless tournament.tournament_site %>
+                  <%= link_to wizard_tournament_admin_tournament_path(tournament),
+                              class: "px-3 py-1.5 text-sm font-medium text-orange-700 bg-orange-100 hover:bg-orange-200 rounded-lg transition-colors" do %>
+                    위자드 계속
+                  <% end %>
+                <% end %>
+                <% if tournament.tournament_site %>
+                  <%= link_to tournament_admin_tournament_site_path(tournament),
+                              class: "px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors" do %>
+                    사이트 편집
+                  <% end %>
+                <% end %>
+                <%= button_to clone_tournament_admin_tournament_path(tournament),
+                              method: :post,
+                              class: "px-3 py-1.5 text-sm font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 rounded-lg transition-colors",
+                              data: { turbo_confirm: "이 대회를 복제하시겠습니까?\n대회 정보와 사이트 설정이 복사됩니다." } do %>
+                  복제
+                <% end %>
+                <%= link_to tournament_admin_tournament_path(tournament),
+                            class: "px-3 py-1.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors" do %>
+                  관리
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% else %>
+    <%# Empty State %>
+    <div class="bg-white rounded-2xl shadow-sm p-12 text-center">
+      <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-900 mb-2">아직 대회가 없습니다</h3>
+      <p class="text-gray-500 mb-6">첫 번째 대회를 만들어 대회 사이트를 공개해보세요!</p>
+      <%= link_to new_tournament_admin_tournament_path, class: "inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors" do %>
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        새 대회 만들기
+      <% end %>
+    </div>
+  <% end %>
+</div>

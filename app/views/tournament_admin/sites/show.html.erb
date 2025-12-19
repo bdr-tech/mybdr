@@ -1,0 +1,166 @@
+<div class="max-w-6xl mx-auto">
+  <%# Header %>
+  <div class="flex justify-between items-start mb-8">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">사이트 관리</h1>
+      <p class="mt-1 text-gray-600"><%= @tournament.name %></p>
+    </div>
+    <div class="flex items-center gap-3">
+      <% if @site.is_published? %>
+        <%= button_to unpublish_tournament_admin_tournament_site_path(@tournament),
+                      method: :patch,
+                      class: "px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors",
+                      data: { turbo_confirm: "사이트를 비공개 처리하시겠습니까?" } do %>
+          비공개로 전환
+        <% end %>
+      <% else %>
+        <%= button_to publish_tournament_admin_tournament_site_path(@tournament),
+                      method: :patch,
+                      class: "px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors" do %>
+          사이트 발행
+        <% end %>
+      <% end %>
+      <% if @site.subdomain.present? %>
+        <%= link_to "/sites/#{@site.subdomain}", target: "_blank",
+                    class: "inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors" do %>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
+          로컬 미리보기
+        <% end %>
+      <% end %>
+      <%= link_to @site.full_url, target: "_blank",
+                  class: "inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors" do %>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+        </svg>
+        사이트 보기
+      <% end %>
+    </div>
+  </div>
+
+  <%# Site Info Card %>
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
+    <div class="p-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <% if @site.logo_url.present? %>
+            <img src="<%= @site.logo_url %>" alt="Logo" class="w-16 h-16 rounded-lg object-cover">
+          <% else %>
+            <div class="w-16 h-16 rounded-lg flex items-center justify-center" style="background-color: <%= @site.primary_color || '#E53E3E' %>">
+              <span class="text-2xl font-bold text-white"><%= @tournament.name.first.upcase %></span>
+            </div>
+          <% end %>
+          <div>
+            <h2 class="text-lg font-semibold text-gray-900"><%= @site.subdomain %>.mybdr.kr</h2>
+            <div class="flex items-center gap-2 mt-1">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= @site.is_published? ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600' %>">
+                <%= @site.is_published? ? '발행됨' : '비공개' %>
+              </span>
+              <% if @site.custom_domain.present? %>
+                <span class="text-sm text-gray-500">| <%= @site.custom_domain %></span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+        <div class="text-right text-sm text-gray-500">
+          <p>조회수: <span class="font-medium text-gray-900"><%= number_with_delimiter(@site.views_count || 0) %></span></p>
+          <% if @site.published_at %>
+            <p>발행일: <%= @site.published_at.strftime("%Y.%m.%d") %></p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%# Quick Actions %>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <%= link_to edit_design_tournament_admin_tournament_site_path(@tournament),
+                class: "bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow group" do %>
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+          <span class="text-2xl">🎨</span>
+        </div>
+        <div>
+          <h3 class="font-medium text-gray-900">디자인 편집</h3>
+          <p class="text-sm text-gray-500">색상, 로고, 이미지 변경</p>
+        </div>
+      </div>
+    <% end %>
+
+    <%= link_to "#",
+                class: "bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow group opacity-50 cursor-not-allowed" do %>
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+          <span class="text-2xl">📄</span>
+        </div>
+        <div>
+          <h3 class="font-medium text-gray-900">페이지 관리</h3>
+          <p class="text-sm text-gray-500">준비 중</p>
+        </div>
+      </div>
+    <% end %>
+
+    <%= link_to "#",
+                class: "bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow group opacity-50 cursor-not-allowed" do %>
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+          <span class="text-2xl">📊</span>
+        </div>
+        <div>
+          <h3 class="font-medium text-gray-900">통계</h3>
+          <p class="text-sm text-gray-500">준비 중</p>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <%# Pages List %>
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+    <div class="p-6 border-b border-gray-100">
+      <h2 class="text-lg font-semibold text-gray-900">페이지 목록</h2>
+    </div>
+    <% if @pages.any? %>
+      <div class="divide-y divide-gray-100">
+        <% @pages.each do |page| %>
+          <div class="p-4 flex items-center justify-between hover:bg-gray-50">
+            <div class="flex items-center gap-3">
+              <span class="text-lg">
+                <%= case page.page_type
+                    when 'home' then '🏠'
+                    when 'schedule' then '📅'
+                    when 'teams' then '👥'
+                    when 'results' then '🏆'
+                    when 'gallery' then '📷'
+                    when 'notice' then '📢'
+                    else '📄'
+                    end %>
+              </span>
+              <div>
+                <h3 class="font-medium text-gray-900"><%= page.title %></h3>
+                <p class="text-sm text-gray-500">/<%= page.slug %></p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs px-2 py-1 rounded-full <%= page.is_visible? ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' %>">
+                <%= page.is_visible? ? '표시' : '숨김' %>
+              </span>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="p-8 text-center text-gray-500">
+        페이지가 없습니다.
+      </div>
+    <% end %>
+  </div>
+
+  <%# Back Link %>
+  <div class="mt-6">
+    <%= link_to tournament_admin_tournament_path(@tournament), class: "text-gray-500 hover:text-gray-700 text-sm" do %>
+      &larr; 대회 관리로 돌아가기
+    <% end %>
+  </div>
+</div>

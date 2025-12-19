@@ -1,0 +1,49 @@
+<%# Schedule Section Form Fields %>
+
+<div class="bg-blue-50 text-blue-800 p-4 rounded-lg">
+  <p class="text-sm">
+    <strong>자동 데이터:</strong> 이 섹션은 대회의 일정 데이터를 자동으로 표시합니다.
+    표시 옵션만 설정하면 됩니다.
+  </p>
+</div>
+
+<div class="flex items-center gap-3">
+  <%= f.check_box :show_past_games,
+                 class: "w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500" %>
+  <%= f.label :show_past_games, "지난 경기 표시", class: "text-sm text-gray-700" %>
+</div>
+
+<div>
+  <%= f.label :max_games, "최대 표시 경기 수", class: "block text-sm font-medium text-gray-700 mb-1" %>
+  <%= f.number_field :max_games,
+                    min: 1,
+                    max: 100,
+                    value: 10,
+                    class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" %>
+  <p class="mt-1 text-sm text-gray-500">0으로 설정하면 모든 경기를 표시합니다</p>
+</div>
+
+<div>
+  <label class="block text-sm font-medium text-gray-700 mb-2">표시 형식</label>
+  <div class="flex gap-4">
+    <label class="flex items-center gap-2">
+      <%= f.radio_button :display_format, "list", class: "text-primary-600", checked: true %>
+      <span class="text-sm">리스트</span>
+    </label>
+    <label class="flex items-center gap-2">
+      <%= f.radio_button :display_format, "calendar", class: "text-primary-600" %>
+      <span class="text-sm">캘린더</span>
+    </label>
+    <label class="flex items-center gap-2">
+      <%= f.radio_button :display_format, "compact", class: "text-primary-600" %>
+      <span class="text-sm">컴팩트</span>
+    </label>
+  </div>
+</div>
+
+<div class="flex items-center gap-3">
+  <%= f.check_box :show_venue,
+                 class: "w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500",
+                 checked: true %>
+  <%= f.label :show_venue, "경기 장소 표시", class: "text-sm text-gray-700" %>
+</div>

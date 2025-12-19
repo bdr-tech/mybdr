@@ -1,0 +1,23 @@
+<% content_for :title, "경기 만들기" %>
+
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- 뒤로가기 -->
+  <%= link_to games_path, class: "inline-flex items-center text-gray-600 hover:text-gray-900 mb-6" do %>
+    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    목록으로
+  <% end %>
+
+  <div class="card p-6 md:p-8">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">경기 만들기</h1>
+
+    <% if @template %>
+      <div class="alert alert-info mb-6">
+        <strong>"<%= @template.name %>"</strong> 템플릿을 사용합니다.
+      </div>
+    <% end %>
+
+    <%= render "form", game: @game %>
+  </div>
+</div>

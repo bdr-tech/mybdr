@@ -1,0 +1,121 @@
+<% content_for :title, "설정 상세 - #{@setting.key}" %>
+
+<div class="px-4 sm:px-6 lg:px-8">
+  <!-- Header -->
+  <div class="mb-6">
+    <%= link_to admin_system_settings_path, class: "inline-flex items-center text-sm text-gray-500 hover:text-gray-700" do %>
+      <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      목록으로
+    <% end %>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Content -->
+    <div class="lg:col-span-2">
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <h1 class="text-xl font-semibold text-gray-900"><%= @setting.key %></h1>
+            <div class="flex space-x-2">
+              <% if @setting.is_public? %>
+                <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5 bg-blue-100 text-blue-800">공개</span>
+              <% end %>
+              <% if @setting.is_editable? %>
+                <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5 bg-green-100 text-green-800">수정가능</span>
+              <% else %>
+                <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5 bg-gray-100 text-gray-600">읽기전용</span>
+              <% end %>
+            </div>
+          </div>
+          <% if @setting.description.present? %>
+            <p class="mt-1 text-sm text-gray-500"><%= @setting.description %></p>
+          <% end %>
+        </div>
+
+        <div class="px-6 py-4">
+          <dl class="grid grid-cols-2 gap-4">
+            <div>
+              <dt class="text-sm font-medium text-gray-500">카테고리</dt>
+              <dd class="mt-1 text-gray-900"><%= @setting.category_label %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">값 타입</dt>
+              <dd class="mt-1 text-gray-900"><%= @setting.value_type_label %></dd>
+            </div>
+            <div class="col-span-2">
+              <dt class="text-sm font-medium text-gray-500">현재 값</dt>
+              <dd class="mt-1">
+                <% if @setting.value_type == "boolean" %>
+                  <span class="inline-flex rounded-full px-3 py-1 text-sm font-semibold <%= @setting.typed_value ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+                    <%= @setting.typed_value ? "예 (true)" : "아니오 (false)" %>
+                  </span>
+                <% elsif @setting.value_type.in?(["json", "array"]) %>
+                  <pre class="bg-gray-100 p-4 rounded-lg overflow-x-auto text-sm"><%= JSON.pretty_generate(@setting.typed_value) rescue @setting.value %></pre>
+                <% else %>
+                  <span class="text-lg text-gray-900"><%= @setting.typed_value %></span>
+                <% end %>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">생성일</dt>
+              <dd class="mt-1 text-gray-900"><%= l(@setting.created_at, format: :long) %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">수정일</dt>
+              <dd class="mt-1 text-gray-900"><%= l(@setting.updated_at, format: :long) %></dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- Actions -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">관리 작업</h2>
+        </div>
+        <div class="px-6 py-4 space-y-3">
+          <% if @setting.is_editable? %>
+            <%= link_to "수정", edit_admin_system_setting_path(@setting), class: "w-full inline-flex justify-center items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500" %>
+            <%= button_to "삭제", admin_system_setting_path(@setting), method: :delete, class: "w-full inline-flex justify-center items-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500", data: { confirm: "정말 이 설정을 삭제하시겠습니까?" } %>
+          <% else %>
+            <p class="text-sm text-gray-500 text-center">이 설정은 수정하거나 삭제할 수 없습니다.</p>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Quick Update for Boolean -->
+      <% if @setting.is_editable? && @setting.value_type == "boolean" %>
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-medium text-gray-900">빠른 토글</h2>
+          </div>
+          <div class="px-6 py-4">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">현재: <%= @setting.typed_value ? "활성화" : "비활성화" %></span>
+              <%= form_with url: quick_update_admin_system_settings_path, method: :post, local: true, class: "inline" do |f| %>
+                <%= f.hidden_field :key, value: @setting.key %>
+                <%= f.hidden_field :value, value: (!@setting.typed_value).to_s %>
+                <%= f.submit(@setting.typed_value ? "비활성화" : "활성화"), class: "inline-flex items-center rounded-md px-3 py-1 text-sm font-medium cursor-pointer #{@setting.typed_value ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}" %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Raw Value -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">원시 값</h2>
+        </div>
+        <div class="px-6 py-4">
+          <code class="block bg-gray-100 p-3 rounded text-sm break-all"><%= @setting.value %></code>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

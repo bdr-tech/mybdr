@@ -1,0 +1,80 @@
+<div id="comment-<%= comment.id %>" class="<%= 'ml-8 border-l-2 border-gray-200 pl-4' if comment.depth > 0 %>">
+  <div class="py-4 <%= 'border-b border-gray-100' unless comment.status_deleted? %>">
+    <% if comment.status_deleted? %>
+      <p class="text-gray-400 italic">삭제된 댓글입니다.</p>
+    <% else %>
+      <!-- 댓글 헤더 -->
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <div class="avatar-xs">
+            <% if comment.user.profile_image.present? %>
+              <img src="<%= comment.user.profile_image %>" alt="" class="w-full h-full object-cover rounded-full">
+            <% else %>
+              <%= comment.user.display_name[0] %>
+            <% end %>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="font-medium text-gray-900 text-sm"><%= comment.user.display_name %></span>
+            <% if comment.is_author %>
+              <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-orange-100 text-orange-600">작성자</span>
+            <% end %>
+            <span class="text-xs text-gray-500"><%= time_ago_in_words(comment.created_at) %> 전</span>
+          </div>
+        </div>
+
+        <% if comment.editable_by?(current_user) %>
+          <div class="flex items-center gap-2">
+            <%= button_to community_post_comment_path(post, comment),
+                method: :delete,
+                class: "text-xs text-gray-400 hover:text-red-500",
+                data: { confirm: "댓글을 삭제하시겠습니까?" } do %>
+              삭제
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- 댓글 내용 -->
+      <div class="text-gray-700 text-sm whitespace-pre-wrap"><%= comment.content %></div>
+
+      <!-- 답글 버튼 -->
+      <% if logged_in? && comment.can_reply? %>
+        <div class="mt-2">
+          <button type="button"
+                  class="text-xs text-gray-500 hover:text-orange-500"
+                  onclick="toggleReplyForm(<%= comment.id %>)">
+            답글
+          </button>
+        </div>
+
+        <!-- 답글 폼 (숨김) -->
+        <div id="reply-form-<%= comment.id %>" class="hidden mt-4">
+          <%= form_with model: [post, Comment.new(parent_id: comment.id)], class: "space-y-3" do |f| %>
+            <%= f.hidden_field :parent_id, value: comment.id %>
+            <%= f.text_area :content,
+                rows: 2,
+                placeholder: "답글을 작성하세요...",
+                class: "w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none" %>
+            <div class="flex justify-end gap-2">
+              <button type="button"
+                      class="btn btn-secondary btn-sm"
+                      onclick="toggleReplyForm(<%= comment.id %>)">
+                취소
+              </button>
+              <%= f.submit "답글 작성", class: "btn btn-primary btn-sm" %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+
+  <!-- 대댓글 -->
+  <% if comment.replies.published.any? %>
+    <div class="replies">
+      <% comment.replies.published.oldest_first.each do |reply| %>
+        <%= render partial: "community_comments/comment", locals: { comment: reply, post: post } %>
+      <% end %>
+    </div>
+  <% end %>
+</div>
