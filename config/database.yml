@@ -84,6 +84,8 @@ production:
     database: bdr_platform_production
     username: bdr_platform
     password: <%= ENV["BDR_PLATFORM_DATABASE_PASSWORD"] %>
+    host: <%= ENV.fetch("DB_HOST") { "localhost" } %>
+    port: 5432
   cache:
     <<: *primary_production
     database: bdr_platform_production_cache
