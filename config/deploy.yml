@@ -2,12 +2,12 @@
 service: bdr_platform
 
 # Name of the container image.
-image: your-user/bdr_platform
+image: mybdr/bdr_platform
 
 # Deploy to these servers.
 servers:
   web:
-    - 192.168.0.1
+    - 157.245.196.193
   # job:
   #   hosts:
   #     - 192.168.0.1
