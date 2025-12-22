@@ -21,6 +21,14 @@ proxy:
   ssl: true
   host: mybdr.kr
 
+# Configure healthcheck (default: 30s timeout)
+healthcheck:
+  path: /up
+  port: 3000
+  max_attempts: 15
+  interval: 10s
+  timeout: 120s
+
 # Credentials for your image host.
 registry:
   # Specify the registry server, if you're not using Docker Hub
