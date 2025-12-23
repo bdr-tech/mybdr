@@ -16,21 +16,40 @@ class Tournament < ApplicationRecord
     "일반부" => { code: "general", description: "만 18세 이상 성인" },
     "대학부" => { code: "college", description: "대학교 재학생/휴학생" },
     "여성부" => { code: "women", description: "여성 선수" },
-    "유소년부" => { code: "youth", description: "만 18세 미만" },
-    "시니어부" => { code: "senior", description: "만 40세 이상" },
-    "초보부" => { code: "beginner", description: "농구 경력 2년 미만" }
+    "유소년부" => { code: "youth", description: "만 18세 미만" }
   }.freeze
 
-  # 2단계: 조별/리그 (하위 카테고리)
-  DIVISION_TIERS = {
-    "1부" => { code: "tier1", description: "상위 리그" },
-    "2부" => { code: "tier2", description: "중위 리그" },
-    "3부" => { code: "tier3", description: "하위 리그" },
-    "A조" => { code: "group_a", description: "A 그룹" },
-    "B조" => { code: "group_b", description: "B 그룹" },
-    "C조" => { code: "group_c", description: "C 그룹" },
-    "D조" => { code: "group_d", description: "D 그룹" }
+  # 2단계: 부별 하위 종목
+  DIVISION_TIERS_BY_CATEGORY = {
+    "일반부" => {
+      "D3" => { code: "d3", description: "Division 3" },
+      "D4" => { code: "d4", description: "Division 4" },
+      "D5" => { code: "d5", description: "Division 5" },
+      "D6" => { code: "d6", description: "Division 6" },
+      "D7" => { code: "d7", description: "Division 7" }
+    },
+    "대학부" => {
+      "U1" => { code: "u1", description: "University 1" },
+      "U2" => { code: "u2", description: "University 2" },
+      "U3" => { code: "u3", description: "University 3" },
+      "U4" => { code: "u4", description: "University 4" }
+    },
+    "여성부" => {
+      "D3" => { code: "w_d3", description: "Women Division 3" },
+      "D4" => { code: "w_d4", description: "Women Division 4" },
+      "D5" => { code: "w_d5", description: "Women Division 5" }
+    },
+    "유소년부" => {
+      "하모니" => { code: "harmony", description: "하모니 리그" },
+      "i1" => { code: "i1", description: "초등 1-2학년" },
+      "i2" => { code: "i2", description: "초등 3-4학년" },
+      "i3" => { code: "i3", description: "초등 5-6학년" },
+      "i4" => { code: "i4", description: "중등부" }
+    }
   }.freeze
+
+  # 전체 하위 종목 목록 (레거시 호환)
+  DIVISION_TIERS = DIVISION_TIERS_BY_CATEGORY.values.reduce({}, :merge).freeze
 
   # 기존 호환성 유지
   DIVISIONS = DIVISION_CATEGORIES
@@ -327,15 +346,15 @@ class Tournament < ApplicationRecord
   end
 
   # =============================================================================
-  # Division Tier Methods (2단계: 조별/리그)
+  # Division Tier Methods (2단계: 하위 종목)
   # =============================================================================
 
-  # 조별 선택 여부
+  # 하위 종목 선택 여부
   def has_division_tiers?
     division_tiers.present? && division_tiers.any?
   end
 
-  # 조별 목록 표시
+  # 하위 종목 목록 표시
   def division_tiers_display
     return nil unless has_division_tiers?
     division_tiers.join(", ")
@@ -349,9 +368,27 @@ class Tournament < ApplicationRecord
     parts.compact.join(" / ")
   end
 
-  # 조별 옵션 (select helper용)
+  # 전체 하위 종목 옵션 (select helper용)
   def self.division_tier_options
     DIVISION_TIERS.map { |name, info| [name, name, { data: { description: info[:description] } }] }
+  end
+
+  # 특정 부별의 하위 종목 옵션 (select helper용)
+  def self.division_tier_options_for(category)
+    tiers = DIVISION_TIERS_BY_CATEGORY[category] || {}
+    tiers.map { |name, info| [name, name, { data: { description: info[:description] } }] }
+  end
+
+  # 특정 부별의 하위 종목 목록
+  def self.division_tiers_for(category)
+    DIVISION_TIERS_BY_CATEGORY[category]&.keys || []
+  end
+
+  # 모든 부별과 하위 종목을 계층 구조로 반환 (JS용)
+  def self.division_hierarchy
+    DIVISION_TIERS_BY_CATEGORY.transform_values do |tiers|
+      tiers.map { |name, info| { name: name, code: info[:code], description: info[:description] } }
+    end
   end
 
   # =============================================================================

@@ -25,7 +25,7 @@
       </div>
       <div class="flex-1 min-w-[150px]">
         <%= f.select :city,
-            options_for_select([["모든 지역", ""]] + Team.distinct.pluck(:city).compact.map { |c| [c, c] }, params[:city]),
+            options_for_select([["모든 지역", ""]] + Team::KOREAN_CITIES.map { |c| [c, c] }, params[:city]),
             {}, class: "form-select w-full" %>
       </div>
       <div class="flex items-center gap-2">

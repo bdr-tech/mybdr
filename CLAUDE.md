@@ -244,6 +244,54 @@ redirect_to path, alert: "오류 메시지"
 
 ---
 
+## Deployment Workflow (Kamal)
+
+**중요: Kamal은 git에 커밋된 코드만 배포합니다!**
+
+### 배포 순서
+
+```bash
+# 1. 로컬 서버에서 먼저 테스트
+bin/rails server
+
+# 2. 브라우저에서 변경사항 확인
+# http://localhost:3000
+
+# 3. 테스트 통과 확인
+bin/rails test
+
+# 4. 변경사항 커밋
+git add .
+git commit -m "변경 내용 설명"
+
+# 5. 프로덕션 배포
+kamal deploy
+```
+
+### 주의사항
+
+- **커밋 전 반드시 로컬에서 테스트**
+- 커밋되지 않은 변경사항은 배포되지 않음
+- 배포 실패 시 `kamal lock release`로 락 해제
+
+### 서버 접속 (SSH 비밀번호 방식)
+
+```bash
+# sshpass 필요 (brew install hudochenkov/sshpass/sshpass)
+sshpass -p '비밀번호' ssh root@157.245.196.193
+
+# Docker 컨테이너 확인
+docker ps
+
+# Rails 콘솔
+kamal app exec -i 'bin/rails console'
+
+# 로그 확인
+kamal app logs -f
+```
+
+---
+
 ## Best Practices
 
 1. **View 작성시** - 기존 뷰 파일의 패턴 참고
@@ -251,3 +299,4 @@ redirect_to path, alert: "오류 메시지"
 3. **디자인** - `docs/DESIGN.md` 컴포넌트 클래스 활용
 4. **한글 텍스트** - 기존 파일의 용어 일관성 유지
 5. **에러 처리** - flash 메시지로 사용자 피드백
+6. **배포 전** - 반드시 로컬 서버에서 테스트 후 커밋

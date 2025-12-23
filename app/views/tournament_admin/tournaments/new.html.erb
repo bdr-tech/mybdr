@@ -143,13 +143,13 @@
           <%# Step 1: 부별 선택 %>
           <div class="mb-4">
             <p class="text-sm text-gray-600 mb-2"><strong>1단계:</strong> 부별 선택 <span class="text-gray-400">(복수 선택 가능)</span></p>
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
               <% Tournament::DIVISION_CATEGORIES.each do |name, info| %>
                 <label class="division-category flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                       data-category="<%= info[:code] %>">
+                       data-category="<%= name %>">
                   <input type="checkbox" name="tournament[divisions][]" value="<%= name %>"
                          class="category-checkbox rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                         onchange="toggleTierSelection(this)"
+                         onchange="updateTierSelection()"
                          <%= 'checked' if @tournament.divisions&.include?(name) %>>
                   <div>
                     <span class="font-medium text-gray-900"><%= name %></span>
@@ -160,34 +160,52 @@
             </div>
           </div>
 
-          <%# Step 2: 조별/리그 선택 %>
-          <div id="tier_selection" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
-            <p class="text-sm text-gray-600 mb-2"><strong>2단계:</strong> 조별/리그 선택 <span class="text-gray-400">(선택한 부별에 적용)</span></p>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-              <% Tournament::DIVISION_TIERS.each do |name, info| %>
-                <label class="flex items-center gap-2 p-2 border bg-white rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                  <input type="checkbox" name="tournament[division_tiers][]" value="<%= name %>"
-                         class="tier-checkbox rounded border-gray-300 text-primary-600 focus:ring-primary-500">
-                  <div>
-                    <span class="text-sm font-medium text-gray-900"><%= name %></span>
-                    <span class="text-xs text-gray-500 ml-1">(<%= info[:description] %>)</span>
-                  </div>
-                </label>
-              <% end %>
-            </div>
-            <p class="mt-2 text-xs text-gray-500">예: 일반부 1부, 일반부 2부, 대학부 A조 등으로 구성됩니다.</p>
+          <%# Step 2: 하위 종목 선택 (부별에 따라 동적으로 표시) %>
+          <div id="tier_selection" class="hidden mt-4 space-y-4">
+            <p class="text-sm text-gray-600"><strong>2단계:</strong> 하위 종목 선택</p>
+
+            <% Tournament::DIVISION_TIERS_BY_CATEGORY.each do |category, tiers| %>
+              <div id="tiers_<%= category.gsub(/[^가-힣a-zA-Z0-9]/, '') %>"
+                   class="tier-group hidden p-4 bg-gray-50 rounded-lg"
+                   data-category="<%= category %>">
+                <p class="text-sm font-medium text-gray-700 mb-2"><%= category %> 종목</p>
+                <div class="flex flex-wrap gap-2">
+                  <% tiers.each do |tier_name, tier_info| %>
+                    <label class="flex items-center gap-2 px-3 py-2 border bg-white rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                      <input type="checkbox" name="tournament[division_tiers][]" value="<%= tier_name %>"
+                             class="tier-checkbox rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                             <%= 'checked' if @tournament.division_tiers&.include?(tier_name) %>>
+                      <span class="text-sm font-medium text-gray-900"><%= tier_name %></span>
+                    </label>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
           </div>
 
           <p class="mt-3 text-sm text-gray-500">선택하지 않으면 전체 부로 진행됩니다.</p>
         </div>
 
         <script>
-          function toggleTierSelection(checkbox) {
+          function updateTierSelection() {
             const checkedCategories = document.querySelectorAll('.category-checkbox:checked');
             const tierSection = document.getElementById('tier_selection');
+            const allTierGroups = document.querySelectorAll('.tier-group');
+
+            // Hide all tier groups first
+            allTierGroups.forEach(group => group.classList.add('hidden'));
 
             if (checkedCategories.length > 0) {
               tierSection.classList.remove('hidden');
+
+              // Show tier groups for selected categories
+              checkedCategories.forEach(checkbox => {
+                const categoryName = checkbox.value;
+                const tierGroup = document.querySelector(`.tier-group[data-category="${categoryName}"]`);
+                if (tierGroup) {
+                  tierGroup.classList.remove('hidden');
+                }
+              });
             } else {
               tierSection.classList.add('hidden');
             }
@@ -195,10 +213,7 @@
 
           // Initialize on page load
           document.addEventListener('DOMContentLoaded', function() {
-            const checkedCategories = document.querySelectorAll('.category-checkbox:checked');
-            if (checkedCategories.length > 0) {
-              document.getElementById('tier_selection').classList.remove('hidden');
-            }
+            updateTierSelection();
           });
         </script>
 
