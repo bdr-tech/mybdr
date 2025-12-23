@@ -101,7 +101,7 @@
       <%# Phone %>
       <div>
         <%= f.label :phone, "전화번호", class: "form-label" %>
-        <%= f.tel_field :phone,
+        <%= f.telephone_field :phone,
             class: "form-input #{@user.errors[:phone].any? ? 'form-input-error' : ''}",
             placeholder: "010-1234-5678",
             autocomplete: "tel" %>
