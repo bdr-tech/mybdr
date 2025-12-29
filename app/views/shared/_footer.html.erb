@@ -1,21 +1,21 @@
 <%# Footer %>
 <footer class="bg-white border-t border-gray-100 hidden lg:block">
-  <div class="container-app py-12">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+  <div class="container-app py-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
       <%# Brand %>
       <div class="col-span-1 md:col-span-2">
-        <div class="flex items-center gap-2 mb-4">
-          <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-7 h-7 bg-blue-800 rounded-lg flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
             </svg>
           </div>
-          <span class="text-xl font-bold text-gray-900">BDR</span>
+          <span class="text-lg font-black tracking-tight text-gray-900">BDR</span>
         </div>
-        <p class="text-gray-500 text-sm max-w-md">
+        <p class="text-gray-500 text-xs max-w-md">
           Basketball Daily Routine - 농구를 사랑하는 모든 사람들을 위한 종합 경기 매칭 플랫폼
         </p>
-        <div class="flex gap-4 mt-6">
+        <div class="flex gap-3 mt-4">
           <a href="#" class="text-gray-400 hover:text-gray-600 transition-colors">
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg>
           </a>
@@ -27,28 +27,28 @@
 
       <%# Links %>
       <div>
-        <h4 class="font-semibold text-gray-900 mb-4">서비스</h4>
-        <ul class="space-y-2">
-          <li><%= link_to "경기 찾기", games_path, class: "text-sm text-gray-500 hover:text-gray-700 transition-colors" %></li>
-          <li><%= link_to "팀 관리", teams_path, class: "text-sm text-gray-500 hover:text-gray-700 transition-colors" %></li>
-          <li><%= link_to "대회 정보", tournaments_path, class: "text-sm text-gray-500 hover:text-gray-700 transition-colors" %></li>
-          <li><%= link_to "코트 검색", courts_path, class: "text-sm text-gray-500 hover:text-gray-700 transition-colors" %></li>
+        <h4 class="font-medium text-gray-900 mb-3 text-sm">서비스</h4>
+        <ul class="space-y-1.5">
+          <li><%= link_to "경기 찾기", games_path, class: "text-xs text-gray-500 hover:text-gray-700 transition-colors" %></li>
+          <li><%= link_to "팀 관리", teams_path, class: "text-xs text-gray-500 hover:text-gray-700 transition-colors" %></li>
+          <li><%= link_to "대회 정보", tournaments_path, class: "text-xs text-gray-500 hover:text-gray-700 transition-colors" %></li>
+          <li><%= link_to "코트 검색", courts_path, class: "text-xs text-gray-500 hover:text-gray-700 transition-colors" %></li>
         </ul>
       </div>
 
       <div>
-        <h4 class="font-semibold text-gray-900 mb-4">고객센터</h4>
-        <ul class="space-y-2">
-          <li><a href="#" class="text-sm text-gray-500 hover:text-gray-700 transition-colors">자주 묻는 질문</a></li>
-          <li><a href="#" class="text-sm text-gray-500 hover:text-gray-700 transition-colors">문의하기</a></li>
-          <li><a href="#" class="text-sm text-gray-500 hover:text-gray-700 transition-colors">이용약관</a></li>
-          <li><a href="#" class="text-sm text-gray-500 hover:text-gray-700 transition-colors">개인정보처리방침</a></li>
+        <h4 class="font-medium text-gray-900 mb-3 text-sm">고객센터</h4>
+        <ul class="space-y-1.5">
+          <li><a href="#" class="text-xs text-gray-500 hover:text-gray-700 transition-colors">자주 묻는 질문</a></li>
+          <li><a href="#" class="text-xs text-gray-500 hover:text-gray-700 transition-colors">문의하기</a></li>
+          <li><a href="#" class="text-xs text-gray-500 hover:text-gray-700 transition-colors">이용약관</a></li>
+          <li><a href="#" class="text-xs text-gray-500 hover:text-gray-700 transition-colors">개인정보처리방침</a></li>
         </ul>
       </div>
     </div>
 
-    <div class="border-t border-gray-100 mt-12 pt-8">
-      <p class="text-sm text-gray-400 text-center">
+    <div class="border-t border-gray-100 mt-8 pt-5">
+      <p class="text-xs text-gray-400 text-center">
         &copy; <%= Date.current.year %> BDR. All rights reserved.
       </p>
     </div>

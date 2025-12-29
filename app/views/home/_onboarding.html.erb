@@ -1,0 +1,82 @@
+<%# Onboarding Section for Non-Logged-In Users %>
+<div class="min-h-[60vh] flex flex-col">
+  <%# Welcome Header %>
+  <div class="text-center pt-8 pb-6">
+    <div class="w-16 h-16 mx-auto bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-primary-500/30">
+      <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+      </svg>
+    </div>
+    <h1 class="text-2xl font-bold text-gray-900">BDR에 오신 것을 환영합니다</h1>
+    <p class="mt-2 text-gray-500">농구를 사랑하는 모든 사람들을 위한 플랫폼</p>
+  </div>
+
+  <%# Feature Cards - 2x2 Grid %>
+  <div class="px-4 grid grid-cols-2 gap-3 flex-1 content-start">
+    <%# 경기찾기 %>
+    <div class="card-toss p-4 text-center">
+      <div class="w-12 h-12 mx-auto bg-blue-100 rounded-xl flex items-center justify-center mb-3">
+        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35"/>
+        </svg>
+      </div>
+      <h3 class="font-semibold text-gray-900 text-sm">경기찾기</h3>
+      <p class="text-xs text-gray-500 mt-1">픽업게임 참가</p>
+    </div>
+
+    <%# 대회참가 %>
+    <div class="card-toss p-4 text-center">
+      <div class="w-12 h-12 mx-auto bg-purple-100 rounded-xl flex items-center justify-center mb-3">
+        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 22h16"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+        </svg>
+      </div>
+      <h3 class="font-semibold text-gray-900 text-sm">대회참가</h3>
+      <p class="text-xs text-gray-500 mt-1">팀으로 우승 도전</p>
+    </div>
+
+    <%# 팀만들기 %>
+    <div class="card-toss p-4 text-center">
+      <div class="w-12 h-12 mx-auto bg-amber-100 rounded-xl flex items-center justify-center mb-3">
+        <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 8v6"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M22 11h-6"/>
+        </svg>
+      </div>
+      <h3 class="font-semibold text-gray-900 text-sm">팀만들기</h3>
+      <p class="text-xs text-gray-500 mt-1">나만의 팀 생성</p>
+    </div>
+
+    <%# 커뮤니티 %>
+    <div class="card-toss p-4 text-center">
+      <div class="w-12 h-12 mx-auto bg-green-100 rounded-xl flex items-center justify-center mb-3">
+        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+      <h3 class="font-semibold text-gray-900 text-sm">커뮤니티</h3>
+      <p class="text-xs text-gray-500 mt-1">농구 정보 공유</p>
+    </div>
+  </div>
+
+  <%# CTA Buttons %>
+  <div class="px-4 py-6 mt-auto space-y-3">
+    <%= link_to signup_path, class: "btn btn-lg btn-primary w-full" do %>
+      무료로 시작하기
+      <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+      </svg>
+    <% end %>
+    <%= link_to login_path, class: "btn btn-lg btn-secondary w-full" do %>
+      이미 계정이 있어요
+    <% end %>
+  </div>
+</div>

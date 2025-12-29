@@ -33,6 +33,21 @@ class SessionsController < ApplicationController
     redirect_to root_path, status: :see_other
   end
 
+  # GET /dev_login/:id (Development Only)
+  def dev_login
+    return head :not_found unless Rails.env.development? || Rails.env.test?
+
+    user = User.find_by(id: params[:id])
+    if user
+      log_in(user)
+      flash[:success] = "[DEV] #{user.display_name}(으)로 로그인되었습니다"
+      redirect_to root_path
+    else
+      flash[:error] = "[DEV] 사용자를 찾을 수 없습니다"
+      redirect_to login_path
+    end
+  end
+
   private
 
   def redirect_if_logged_in

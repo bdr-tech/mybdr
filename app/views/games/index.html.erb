@@ -8,7 +8,7 @@
       <p class="text-gray-600 mt-1">참여할 수 있는 경기를 찾아보세요</p>
     </div>
     <% if logged_in? %>
-      <%= link_to new_game_path, class: "btn btn-primary" do %>
+      <%= link_to new_game_path, class: "btn btn-primary", data: { tip: "create-game" } do %>
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
         </svg>
@@ -18,7 +18,7 @@
   </div>
 
   <!-- 필터 -->
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6" data-tip="filter">
     <%= form_with url: games_path, method: :get, local: true, class: "flex flex-wrap gap-4" do |f| %>
       <div class="flex-1 min-w-[150px]">
         <%= f.select :game_type,
@@ -40,8 +40,8 @@
   <!-- 경기 목록 -->
   <% if @games.any? %>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <% @games.each do |game| %>
-        <%= render "games/game_card", game: game %>
+      <% @games.each_with_index do |game, index| %>
+        <%= render "games/game_card", game: game, tip: (index == 0 ? "game-card" : nil) %>
       <% end %>
     </div>
 
@@ -62,3 +62,6 @@
     </div>
   <% end %>
 </div>
+
+<%# 페이지별 온보딩 팁 %>
+<%= render_tips(:games_index) %>

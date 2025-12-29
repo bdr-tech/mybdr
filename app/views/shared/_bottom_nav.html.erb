@@ -1,39 +1,63 @@
-<%# Mobile Bottom Navigation %>
-<nav class="bottom-nav lg:hidden">
-  <div class="grid grid-cols-5 h-16">
-    <%= link_to root_path, class: "bottom-nav-item #{current_page?(root_path) ? 'bottom-nav-item-active' : ''}" do %>
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-      </svg>
-      <span class="text-xs mt-1">홈</span>
-    <% end %>
+<%# Mobile Bottom Navigation - Toss Style with Lucide Icons %>
+<div data-controller="bottom-nav" class="lg:hidden">
+  <nav class="bottom-nav-new">
+    <div class="grid grid-cols-5 h-14">
+      <%# 홈 (Home) - Lucide Home %>
+      <%= link_to root_path, class: "#{current_page?(root_path) ? 'bottom-nav-item-active-new' : 'bottom-nav-item-new'}", data: { turbo_frame: "_top" } do %>
+        <svg class="bottom-nav-icon" fill="none" stroke="currentColor" stroke-width="<%= current_page?(root_path) ? '2.5' : '2' %>" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline stroke-linecap="round" stroke-linejoin="round" points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span class="bottom-nav-label">홈</span>
+      <% end %>
 
-    <%= link_to games_path, class: "bottom-nav-item #{controller_name == 'games' ? 'bottom-nav-item-active' : ''}" do %>
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-      </svg>
-      <span class="text-xs mt-1">경기</span>
-    <% end %>
+      <%# 경기 (Games) - Lucide Calendar %>
+      <%= link_to games_path, class: "#{controller_name == 'games' ? 'bottom-nav-item-active-new' : 'bottom-nav-item-new'}", data: { turbo_frame: "_top" } do %>
+        <svg class="bottom-nav-icon" fill="none" stroke="currentColor" stroke-width="<%= controller_name == 'games' ? '2.5' : '2' %>" viewBox="0 0 24 24">
+          <rect stroke-linecap="round" stroke-linejoin="round" x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line stroke-linecap="round" stroke-linejoin="round" x1="16" y1="2" x2="16" y2="6"/>
+          <line stroke-linecap="round" stroke-linejoin="round" x1="8" y1="2" x2="8" y2="6"/>
+          <line stroke-linecap="round" stroke-linejoin="round" x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <span class="bottom-nav-label">경기</span>
+      <% end %>
 
-    <%= link_to tournaments_path, class: "bottom-nav-item #{controller_name == 'tournaments' ? 'bottom-nav-item-active' : ''}" do %>
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
-      </svg>
-      <span class="text-xs mt-1">대회</span>
-    <% end %>
+      <%# 대회 (Tournaments) - Lucide Trophy %>
+      <%= link_to tournaments_path, class: "#{controller_name == 'tournaments' ? 'bottom-nav-item-active-new' : 'bottom-nav-item-new'}", data: { turbo_frame: "_top" } do %>
+        <svg class="bottom-nav-icon" fill="none" stroke="currentColor" stroke-width="<%= controller_name == 'tournaments' ? '2.5' : '2' %>" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 22h16"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+        </svg>
+        <span class="bottom-nav-label">대회</span>
+      <% end %>
 
-    <%= link_to community_path, class: "bottom-nav-item #{controller_name == 'community' ? 'bottom-nav-item-active' : ''}" do %>
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-      </svg>
-      <span class="text-xs mt-1">커뮤니티</span>
-    <% end %>
+      <%# 게시판 (Community) - Lucide MessageSquare %>
+      <%= link_to community_path, class: "#{controller_name == 'community' ? 'bottom-nav-item-active-new' : 'bottom-nav-item-new'}", data: { turbo_frame: "_top" } do %>
+        <svg class="bottom-nav-icon" fill="none" stroke="currentColor" stroke-width="<%= controller_name == 'community' ? '2.5' : '2' %>" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span class="bottom-nav-label">게시판</span>
+      <% end %>
 
-    <%= link_to profile_path, class: "bottom-nav-item #{current_page?(profile_path) ? 'bottom-nav-item-active' : ''}" do %>
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-      </svg>
-      <span class="text-xs mt-1">MY</span>
-    <% end %>
-  </div>
-</nav>
+      <%# 전체 (Menu) - Lucide Menu %>
+      <button type="button"
+              class="bottom-nav-item-new"
+              data-action="click->bottom-nav#openMenu"
+              data-bottom-nav-target="menuButton">
+        <svg class="bottom-nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <line stroke-linecap="round" stroke-linejoin="round" x1="4" y1="6" x2="20" y2="6"/>
+          <line stroke-linecap="round" stroke-linejoin="round" x1="4" y1="12" x2="20" y2="12"/>
+          <line stroke-linecap="round" stroke-linejoin="round" x1="4" y1="18" x2="20" y2="18"/>
+        </svg>
+        <span class="bottom-nav-label">전체</span>
+      </button>
+    </div>
+  </nav>
+
+  <%# Full Menu Slide Panel %>
+  <%= render "shared/full_menu" %>
+</div>

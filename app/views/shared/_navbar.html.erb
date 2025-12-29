@@ -2,27 +2,55 @@
 <nav class="fixed top-0 inset-x-0 bg-white border-b border-gray-100 z-30">
   <div class="container-app">
     <div class="flex items-center justify-between h-16">
-      <%# Logo %>
+      <%# Logo - Nike Style %>
       <%= link_to root_path, class: "flex items-center gap-2" do %>
-        <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+        <div class="w-8 h-8 bg-blue-800 rounded-lg flex items-center justify-center">
           <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
             <path d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/>
           </svg>
         </div>
-        <span class="text-xl font-bold text-gray-900">BDR</span>
+        <span class="text-xl font-black tracking-tight text-gray-900">BDR</span>
       <% end %>
 
-      <%# Mobile Menu Button %>
-      <button type="button" class="lg:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" data-action="click->mobile-menu#toggle" data-mobile-menu-target="button">
-        <svg class="w-6 h-6 hamburger-icon transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-mobile-menu-target="hamburger">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-        </svg>
-        <svg class="w-6 h-6 close-icon hidden transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-mobile-menu-target="close">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
+      <%# Mobile Menu Button - Hidden, using bottom nav instead %>
+      <%# Hamburger menu removed - all navigation via bottom nav %>
+
+      <%# Mobile Right Section %>
+      <div class="lg:hidden flex items-center gap-2">
+        <% if logged_in? %>
+          <%# Notifications for Mobile %>
+          <% unread_count = current_user.notifications.unread.count %>
+          <%= link_to notifications_path, class: "relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors" do %>
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/>
+            </svg>
+            <% if unread_count > 0 %>
+              <span class="absolute -top-0.5 -right-0.5 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                <%= unread_count > 9 ? '9+' : unread_count %>
+              </span>
+            <% end %>
+          <% end %>
+          <%# User Avatar for Mobile %>
+          <%= link_to profile_path, class: "flex items-center" do %>
+            <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center">
+              <% if current_user.profile_image.present? %>
+                <img src="<%= current_user.profile_image %>" alt="<%= current_user.display_name %>" class="w-full h-full object-cover rounded-full">
+              <% else %>
+                <span class="text-white font-semibold text-sm"><%= current_user.display_name[0].upcase %></span>
+              <% end %>
+            </div>
+          <% end %>
+        <% else %>
+          <%# Non-logged in: 시작하기 Button %>
+          <button onclick="document.dispatchEvent(new CustomEvent('bottom-sheet:open', {detail: {target: 'auth'}}))"
+                  class="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium
+                         hover:bg-blue-700 transition-colors active:scale-[0.98] transform">
+            시작하기
+          </button>
+        <% end %>
+      </div>
 
       <%# Desktop Navigation with sliding indicator %>
       <div class="hidden lg:flex items-center gap-1 relative" data-controller="nav-indicator">
@@ -35,13 +63,13 @@
         ] %>
         <% nav_items.each_with_index do |item, index| %>
           <%= link_to item[:name], item[:path],
-              class: "nav-link relative w-20 text-center py-2 text-sm font-medium rounded-lg transition-all duration-300 #{item[:active] ? 'text-primary-600 bg-primary-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}",
+              class: "nav-link relative w-20 text-center py-2 text-sm font-bold uppercase tracking-wide rounded-lg transition-all duration-300 #{item[:active] ? 'text-gray-900 bg-gray-100' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'}",
               data: { nav_indicator_target: "link", index: index, active: item[:active] } %>
         <% end %>
       </div>
 
-      <%# Auth Buttons / User Menu %>
-      <div class="flex items-center gap-3">
+      <%# Auth Buttons / User Menu - Desktop Only %>
+      <div class="hidden lg:flex items-center gap-3">
         <% if logged_in? %>
           <%# Notifications Dropdown %>
           <% unread_count = current_user.notifications.unread.count %>
@@ -148,15 +176,15 @@
           { name: "커뮤니티", path: community_path, active: controller_name == 'community' }
         ].each_with_index do |item, index| %>
           <%= link_to item[:name], item[:path],
-              class: "mobile-nav-link block px-4 py-3 text-base font-medium rounded-lg transition-all duration-200 transform #{item[:active] ? 'text-primary-600 bg-primary-50' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'}",
+              class: "mobile-nav-link block px-4 py-3 text-base font-bold uppercase tracking-wide rounded-lg transition-all duration-200 transform #{item[:active] ? 'text-gray-900 bg-gray-100' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}",
               style: "animation-delay: #{index * 50}ms",
               data: { mobile_menu_target: "item" } %>
         <% end %>
 
         <% unless logged_in? %>
           <div class="pt-4 mt-4 border-t border-gray-100 space-y-2">
-            <%= link_to "로그인", login_path, class: "block w-full text-center py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition-colors" %>
-            <%= link_to "회원가입", signup_path, class: "block w-full text-center py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors" %>
+            <%= link_to "로그인", login_path, class: "block w-full text-center py-3 text-gray-700 hover:bg-gray-50 rounded-full font-bold uppercase tracking-wide transition-colors" %>
+            <%= link_to "회원가입", signup_path, class: "block w-full text-center py-3 bg-gray-900 text-white rounded-full font-bold uppercase tracking-wide hover:bg-gray-800 transition-colors" %>
           </div>
         <% end %>
       </div>

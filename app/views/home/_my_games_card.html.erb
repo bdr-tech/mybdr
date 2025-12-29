@@ -1,0 +1,60 @@
+<%# My Games Dashboard Card %>
+<% upcoming_games = current_user.game_applications.approved.joins(:game).where('games.scheduled_at > ?', Time.current).order('games.scheduled_at ASC').limit(3) %>
+
+<div class="dashboard-card">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-lg font-semibold text-gray-900">참가 예정 경기</h3>
+    <%= link_to my_games_games_path, class: "text-sm text-primary-600 font-medium" do %>
+      전체보기
+      <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+    <% end %>
+  </div>
+
+  <% if upcoming_games.any? %>
+    <div class="space-y-3">
+      <% upcoming_games.each do |application| %>
+        <% game = application.game %>
+        <%= link_to game_path(game), class: "block p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors" do %>
+          <div class="flex items-center justify-between">
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-900 truncate"><%= game.title %></p>
+              <p class="text-sm text-gray-500 mt-0.5">
+                <span class="inline-flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  <%= game.scheduled_at.strftime("%m/%d %H:%M") %>
+                </span>
+                <span class="mx-1 text-gray-300">|</span>
+                <span class="inline-flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                  </svg>
+                  <%= game.court&.name || game.venue_name || "미정" %>
+                </span>
+              </p>
+            </div>
+            <div class="ml-4">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
+                <%= game.scheduled_at.today? ? 'bg-primary-100 text-primary-700' : 'bg-gray-200 text-gray-600' %>">
+                <%= game.scheduled_at.today? ? "오늘" : "D-#{(game.scheduled_at.to_date - Date.today).to_i}" %>
+              </span>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="text-center py-8">
+      <div class="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-3">
+        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <p class="text-gray-500 text-sm">참가 예정인 경기가 없어요</p>
+      <%= link_to "경기 찾기", games_path, class: "inline-flex items-center mt-2 text-sm text-primary-600 font-medium" %>
+    </div>
+  <% end %>
+</div>

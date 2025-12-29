@@ -1,0 +1,55 @@
+<%# 페이지별 온보딩 툴팁 %>
+<%# 사용법: <%= render_tips(:games_index) %> %>
+
+<div data-controller="tooltip"
+     data-tooltip-page-key-value="<%= page_key %>"
+     data-tooltip-tips-value="<%= tips.to_json %>"
+     data-tooltip-session-completed-value="<%= session["tips_#{page_key}"].present? %>"
+     class="tooltip-container">
+
+  <%# 오버레이 %>
+  <div class="fixed inset-0 bg-black/30 z-40 transition-opacity hidden"
+       data-tooltip-target="overlay"
+       data-action="click->tooltip#skip"></div>
+
+  <%# 툴팁 말풍선 %>
+  <div data-tooltip-target="tooltip"
+       class="fixed z-50 max-w-xs w-full bg-white rounded-2xl shadow-xl p-4
+              transform transition-all duration-200 hidden opacity-0 scale-95"
+       style="min-width: 280px;">
+
+    <%# 화살표 %>
+    <div data-tooltip-target="arrow" class="tooltip-arrow"></div>
+
+    <%# 컨텐츠 영역 %>
+    <div data-tooltip-target="content" class="mb-4"></div>
+
+    <%# 진행바 %>
+    <div class="h-1 bg-gray-100 rounded-full mb-3 overflow-hidden">
+      <div data-tooltip-target="progress"
+           class="h-full bg-primary-600 transition-all duration-300"
+           style="width: 0%"></div>
+    </div>
+
+    <%# 하단 버튼 %>
+    <div class="flex items-center justify-between">
+      <button type="button"
+              data-action="click->tooltip#skip"
+              class="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+        건너뛰기
+      </button>
+
+      <div class="flex items-center gap-3">
+        <span data-tooltip-target="stepIndicator"
+              class="text-xs text-gray-400 font-medium">1/3</span>
+        <button type="button"
+                data-action="click->tooltip#next"
+                data-tooltip-target="nextButton"
+                class="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg
+                       hover:bg-primary-700 transition-colors">
+          다음
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

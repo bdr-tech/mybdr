@@ -27,11 +27,27 @@ Rails.application.routes.draw do
   root "home#index"
 
   # =============================================================================
+  # Onboarding
+  # =============================================================================
+  get "onboarding", to: "onboarding#index"
+  post "onboarding/complete", to: "onboarding#complete"
+
+  # =============================================================================
+  # Page Tips (페이지별 온보딩 팁)
+  # =============================================================================
+  post "tips/complete", to: "tips#complete"
+
+  # =============================================================================
   # Authentication Routes
   # =============================================================================
   get    "login",  to: "sessions#new"
   post   "login",  to: "sessions#create"
   delete "logout", to: "sessions#destroy"
+
+  # Dev Login (Development Only)
+  if Rails.env.development? || Rails.env.test?
+    get "dev_login/:id", to: "sessions#dev_login", as: :dev_login
+  end
 
   get  "signup", to: "users#new"
   post "signup", to: "users#create"
@@ -47,6 +63,13 @@ Rails.application.routes.draw do
   get   "profile",      to: "users#show"
   get   "profile/edit", to: "users#edit"
   patch "profile",      to: "users#update"
+  post  "profile/admin_mode", to: "users#update_admin_mode"
+
+  # =============================================================================
+  # Board Favorites (즐겨찾기 게시판)
+  # =============================================================================
+  resources :board_favorites, only: [:create], param: :category
+  delete "board_favorites/:category", to: "board_favorites#destroy", as: :board_favorite
 
   # =============================================================================
   # User Resources

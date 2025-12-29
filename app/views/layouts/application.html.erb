@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#DC2626">
+    <meta name="theme-color" content="#1E40AF">
     <meta name="description" content="<%= content_for(:description) || 'BDR - 농구를 사랑하는 모든 사람들을 위한 종합 경기 매칭 플랫폼' %>">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
@@ -24,7 +24,7 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="min-h-screen bg-gray-50 antialiased">
+  <body class="min-h-screen bg-white antialiased">
     <%# Navigation %>
     <%= render "shared/navbar" %>
 
@@ -46,6 +46,6 @@
     <%= render "shared/footer" %>
 
     <%# Mobile Bottom Navigation %>
-    <%= render "shared/bottom_nav" if logged_in? %>
+    <%= render "shared/bottom_nav" %>
   </body>
 </html>

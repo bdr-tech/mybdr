@@ -8,7 +8,7 @@
       <p class="text-gray-600 mt-1">함께 할 팀을 찾아보세요</p>
     </div>
     <% if logged_in? %>
-      <%= link_to new_team_path, class: "btn btn-primary" do %>
+      <%= link_to new_team_path, class: "btn btn-primary", data: { tip: "create-team" } do %>
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
         </svg>
@@ -18,7 +18,7 @@
   </div>
 
   <!-- 필터 -->
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6" data-tip="search">
     <%= form_with url: teams_path, method: :get, local: true, class: "flex flex-wrap gap-4" do |f| %>
       <div class="flex-1 min-w-[200px]">
         <%= f.text_field :q, value: params[:q], class: "form-input w-full", placeholder: "팀 이름으로 검색..." %>
@@ -41,8 +41,8 @@
   <!-- 팀 목록 -->
   <% if @teams.any? %>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <% @teams.each do |team| %>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+      <% @teams.each_with_index do |team, index| %>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow" <%= 'data-tip="team-card"'.html_safe if index == 0 %>>
           <!-- 팀 로고/배너 -->
           <div class="h-24 bg-gradient-to-r from-primary-500 to-primary-600 relative">
             <% if team.banner.attached? %>
@@ -119,3 +119,6 @@
     </div>
   <% end %>
 </div>
+
+<%# 페이지별 온보딩 팁 %>
+<%= render_tips(:teams_index) %>

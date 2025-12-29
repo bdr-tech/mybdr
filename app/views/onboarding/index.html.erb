@@ -1,0 +1,52 @@
+<% content_for :title, "BDR 시작하기" %>
+
+<div class="min-h-screen bg-white flex flex-col safe-area-inset"
+     data-controller="onboarding"
+     data-onboarding-current-value="0"
+     data-onboarding-total-value="3">
+
+  <%# 건너뛰기 버튼 %>
+  <div class="p-4 flex justify-end">
+    <button data-action="onboarding#skip"
+            class="text-gray-400 text-sm font-medium hover:text-gray-600 transition-colors">
+      건너뛰기
+    </button>
+  </div>
+
+  <%# 스텝 콘텐츠 (스와이프 영역) %>
+  <div class="flex-1 flex flex-col items-center justify-center px-8"
+       data-onboarding-target="container">
+    <%# 초기 렌더링 (JavaScript가 로드되기 전 보여질 콘텐츠) %>
+    <div class="w-32 h-32 bg-blue-500 rounded-3xl flex items-center justify-center mb-8 shadow-lg shadow-blue-500/30">
+      <span class="text-6xl">&#127936;</span>
+    </div>
+    <h1 class="text-2xl font-bold text-gray-900 mb-4 text-center">내 주변 경기 찾기</h1>
+    <p class="text-gray-500 text-center leading-relaxed">
+      위치 기반으로 가까운 픽업게임과<br/>대회를 한눈에 확인하세요
+    </p>
+  </div>
+
+  <%# 하단 영역 %>
+  <div class="p-6 pb-12">
+    <%# 인디케이터 dots %>
+    <div class="flex justify-center gap-2 mb-8" data-onboarding-target="indicators">
+      <% 3.times do |i| %>
+        <div data-index="<%= i %>"
+             class="h-2 rounded-full transition-all duration-300 <%= i == 0 ? 'w-8 bg-blue-500' : 'w-2 bg-gray-200' %>">
+        </div>
+      <% end %>
+    </div>
+
+    <%# 다음/시작하기 버튼 %>
+    <button data-action="onboarding#next"
+            data-onboarding-target="nextButton"
+            class="w-full py-4 bg-blue-600 text-white rounded-2xl font-semibold text-lg
+                   flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors
+                   active:scale-[0.98] transform">
+      <span data-onboarding-target="buttonText">다음</span>
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+      </svg>
+    </button>
+  </div>
+</div>

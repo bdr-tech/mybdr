@@ -10,53 +10,64 @@
 
 /* ===================================
    BDR Platform - Design System
-   Toss-style modern UI
+   Nike/Adidas Style - Bold & Clean
    =================================== */
 
 /* Custom Theme Configuration */
 @theme {
-  /* Primary Colors (Red - BDR Brand) */
-  --color-primary-50: #FEF2F2;
-  --color-primary-100: #FEE2E2;
-  --color-primary-200: #FECACA;
-  --color-primary-300: #FCA5A5;
-  --color-primary-400: #F87171;
-  --color-primary-500: #EF4444;
-  --color-primary-600: #DC2626;
-  --color-primary-700: #B91C1C;
-  --color-primary-800: #991B1B;
-  --color-primary-900: #7F1D1D;
+  /* Primary Colors (Deep Blue - shadcn/ui Style) */
+  --color-primary-50: #EFF6FF;
+  --color-primary-100: #DBEAFE;
+  --color-primary-200: #BFDBFE;
+  --color-primary-300: #93C5FD;
+  --color-primary-400: #60A5FA;
+  --color-primary-500: #3B82F6;
+  --color-primary-600: #2563EB;
+  --color-primary-700: #1D4ED8;
+  --color-primary-800: #1E40AF;
+  --color-primary-900: #1E3A8A;
 
-  /* Secondary Colors (Orange) */
-  --color-secondary-50: #FFF7ED;
-  --color-secondary-100: #FFEDD5;
-  --color-secondary-200: #FED7AA;
-  --color-secondary-300: #FDBA74;
-  --color-secondary-400: #FB923C;
-  --color-secondary-500: #F97316;
-  --color-secondary-600: #EA580C;
-  --color-secondary-700: #C2410C;
-  --color-secondary-800: #9A3412;
-  --color-secondary-900: #7C2D12;
+  /* Accent Colors (Sporty Orange) */
+  --color-accent-50: #FFF4ED;
+  --color-accent-100: #FFE6D5;
+  --color-accent-200: #FFCAAA;
+  --color-accent-300: #FFA674;
+  --color-accent-400: #FF8243;
+  --color-accent-500: #FF6B35;
+  --color-accent-600: #E85A2B;
+  --color-accent-700: #C24A23;
+  --color-accent-800: #9A3B1C;
+  --color-accent-900: #7C3118;
 
-  /* Cream/Surface Colors */
-  --color-cream-50: #FFFBEB;
-  --color-cream-100: #FEF3C7;
-  --color-cream-200: #FDE68A;
-  --color-cream-300: #FCD34D;
-  --color-surface: #FDF6E3;
+  /* Secondary Colors (Neutral Gray) */
+  --color-secondary-50: #FAFAFA;
+  --color-secondary-100: #F5F5F5;
+  --color-secondary-200: #E5E5E5;
+  --color-secondary-300: #D4D4D4;
+  --color-secondary-400: #A3A3A3;
+  --color-secondary-500: #737373;
+  --color-secondary-600: #525252;
+  --color-secondary-700: #404040;
+  --color-secondary-800: #262626;
+  --color-secondary-900: #171717;
 
-  /* Gray Colors (Toss-style) */
-  --color-gray-50: #F9FAFB;
-  --color-gray-100: #F3F4F6;
-  --color-gray-200: #E5E7EB;
-  --color-gray-300: #D1D5DB;
-  --color-gray-400: #9CA3AF;
-  --color-gray-500: #6B7280;
-  --color-gray-600: #4B5563;
-  --color-gray-700: #374151;
-  --color-gray-800: #1F2937;
-  --color-gray-900: #111827;
+  /* Brand Variables */
+  --color-brand-blue: #1E40AF;
+  --color-brand-orange: #FF6B35;
+  --color-brand-orange-light: #FFF4ED;
+  --color-surface: #F8FAFC;
+
+  /* Gray Colors (Slate - shadcn/ui style) */
+  --color-gray-50: #F8FAFC;
+  --color-gray-100: #F1F5F9;
+  --color-gray-200: #E2E8F0;
+  --color-gray-300: #CBD5E1;
+  --color-gray-400: #94A3B8;
+  --color-gray-500: #64748B;
+  --color-gray-600: #475569;
+  --color-gray-700: #334155;
+  --color-gray-800: #1E293B;
+  --color-gray-900: #0F172A;
 
   /* Status Colors */
   --color-success: #10B981;
@@ -94,7 +105,7 @@ html {
 }
 
 body {
-  @apply bg-gray-50 text-gray-900;
+  @apply bg-white text-gray-900;
 }
 
 /* Typography Utilities */
@@ -126,72 +137,76 @@ body {
   @apply text-gray-500;
 }
 
-/* Button Components */
+/* Button Components - Nike Style */
 .btn {
-  @apply inline-flex items-center justify-center px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply inline-flex items-center justify-center px-5 py-3 rounded-full font-bold text-sm tracking-wide transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed uppercase;
 }
 
 .btn-primary {
-  @apply inline-flex items-center justify-center px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800 focus:ring-primary-500;
+  @apply inline-flex items-center justify-center px-5 py-3 rounded-full font-bold text-sm tracking-wide transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed uppercase bg-primary-800 text-white hover:bg-primary-700 active:bg-primary-900 focus:ring-primary-500;
+}
+
+.btn-accent {
+  @apply inline-flex items-center justify-center px-5 py-3 rounded-full font-bold text-sm tracking-wide transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed uppercase bg-accent-500 text-white hover:bg-accent-600 active:bg-accent-700 focus:ring-accent-400;
 }
 
 .btn-secondary {
-  @apply inline-flex items-center justify-center px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 focus:ring-gray-500;
+  @apply inline-flex items-center justify-center px-5 py-3 rounded-full font-bold text-sm tracking-wide transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed uppercase bg-gray-100 text-gray-900 hover:bg-gray-200 active:bg-gray-300 focus:ring-gray-400;
 }
 
 .btn-outline {
-  @apply inline-flex items-center justify-center px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50 focus:ring-gray-500;
+  @apply inline-flex items-center justify-center px-5 py-3 rounded-full font-bold text-sm tracking-wide transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed uppercase border-2 border-primary-800 bg-white text-primary-800 hover:bg-primary-800 hover:text-white focus:ring-primary-500;
 }
 
 .btn-ghost {
-  @apply inline-flex items-center justify-center px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:ring-gray-500;
+  @apply inline-flex items-center justify-center px-5 py-3 rounded-full font-bold text-sm tracking-wide transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed uppercase bg-transparent text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:ring-gray-400;
 }
 
 .btn-danger {
-  @apply inline-flex items-center justify-center px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-error text-white hover:bg-red-600 active:bg-red-700 focus:ring-red-500;
+  @apply inline-flex items-center justify-center px-5 py-3 rounded-full font-bold text-sm tracking-wide transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed uppercase bg-error text-white hover:bg-red-600 active:bg-red-700 focus:ring-red-500;
 }
 
 .btn-success {
-  @apply inline-flex items-center justify-center px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-success text-white hover:bg-emerald-600 active:bg-emerald-700 focus:ring-emerald-500;
+  @apply inline-flex items-center justify-center px-5 py-3 rounded-full font-bold text-sm tracking-wide transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed uppercase bg-success text-white hover:bg-emerald-600 active:bg-emerald-700 focus:ring-emerald-500;
 }
 
 .btn-sm {
-  @apply px-3 py-1.5 text-xs rounded-lg;
+  @apply px-4 py-2 text-xs rounded-full;
 }
 
 .btn-lg {
-  @apply px-6 py-3.5 text-base rounded-2xl;
+  @apply px-8 py-4 text-base rounded-full;
 }
 
-/* Card Components */
+/* Card Components - Nike Style */
 .card {
-  @apply bg-white rounded-2xl p-6 shadow-card;
+  @apply bg-gray-50 rounded-xl p-6 border border-gray-100;
 }
 
 .card-elevated {
-  @apply bg-white rounded-2xl p-6 shadow-elevated;
+  @apply bg-white rounded-xl p-6 shadow-soft border border-gray-100;
 }
 
 .card-interactive {
-  @apply bg-white rounded-2xl p-6 shadow-card transition-all duration-200 hover:shadow-elevated hover:-translate-y-0.5 cursor-pointer;
+  @apply bg-gray-50 rounded-xl p-6 border border-gray-100 transition-all duration-300 hover:bg-white hover:shadow-soft hover:border-gray-200 cursor-pointer;
 }
 
-/* Form Components */
+/* Form Components - Nike Style */
 .form-label {
-  @apply block text-sm font-medium text-gray-700 mb-1.5;
+  @apply block text-sm font-bold text-gray-900 mb-2 uppercase tracking-wide;
 }
 
 .form-input {
-  @apply block w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none;
+  @apply block w-full px-4 py-3.5 rounded-full border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 transition-all focus:border-gray-900 focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:outline-none;
 }
 
 .form-input-error {
-  @apply block w-full px-4 py-3 rounded-xl border bg-white text-gray-900 placeholder-gray-400 transition-colors focus:outline-none border-error focus:border-error focus:ring-2 focus:ring-error/20;
+  @apply block w-full px-4 py-3.5 rounded-full border bg-red-50 text-gray-900 placeholder-gray-400 transition-all focus:outline-none border-error focus:border-error focus:ring-2 focus:ring-error/20;
 }
 
 .form-select {
-  @apply block w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none appearance-none bg-no-repeat bg-right pr-10;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  @apply block w-full px-4 py-3.5 rounded-full border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 transition-all focus:border-gray-900 focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:outline-none appearance-none bg-no-repeat bg-right pr-10;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23111111' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-size: 1.5em 1.5em;
   background-position: right 0.75rem center;
 }
@@ -247,7 +262,7 @@ body {
 }
 
 .badge-pickup-host {
-  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary-100 text-secondary-700;
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-accent-100 text-accent-700;
 }
 
 .badge-tournament-admin {
@@ -474,17 +489,17 @@ body {
   @apply fixed bottom-4 right-4 p-4 rounded-xl shadow-elevated bg-white border border-gray-100 flex items-center gap-3 z-50;
 }
 
-/* Tab Navigation */
+/* Tab Navigation - Nike Style */
 .tabs {
   @apply flex border-b border-gray-200;
 }
 
 .tab {
-  @apply px-4 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700 hover:border-gray-300 transition-colors;
+  @apply px-4 py-3 text-sm font-bold uppercase tracking-wide text-gray-400 border-b-2 border-transparent hover:text-primary-800 hover:border-primary-300 transition-colors;
 }
 
 .tab-active {
-  @apply px-4 py-3 text-sm font-medium text-primary-600 border-b-2 border-primary-600 transition-colors;
+  @apply px-4 py-3 text-sm font-bold uppercase tracking-wide text-primary-800 border-b-2 border-primary-800 transition-colors;
 }
 
 /* Empty State */
@@ -565,7 +580,7 @@ body {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
-/* Pagy Pagination */
+/* Pagy Pagination - Nike Style */
 nav.pagy {
   display: flex;
   align-items: center;
@@ -575,31 +590,547 @@ nav.pagy {
 
 nav.pagy a {
   display: inline-block;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border-radius: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 9999px;
   transition: all 0.2s ease;
   text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 nav.pagy a:not([aria-disabled="true"]):not(.current) {
-  color: #4B5563;
+  color: #525252;
   cursor: pointer;
 }
 
 nav.pagy a:not([aria-disabled="true"]):not(.current):hover {
-  background-color: #F3F4F6;
-  color: #111827;
+  background-color: #EFF6FF;
+  color: #1E40AF;
 }
 
 nav.pagy a[aria-disabled="true"] {
-  color: #9CA3AF;
+  color: #94A3B8;
   cursor: not-allowed;
 }
 
 nav.pagy a.current {
-  background-color: #DC2626;
+  background-color: #1E40AF;
   color: white;
+  border-radius: 9999px;
+}
+
+/* ===================================
+   Page Transition Animations
+   =================================== */
+
+/* Fade in animation for page load */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Main content animation on page load */
+main {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+/* Turbo Drive page transition */
+.turbo-progress-bar {
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary-500), var(--color-accent-500));
+}
+
+/* Smooth fade for Turbo navigation */
+html.turbo-loading body {
+  opacity: 0.85;
+  transition: opacity 0.15s ease-out;
+}
+
+html:not(.turbo-loading) body {
+  opacity: 1;
+  transition: opacity 0.15s ease-in;
+}
+
+/* Card hover animations */
+.card-interactive {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-interactive:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.15);
+}
+
+/* Button press effect */
+.btn:active {
+  transform: scale(0.97);
+}
+
+/* Link hover underline animation */
+.link-animated {
+  position: relative;
+}
+
+.link-animated::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -2px;
+  left: 0;
+  background-color: var(--color-primary-500);
+  transition: width 0.3s ease;
+}
+
+.link-animated:hover::after {
+  width: 100%;
+}
+
+/* Stagger animation for lists */
+.animate-stagger > * {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+.animate-stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.animate-stagger > *:nth-child(2) { animation-delay: 0.1s; }
+.animate-stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.animate-stagger > *:nth-child(4) { animation-delay: 0.2s; }
+.animate-stagger > *:nth-child(5) { animation-delay: 0.25s; }
+.animate-stagger > *:nth-child(6) { animation-delay: 0.3s; }
+.animate-stagger > *:nth-child(7) { animation-delay: 0.35s; }
+.animate-stagger > *:nth-child(8) { animation-delay: 0.4s; }
+
+/* ===================================
+   Toss Style Design System
+   Clean, Minimal, Modern
+   =================================== */
+
+/* Toss-style Shadows */
+.shadow-toss-xs {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.shadow-toss-sm {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.shadow-toss-md {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.shadow-toss-lg {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.shadow-toss-xl {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Toss-style Card */
+.card-toss {
+  @apply bg-white rounded-2xl border border-gray-100;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.card-toss-elevated {
+  @apply bg-white rounded-2xl;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.card-toss-interactive {
+  @apply bg-white rounded-2xl border border-gray-100 transition-all duration-200 cursor-pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.card-toss-interactive:hover {
+  border-color: #E2E8F0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.card-toss-interactive:active {
+  transform: scale(0.98);
+}
+
+/* Quick Action Card */
+.quick-action-card {
+  @apply flex flex-col items-center justify-center p-4 rounded-2xl bg-gray-50 transition-all duration-200;
+}
+
+.quick-action-card:hover {
+  @apply bg-gray-100;
+}
+
+.quick-action-card:active {
+  transform: scale(0.95);
+}
+
+.quick-action-card-admin {
+  @apply flex flex-col items-center justify-center p-4 rounded-2xl bg-primary-50 transition-all duration-200;
+}
+
+.quick-action-card-admin:hover {
+  @apply bg-primary-100;
+}
+
+.quick-action-card-admin:active {
+  transform: scale(0.95);
+}
+
+.quick-action-icon {
+  @apply w-10 h-10 rounded-xl flex items-center justify-center mb-2;
+}
+
+.quick-action-icon-default {
+  @apply w-10 h-10 rounded-xl flex items-center justify-center mb-2 bg-white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.quick-action-icon-admin {
+  @apply w-10 h-10 rounded-xl flex items-center justify-center mb-2 bg-primary-600 text-white;
+}
+
+.quick-action-label {
+  @apply text-xs font-medium text-gray-700 text-center;
+}
+
+/* Admin Mode Toggle (Segment Control) */
+.mode-toggle-container {
+  @apply p-1 bg-gray-100 rounded-xl inline-flex;
+}
+
+.mode-toggle-button {
+  @apply px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-gray-500;
+}
+
+.mode-toggle-button:hover:not(.mode-toggle-active) {
+  @apply text-gray-700;
+}
+
+.mode-toggle-active {
+  @apply bg-white text-gray-900;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* Dashboard Card */
+.dashboard-card {
+  @apply bg-white rounded-2xl p-4 border border-gray-100;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.dashboard-card-header {
+  @apply flex items-center justify-between mb-3;
+}
+
+.dashboard-card-title {
+  @apply text-base font-semibold text-gray-900;
+}
+
+.dashboard-card-link {
+  @apply text-sm text-gray-400 hover:text-gray-600 transition-colors;
+}
+
+.dashboard-card-content {
+  @apply space-y-3;
+}
+
+.dashboard-empty {
+  @apply py-6 text-center text-gray-400 text-sm;
+}
+
+/* Dashboard List Item */
+.dashboard-item {
+  @apply flex items-center gap-3 p-3 -mx-1 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer;
+}
+
+.dashboard-item-icon {
+  @apply w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0;
+}
+
+.dashboard-item-content {
+  @apply flex-1 min-w-0;
+}
+
+.dashboard-item-title {
+  @apply text-sm font-medium text-gray-900 truncate;
+}
+
+.dashboard-item-meta {
+  @apply text-xs text-gray-400 mt-0.5;
+}
+
+.dashboard-item-badge {
+  @apply flex-shrink-0;
+}
+
+/* Full Menu Slide Panel */
+.menu-slide-panel {
+  @apply fixed inset-0 z-50;
+}
+
+.menu-slide-backdrop {
+  @apply absolute inset-0 bg-black/40 backdrop-blur-sm;
+}
+
+.menu-slide-content {
+  @apply absolute bottom-0 inset-x-0 bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto;
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+.menu-slide-handle {
+  @apply w-10 h-1 bg-gray-300 rounded-full mx-auto mt-3 mb-2;
+}
+
+.menu-section {
+  @apply px-4 py-3;
+}
+
+.menu-section-title {
+  @apply text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2;
+}
+
+.menu-item {
+  @apply flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer;
+}
+
+.menu-item-icon {
+  @apply w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600;
+}
+
+.menu-item-label {
+  @apply flex-1 text-sm font-medium text-gray-900;
+}
+
+.menu-item-arrow {
+  @apply w-5 h-5 text-gray-300;
+}
+
+.menu-item-favorite {
+  @apply w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:text-yellow-500 transition-colors;
+}
+
+.menu-item-favorite-active {
+  @apply w-8 h-8 rounded-lg flex items-center justify-center text-yellow-500;
+}
+
+/* Bottom Navigation - New Style */
+.bottom-nav-new {
+  @apply fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-gray-200 z-40;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.bottom-nav-item-new {
+  @apply flex flex-col items-center justify-center py-2 text-gray-400 transition-colors;
+}
+
+.bottom-nav-item-new:hover {
+  @apply text-gray-600;
+}
+
+.bottom-nav-item-active-new {
+  @apply flex flex-col items-center justify-center py-2 text-primary-600 transition-colors;
+}
+
+.bottom-nav-icon {
+  @apply w-6 h-6 mb-0.5;
+}
+
+.bottom-nav-label {
+  @apply text-[10px] font-medium;
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
+@keyframes fadeInBackdrop {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeInBackdrop 0.2s ease forwards;
+}
+
+/* Haptic feedback indicator (visual) */
+.haptic-feedback {
+  @apply transition-transform duration-75;
+}
+
+.haptic-feedback:active {
+  transform: scale(0.97);
+}
+
+/* Long press indicator */
+.long-press-indicator {
+  @apply absolute inset-0 rounded-xl bg-primary-100 opacity-0 transition-opacity duration-300;
+}
+
+.long-press-active .long-press-indicator {
+  @apply opacity-100;
+}
+
+/* Onboarding Styles */
+.onboarding-card {
+  @apply bg-gradient-to-br from-primary-600 to-primary-800 rounded-3xl p-6 text-white;
+}
+
+.onboarding-title {
+  @apply text-2xl font-bold mb-2;
+}
+
+.onboarding-description {
+  @apply text-primary-100 text-sm mb-6;
+}
+
+.onboarding-action {
+  @apply inline-flex items-center px-5 py-3 bg-white text-primary-700 font-semibold rounded-full hover:bg-gray-100 transition-colors;
+}
+
+/* Section Headers */
+.section-header {
+  @apply flex items-center justify-between mb-4;
+}
+
+.section-title {
+  @apply text-lg font-bold text-gray-900;
+}
+
+.section-link {
+  @apply text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1;
+}
+
+/* Status Dot */
+.status-dot {
+  @apply w-2 h-2 rounded-full;
+}
+
+.status-dot-live {
+  @apply w-2 h-2 rounded-full bg-green-500 animate-pulse;
+}
+
+.status-dot-upcoming {
+  @apply w-2 h-2 rounded-full bg-blue-500;
+}
+
+.status-dot-completed {
+  @apply w-2 h-2 rounded-full bg-gray-400;
+}
+
+/* Scrollbar Hide (for horizontal scrolling menus) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ===================================
+   Page Tooltip System
+   =================================== */
+
+/* 타겟 요소 하이라이트 */
+.tooltip-highlight {
+  position: relative;
+  z-index: 45;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.3), 0 0 0 8px rgba(37, 99, 235, 0.1);
   border-radius: 0.5rem;
+  animation: pulse-highlight 2s infinite;
+}
+
+@keyframes pulse-highlight {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.3), 0 0 0 8px rgba(37, 99, 235, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.4), 0 0 0 12px rgba(37, 99, 235, 0.15);
+  }
+}
+
+/* 툴팁 화살표 */
+.tooltip-arrow {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: white;
+  transform: rotate(45deg);
+}
+
+.tooltip-arrow.arrow-top {
+  top: -6px;
+  left: 50%;
+  margin-left: -6px;
+  box-shadow: -2px -2px 3px rgba(0, 0, 0, 0.05);
+}
+
+.tooltip-arrow.arrow-bottom {
+  bottom: -6px;
+  left: 50%;
+  margin-left: -6px;
+  box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.05);
+}
+
+.tooltip-arrow.arrow-left {
+  left: -6px;
+  top: 50%;
+  margin-top: -6px;
+  box-shadow: -2px 2px 3px rgba(0, 0, 0, 0.05);
+}
+
+.tooltip-arrow.arrow-right {
+  right: -6px;
+  top: 50%;
+  margin-top: -6px;
+  box-shadow: 2px -2px 3px rgba(0, 0, 0, 0.05);
 }

@@ -1,0 +1,28 @@
+<%# Hero Section - Personalized Greeting %>
+<section class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl p-6 mx-4 mb-6 text-white">
+  <h1 class="text-2xl font-bold mb-2">
+    <% if logged_in? %>
+      <%= current_user.nickname || current_user.name %>님, 오늘도 농구하세요! &#127936;
+    <% else %>
+      농구 한 판 어때요? &#127936;
+    <% end %>
+  </h1>
+
+  <p class="text-blue-100 mb-4">
+    <% if logged_in? && @available_games_count && @available_games_count > 0 %>
+      오늘 참여 가능한 경기 <%= @available_games_count %>개가 있어요
+    <% else %>
+      내 주변 픽업게임과 대회를 찾아보세요
+    <% end %>
+  </p>
+
+  <%= link_to games_path, class: "inline-flex items-center gap-2 text-sm bg-white/20 hover:bg-white/30 px-4 py-2 rounded-full transition-colors" do %>
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+    </svg>
+    <span>경기 찾아보기</span>
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+    </svg>
+  <% end %>
+</section>

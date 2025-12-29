@@ -2,7 +2,7 @@
 
 class UsersController < ApplicationController
   before_action :redirect_if_logged_in, only: [:new, :create]
-  before_action :require_login, only: [:show, :edit, :update]
+  before_action :require_login, only: [:show, :edit, :update, :update_admin_mode]
   before_action :set_user, only: [:show, :edit, :update]
   before_action :authorize_user, only: [:edit, :update]
 
@@ -39,6 +39,31 @@ class UsersController < ApplicationController
       redirect_to profile_path
     else
       render :edit, status: :unprocessable_entity
+    end
+  end
+
+  # POST /profile/admin_mode
+  def update_admin_mode
+    unless current_user.show_admin_mode?
+      return respond_to do |format|
+        format.json { render json: { success: false, error: "권한이 없습니다" }, status: :forbidden }
+        format.html { redirect_to root_path, alert: "권한이 없습니다" }
+      end
+    end
+
+    # Handle both JSON boolean (true/false) and string ("true"/"false") values
+    admin_mode_value = ActiveModel::Type::Boolean.new.cast(params[:admin_mode])
+    if current_user.update(prefer_admin_mode: admin_mode_value)
+      respond_to do |format|
+        format.turbo_stream
+        format.json { render json: { success: true, admin_mode: current_user.prefer_admin_mode } }
+        format.html { redirect_to root_path }
+      end
+    else
+      respond_to do |format|
+        format.json { render json: { success: false, error: "업데이트 실패" }, status: :unprocessable_entity }
+        format.html { redirect_to root_path, alert: "업데이트 실패" }
+      end
     end
   end
 

@@ -8,7 +8,7 @@
       <p class="text-gray-600 mt-1">농구인들과 소통하세요</p>
     </div>
     <% if logged_in? %>
-      <%= link_to new_community_post_path(category: params[:category]), class: "btn btn-primary" do %>
+      <%= link_to new_community_post_path(category: params[:category]), class: "btn btn-primary", data: { tip: "write" } do %>
         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
         </svg>
@@ -18,7 +18,7 @@
   </div>
 
   <!-- 카테고리 탭 -->
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6" data-tip="category">
     <div class="flex overflow-x-auto scrollbar-hide">
       <%= link_to community_path, class: "px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 #{params[:category].blank? ? 'text-primary-600 border-primary-600' : 'text-gray-500 border-transparent hover:text-gray-700'}" do %>
         전체
@@ -32,7 +32,7 @@
   </div>
 
   <!-- 검색 -->
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6" data-tip="search-box">
     <%= form_with url: community_path, method: :get, local: true, class: "flex gap-2" do |f| %>
       <%= f.hidden_field :category, value: params[:category] %>
       <div class="flex-1">
@@ -46,8 +46,8 @@
   <% if @posts.any? %>
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <div class="divide-y divide-gray-100">
-        <% @posts.each do |post| %>
-          <div class="p-4 hover:bg-gray-50 transition-colors">
+        <% @posts.each_with_index do |post, index| %>
+          <div class="p-4 hover:bg-gray-50 transition-colors" <%= 'data-tip="post-item"'.html_safe if index == 0 %>>
             <div class="flex items-start gap-4">
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">
@@ -120,3 +120,6 @@
     </div>
   <% end %>
 </div>
+
+<%# 페이지별 온보딩 팁 %>
+<%= render_tips(:community_index) %>

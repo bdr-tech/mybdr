@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_11_050830) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_28_115651) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -67,6 +67,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_11_050830) do
     t.index ["resource_type"], name: "index_admin_logs_on_resource_type"
     t.index ["severity"], name: "index_admin_logs_on_severity"
     t.index ["target_type", "target_id"], name: "index_admin_logs_on_target"
+  end
+
+  create_table "board_favorites", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "category", null: false
+    t.integer "position", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "category"], name: "index_board_favorites_on_user_id_and_category", unique: true
+    t.index ["user_id"], name: "index_board_favorites_on_user_id"
   end
 
   create_table "comments", force: :cascade do |t|
@@ -1042,6 +1052,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_11_050830) do
     t.string "oauth_token"
     t.datetime "oauth_expires_at"
     t.string "profile_image_url"
+    t.boolean "prefer_admin_mode", default: false
     t.index ["created_at"], name: "index_users_on_created_at"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["is_admin"], name: "index_users_on_is_admin_partial", where: "(is_admin = true)"
@@ -1056,6 +1067,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_11_050830) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "admin_logs", "users", column: "admin_id"
+  add_foreign_key "board_favorites", "users"
   add_foreign_key "comments", "comments", column: "parent_id"
   add_foreign_key "comments", "users"
   add_foreign_key "community_posts", "teams"

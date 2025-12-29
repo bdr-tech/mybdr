@@ -78,6 +78,7 @@ class User < ApplicationRecord
   has_many :posts, dependent: :destroy
   has_many :comments, dependent: :destroy
   has_many :community_posts, dependent: :destroy
+  has_many :board_favorites, dependent: :destroy
 
   # =============================================================================
   # Enums
@@ -390,6 +391,34 @@ class User < ApplicationRecord
   # Count of teams where user is captain
   def teams_as_captain_count
     captained_teams.count
+  end
+
+  # =============================================================================
+  # Board Favorites Methods
+  # =============================================================================
+
+  # Get ordered list of favorite board categories
+  def favorite_board_categories
+    board_favorites.ordered.pluck(:category)
+  end
+
+  # Check if a category is favorited
+  def favorited_board?(category)
+    board_favorites.exists?(category: category)
+  end
+
+  # =============================================================================
+  # Admin Mode Methods
+  # =============================================================================
+
+  # Check if user should see admin mode toggle
+  def show_admin_mode?
+    can_create_tournament? || can_access_pickup_menu?
+  end
+
+  # Check if admin mode is currently active
+  def admin_mode_active?
+    prefer_admin_mode && show_admin_mode?
   end
 
   # =============================================================================

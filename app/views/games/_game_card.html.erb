@@ -1,5 +1,5 @@
-<%# locals: (game:) %>
-<%= link_to game_path(game.uuid), class: "card hover:shadow-lg transition-shadow group" do %>
+<%# locals: (game:, tip: nil) %>
+<%= link_to game_path(game.uuid), class: "card hover:shadow-lg transition-shadow group", data: (tip ? { tip: tip } : {}) do %>
   <div class="p-5">
     <!-- 상단: 타입 & 상태 -->
     <div class="flex items-center justify-between mb-3">

@@ -1,0 +1,212 @@
+<%# Full Menu Slide Panel - Toss Style %>
+<div class="menu-slide-panel hidden"
+     data-bottom-nav-target="menuPanel"
+     data-action="click->bottom-nav#backdropClick">
+
+  <%# Backdrop %>
+  <div class="menu-slide-backdrop animate-fade-in" data-bottom-nav-target="backdrop"></div>
+
+  <%# Menu Content %>
+  <div class="menu-slide-content animate-slide-up" data-bottom-nav-target="menuContent">
+    <%# Handle %>
+    <div class="menu-slide-handle"></div>
+
+    <%# Close Button %>
+    <div class="flex justify-end px-4 pb-2">
+      <button type="button"
+              class="p-2 -mr-2 text-gray-400 hover:text-gray-600 transition-colors"
+              data-action="click->bottom-nav#closeMenu">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <% if logged_in? %>
+      <%# User Info Section %>
+      <div class="px-4 pb-4 border-b border-gray-100">
+        <div class="flex items-center gap-3">
+          <% if current_user.avatar.attached? %>
+            <%= image_tag current_user.avatar, class: "w-12 h-12 rounded-full object-cover" %>
+          <% else %>
+            <div class="avatar-lg bg-primary-100 text-primary-600">
+              <%= current_user.display_name.first.upcase %>
+            </div>
+          <% end %>
+          <div class="flex-1 min-w-0">
+            <div class="text-base font-semibold text-gray-900 truncate"><%= current_user.display_name %></div>
+            <div class="text-sm text-gray-400 truncate"><%= current_user.email %></div>
+          </div>
+          <%= link_to profile_path, class: "text-gray-400 hover:text-gray-600 transition-colors" do %>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+            </svg>
+          <% end %>
+        </div>
+      </div>
+
+      <%# Favorite Boards Section %>
+      <% favorite_categories = current_user.favorite_board_categories %>
+      <% if favorite_categories.any? %>
+        <div class="menu-section border-b border-gray-100">
+          <div class="menu-section-title flex items-center gap-1">
+            <svg class="w-3.5 h-3.5 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+              <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd"/>
+            </svg>
+            즐겨찾기 게시판
+          </div>
+          <div class="space-y-1">
+            <% favorite_categories.each do |category| %>
+              <%= link_to community_path(category: category), class: "menu-item", data: { turbo_frame: "_top" } do %>
+                <div class="menu-item-icon bg-yellow-50">
+                  <svg class="w-4 h-4 text-yellow-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd"/>
+                  </svg>
+                </div>
+                <span class="menu-item-label"><%= CommunityPost.category_label(category) %></span>
+                <svg class="menu-item-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+                </svg>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <%# All Boards Section %>
+      <div class="menu-section border-b border-gray-100" data-controller="long-press">
+        <div class="menu-section-title">게시판 전체</div>
+        <div class="text-xs text-gray-400 mb-2 px-2">길게 눌러서 즐겨찾기에 추가</div>
+        <div class="space-y-1">
+          <% CommunityPost::CATEGORIES.each do |category| %>
+            <div class="relative"
+                 data-action="touchstart->long-press#start touchend->long-press#end mousedown->long-press#start mouseup->long-press#end mouseleave->long-press#end"
+                 data-long-press-category-value="<%= category %>"
+                 data-long-press-favorited-value="<%= current_user.favorited_board?(category) %>">
+              <div class="long-press-indicator"></div>
+              <%= link_to community_path(category: category), class: "menu-item relative", data: { turbo_frame: "_top" } do %>
+                <div class="menu-item-icon">
+                  <%= render "shared/category_icon", category: category %>
+                </div>
+                <span class="menu-item-label"><%= CommunityPost.category_label(category) %></span>
+                <% if current_user.favorited_board?(category) %>
+                  <div class="menu-item-favorite-active">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd"/>
+                    </svg>
+                  </div>
+                <% else %>
+                  <div class="menu-item-favorite opacity-0 group-hover:opacity-100">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"/>
+                    </svg>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <%# Other Menu Items %>
+      <div class="menu-section border-b border-gray-100">
+        <div class="menu-section-title">기타</div>
+        <div class="space-y-1">
+          <%= link_to teams_path, class: "menu-item", data: { turbo_frame: "_top" } do %>
+            <div class="menu-item-icon">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"/>
+              </svg>
+            </div>
+            <span class="menu-item-label">내 팀</span>
+            <svg class="menu-item-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+            </svg>
+          <% end %>
+
+          <%= link_to courts_path, class: "menu-item", data: { turbo_frame: "_top" } do %>
+            <div class="menu-item-icon">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/>
+              </svg>
+            </div>
+            <span class="menu-item-label">코트 찾기</span>
+            <svg class="menu-item-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+            </svg>
+          <% end %>
+
+          <%= link_to profile_path, class: "menu-item", data: { turbo_frame: "_top" } do %>
+            <div class="menu-item-icon">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
+              </svg>
+            </div>
+            <span class="menu-item-label">프로필</span>
+            <svg class="menu-item-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+            </svg>
+          <% end %>
+
+          <%= link_to profile_edit_path, class: "menu-item", data: { turbo_frame: "_top" } do %>
+            <div class="menu-item-icon">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+              </svg>
+            </div>
+            <span class="menu-item-label">설정</span>
+            <svg class="menu-item-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+            </svg>
+          <% end %>
+
+          <% if current_user.admin? %>
+            <%= link_to admin_root_path, class: "menu-item", data: { turbo_frame: "_top" } do %>
+              <div class="menu-item-icon bg-gray-900">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/>
+                </svg>
+              </div>
+              <span class="menu-item-label">관리자</span>
+              <svg class="menu-item-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+              </svg>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+
+      <%# Logout %>
+      <div class="menu-section pb-6">
+        <%= button_to logout_path, method: :delete, class: "w-full menu-item text-red-500 hover:bg-red-50" do %>
+          <div class="menu-item-icon bg-red-50">
+            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9"/>
+            </svg>
+          </div>
+          <span class="menu-item-label text-red-500">로그아웃</span>
+        <% end %>
+      </div>
+
+    <% else %>
+      <%# Not Logged In %>
+      <div class="px-4 py-8 text-center">
+        <div class="mb-6">
+          <div class="w-16 h-16 mx-auto bg-primary-100 rounded-full flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">로그인이 필요합니다</h3>
+          <p class="text-sm text-gray-500 mb-6">BDR의 모든 기능을 이용하려면<br>로그인해주세요.</p>
+        </div>
+        <div class="space-y-3">
+          <%= link_to "로그인", login_path, class: "btn btn-primary w-full" %>
+          <%= link_to "회원가입", signup_path, class: "btn btn-outline w-full" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

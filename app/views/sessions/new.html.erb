@@ -42,5 +42,21 @@
       <a href="#" class="text-primary-600 hover:underline">이용약관</a> 및
       <a href="#" class="text-primary-600 hover:underline">개인정보처리방침</a>에 동의하게 됩니다.
     </p>
+
+    <% if Rails.env.development? || Rails.env.test? %>
+      <%# Dev Login Form %>
+      <div class="mt-8 pt-6 border-t border-gray-200">
+        <p class="text-center text-xs text-gray-400 mb-4">개발용 로그인</p>
+        <%= form_with url: login_path, method: :post, class: "space-y-4" do |f| %>
+          <div>
+            <%= f.email_field :email, placeholder: "이메일", class: "form-input w-full", value: "admin@bdr.com" %>
+          </div>
+          <div>
+            <%= f.password_field :password, placeholder: "비밀번호", class: "form-input w-full", value: "password123!" %>
+          </div>
+          <%= f.submit "개발용 로그인", class: "btn btn-secondary w-full" %>
+        <% end %>
+      </div>
+    <% end %>
   </div>
 </div>
