@@ -101,7 +101,7 @@ builder:
 accessories:
   db:
     image: postgres:16-alpine
-    host: 157.245.196.193
+    host: 68.183.234.77
     port: "127.0.0.1:5432:5432"
     env:
       clear:
