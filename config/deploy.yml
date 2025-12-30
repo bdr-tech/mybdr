@@ -7,7 +7,7 @@ image: mybdr/bdr_platform
 # Deploy to these servers.
 servers:
   web:
-    - 157.245.196.193
+    - 68.183.234.77
   # job:
   #   hosts:
   #     - 192.168.0.1
