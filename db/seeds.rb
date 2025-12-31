@@ -390,7 +390,10 @@ if Rails.env.development?
     User.find_by(email: "user@bdr.com")
   ].compact
 
-  created_teams.each_with_index do |team, idx|
+  # Reload teams from database to ensure fresh data
+  all_teams = Team.where(name: teams_data.map { |t| t[:name] }).to_a
+
+  all_teams.each_with_index do |team, idx|
     # Add 5 members per team
     5.times do |i|
       user = demo_users[(idx * 5 + i) % demo_users.size]
@@ -1090,6 +1093,71 @@ content_presets_data.each do |preset_data|
     puts "  ✅ Created preset: #{preset_data[:name]} (#{preset_data[:category]})"
   else
     puts "  ⏭️  Skipped (exists): #{preset_data[:name]}"
+  end
+end
+
+# =============================================================================
+# Community Posts (커뮤니티 게시글)
+# =============================================================================
+
+puts "\n💬 Creating community posts..."
+
+if Rails.env.development?
+  users = [
+    User.find_by(email: "pro@bdr.com"),
+    User.find_by(email: "user@bdr.com"),
+    User.find_by(email: "pickup@bdr.com")
+  ].compact
+
+  community_posts_data = [
+    {
+      title: "서울 강남 픽업게임 같이 하실 분!",
+      content: "매주 수요일 저녁 7시에 강남역 근처에서 픽업게임 하는데 같이 하실 분 구합니다. 초중급 레벨이고 분위기 좋아요!",
+      category: "general"
+    },
+    {
+      title: "농구화 추천 부탁드립니다",
+      content: "요즘 농구를 시작했는데 농구화 추천 부탁드립니다. 예산은 15만원 정도이고, 야외에서 주로 할 예정입니다. 쿠션감 좋은 걸로 부탁드려요!",
+      category: "question"
+    },
+    {
+      title: "BDR 챔피언십 후기",
+      content: "지난주 BDR 챔피언십 2회 8강전 다녀왔습니다. 경기 수준도 높고 운영도 잘 되어있더라고요. 다음에도 참가하고 싶네요. 추천합니다!",
+      category: "general"
+    },
+    {
+      title: "팀원 모집합니다 (서울/경기)",
+      content: "저희 팀 '서울 버커스'에서 포워드 포지션 팀원을 모집합니다. 주 1-2회 정기 연습하고 대회도 나가고 있어요. 관심있으신 분 연락주세요!",
+      category: "team_recruit"
+    },
+    {
+      title: "슛 폼 교정 어떻게 하셨나요?",
+      content: "슛이 자꾸 왼쪽으로 빠지는데 어떻게 교정해야 할까요? 혼자 연습하다 보니 뭐가 문제인지 모르겠어요. 팁 있으시면 공유 부탁드립니다!",
+      category: "tips"
+    },
+    {
+      title: "부산 해운대 비치코트 후기",
+      content: "부산 출장 갔다가 해운대 비치코트에서 농구 했습니다. 바다 보면서 농구하니까 진짜 힐링되더라고요. 부산 가시면 꼭 가보세요!",
+      category: "court_info"
+    }
+  ]
+
+  community_posts_data.each_with_index do |post_data, idx|
+    user = users[idx % users.size]
+    post = CommunityPost.find_or_initialize_by(title: post_data[:title])
+    if post.new_record?
+      post.assign_attributes(
+        user: user,
+        content: post_data[:content],
+        category: post_data[:category],
+        view_count: rand(10..200),
+        created_at: rand(1..30).days.ago
+      )
+      post.save!
+      puts "  ✅ Created community post: #{post_data[:title]}"
+    else
+      puts "  ⏭️  Skipped (exists): #{post_data[:title]}"
+    end
   end
 end
 

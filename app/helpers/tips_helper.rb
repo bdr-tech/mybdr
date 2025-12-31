@@ -8,6 +8,7 @@ module TipsHelper
   # position: 툴팁 위치 (top, bottom, left, right)
   TIPS_CONFIG = {
     # 경기 목록 페이지
+    # 순서: 항상 존재하는 요소 -> 조건부 요소 (데이터/로그인 필요)
     games_index: [
       {
         target: '[data-tip="filter"]',
@@ -16,16 +17,16 @@ module TipsHelper
         position: "bottom"
       },
       {
-        target: '[data-tip="create-game"]',
-        title: "경기 만들기",
-        description: "직접 경기를 만들어 참가자를 모집할 수 있어요.",
-        position: "left"
-      },
-      {
         target: '[data-tip="game-card"]',
         title: "경기 카드",
         description: "카드를 클릭하면 경기 상세 정보를 확인할 수 있어요.",
         position: "top"
+      },
+      {
+        target: '[data-tip="create-game"]',
+        title: "경기 만들기",
+        description: "직접 경기를 만들어 참가자를 모집할 수 있어요.",
+        position: "left"
       }
     ],
 
@@ -52,6 +53,7 @@ module TipsHelper
     ],
 
     # 팀 목록 페이지
+    # 순서: 항상 존재하는 요소 -> 조건부 요소
     teams_index: [
       {
         target: '[data-tip="search"]',
@@ -60,20 +62,21 @@ module TipsHelper
         position: "bottom"
       },
       {
-        target: '[data-tip="create-team"]',
-        title: "팀 만들기",
-        description: "나만의 팀을 만들어 함께할 동료를 모집하세요.",
-        position: "left"
-      },
-      {
         target: '[data-tip="team-card"]',
         title: "팀 카드",
         description: "팀을 클릭하면 팀 정보와 가입 신청을 할 수 있어요.",
         position: "top"
+      },
+      {
+        target: '[data-tip="create-team"]',
+        title: "팀 만들기",
+        description: "나만의 팀을 만들어 함께할 동료를 모집하세요.",
+        position: "left"
       }
     ],
 
     # 대회 목록 페이지
+    # 순서: 항상 존재하는 요소 -> 조건부 요소
     tournaments_index: [
       {
         target: '[data-tip="status-filter"]',
@@ -102,6 +105,7 @@ module TipsHelper
     ],
 
     # 커뮤니티 페이지
+    # 순서: 항상 존재하는 요소 -> 조건부 요소
     community_index: [
       {
         target: '[data-tip="category"]',
@@ -116,16 +120,16 @@ module TipsHelper
         position: "bottom"
       },
       {
-        target: '[data-tip="write"]',
-        title: "글쓰기",
-        description: "농구 동호인들과 이야기를 나눠보세요.",
-        position: "left"
-      },
-      {
         target: '[data-tip="post-item"]',
         title: "게시글 보기",
         description: "게시글을 클릭하면 상세 내용과 댓글을 볼 수 있어요.",
         position: "top"
+      },
+      {
+        target: '[data-tip="write"]',
+        title: "글쓰기",
+        description: "농구 동호인들과 이야기를 나눠보세요.",
+        position: "left"
       }
     ],
 

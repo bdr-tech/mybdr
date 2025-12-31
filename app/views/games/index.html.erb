@@ -50,14 +50,14 @@
       <%== pagy_nav(@pagy) if @pagy %>
     </div>
   <% else %>
-    <div class="text-center py-16">
+    <div class="text-center py-16" data-tip="game-card">
       <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
       </svg>
       <h3 class="mt-4 text-lg font-medium text-gray-900">등록된 경기가 없습니다</h3>
       <p class="mt-2 text-gray-600">첫 번째 경기를 만들어보세요!</p>
       <% if logged_in? %>
-        <%= link_to "경기 만들기", new_game_path, class: "btn btn-primary mt-4" %>
+        <%= link_to "경기 만들기", new_game_path, class: "btn btn-primary mt-4", data: { tip: "create-game" } %>
       <% end %>
     </div>
   <% end %>
