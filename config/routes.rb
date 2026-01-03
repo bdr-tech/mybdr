@@ -44,12 +44,6 @@ Rails.application.routes.draw do
   post   "login",  to: "sessions#create"
   delete "logout", to: "sessions#destroy"
 
-  # Dev Login (Development Only)
-  # id에 email(@, . 포함) 또는 UUID가 들어올 수 있으므로 format: false 설정
-  if Rails.env.development? || Rails.env.test?
-    get "dev_login/:id", to: "sessions#dev_login", as: :dev_login, format: false, constraints: { id: /[^\/]+/ }
-  end
-
   get  "signup", to: "users#new"
   post "signup", to: "users#create"
 
