@@ -34,16 +34,17 @@ class SessionsController < ApplicationController
   end
 
   # GET /dev_login/:id (Development Only)
+  # id는 public_id(UUID) 또는 email을 사용
   def dev_login
     return head :not_found unless Rails.env.development? || Rails.env.test?
 
-    user = User.find_by(id: params[:id])
+    user = User.find_by(public_id: params[:id]) || User.find_by(email: params[:id])
     if user
       log_in(user)
       flash[:success] = "[DEV] #{user.display_name}(으)로 로그인되었습니다"
       redirect_to root_path
     else
-      flash[:error] = "[DEV] 사용자를 찾을 수 없습니다"
+      flash[:error] = "[DEV] 사용자를 찾을 수 없습니다 (public_id 또는 email로 검색)"
       redirect_to login_path
     end
   end

@@ -348,6 +348,37 @@
               </ul>
             </div>
 
+            <%# Bank Account Info (if entry fee exists) %>
+            <% if tournament.has_fee? && tournament.has_bank_info? %>
+              <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 sm:p-6 text-left mb-6 sm:mb-8">
+                <h3 class="text-sm sm:text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center flex-shrink-0 bg-amber-100">
+                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                    </svg>
+                  </div>
+                  💳 참가비 입금 안내
+                </h3>
+                <div class="space-y-2.5 sm:space-y-3">
+                  <div class="flex flex-col gap-1 p-3 bg-white rounded-lg border border-amber-200">
+                    <span class="text-xs text-gray-500">입금 금액</span>
+                    <span class="text-lg font-bold text-gray-900"><%= number_with_delimiter(tournament.entry_fee) %>원</span>
+                  </div>
+                  <div class="flex flex-col gap-1 p-3 bg-white rounded-lg border border-amber-200">
+                    <span class="text-xs text-gray-500">입금 계좌</span>
+                    <span class="text-base font-bold text-gray-900"><%= tournament.bank_name %></span>
+                    <span class="text-sm text-gray-700 font-mono tracking-wide"><%= tournament.bank_account %></span>
+                    <% if tournament.bank_holder.present? %>
+                      <span class="text-sm text-gray-600">예금주: <%= tournament.bank_holder %></span>
+                    <% end %>
+                  </div>
+                  <p class="text-xs text-amber-700 mt-2">
+                    ⚠️ 입금 후 참가 신청을 진행해주세요. 입금자명은 팀명 또는 신청자 이름으로 해주세요.
+                  </p>
+                </div>
+              </div>
+            <% end %>
+
             <%= link_to tournament_path(tournament),
                         class: "inline-flex items-center justify-center gap-2 w-full py-3.5 sm:py-4 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all",
                         style: "background-color: #{primary_color};" do %>

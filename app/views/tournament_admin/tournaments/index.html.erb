@@ -124,6 +124,14 @@
                             class: "px-3 py-1.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors" do %>
                   관리
                 <% end %>
+                <% if tournament.owner?(current_user) %>
+                  <%= button_to tournament_admin_tournament_path(tournament),
+                                method: :delete,
+                                class: "px-3 py-1.5 text-sm font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors",
+                                data: { turbo_confirm: "정말 '#{tournament.name}'을(를) 삭제하시겠습니까?\n\n⚠️ 이 작업은 되돌릴 수 없습니다.\n• 대회 사이트가 삭제됩니다\n• 모든 참가 팀 정보가 삭제됩니다\n• 경기 기록이 삭제됩니다" } do %>
+                    삭제
+                  <% end %>
+                <% end %>
               </div>
             </div>
           </div>

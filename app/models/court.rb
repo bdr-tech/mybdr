@@ -7,6 +7,8 @@ class Court < ApplicationRecord
   # Associations
   # =============================================================================
   has_many :games, dependent: :nullify
+  has_many :user_favorite_courts, dependent: :destroy
+  has_many :favorited_by_users, through: :user_favorite_courts, source: :user
 
   # =============================================================================
   # Validations

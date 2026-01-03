@@ -133,6 +133,17 @@ module TournamentAdmin
           logo_url: params[:logo_url],
           hero_image_url: params[:hero_image_url]
         }
+
+        # Handle file uploads - store temporarily in tournament
+        if params[:logo].present?
+          @tournament.logo.attach(params[:logo])
+          session[:wizard_design][:has_logo_file] = true
+        end
+        if params[:hero_image].present?
+          @tournament.banner.attach(params[:hero_image])
+          session[:wizard_design][:has_hero_file] = true
+        end
+
         # Store selected content preset IDs
         session[:wizard_preset_ids] = params[:preset_ids] || []
         redirect_to wizard_tournament_admin_tournament_path(@tournament, step: 5)
@@ -277,6 +288,14 @@ module TournamentAdmin
         logo_url: design[:logo_url],
         hero_image_url: design[:hero_image_url]
       )
+
+      # Copy uploaded files from tournament to site
+      if design[:has_logo_file] && @tournament.logo.attached?
+        site.logo.attach(@tournament.logo.blob)
+      end
+      if design[:has_hero_file] && @tournament.banner.attached?
+        site.hero_image.attach(@tournament.banner.blob)
+      end
 
       template&.increment_usage!
 

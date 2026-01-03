@@ -289,7 +289,13 @@
       <%# Submit Section %>
       <div class="p-6 bg-gray-50 flex items-center justify-between">
         <%= link_to "취소", tournament_admin_tournaments_path, class: "px-4 py-2 text-gray-700 hover:text-gray-900 font-medium" %>
-        <%= f.submit "대회 생성 & 위자드 시작", class: "px-6 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors cursor-pointer" %>
+        <%= f.submit "대회 생성 & 위자드 시작", id: "submit_tournament", class: "px-6 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors cursor-pointer" %>
+      </div>
+
+      <%# Validation Errors Display %>
+      <div id="validation_errors" class="hidden p-4 mx-6 mb-6 bg-red-50 border border-red-200 rounded-lg">
+        <h4 class="font-medium text-red-800 mb-2">⚠️ 필수 항목을 확인해주세요</h4>
+        <ul id="error_list" class="list-disc list-inside text-sm text-red-700 space-y-1"></ul>
       </div>
     <% end %>
   </div>
@@ -320,3 +326,85 @@
     </div>
   <% end %>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const submitBtn = document.getElementById('submit_tournament');
+    const validationErrors = document.getElementById('validation_errors');
+    const errorList = document.getElementById('error_list');
+
+    form.addEventListener('submit', function(e) {
+      const errors = [];
+
+      // 대회 이름 검증
+      const name = document.getElementById('tournament_name');
+      if (!name || !name.value.trim()) {
+        errors.push('대회 이름을 입력해주세요.');
+        name?.classList.add('border-red-500');
+      } else {
+        name?.classList.remove('border-red-500');
+      }
+
+      // 일정 검증 (시작일)
+      const startDate = document.getElementById('tournament_start_date');
+      if (!startDate || !startDate.value) {
+        errors.push('대회 시작일을 선택해주세요.');
+        startDate?.classList.add('border-red-500');
+      } else {
+        startDate?.classList.remove('border-red-500');
+      }
+
+      // 참가 부별 설정 검증
+      const divisions = document.querySelectorAll('.category-checkbox:checked');
+      if (divisions.length === 0) {
+        errors.push('참가 부별을 최소 하나 이상 선택해주세요.');
+      }
+
+      // 장소 검증
+      const city = document.getElementById('tournament_city');
+      const district = document.getElementById('tournament_district');
+      const venue = document.getElementById('tournament_venue_name');
+
+      if ((!city || !city.value.trim()) && (!district || !district.value.trim()) && (!venue || !venue.value.trim())) {
+        errors.push('장소 정보를 입력해주세요. (시/도, 구/군, 경기장 중 최소 하나)');
+        city?.classList.add('border-red-500');
+        district?.classList.add('border-red-500');
+        venue?.classList.add('border-red-500');
+      } else {
+        city?.classList.remove('border-red-500');
+        district?.classList.remove('border-red-500');
+        venue?.classList.remove('border-red-500');
+      }
+
+      // 참가비 입력시 계좌 정보 검증
+      const entryFee = document.getElementById('entry_fee_field');
+      if (entryFee && parseInt(entryFee.value) > 0) {
+        const bankName = document.getElementById('tournament_bank_name');
+        const bankAccount = document.getElementById('tournament_bank_account');
+        if (!bankName || !bankName.value || bankName.value === '') {
+          errors.push('참가비가 있는 경우 은행명을 선택해주세요.');
+        }
+        if (!bankAccount || !bankAccount.value.trim()) {
+          errors.push('참가비가 있는 경우 계좌번호를 입력해주세요.');
+        }
+      }
+
+      if (errors.length > 0) {
+        e.preventDefault();
+        errorList.innerHTML = errors.map(err => `<li>${err}</li>`).join('');
+        validationErrors.classList.remove('hidden');
+        validationErrors.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        validationErrors.classList.add('hidden');
+      }
+    });
+
+    // 입력 필드 변경시 에러 표시 제거
+    form.querySelectorAll('input, select, textarea').forEach(field => {
+      field.addEventListener('input', function() {
+        this.classList.remove('border-red-500');
+      });
+    });
+  });
+</script>

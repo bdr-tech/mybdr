@@ -4,6 +4,7 @@ class GamesController < ApplicationController
   before_action :require_login, except: [:index, :show]
   before_action :set_game, only: [:show, :edit, :update, :destroy, :clone, :publish, :cancel]
   before_action :require_organizer, only: [:edit, :update, :destroy, :clone, :publish, :cancel]
+  before_action :set_court_options, only: [:new, :edit, :create, :update]
 
   def index
     games = Game.includes(:organizer, :court)
@@ -61,7 +62,6 @@ class GamesController < ApplicationController
   end
 
   def edit
-    @courts = Court.active.order(:name)
   end
 
   def update
@@ -193,5 +193,19 @@ class GamesController < ApplicationController
     )
     @game.cloned_from = source
     @game.scheduled_at = source.scheduled_at + 1.week
+  end
+
+  def set_court_options
+    @frequent_courts = current_user.frequent_courts_with_count(limit: 3)
+
+    if @frequent_courts.empty?
+      @recommended_courts = current_user.nearby_courts(limit: 3)
+      @court_section_title = "추천 경기장"
+      @court_section_subtitle = current_user.city.present? ? "#{current_user.city} 지역" : nil
+    else
+      @recommended_courts = []
+      @court_section_title = "자주 가는 경기장"
+      @court_section_subtitle = nil
+    end
   end
 end

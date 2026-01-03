@@ -239,8 +239,21 @@ redirect_to path, alert: "오류 메시지"
 |------|-------|----------|
 | 슈퍼관리자 | admin@bdr.com | password123! |
 | 대회관리자 | tournament@bdr.com | password123! |
-| 호스트 | host@bdr.com | password123! |
+| 픽업호스트 | pickup@bdr.com | password123! |
 | 일반유저 | user@bdr.com | password123! |
+
+### 개발용 빠른 로그인 (Development Only)
+
+```bash
+# email로 로그인 (추천)
+http://localhost:3030/dev_login/admin@bdr.com
+http://localhost:3030/dev_login/pickup@bdr.com
+
+# public_id(UUID)로 로그인
+http://localhost:3030/dev_login/{user.public_id}
+```
+
+**참고:** 정수 ID는 더 이상 지원하지 않음. email 또는 public_id(UUID) 사용.
 
 ---
 

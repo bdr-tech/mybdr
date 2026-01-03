@@ -95,7 +95,12 @@ class Tournament < ApplicationRecord
   # =============================================================================
   # Callbacks
   # =============================================================================
+  # prepend: true로 dependent: :destroy보다 먼저 실행되도록 함
+  before_destroy :set_destroying_flag, prepend: true
   after_save :update_series_counter, if: -> { series.present? }
+
+  # 삭제 중 여부를 확인하는 플래그 (연관 모델에서 사용)
+  attr_accessor :being_destroyed
 
   # =============================================================================
   # Validations
@@ -451,6 +456,10 @@ class Tournament < ApplicationRecord
   end
 
   private
+
+  def set_destroying_flag
+    self.being_destroyed = true
+  end
 
   def update_series_counter
     series.update_column(:tournaments_count, series.tournaments.count)

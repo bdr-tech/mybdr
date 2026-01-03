@@ -1,63 +1,67 @@
 <%# Countdown Section Form Fields %>
+<% section ||= nil %>
+<% existing_content = section&.content || {} %>
+<% existing_settings = section&.settings || {} %>
 
 <div>
   <%= f.label :target_date, "목표 날짜/시간", class: "block text-sm font-medium text-gray-700 mb-1" %>
-  <%= f.datetime_local_field :target_date,
-                            class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" %>
+  <%= datetime_local_field_tag "site_section[content][target_date]",
+               existing_content["target_date"],
+               class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" %>
   <p class="mt-1 text-sm text-gray-500">대회 시작 시간을 설정하세요</p>
 </div>
 
 <div class="space-y-3">
   <div class="flex items-center gap-3">
-    <%= f.check_box :show_days,
-                   class: "w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500",
-                   checked: true %>
-    <%= f.label :show_days, "일수 표시", class: "text-sm text-gray-700" %>
+    <%= check_box_tag "site_section[settings][show_days]", "1",
+                 existing_settings["show_days"] == true || existing_settings["show_days"].nil?,
+                 class: "w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500" %>
+    <label for="site_section_settings_show_days" class="text-sm text-gray-700">일수 표시</label>
   </div>
 
   <div class="flex items-center gap-3">
-    <%= f.check_box :show_hours,
-                   class: "w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500",
-                   checked: true %>
-    <%= f.label :show_hours, "시간 표시", class: "text-sm text-gray-700" %>
+    <%= check_box_tag "site_section[settings][show_hours]", "1",
+                 existing_settings["show_hours"] == true || existing_settings["show_hours"].nil?,
+                 class: "w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500" %>
+    <label for="site_section_settings_show_hours" class="text-sm text-gray-700">시간 표시</label>
   </div>
 
   <div class="flex items-center gap-3">
-    <%= f.check_box :show_minutes,
-                   class: "w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500",
-                   checked: true %>
-    <%= f.label :show_minutes, "분 표시", class: "text-sm text-gray-700" %>
+    <%= check_box_tag "site_section[settings][show_minutes]", "1",
+                 existing_settings["show_minutes"] == true || existing_settings["show_minutes"].nil?,
+                 class: "w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500" %>
+    <label for="site_section_settings_show_minutes" class="text-sm text-gray-700">분 표시</label>
   </div>
 
   <div class="flex items-center gap-3">
-    <%= f.check_box :show_seconds,
-                   class: "w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500",
-                   checked: true %>
-    <%= f.label :show_seconds, "초 표시", class: "text-sm text-gray-700" %>
+    <%= check_box_tag "site_section[settings][show_seconds]", "1",
+                 existing_settings["show_seconds"] == true || existing_settings["show_seconds"].nil?,
+                 class: "w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500" %>
+    <label for="site_section_settings_show_seconds" class="text-sm text-gray-700">초 표시</label>
   </div>
 </div>
 
 <div>
   <%= f.label :expired_message, "만료 후 메시지", class: "block text-sm font-medium text-gray-700 mb-1" %>
-  <%= f.text_field :expired_message,
-                  class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500",
-                  placeholder: "대회가 시작되었습니다!",
-                  value: "대회가 시작되었습니다!" %>
+  <%= text_field_tag "site_section[content][expired_message]",
+               existing_content["expired_message"] || "대회가 시작되었습니다!",
+               class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500",
+               placeholder: "대회가 시작되었습니다!" %>
 </div>
 
 <div>
   <label class="block text-sm font-medium text-gray-700 mb-2">스타일</label>
   <div class="flex gap-4">
     <label class="flex items-center gap-2">
-      <%= f.radio_button :style, "default", class: "text-primary-600", checked: true %>
+      <%= radio_button_tag "site_section[settings][style]", "default", existing_settings["style"] == "default" || existing_settings["style"].nil?, class: "text-primary-600" %>
       <span class="text-sm">기본</span>
     </label>
     <label class="flex items-center gap-2">
-      <%= f.radio_button :style, "flip", class: "text-primary-600" %>
+      <%= radio_button_tag "site_section[settings][style]", "flip", existing_settings["style"] == "flip", class: "text-primary-600" %>
       <span class="text-sm">플립</span>
     </label>
     <label class="flex items-center gap-2">
-      <%= f.radio_button :style, "minimal", class: "text-primary-600" %>
+      <%= radio_button_tag "site_section[settings][style]", "minimal", existing_settings["style"] == "minimal", class: "text-primary-600" %>
       <span class="text-sm">미니멀</span>
     </label>
   </div>

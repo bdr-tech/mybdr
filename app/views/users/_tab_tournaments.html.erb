@@ -1,0 +1,187 @@
+<%# 대회 기록 탭 %>
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+  <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+    <div class="flex items-center justify-between">
+      <h3 class="font-semibold text-gray-900 flex items-center">
+        <svg class="w-5 h-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+        </svg>
+        대회 참가 기록
+      </h3>
+      <% unless current_user&.subscription_active? %>
+        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">
+          <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+          </svg>
+          Pro 회원 전용 기능 포함
+        </span>
+      <% end %>
+    </div>
+  </div>
+
+  <% if tournament_participations.any? %>
+    <div class="divide-y divide-gray-100">
+      <% tournament_participations.each do |ttp| %>
+        <% tournament_team = ttp.tournament_team %>
+        <% next unless tournament_team %>
+        <% tournament = tournament_team.tournament %>
+        <% next unless tournament %>
+        
+        <%# 유료회원 체크: 무료회원은 최근 2주 이내 종료된 대회만 상세 조회 가능 %>
+        <% can_view_details = current_user&.can_view_tournament_results?(tournament) %>
+        
+        <div class="px-6 py-5 <%= can_view_details ? 'hover:bg-gray-50' : 'bg-gray-50/50' %> transition relative">
+          <% unless can_view_details %>
+            <%# 블러 오버레이 (Pro 멤버십 필요) %>
+            <div class="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10">
+              <div class="text-center">
+                <svg class="w-8 h-8 mx-auto text-amber-500 mb-2" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                </svg>
+                <p class="text-sm font-medium text-gray-900">Pro 멤버십으로 전체 기록 보기</p>
+                <p class="text-xs text-gray-500 mt-1">2주 이상 지난 대회 기록입니다</p>
+              </div>
+            </div>
+          <% end %>
+          
+          <div class="flex items-start justify-between">
+            <div class="flex-1 min-w-0">
+              <% if can_view_details %>
+                <%= link_to tournament_path(tournament), class: "block group" do %>
+                  <div class="flex items-center gap-2 mb-1">
+                    <h4 class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition">
+                      <%= tournament.name %>
+                    </h4>
+                    <% if tournament_team.final_rank.present? && tournament_team.final_rank <= 3 %>
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold <%= 
+                        case tournament_team.final_rank
+                        when 1 then 'bg-yellow-100 text-yellow-800'
+                        when 2 then 'bg-gray-200 text-gray-800'
+                        when 3 then 'bg-amber-100 text-amber-800'
+                        end
+                      %>">
+                        <%= tournament_team.final_rank %>위
+                      </span>
+                    <% end %>
+                  </div>
+                <% end %>
+              <% else %>
+                <div class="flex items-center gap-2 mb-1">
+                  <h4 class="text-sm font-semibold text-gray-900">
+                    <%= tournament.name %>
+                  </h4>
+                </div>
+              <% end %>
+              
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 mt-1">
+                <span class="flex items-center">
+                  <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                  <%= tournament_team.team&.name || "팀" %>
+                </span>
+                <span class="flex items-center">
+                  <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  <%= tournament.start_date ? l(tournament.start_date, format: :short) : "-" %>
+                </span>
+                <% if tournament.division_tier.present? %>
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-medium">
+                    <%= tournament.division_tier %>
+                  </span>
+                <% end %>
+              </div>
+              
+              <%# 개인 통계 %>
+              <% if can_view_details && ttp.games_played.to_i > 0 %>
+                <div class="mt-3 flex items-center gap-4">
+                  <div class="flex items-center gap-1">
+                    <span class="text-xs text-gray-500">경기:</span>
+                    <span class="text-xs font-medium text-gray-900"><%= ttp.games_played %></span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <span class="text-xs text-gray-500">득점:</span>
+                    <span class="text-xs font-medium text-gray-900"><%= ttp.avg_points || 0 %></span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <span class="text-xs text-gray-500">리바:</span>
+                    <span class="text-xs font-medium text-gray-900"><%= ttp.avg_rebounds || 0 %></span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <span class="text-xs text-gray-500">어시:</span>
+                    <span class="text-xs font-medium text-gray-900"><%= ttp.avg_assists || 0 %></span>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+            
+            <div class="ml-4 flex-shrink-0 text-right">
+              <% if tournament_team.final_rank.present? %>
+                <div class="text-lg font-bold <%= tournament_team.final_rank <= 3 ? 'text-indigo-600' : 'text-gray-700' %>">
+                  #<%= tournament_team.final_rank %>
+                </div>
+                <div class="text-xs text-gray-500">최종 순위</div>
+              <% else %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium <%= 
+                  case tournament.status
+                  when 'completed' then 'bg-gray-100 text-gray-800'
+                  when 'in_progress' then 'bg-green-100 text-green-800'
+                  else 'bg-blue-100 text-blue-800'
+                  end
+                %>">
+                  <%= 
+                    case tournament.status
+                    when 'completed' then '종료'
+                    when 'in_progress' then '진행중'
+                    when 'registration_open' then '모집중'
+                    else tournament.status
+                    end
+                  %>
+                </span>
+              <% end %>
+            </div>
+          </div>
+          
+          <%# 경기별 기록 링크 %>
+          <% if can_view_details && ttp.games_played.to_i > 0 %>
+            <div class="mt-3 pt-3 border-t border-gray-100">
+              <%= link_to tournament_path(tournament, anchor: "matches"), class: "text-xs text-indigo-600 hover:text-indigo-800 font-medium" do %>
+                경기별 상세 기록 보기 →
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="p-12 text-center">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+      </svg>
+      <h3 class="mt-4 text-sm font-medium text-gray-900">참가한 대회가 없습니다</h3>
+      <p class="mt-1 text-sm text-gray-500">팀을 만들고 대회에 참가해보세요!</p>
+      <%= link_to "대회 찾기", tournaments_path, class: "mt-4 inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition" %>
+    </div>
+  <% end %>
+</div>
+
+<%# Pro 멤버십 안내 (무료회원인 경우) %>
+<% if user == current_user && !current_user.subscription_active? && tournament_participations.any? %>
+  <div class="mt-6 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 text-white">
+    <div class="flex items-start justify-between">
+      <div>
+        <h4 class="font-semibold text-lg">Pro 멤버십으로 전체 기록 열람</h4>
+        <p class="mt-1 text-indigo-100 text-sm">
+          모든 과거 대회 기록과 상세 통계를 확인하세요.<br>
+          경기별 박스스코어, 시즌 평균, 커리어 하이 등을 볼 수 있습니다.
+        </p>
+      </div>
+      <%= link_to "#", class: "flex-shrink-0 ml-4 px-5 py-2.5 bg-white text-indigo-600 font-medium text-sm rounded-lg hover:bg-indigo-50 transition" do %>
+        업그레이드
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+

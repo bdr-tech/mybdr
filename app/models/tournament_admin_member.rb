@@ -69,6 +69,9 @@ class TournamentAdminMember < ApplicationRecord
   private
 
   def ensure_owner_remains
+    # 대회 자체가 삭제될 때는 owner 삭제 허용
+    return if tournament.destroyed? || tournament.being_destroyed
+
     if tournament.tournament_admin_members.owners.where.not(id: id).empty?
       errors.add(:base, '대회에는 최소 한 명의 소유자가 있어야 합니다')
       throw(:abort)

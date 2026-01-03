@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_28_115651) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_01_093306) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -1014,6 +1014,22 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_28_115651) do
     t.index ["venue_id"], name: "index_tournaments_on_venue_id"
   end
 
+  create_table "user_favorite_courts", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "court_id", null: false
+    t.string "nickname"
+    t.integer "use_count", default: 0, null: false
+    t.integer "position", default: 0
+    t.datetime "last_used_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["court_id"], name: "index_user_favorite_courts_on_court_id"
+    t.index ["user_id", "court_id"], name: "index_user_favorite_courts_on_user_id_and_court_id", unique: true
+    t.index ["user_id", "position"], name: "index_user_favorite_courts_on_user_id_and_position"
+    t.index ["user_id", "use_count"], name: "index_user_favorite_courts_on_user_id_and_use_count"
+    t.index ["user_id"], name: "index_user_favorite_courts_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email", null: false
     t.string "password_digest", null: false
@@ -1136,4 +1152,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_28_115651) do
   add_foreign_key "tournaments", "tournament_series", column: "series_id"
   add_foreign_key "tournaments", "users", column: "mvp_player_id"
   add_foreign_key "tournaments", "users", column: "organizer_id"
+  add_foreign_key "user_favorite_courts", "courts"
+  add_foreign_key "user_favorite_courts", "users"
 end

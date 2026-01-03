@@ -2,6 +2,12 @@
 
 class TournamentSite < ApplicationRecord
   # =============================================================================
+  # Active Storage
+  # =============================================================================
+  has_one_attached :logo
+  has_one_attached :hero_image
+
+  # =============================================================================
   # Associations
   # =============================================================================
   belongs_to :tournament
@@ -133,6 +139,38 @@ class TournamentSite < ApplicationRecord
 
   def increment_view!
     increment!(:views_count)
+  end
+
+  # =============================================================================
+  # Image Methods
+  # =============================================================================
+
+  # 로고 이미지 URL (Active Storage 우선, fallback to logo_url)
+  def logo_image_url
+    if logo.attached?
+      Rails.application.routes.url_helpers.rails_blob_path(logo, only_path: true)
+    else
+      logo_url
+    end
+  end
+
+  # 히어로 이미지 URL (Active Storage 우선, fallback to hero_image_url)
+  def hero_image_url_display
+    if hero_image.attached?
+      Rails.application.routes.url_helpers.rails_blob_path(hero_image, only_path: true)
+    else
+      hero_image_url
+    end
+  end
+
+  # 로고가 있는지 확인
+  def has_logo?
+    logo.attached? || logo_url.present?
+  end
+
+  # 히어로 이미지가 있는지 확인
+  def has_hero_image?
+    hero_image.attached? || hero_image_url.present?
   end
 
   # Clone site structure to another tournament

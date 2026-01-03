@@ -1,0 +1,159 @@
+<%# 소속 팀 탭 %>
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+  <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+    <h3 class="font-semibold text-gray-900 flex items-center">
+      <svg class="w-5 h-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+      </svg>
+      소속 팀
+      <span class="ml-2 text-xs text-gray-500">(<%= team_memberships.count %>)</span>
+    </h3>
+  </div>
+
+  <% if team_memberships.any? %>
+    <div class="divide-y divide-gray-100">
+      <% team_memberships.each do |membership| %>
+        <% team = membership.team %>
+        <% next unless team %>
+        <div class="px-6 py-4 hover:bg-gray-50 transition">
+          <div class="flex items-center gap-4">
+            <%# 팀 로고 %>
+            <div class="flex-shrink-0">
+              <% if team.logo.attached? %>
+                <%= image_tag team.logo, alt: team.name, class: "w-14 h-14 rounded-xl object-cover border border-gray-200" %>
+              <% else %>
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
+                  <span class="text-lg font-bold text-white"><%= team.name[0].upcase %></span>
+                </div>
+              <% end %>
+            </div>
+            
+            <%# 팀 정보 %>
+            <div class="flex-1 min-w-0">
+              <%= link_to team_path(team), class: "block group" do %>
+                <h4 class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition truncate">
+                  <%= team.name %>
+                </h4>
+                <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+                  <% if membership.jersey_number.present? %>
+                    <span class="font-medium text-indigo-600">#<%= membership.jersey_number %></span>
+                  <% end %>
+                  <span class="<%= 
+                    case membership.role
+                    when 'captain' then 'text-amber-600 font-medium'
+                    when 'vice_captain' then 'text-blue-600 font-medium'
+                    else ''
+                    end
+                  %>">
+                    <%= 
+                      case membership.role
+                      when 'captain' then '주장'
+                      when 'vice_captain' then '부주장'
+                      when 'member' then '팀원'
+                      else membership.role
+                      end
+                    %>
+                  </span>
+                  <% if team.city.present? %>
+                    <span class="flex items-center">
+                      <svg class="w-3 h-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                      </svg>
+                      <%= team.city %>
+                    </span>
+                  <% end %>
+                  <span>가입: <%= l(membership.created_at, format: :short) %></span>
+                </div>
+              <% end %>
+            </div>
+            
+            <%# 상태 및 액션 %>
+            <div class="flex-shrink-0 flex items-center gap-2">
+              <% if membership.role == 'captain' %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                  <svg class="w-3 h-3 mr-0.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                  </svg>
+                  주장
+                </span>
+              <% end %>
+              
+              <% if membership.is_active %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                  활동중
+                </span>
+              <% else %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                  비활동
+                </span>
+              <% end %>
+            </div>
+          </div>
+          
+          <%# 팀 전적 (있으면) %>
+          <% if team.tournament_teams.approved.any? %>
+            <div class="mt-3 pt-3 border-t border-gray-100 flex items-center gap-4 text-xs">
+              <span class="text-gray-500">팀 전적:</span>
+              <span class="font-medium text-gray-900">
+                <%= team.tournament_teams.approved.sum(:wins) %>승
+                <%= team.tournament_teams.approved.sum(:losses) %>패
+              </span>
+              <span class="text-gray-400">|</span>
+              <span class="text-gray-500">대회 참가: <%= team.tournament_teams.approved.count %>회</span>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="p-12 text-center">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+      <h3 class="mt-4 text-sm font-medium text-gray-900">소속된 팀이 없습니다</h3>
+      <p class="mt-1 text-sm text-gray-500">팀에 가입하거나 새 팀을 만들어보세요!</p>
+      <div class="mt-4 flex items-center justify-center gap-3">
+        <%= link_to "팀 찾기", teams_path, class: "inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition" %>
+        <% if user == current_user && current_user.can_create_team? %>
+          <%= link_to "팀 만들기", new_team_path, class: "inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition" %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<%# 주장으로 있는 팀 (본인만 볼 수 있음) %>
+<% if user == current_user && user.captained_teams.any? %>
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-6">
+    <div class="px-6 py-4 border-b border-gray-100 bg-amber-50/50">
+      <h3 class="font-semibold text-gray-900 flex items-center">
+        <svg class="w-5 h-5 mr-2 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+        </svg>
+        내가 주장인 팀
+        <span class="ml-2 text-xs text-gray-500">(<%= user.captained_teams.count %>)</span>
+      </h3>
+    </div>
+    <div class="divide-y divide-gray-100">
+      <% user.captained_teams.each do |team| %>
+        <div class="px-6 py-4 hover:bg-gray-50 transition">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <% if team.logo.attached? %>
+                <%= image_tag team.logo, alt: team.name, class: "w-10 h-10 rounded-lg object-cover" %>
+              <% else %>
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                  <span class="text-sm font-bold text-white"><%= team.name[0].upcase %></span>
+                </div>
+              <% end %>
+              <%= link_to team.name, team_path(team), class: "text-sm font-medium text-gray-900 hover:text-indigo-600" %>
+            </div>
+            <%= link_to "관리", edit_team_path(team), class: "text-xs text-indigo-600 hover:text-indigo-800 font-medium" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+

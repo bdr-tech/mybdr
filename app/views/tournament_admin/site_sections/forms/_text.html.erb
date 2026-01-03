@@ -1,8 +1,12 @@
 <%# Text Section Form Fields %>
+<% section ||= nil %>
+<% existing_content = section&.content || {} %>
+<% existing_settings = section&.settings || {} %>
 
 <div>
   <%= f.label :body, "본문", class: "block text-sm font-medium text-gray-700 mb-1" %>
-  <%= f.text_area :body,
+  <%= text_area_tag "site_section[content][body]",
+                 existing_content["body"],
                  rows: 8,
                  class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500",
                  placeholder: "마크다운 형식으로 작성할 수 있습니다..." %>
@@ -13,15 +17,15 @@
   <label class="block text-sm font-medium text-gray-700 mb-2">정렬</label>
   <div class="flex gap-4">
     <label class="flex items-center gap-2">
-      <%= f.radio_button :alignment, "left", class: "text-primary-600", checked: true %>
+      <%= radio_button_tag "site_section[settings][alignment]", "left", existing_settings["alignment"] == "left" || existing_settings["alignment"].nil?, class: "text-primary-600" %>
       <span class="text-sm">왼쪽</span>
     </label>
     <label class="flex items-center gap-2">
-      <%= f.radio_button :alignment, "center", class: "text-primary-600" %>
+      <%= radio_button_tag "site_section[settings][alignment]", "center", existing_settings["alignment"] == "center", class: "text-primary-600" %>
       <span class="text-sm">가운데</span>
     </label>
     <label class="flex items-center gap-2">
-      <%= f.radio_button :alignment, "right", class: "text-primary-600" %>
+      <%= radio_button_tag "site_section[settings][alignment]", "right", existing_settings["alignment"] == "right", class: "text-primary-600" %>
       <span class="text-sm">오른쪽</span>
     </label>
   </div>
@@ -31,13 +35,13 @@
   <div>
     <%= f.label :background_color, "배경색", class: "block text-sm font-medium text-gray-700 mb-1" %>
     <%= f.color_field :background_color,
-                     value: "#FFFFFF",
+                     value: section&.background_color || "#FFFFFF",
                      class: "w-full h-10 border border-gray-300 rounded-lg cursor-pointer" %>
   </div>
   <div>
     <%= f.label :text_color, "텍스트 색상", class: "block text-sm font-medium text-gray-700 mb-1" %>
     <%= f.color_field :text_color,
-                     value: "#1F2937",
+                     value: section&.text_color || "#1F2937",
                      class: "w-full h-10 border border-gray-300 rounded-lg cursor-pointer" %>
   </div>
 </div>

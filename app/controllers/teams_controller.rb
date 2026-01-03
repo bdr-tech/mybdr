@@ -2,8 +2,8 @@
 
 class TeamsController < ApplicationController
   before_action :require_login, except: [:index, :show]
-  before_action :set_team, only: [:show, :edit, :update, :destroy, :join, :leave]
-  before_action :require_admin, only: [:edit, :update, :destroy]
+  before_action :set_team, only: [:show, :edit, :update, :destroy, :join, :leave, :remove_photo]
+  before_action :require_admin, only: [:edit, :update, :destroy, :remove_photo]
 
   def index
     teams = Team.active.public_teams.includes(:captain).with_attached_logo.with_attached_banner
@@ -66,7 +66,16 @@ class TeamsController < ApplicationController
   end
 
   def update
-    if @team.update(team_params)
+    # photos는 별도로 처리 (기존 사진 유지하면서 추가)
+    new_photos = params[:team][:photos]
+
+    if @team.update(team_params.except(:photos))
+      # 새 사진이 있으면 기존 사진에 추가
+      if new_photos.present?
+        new_photos.reject(&:blank?).each do |photo|
+          @team.photos.attach(photo)
+        end
+      end
       redirect_to @team, notice: "팀 정보가 수정되었습니다."
     else
       render :edit, status: :unprocessable_entity
@@ -109,6 +118,15 @@ class TeamsController < ApplicationController
     end
   end
 
+  # 사진 삭제
+  def remove_photo
+    photo = @team.photos.find(params[:photo_id])
+    photo.purge
+    redirect_to edit_team_path(@team, anchor: "photos"), notice: "사진이 삭제되었습니다."
+  rescue ActiveRecord::RecordNotFound
+    redirect_to edit_team_path(@team), alert: "사진을 찾을 수 없습니다."
+  end
+
   private
 
   def set_team
@@ -129,7 +147,8 @@ class TeamsController < ApplicationController
     params.require(:team).permit(
       :name, :description, :city, :home_court,
       :logo_url, :banner_url, :logo, :banner,
-      :is_public, :accepting_members, :auto_accept_members
+      :is_public, :accepting_members, :auto_accept_members,
+      photos: []
     )
   end
 end

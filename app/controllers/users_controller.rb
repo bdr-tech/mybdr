@@ -26,6 +26,7 @@ class UsersController < ApplicationController
 
   # GET /profile or /users/:id
   def show
+    load_profile_data
   end
 
   # GET /profile/edit or /users/:id/edit
@@ -118,5 +119,80 @@ class UsersController < ApplicationController
       :account_holder,
       :toss_id
     )
+  end
+
+  def load_profile_data
+    # 픽업 경기 기록 (신청한 게임들)
+    @game_applications = @user.game_applications
+      .includes(game: [:court, :organizer])
+      .order(created_at: :desc)
+      .limit(20)
+
+    # 대회 참가 기록 (TournamentTeamPlayer를 통해)
+    @tournament_participations = @user.tournament_team_players
+      .includes(tournament_team: [:team, { tournament: :venue }])
+      .joins(tournament_team: :tournament)
+      .order("tournaments.start_date DESC")
+
+    # 소속 팀 목록
+    @team_memberships = @user.team_memberships
+      .includes(:team)
+      .order(created_at: :desc)
+
+    # 통계 계산
+    @user_stats = calculate_user_stats
+  end
+
+  def calculate_user_stats
+    # 대회 통계 집계
+    tournament_stats = @user.tournament_team_players.inject({
+      total_games: 0,
+      total_points: 0,
+      total_rebounds: 0,
+      total_assists: 0,
+      total_steals: 0,
+      total_blocks: 0
+    }) do |acc, ttp|
+      acc[:total_games] += ttp.games_played.to_i
+      acc[:total_points] += ttp.total_points.to_i
+      acc[:total_rebounds] += ttp.total_rebounds.to_i
+      acc[:total_assists] += ttp.total_assists.to_i
+      acc[:total_steals] += ttp.total_steals.to_i
+      acc[:total_blocks] += ttp.total_blocks.to_i
+      acc
+    end
+
+    # 평균 계산
+    games = tournament_stats[:total_games]
+    if games > 0
+      tournament_stats[:avg_points] = (tournament_stats[:total_points].to_f / games).round(1)
+      tournament_stats[:avg_rebounds] = (tournament_stats[:total_rebounds].to_f / games).round(1)
+      tournament_stats[:avg_assists] = (tournament_stats[:total_assists].to_f / games).round(1)
+    else
+      tournament_stats[:avg_points] = 0.0
+      tournament_stats[:avg_rebounds] = 0.0
+      tournament_stats[:avg_assists] = 0.0
+    end
+
+    # 픽업 게임 통계
+    pickup_stats = {
+      total_applications: @user.game_applications.count,
+      approved_games: @user.game_applications.where(status: "approved").count,
+      hosted_games: @user.organized_games.count
+    }
+
+    # 대회 참가 수
+    tournament_count = @user.tournament_team_players
+      .joins(tournament_team: :tournament)
+      .where(tournaments: { status: "completed" })
+      .select("DISTINCT tournaments.id")
+      .count
+
+    {
+      tournament: tournament_stats,
+      pickup: pickup_stats,
+      tournaments_participated: tournament_count,
+      teams_count: @user.team_memberships.count
+    }
   end
 end

@@ -19,6 +19,7 @@ class Team < ApplicationRecord
   # =============================================================================
   has_one_attached :logo
   has_one_attached :banner
+  has_many_attached :photos
 
   # =============================================================================
   # Associations

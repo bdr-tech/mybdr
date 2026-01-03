@@ -73,6 +73,8 @@ class User < ApplicationRecord
   has_many :court_infos, dependent: :destroy
   has_many :court_reviews, dependent: :destroy
   has_many :court_checkins, dependent: :destroy
+  has_many :user_favorite_courts, dependent: :destroy
+  has_many :favorite_courts, through: :user_favorite_courts, source: :court
 
   # Community associations
   has_many :posts, dependent: :destroy
@@ -465,6 +467,81 @@ class User < ApplicationRecord
       rebounds: player_game_stats.maximum(:rebounds) || 0,
       assists: player_game_stats.maximum(:assists) || 0
     }
+  end
+
+  # =============================================================================
+  # Favorite Courts Methods (즐겨찾기 경기장)
+  # =============================================================================
+
+  # 경기장 즐겨찾기 추가
+  def add_favorite_court(court, nickname: nil)
+    user_favorite_courts.find_or_create_by(court: court) do |fav|
+      fav.nickname = nickname
+    end
+  end
+
+  # 경기장 즐겨찾기 제거
+  def remove_favorite_court(court)
+    user_favorite_courts.find_by(court: court)&.destroy
+  end
+
+  # 경기장이 즐겨찾기인지 확인
+  def favorited_court?(court)
+    user_favorite_courts.exists?(court: court)
+  end
+
+  # 즐겨찾기 경기장 목록 (정렬됨)
+  def ordered_favorite_courts
+    user_favorite_courts.ordered.includes(:court)
+  end
+
+  # 경기장 사용 시 카운트 증가
+  def increment_court_usage(court)
+    fav = user_favorite_courts.find_by(court: court)
+    fav&.increment_use!
+  end
+
+  # =============================================================================
+  # Frequent Courts Methods (자주 가는 경기장)
+  # =============================================================================
+
+  # 자주 가는 경기장 (경기 참가 + 개최 기준)
+  def frequent_courts(limit: 5)
+    # 주최한 경기의 경기장
+    hosted_court_ids = organized_games.where.not(court_id: nil).group(:court_id).count
+
+    # 참가한 경기의 경기장
+    participated_court_ids = applied_games.where.not(court_id: nil).group(:court_id).count
+
+    # 합산하여 정렬
+    court_counts = hosted_court_ids.merge(participated_court_ids) { |_k, v1, v2| v1 + v2 }
+
+    return [] if court_counts.empty?
+
+    sorted_ids = court_counts.sort_by { |_, count| -count }.first(limit).map(&:first)
+    Court.where(id: sorted_ids).index_by(&:id).values_at(*sorted_ids).compact
+  end
+
+  # 자주 가는 경기장 (횟수 포함)
+  def frequent_courts_with_count(limit: 5)
+    hosted_court_ids = organized_games.where.not(court_id: nil).group(:court_id).count
+    participated_court_ids = applied_games.where.not(court_id: nil).group(:court_id).count
+
+    court_counts = hosted_court_ids.merge(participated_court_ids) { |_k, v1, v2| v1 + v2 }
+
+    return [] if court_counts.empty?
+
+    sorted = court_counts.sort_by { |_, count| -count }.first(limit)
+    courts = Court.where(id: sorted.map(&:first)).index_by(&:id)
+
+    sorted.map { |court_id, count| { court: courts[court_id], count: count } }.compact
+  end
+
+  # 지역 기반 경기장 추천 (신규 사용자용)
+  def nearby_courts(limit: 5)
+    return [] unless city.present?
+
+    Court.active.where(city: city).order(:name).limit(limit).to_a
   end
 
   private
