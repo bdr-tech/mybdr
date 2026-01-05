@@ -53,7 +53,7 @@ gem "omniauth-rails_csrf_protection"
 gem "dotenv-rails", groups: [:development, :test]
 
 # Pagination
-gem "pagy", "~> 9.0"
+gem "pagy", "~> 43.2"
 
 # SEO-friendly URLs
 gem "friendly_id", "~> 5.5"
