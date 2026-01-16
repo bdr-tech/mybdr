@@ -76,7 +76,7 @@ module TipsHelper
     ],
 
     # 대회 목록 페이지
-    # 순서: 항상 존재하는 요소 -> 조건부 요소
+    # 순서: 항상 존재하는 요소만 (중첩 요소 제거)
     tournaments_index: [
       {
         target: '[data-tip="status-filter"]',
@@ -87,19 +87,7 @@ module TipsHelper
       {
         target: '[data-tip="tournament-card"]',
         title: "대회 정보",
-        description: "카드를 클릭해 대회 상세 정보와 참가 신청을 할 수 있어요.",
-        position: "top"
-      },
-      {
-        target: '[data-tip="tournament-teams"]',
-        title: "참가팀 현황",
-        description: "현재 참가 신청된 팀 수를 확인할 수 있어요.",
-        position: "top"
-      },
-      {
-        target: '[data-tip="tournament-fee"]',
-        title: "참가비 안내",
-        description: "대회별 참가비를 확인하고 결제할 수 있어요.",
+        description: "카드를 클릭해 대회 상세 정보, 참가팀 현황, 참가비를 확인할 수 있어요.",
         position: "top"
       }
     ],

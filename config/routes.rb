@@ -259,6 +259,29 @@ Rails.application.routes.draw do
           patch :update_role
         end
       end
+
+      # Matches & Bracket management (일정/대진표 관리)
+      resources :matches, controller: "matches" do
+        collection do
+          # 대진표 생성/관리
+          post :generate_bracket
+          delete :clear_bracket
+
+          # 조 추첨
+          get :draw
+          post :perform_draw
+          delete :reset_draw
+          post :assign_group
+
+          # 시드 배정
+          get :seeds
+          patch :update_seeds
+
+          # 일괄 일정 등록
+          get :bulk_schedule
+          patch :update_bulk_schedule
+        end
+      end
     end
 
     # Series management
@@ -289,6 +312,31 @@ Rails.application.routes.draw do
     namespace :v1 do
       resources :site_templates, only: [:index, :show]
       get "subdomain/check", to: "subdomains#check"
+
+      # Match Stats API (경기 개인기록)
+      resources :matches, only: [], param: :match_id do
+        member do
+          get :stats, to: "match_stats#show"
+          post :stats, to: "match_stats#create"
+          post "stats/bulk", to: "match_stats#bulk_create"
+          patch "stats/:id", to: "match_stats#update"
+          delete "stats/:id", to: "match_stats#destroy"
+        end
+      end
+
+      # Tournament Stats (대회별 통계)
+      resources :tournaments, only: [] do
+        member do
+          get :player_stats, to: "match_stats#tournament_stats"
+        end
+      end
+
+      # Player Career Stats (선수 통산 기록)
+      resources :players, only: [] do
+        member do
+          get :stats, to: "match_stats#player_career_stats"
+        end
+      end
     end
   end
 

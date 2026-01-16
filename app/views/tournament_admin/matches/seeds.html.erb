@@ -1,0 +1,99 @@
+<% content_for :title, "#{@tournament.name} - 시드 배정" %>
+
+<div class="space-y-6">
+  <!-- 헤더 -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">시드 배정</h1>
+      <p class="text-gray-500 mt-1">팀의 시드 순위를 지정합니다</p>
+    </div>
+  </div>
+
+  <!-- 탭 네비게이션 -->
+  <div class="border-b border-gray-200">
+    <nav class="flex gap-4">
+      <%= link_to tournament_admin_tournament_matches_path(@tournament),
+                  class: "py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm" do %>
+        경기 목록
+      <% end %>
+      <%= link_to draw_tournament_admin_tournament_matches_path(@tournament),
+                  class: "py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm" do %>
+        조 추첨
+      <% end %>
+      <%= link_to seeds_tournament_admin_tournament_matches_path(@tournament),
+                  class: "py-3 px-1 border-b-2 border-primary-500 text-primary-600 font-medium text-sm" do %>
+        시드 배정
+      <% end %>
+      <%= link_to bulk_schedule_tournament_admin_tournament_matches_path(@tournament),
+                  class: "py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm" do %>
+        일괄 일정
+      <% end %>
+    </nav>
+  </div>
+
+  <div class="card">
+    <div class="p-4 border-b border-gray-100">
+      <h2 class="font-semibold text-gray-900">참가팀 시드 배정</h2>
+      <p class="text-sm text-gray-500 mt-1">시드 번호가 낮을수록 높은 시드입니다 (1번 시드가 가장 높음)</p>
+    </div>
+
+    <%= form_tag update_seeds_tournament_admin_tournament_matches_path(@tournament), method: :patch do %>
+      <div class="divide-y divide-gray-100">
+        <% @teams.each_with_index do |team, index| %>
+          <div class="flex items-center justify-between p-4 hover:bg-gray-50">
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                <% if team.team.logo&.attached? %>
+                  <%= image_tag team.team.logo, class: "w-full h-full rounded-full object-cover" %>
+                <% elsif team.team.logo_url.present? %>
+                  <img src="<%= team.team.logo_url %>" class="w-full h-full rounded-full object-cover">
+                <% else %>
+                  <span class="text-sm font-medium text-gray-600"><%= team.team.name.first(2) %></span>
+                <% end %>
+              </div>
+              <div>
+                <p class="font-medium text-gray-900"><%= team.team.name %></p>
+                <p class="text-sm text-gray-500">신청일: <%= team.created_at.strftime('%Y.%m.%d') %></p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <label class="text-sm text-gray-600">시드:</label>
+              <input type="number"
+                     name="seeds[<%= team.id %>]"
+                     value="<%= team.seed_number %>"
+                     min="1"
+                     max="<%= @teams.count %>"
+                     placeholder="-"
+                     class="w-16 text-center border rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <% if @teams.any? %>
+        <div class="p-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+          <p class="text-sm text-gray-500">변경사항을 저장하려면 버튼을 클릭하세요</p>
+          <button type="submit" class="btn btn-primary">
+            시드 저장
+          </button>
+        </div>
+      <% else %>
+        <div class="p-12 text-center">
+          <p class="text-gray-500">아직 참가팀이 없습니다</p>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+
+  <!-- 도움말 -->
+  <div class="card p-6 bg-blue-50 border-blue-200">
+    <h3 class="font-semibold text-blue-900 mb-2">시드 배정 가이드</h3>
+    <ul class="text-sm text-blue-800 space-y-1">
+      <li>• <strong>싱글/더블 엘리미네이션</strong>: 시드 순으로 대진표 배치 (1번 vs 마지막, 2번 vs 마지막-1)</li>
+      <li>• <strong>그룹 스테이지</strong>: 시드 팀이 각 조에 분산 배치됨</li>
+      <li>• <strong>스위스 방식</strong>: 첫 라운드 시드 순 매칭</li>
+      <li>• 빈 칸으로 두면 신청 순서대로 배치됩니다</li>
+    </ul>
+  </div>
+</div>

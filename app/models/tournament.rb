@@ -128,6 +128,27 @@ class Tournament < ApplicationRecord
   # Instance Methods
   # =============================================================================
 
+  # API 토큰 생성
+  def generate_api_token!
+    loop do
+      token = SecureRandom.hex(32)
+      unless Tournament.exists?(api_token: token)
+        update!(api_token: token)
+        return token
+      end
+    end
+  end
+
+  # API 토큰 재발급
+  def regenerate_api_token!
+    generate_api_token!
+  end
+
+  # API 토큰 폐기
+  def revoke_api_token!
+    update!(api_token: nil)
+  end
+
   # 등록 가능 여부
   def can_register?
     status_registration_open? && !full? && registration_period_active?

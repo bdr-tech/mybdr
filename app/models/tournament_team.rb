@@ -5,7 +5,7 @@ class TournamentTeam < ApplicationRecord
   # Associations
   # =============================================================================
   belongs_to :tournament, counter_cache: :teams_count
-  belongs_to :team
+  belongs_to :team, primary_key: :id
   belongs_to :registered_by, class_name: "User", optional: true
 
   has_many :tournament_team_players, dependent: :destroy

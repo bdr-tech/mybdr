@@ -5,9 +5,9 @@ class TeamMemberHistory < ApplicationRecord
   # Associations
   # =============================================================================
   belongs_to :user
-  belongs_to :team
-  belongs_to :from_team, class_name: "Team", optional: true
-  belongs_to :to_team, class_name: "Team", optional: true
+  belongs_to :team, primary_key: :id
+  belongs_to :from_team, class_name: "Team", optional: true, primary_key: :id
+  belongs_to :to_team, class_name: "Team", optional: true, primary_key: :id
   belongs_to :processed_by, class_name: "User", optional: true
 
   # =============================================================================

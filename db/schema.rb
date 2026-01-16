@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_01_093306) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_15_015636) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -833,6 +833,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_01_093306) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.uuid "tournament_id", null: false
+    t.string "venue_name"
     t.index ["away_team_id"], name: "index_tournament_matches_on_away_team_id"
     t.index ["home_team_id"], name: "index_tournament_matches_on_home_team_id"
     t.index ["mvp_player_id"], name: "index_tournament_matches_on_mvp_player_id"
@@ -1000,6 +1001,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_01_093306) do
     t.datetime "updated_at", null: false
     t.string "primary_color"
     t.string "secondary_color"
+    t.string "api_token"
+    t.index ["api_token"], name: "index_tournaments_on_api_token", unique: true
     t.index ["champion_team_id"], name: "index_tournaments_on_champion_team_id"
     t.index ["divisions"], name: "index_tournaments_on_divisions", using: :gin
     t.index ["is_public"], name: "index_tournaments_on_is_public"

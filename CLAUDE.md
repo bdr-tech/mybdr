@@ -1,5 +1,11 @@
 # BDR Platform - Claude Code Instructions
 
+## ⚠️ Important Rules
+
+- **Git 작업 금지**: 내 지시 없이 스스로 판단하에 `git add`, `git commit`, `git push` 하지 말 것
+
+---
+
 ## Project Overview
 
 BDR Platform은 **농구 동호회 및 대회 관리 플랫폼**입니다. Rails 8.0 + Tailwind CSS 4.0 기반의 모놀리식 아키텍처로, Toss 스타일의 모던 UI를 제공합니다.

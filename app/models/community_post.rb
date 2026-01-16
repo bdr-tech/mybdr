@@ -4,7 +4,7 @@ class CommunityPost < ApplicationRecord
   include HasPublicId
 
   belongs_to :user
-  belongs_to :team, optional: true
+  belongs_to :team, optional: true, primary_key: :id
   has_many :comments, as: :commentable, dependent: :destroy
 
   # Validations

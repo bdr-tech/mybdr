@@ -34,7 +34,7 @@ class CourtsController < ApplicationController
   end
 
   def show
-    @court = Court.find(params[:id])
+    @court = Court.find_by_public_id!(params[:id])
     @upcoming_games = @court.games.upcoming.limit(5)
   end
 end

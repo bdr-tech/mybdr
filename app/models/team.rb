@@ -27,16 +27,16 @@ class Team < ApplicationRecord
   belongs_to :captain, class_name: "User"
   belongs_to :manager, class_name: "User", optional: true
 
-  has_many :team_members, dependent: :destroy
+  has_many :team_members, dependent: :destroy, primary_key: :id
   has_many :members, through: :team_members, source: :user
-  has_many :team_join_requests, dependent: :destroy
-  has_many :team_member_histories, dependent: :destroy
-  has_many :tournament_teams, dependent: :destroy
+  has_many :team_join_requests, dependent: :destroy, primary_key: :id
+  has_many :team_member_histories, dependent: :destroy, primary_key: :id
+  has_many :tournament_teams, dependent: :destroy, primary_key: :id
   has_many :tournaments, through: :tournament_teams
 
   # Transfer history associations
-  has_many :transfers_from, class_name: "TeamMemberHistory", foreign_key: :from_team_id
-  has_many :transfers_to, class_name: "TeamMemberHistory", foreign_key: :to_team_id
+  has_many :transfers_from, class_name: "TeamMemberHistory", foreign_key: :from_team_id, primary_key: :id
+  has_many :transfers_to, class_name: "TeamMemberHistory", foreign_key: :to_team_id, primary_key: :id
 
   # =============================================================================
   # Enums

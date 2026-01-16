@@ -1,0 +1,163 @@
+<% content_for :title, "#{@tournament.name} - 일정/대진표 관리" %>
+
+<div class="space-y-6">
+  <!-- 헤더 -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">일정/대진표 관리</h1>
+      <p class="text-gray-500 mt-1">경기 일정과 대진표를 관리합니다</p>
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+      <%= link_to new_tournament_admin_tournament_match_path(@tournament), class: "btn btn-secondary" do %>
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        경기 추가
+      <% end %>
+
+      <% if @matches.empty? %>
+        <%= button_to generate_bracket_tournament_admin_tournament_matches_path(@tournament),
+                      method: :post,
+                      class: "btn btn-primary",
+                      data: { turbo_confirm: "대진표를 자동 생성하시겠습니까?" } do %>
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          대진표 생성
+        <% end %>
+      <% else %>
+        <%= button_to clear_bracket_tournament_admin_tournament_matches_path(@tournament),
+                      method: :delete,
+                      class: "btn btn-danger",
+                      data: { turbo_confirm: "모든 경기를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다." } do %>
+          대진표 초기화
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- 탭 네비게이션 -->
+  <div class="border-b border-gray-200">
+    <nav class="flex gap-4">
+      <%= link_to tournament_admin_tournament_matches_path(@tournament),
+                  class: "py-3 px-1 border-b-2 border-primary-500 text-primary-600 font-medium text-sm" do %>
+        경기 목록
+      <% end %>
+      <%= link_to draw_tournament_admin_tournament_matches_path(@tournament),
+                  class: "py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm" do %>
+        조 추첨
+      <% end %>
+      <%= link_to seeds_tournament_admin_tournament_matches_path(@tournament),
+                  class: "py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm" do %>
+        시드 배정
+      <% end %>
+      <%= link_to bulk_schedule_tournament_admin_tournament_matches_path(@tournament),
+                  class: "py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm" do %>
+        일괄 일정
+      <% end %>
+    </nav>
+  </div>
+
+  <!-- 통계 카드 -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="card p-4">
+      <p class="text-sm text-gray-500">총 경기</p>
+      <p class="text-2xl font-bold text-gray-900"><%= @matches.count %></p>
+    </div>
+    <div class="card p-4">
+      <p class="text-sm text-gray-500">일정 확정</p>
+      <p class="text-2xl font-bold text-green-600"><%= @matches.where.not(scheduled_at: nil).count %></p>
+    </div>
+    <div class="card p-4">
+      <p class="text-sm text-gray-500">참가팀</p>
+      <p class="text-2xl font-bold text-blue-600"><%= @teams.count %></p>
+    </div>
+    <div class="card p-4">
+      <p class="text-sm text-gray-500">대회 형식</p>
+      <p class="text-lg font-bold text-gray-900"><%= @tournament.format_name %></p>
+    </div>
+  </div>
+
+  <!-- 경기 목록 -->
+  <div class="card">
+    <div class="p-4 border-b border-gray-100">
+      <h2 class="font-semibold text-gray-900">경기 목록</h2>
+    </div>
+
+    <% if @matches.any? %>
+      <div class="divide-y divide-gray-100">
+        <% @matches.group_by { |m| m.group_name || m.round_name || "#{m.round_number}라운드" }.each do |group, matches| %>
+          <div class="p-4">
+            <h3 class="text-sm font-semibold text-gray-700 mb-3"><%= group %></h3>
+            <div class="space-y-2">
+              <% matches.each do |match| %>
+                <div class="flex items-center justify-between bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors">
+                  <div class="flex items-center gap-4 flex-1">
+                    <span class="text-xs text-gray-400 w-8">#<%= match.match_number %></span>
+
+                    <div class="flex items-center gap-2 flex-1">
+                      <span class="font-medium text-gray-900 truncate max-w-[120px]">
+                        <%= match.home_team&.team&.name || 'TBD' %>
+                      </span>
+                      <span class="text-gray-400">vs</span>
+                      <span class="font-medium text-gray-900 truncate max-w-[120px]">
+                        <%= match.away_team&.team&.name || 'TBD' %>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-4">
+                    <% if match.scheduled_at %>
+                      <span class="text-sm text-gray-600">
+                        <%= match.scheduled_at.strftime('%m/%d %H:%M') %>
+                      </span>
+                    <% else %>
+                      <span class="text-sm text-orange-500">일정 미정</span>
+                    <% end %>
+
+                    <div class="flex gap-1">
+                      <%= link_to edit_tournament_admin_tournament_match_path(@tournament, match),
+                                  class: "p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded" do %>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                        </svg>
+                      <% end %>
+                      <%= button_to tournament_admin_tournament_match_path(@tournament, match),
+                                    method: :delete,
+                                    class: "p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded",
+                                    data: { turbo_confirm: "이 경기를 삭제하시겠습니까?" } do %>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="p-12 text-center">
+        <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        <p class="text-gray-500 mb-4">아직 등록된 경기가 없습니다</p>
+        <p class="text-sm text-gray-400 mb-6">대진표를 자동 생성하거나 경기를 직접 추가하세요</p>
+
+        <div class="flex justify-center gap-3">
+          <% if @teams.count >= 2 %>
+            <%= button_to generate_bracket_tournament_admin_tournament_matches_path(@tournament),
+                          method: :post,
+                          class: "btn btn-primary" do %>
+              대진표 자동 생성
+            <% end %>
+          <% end %>
+          <%= link_to "경기 직접 추가", new_tournament_admin_tournament_match_path(@tournament), class: "btn btn-secondary" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

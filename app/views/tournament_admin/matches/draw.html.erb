@@ -1,0 +1,164 @@
+<% content_for :title, "#{@tournament.name} - 조 추첨" %>
+
+<div class="space-y-6">
+  <!-- 헤더 -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">조 추첨</h1>
+      <p class="text-gray-500 mt-1">팀을 조에 배치합니다 (그룹 스테이지/조별 리그)</p>
+    </div>
+
+    <% if @groups.any? %>
+      <%= button_to reset_draw_tournament_admin_tournament_matches_path(@tournament),
+                    method: :delete,
+                    class: "btn btn-danger",
+                    data: { turbo_confirm: "조 추첨을 초기화하시겠습니까?" } do %>
+        조 추첨 초기화
+      <% end %>
+    <% end %>
+  </div>
+
+  <!-- 탭 네비게이션 -->
+  <div class="border-b border-gray-200">
+    <nav class="flex gap-4">
+      <%= link_to tournament_admin_tournament_matches_path(@tournament),
+                  class: "py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm" do %>
+        경기 목록
+      <% end %>
+      <%= link_to draw_tournament_admin_tournament_matches_path(@tournament),
+                  class: "py-3 px-1 border-b-2 border-primary-500 text-primary-600 font-medium text-sm" do %>
+        조 추첨
+      <% end %>
+      <%= link_to seeds_tournament_admin_tournament_matches_path(@tournament),
+                  class: "py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm" do %>
+        시드 배정
+      <% end %>
+      <%= link_to bulk_schedule_tournament_admin_tournament_matches_path(@tournament),
+                  class: "py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm" do %>
+        일괄 일정
+      <% end %>
+    </nav>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- 왼쪽: 추첨 설정 -->
+    <div class="lg:col-span-1 space-y-4">
+      <div class="card p-6">
+        <h2 class="font-semibold text-gray-900 mb-4">조 추첨 설정</h2>
+
+        <%= form_tag perform_draw_tournament_admin_tournament_matches_path(@tournament), method: :post, class: "space-y-4" do %>
+          <div>
+            <label class="form-label">조 개수</label>
+            <select name="group_count" class="form-select w-full">
+              <% (2..8).each do |n| %>
+                <option value="<%= n %>" <%= 'selected' if n == 4 %>><%= n %>개 조</option>
+              <% end %>
+            </select>
+            <p class="text-xs text-gray-500 mt-1">참가팀: <%= @teams.count %>팀</p>
+          </div>
+
+          <div>
+            <label class="form-label">시드 팀 (수동 배치)</label>
+            <p class="text-xs text-gray-500 mb-2">선택한 팀은 각 조에 1명씩 분산 배치됩니다</p>
+            <div class="space-y-2 max-h-48 overflow-y-auto">
+              <% @teams.where.not(seed_number: nil).order(:seed_number).each do |team| %>
+                <label class="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer">
+                  <input type="checkbox" name="seeded_teams[]" value="<%= team.id %>" class="rounded text-primary-600">
+                  <span class="text-sm"><%= team.seed_number %>. <%= team.team.name %></span>
+                </label>
+              <% end %>
+              <% if @teams.where.not(seed_number: nil).empty? %>
+                <p class="text-sm text-gray-400 p-2">시드가 배정된 팀이 없습니다</p>
+                <%= link_to "시드 배정하기", seeds_tournament_admin_tournament_matches_path(@tournament), class: "text-sm text-primary-600 hover:underline" %>
+              <% end %>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-full">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+            </svg>
+            조 추첨 실행
+          </button>
+        <% end %>
+      </div>
+
+      <!-- 미배치 팀 -->
+      <div class="card p-6">
+        <h3 class="font-semibold text-gray-900 mb-3">미배치 팀</h3>
+        <% unassigned = @teams.where(group_name: nil) %>
+        <% if unassigned.any? %>
+          <div class="space-y-2">
+            <% unassigned.each do |team| %>
+              <div class="flex items-center justify-between p-2 bg-gray-50 rounded" data-team-id="<%= team.id %>">
+                <span class="text-sm font-medium"><%= team.team.name %></span>
+                <select onchange="assignGroup(this, <%= team.id %>)" class="text-xs border rounded px-2 py-1">
+                  <option value="">조 선택</option>
+                  <% ('A'..'H').first(@groups.keys.compact.size.zero? ? 4 : @groups.keys.compact.size).each do |g| %>
+                    <option value="<%= g %>"><%= g %>조</option>
+                  <% end %>
+                </select>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-sm text-gray-500">모든 팀이 배치되었습니다</p>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- 오른쪽: 조 현황 -->
+    <div class="lg:col-span-2">
+      <div class="card p-6">
+        <h2 class="font-semibold text-gray-900 mb-4">조 현황</h2>
+
+        <% if @groups.any? %>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <% @groups.sort.each do |group_name, teams| %>
+              <div class="bg-gray-50 rounded-lg p-4">
+                <h3 class="font-bold text-lg text-center mb-3 text-primary-600"><%= group_name %>조</h3>
+                <div class="space-y-2">
+                  <% teams.sort_by { |t| t.seed_number || 999 }.each_with_index do |team, i| %>
+                    <div class="flex items-center gap-2 p-2 bg-white rounded shadow-sm">
+                      <span class="text-xs text-gray-400 w-4"><%= i + 1 %></span>
+                      <span class="text-sm font-medium truncate"><%= team.team.name %></span>
+                      <% if team.seed_number %>
+                        <span class="text-xs bg-yellow-100 text-yellow-700 px-1 rounded">S<%= team.seed_number %></span>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="text-center py-12">
+            <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+            </svg>
+            <p class="text-gray-500">아직 조 추첨이 진행되지 않았습니다</p>
+            <p class="text-sm text-gray-400 mt-1">왼쪽에서 조 개수를 선택하고 추첨을 실행하세요</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function assignGroup(select, teamId) {
+  const groupName = select.value;
+  if (!groupName) return;
+
+  fetch('<%= assign_group_tournament_admin_tournament_matches_path(@tournament) %>', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    },
+    body: JSON.stringify({ team_id: teamId, group_name: groupName })
+  }).then(() => {
+    window.location.reload();
+  });
+}
+</script>

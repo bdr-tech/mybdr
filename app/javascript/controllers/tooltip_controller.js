@@ -9,9 +9,37 @@ export default class extends Controller {
     sessionCompleted: Boolean
   }
 
+  // localStorage 키 생성
+  get storageKey() {
+    return `bdr_tips_completed_${this.pageKeyValue}`
+  }
+
+  // localStorage에서 완료 여부 확인
+  isCompletedInStorage() {
+    try {
+      return localStorage.getItem(this.storageKey) === 'true'
+    } catch (e) {
+      // localStorage 접근 불가 시 (private browsing 등)
+      return false
+    }
+  }
+
+  // localStorage에 완료 상태 저장
+  saveToStorage() {
+    try {
+      localStorage.setItem(this.storageKey, 'true')
+    } catch (e) {
+      console.warn('Failed to save tips completion to localStorage:', e)
+    }
+  }
+
   connect() {
-    // 이미 완료된 세션이면 표시하지 않음
-    if (this.sessionCompletedValue) return
+    // localStorage 또는 세션에서 이미 완료됐으면 표시하지 않음 (첫 방문만 표시)
+    if (this.isCompletedInStorage() || this.sessionCompletedValue) {
+      // 컨테이너 숨김
+      this.element.classList.add('hidden')
+      return
+    }
 
     // DOM 로드 후 첫 번째 팁 표시
     requestAnimationFrame(() => {
@@ -196,6 +224,9 @@ export default class extends Controller {
   }
 
   async complete() {
+    // localStorage에 저장 (브라우저 종료 후에도 유지)
+    this.saveToStorage()
+
     const csrfToken = document.querySelector('[name="csrf-token"]')?.content
 
     try {

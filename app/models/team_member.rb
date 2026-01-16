@@ -4,7 +4,7 @@ class TeamMember < ApplicationRecord
   # =============================================================================
   # Associations
   # =============================================================================
-  belongs_to :team, counter_cache: :members_count
+  belongs_to :team, counter_cache: :members_count, primary_key: :id
   belongs_to :user
 
   # =============================================================================

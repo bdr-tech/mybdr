@@ -4,7 +4,7 @@ class TeamJoinRequest < ApplicationRecord
   # =============================================================================
   # Associations
   # =============================================================================
-  belongs_to :team
+  belongs_to :team, primary_key: :id
   belongs_to :user
   belongs_to :processed_by, class_name: "User", optional: true
 
