@@ -56,7 +56,7 @@ gem "dotenv-rails", groups: [:development, :test]
 gem "pagy", "~> 9.0"
 
 # SEO-friendly URLs
-gem "friendly_id", "~> 5.5"
+gem "friendly_id", "~> 5.6"
 
 # HTTP requests (for TossPayments API)
 gem "httparty"
