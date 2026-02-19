@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  /* Dark Mode Colors (참조 이미지 기반) */
+  --color-background: #0A0A0A;
+  --color-card: #1A1A1A;
+  --color-elevated: #252525;
+  --color-surface: #2A2A2A;
+
+  /* Warm Orange Accent */
+  --color-primary: #F4A261;
+  --color-primary-hover: #E8934E;
+  --color-primary-light: rgba(244, 162, 97, 0.12);
+  --color-accent-coral: #E76F51;
+
+  /* Text */
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #A0A0A0;
+  --color-text-muted: #666666;
+  --color-text-on-primary: #0A0A0A;
+
+  /* Status */
+  --color-success: #4ADE80;
+  --color-error: #EF4444;
+  --color-warning: #FBBF24;
+  --color-info: #60A5FA;
+
+  /* Border */
+  --color-border: #2A2A2A;
+  --color-border-subtle: #1F1F1F;
+
+  /* Border Radius */
+  --radius-card: 16px;
+  --radius-card-lg: 24px;
+  --radius-pill: 9999px;
+
+  /* Shadows */
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+  /* Font */
+  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+}

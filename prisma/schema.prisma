@@ -1,0 +1,1396 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                                                                        BigInt                       @id @default(autoincrement())
+  email                                                                     String                       @unique(map: "index_users_on_email") @db.VarChar
+  passwordDigest                                                            String                       @map("password_digest") @db.VarChar
+  name                                                                      String?                      @db.VarChar
+  nickname                                                                  String?                      @db.VarChar
+  phone                                                                     String?                      @db.VarChar
+  profile_image                                                             String?                      @db.VarChar
+  position                                                                  String?                      @db.VarChar
+  height                                                                    Int?
+  weight                                                                    Int?
+  birth_date                                                                DateTime?                    @db.Date
+  city                                                                      String?                      @db.VarChar
+  district                                                                  String?                      @db.VarChar
+  bio                                                                       String?
+  membershipType                                                            Int                          @default(0) @map("membership_type")
+  subscription_started_at                                                   DateTime?                    @db.Timestamp(6)
+  subscription_expires_at                                                   DateTime?                    @db.Timestamp(6)
+  subscription_status                                                       String?                      @default("inactive") @db.VarChar
+  bank_name                                                                 String?                      @db.VarChar
+  bank_code                                                                 String?                      @db.VarChar
+  account_number                                                            String?                      @db.VarChar
+  account_holder                                                            String?                      @db.VarChar
+  toss_id                                                                   String?                      @db.VarChar
+  isAdmin                                                                   Boolean?                     @default(false) @map("is_admin")
+  status                                                                    String?                      @default("active") @db.VarChar
+  suspended_at                                                              DateTime?                    @db.Timestamp(6)
+  evaluation_rating                                                         Decimal?                     @default(0.0) @db.Decimal(3, 2)
+  total_games_hosted                                                        Int?                         @default(0)
+  total_games_participated                                                  Int?                         @default(0)
+  last_login_at                                                             DateTime?                    @db.Timestamp(6)
+  createdAt                                                                 DateTime                     @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt                                                                 DateTime                     @updatedAt @map("updated_at") @db.Timestamp(6)
+  public_id                                                                 String                       @unique(map: "index_users_on_public_id") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider                                                                  String?                      @db.VarChar
+  uid                                                                       String?                      @db.VarChar
+  oauth_token                                                               String?                      @db.VarChar
+  oauth_expires_at                                                          DateTime?                    @db.Timestamp(6)
+  profile_image_url                                                         String?                      @db.VarChar
+  prefer_admin_mode                                                         Boolean?                     @default(false)
+  tutorial_completed_teams                                                  Boolean                      @default(false)
+  tutorial_completed_tournaments                                            Boolean                      @default(false)
+  tutorial_completed_games                                                  Boolean                      @default(false)
+  tutorial_completed_community                                              Boolean                      @default(false)
+  preferred_divisions                                                       Json                         @default("[]")
+  preferred_board_categories                                                Json                         @default("[]")
+  profile_completed                                                         Boolean                      @default(false)
+  admin_logs                                                                admin_logs[]
+  board_favorites                                                           board_favorites[]
+  comments                                                                  comments[]
+  community_posts                                                           community_posts[]
+  court_checkins                                                            court_checkins[]
+  court_infos                                                               court_infos[]
+  court_reviews                                                             court_reviews[]
+  game_applications                                                         game_applications[]
+  game_templates                                                            game_templates[]
+  games                                                                     games[]
+  marketplace_items                                                         marketplace_items[]
+  marketplace_phone_requests_marketplace_phone_requests_seller_idTousers    marketplace_phone_requests[] @relation("marketplace_phone_requests_seller_idTousers")
+  marketplace_phone_requests_marketplace_phone_requests_requester_idTousers marketplace_phone_requests[] @relation("marketplace_phone_requests_requester_idTousers")
+  marketplace_wishlists                                                     marketplace_wishlists[]
+  memory_cards                                                              memory_cards[]
+  notifications                                                             notifications[]
+  payments                                                                  payments[]
+  posts                                                                     posts[]
+  suggestions_suggestions_responded_by_idTousers                            suggestions[]                @relation("suggestions_responded_by_idTousers")
+  suggestions_suggestions_assigned_to_idTousers                             suggestions[]                @relation("suggestions_assigned_to_idTousers")
+  suggestions_suggestions_user_idTousers                                    suggestions[]                @relation("suggestions_user_idTousers")
+  team_join_requests_team_join_requests_user_idTousers                      team_join_requests[]         @relation("team_join_requests_user_idTousers")
+  team_join_requests_team_join_requests_processed_by_idTousers              team_join_requests[]         @relation("team_join_requests_processed_by_idTousers")
+  team_member_histories_team_member_histories_user_idTousers                team_member_histories[]      @relation("team_member_histories_user_idTousers")
+  team_member_histories_team_member_histories_processed_by_idTousers        team_member_histories[]      @relation("team_member_histories_processed_by_idTousers")
+  teamMembers                                                               TeamMember[]
+  teams_teams_manager_idTousers                                             Team[]                       @relation("teams_manager_idTousers")
+  teams_teams_captain_idTousers                                             Team[]                       @relation("teams_captain_idTousers")
+  tournamentAdminMembers                                                    TournamentAdminMember[]
+  tournament_matches                                                        TournamentMatch[]
+  tournament_series                                                         tournament_series[]
+  tournament_team_players                                                   TournamentTeamPlayer[]
+  tournament_teams                                                          TournamentTeam[]
+  tournaments_tournaments_organizer_idTousers                               Tournament[]                 @relation("tournaments_organizer_idTousers")
+  tournaments_tournaments_mvp_player_idTousers                              Tournament[]                 @relation("tournaments_mvp_player_idTousers")
+  user_favorite_courts                                                      user_favorite_courts[]
+
+  @@unique([provider, uid], map: "index_users_on_provider_and_uid")
+  @@index([createdAt], map: "index_users_on_created_at")
+  @@index([membershipType], map: "index_users_on_membership_type")
+  @@index([preferred_divisions], map: "index_users_on_preferred_divisions", type: Gin)
+  @@index([profile_completed], map: "index_users_on_profile_completed")
+  @@index([status], map: "index_users_on_status")
+  @@map("users")
+}
+
+model Tournament {
+  id                                     String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  series_id                              BigInt?
+  organizerId                            BigInt                  @map("organizer_id")
+  name                                   String                  @db.VarChar
+  edition_number                         Int?
+  description                            String?
+  logo_url                               String?                 @db.VarChar
+  banner_url                             String?                 @db.VarChar
+  registration_start_at                  DateTime?               @db.Timestamp(6)
+  registration_end_at                    DateTime?               @db.Timestamp(6)
+  startDate                              DateTime?               @map("start_date") @db.Timestamp(6)
+  endDate                                DateTime?               @map("end_date") @db.Timestamp(6)
+  format                                 String?                 @default("single_elimination") @db.VarChar
+  maxTeams                               Int?                    @default(16) @map("max_teams")
+  min_teams                              Int?                    @default(4)
+  team_size                              Int?                    @default(5)
+  roster_min                             Int?                    @default(5)
+  roster_max                             Int?                    @default(12)
+  entry_fee                              Decimal?                @default(0.0) @db.Decimal(10, 0)
+  prize_info                             String?
+  prize_distribution                     Json?                   @default("{}")
+  rules                                  String?
+  game_rules                             Json?                   @default("{}")
+  venue_id                               BigInt?
+  venue_name                             String?                 @db.VarChar
+  venue_address                          String?                 @db.VarChar
+  city                                   String?                 @db.VarChar
+  district                               String?                 @db.VarChar
+  status                                 String?                 @default("draft") @db.VarChar
+  teams_count                            Int?                    @default(0)
+  matches_count                          Int?                    @default(0)
+  views_count                            Int?                    @default(0)
+  settings                               Json?                   @default("{}")
+  is_public                              Boolean?                @default(true)
+  auto_approve_teams                     Boolean?                @default(false)
+  champion_team_id                       BigInt?
+  mvp_player_id                          BigInt?
+  divisions                              Json                    @default("[]")
+  division_tiers                         Json                    @default("[]")
+  bank_name                              String?                 @db.VarChar
+  bank_account                           String?                 @db.VarChar
+  bank_holder                            String?                 @db.VarChar
+  createdAt                              DateTime                @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt                              DateTime                @updatedAt @map("updated_at") @db.Timestamp(6)
+  primary_color                          String?                 @db.VarChar
+  secondary_color                        String?                 @db.VarChar
+  apiToken                               String?                 @unique(map: "index_tournaments_on_api_token") @map("api_token") @db.VarChar
+  adminMembers                           TournamentAdminMember[]
+  tournamentMatches                      TournamentMatch[]
+  tournamentSite                         TournamentSite[]
+  tournamentTeams                        TournamentTeam[]
+  teams                                  Team?                   @relation(fields: [champion_team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_18732ad2a6")
+  tournament_series                      tournament_series?      @relation(fields: [series_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_228d987a3d")
+  courts                                 courts?                 @relation(fields: [venue_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_4ed1e7dadb")
+  users_tournaments_organizer_idTousers  User                    @relation("tournaments_organizer_idTousers", fields: [organizerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_5037ef73fd")
+  users_tournaments_mvp_player_idTousers User?                   @relation("tournaments_mvp_player_idTousers", fields: [mvp_player_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_85db3c3f6e")
+
+  @@index([champion_team_id], map: "index_tournaments_on_champion_team_id")
+  @@index([divisions], map: "index_tournaments_on_divisions", type: Gin)
+  @@index([is_public], map: "index_tournaments_on_is_public")
+  @@index([mvp_player_id], map: "index_tournaments_on_mvp_player_id")
+  @@index([organizerId, status], map: "index_tournaments_on_organizer_and_status")
+  @@index([organizerId], map: "index_tournaments_on_organizer_id")
+  @@index([series_id], map: "index_tournaments_on_series_id")
+  @@index([startDate], map: "index_tournaments_on_start_date")
+  @@index([status], map: "index_tournaments_on_status")
+  @@index([status, startDate], map: "index_tournaments_on_status_and_start_date")
+  @@index([venue_id], map: "index_tournaments_on_venue_id")
+  @@map("tournaments")
+}
+
+model TournamentAdminMember {
+  id           BigInt     @id @default(autoincrement())
+  userId       BigInt     @map("user_id")
+  role         String     @default("admin") @db.VarChar
+  permissions  Json?      @default("{}")
+  isActive     Boolean?   @default(true) @map("is_active")
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamp(6)
+  tournamentId String     @map("tournament_id") @db.Uuid
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_3f7d9c2d9b")
+  user         User       @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_44decc2910")
+
+  @@index([tournamentId], map: "index_tournament_admin_members_on_tournament_id")
+  @@index([tournamentId, role], map: "index_tournament_admin_members_on_tournament_id_and_role")
+  @@index([userId], map: "index_tournament_admin_members_on_user_id")
+  @@map("tournament_admin_members")
+}
+
+model Team {
+  id                                                              BigInt                  @id @default(autoincrement())
+  uuid                                                            String                  @unique(map: "index_teams_on_uuid") @db.VarChar
+  name                                                            String                  @db.VarChar
+  slug                                                            String?                 @unique(map: "index_teams_on_slug") @db.VarChar
+  description                                                     String?
+  logoUrl                                                         String?                 @map("logo_url") @db.VarChar
+  banner_url                                                      String?                 @db.VarChar
+  city                                                            String?                 @db.VarChar
+  district                                                        String?                 @db.VarChar
+  home_court                                                      String?                 @db.VarChar
+  founded_year                                                    Int?
+  captainId                                                       BigInt                  @map("captain_id")
+  manager_id                                                      BigInt?
+  status                                                          String?                 @default("active") @db.VarChar
+  is_public                                                       Boolean?                @default(true)
+  accepting_members                                               Boolean?                @default(true)
+  max_members                                                     Int?                    @default(15)
+  settings                                                        Json?                   @default("{}")
+  members_count                                                   Int?                    @default(0)
+  wins                                                            Int?                    @default(0)
+  losses                                                          Int?                    @default(0)
+  draws                                                           Int?                    @default(0)
+  tournaments_count                                               Int?                    @default(0)
+  primaryColor                                                    String?                 @default("#FFFFFF") @map("primary_color") @db.VarChar
+  secondaryColor                                                  String?                 @default("#000000") @map("secondary_color") @db.VarChar
+  createdAt                                                       DateTime                @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt                                                       DateTime                @updatedAt @map("updated_at") @db.Timestamp(6)
+  team_code                                                       String?                 @unique(map: "index_teams_on_team_code") @db.VarChar
+  auto_accept_members                                             Boolean                 @default(false)
+  community_posts                                                 community_posts[]
+  team_join_requests                                              team_join_requests[]
+  team_member_histories_team_member_histories_team_idToteams      team_member_histories[] @relation("team_member_histories_team_idToteams")
+  team_member_histories_team_member_histories_from_team_idToteams team_member_histories[] @relation("team_member_histories_from_team_idToteams")
+  team_member_histories_team_member_histories_to_team_idToteams   team_member_histories[] @relation("team_member_histories_to_team_idToteams")
+  teamMembers                                                     TeamMember[]
+  users_teams_manager_idTousers                                   User?                   @relation("teams_manager_idTousers", fields: [manager_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_93b029b083")
+  users_teams_captain_idTousers                                   User                    @relation("teams_captain_idTousers", fields: [captainId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_ecb2d22ad1")
+  tournamentTeams                                                 TournamentTeam[]
+  tournaments                                                     Tournament[]
+
+  @@index([captainId], map: "index_teams_on_captain_id")
+  @@index([city], map: "index_teams_on_city")
+  @@index([manager_id], map: "index_teams_on_manager_id")
+  @@index([name], map: "index_teams_on_name")
+  @@index([status], map: "index_teams_on_status")
+  @@index([status, city], map: "index_teams_on_status_and_city")
+  @@map("teams")
+}
+
+model TeamMember {
+  id           BigInt    @id @default(autoincrement())
+  teamId       BigInt    @map("team_id")
+  userId       BigInt    @map("user_id")
+  jerseyNumber Int?      @map("jersey_number")
+  role         String?   @default("member") @db.VarChar
+  position     String?   @db.VarChar
+  status       String?   @default("active") @db.VarChar
+  joined_at    DateTime? @db.Timestamp(6)
+  left_at      DateTime? @db.Timestamp(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+  team         Team      @relation(fields: [teamId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_194b5b076d")
+  user         User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_9ec2d5e75e")
+
+  @@unique([teamId, jerseyNumber], map: "index_team_members_on_team_id_and_jersey_number")
+  @@unique([teamId, userId], map: "index_team_members_on_team_id_and_user_id")
+  @@index([status], map: "index_team_members_on_status")
+  @@index([teamId], map: "index_team_members_on_team_id")
+  @@index([userId], map: "index_team_members_on_user_id")
+  @@map("team_members")
+}
+
+model TournamentTeam {
+  id                                                                     BigInt                 @id @default(autoincrement())
+  teamId                                                                 BigInt                 @map("team_id")
+  seedNumber                                                             Int?                   @map("seed_number")
+  groupName                                                              String?                @map("group_name") @db.VarChar
+  group_order                                                            Int?
+  status                                                                 String?                @default("pending") @db.VarChar
+  registered_by_id                                                       BigInt?
+  approved_at                                                            DateTime?              @db.Timestamp(6)
+  paid_at                                                                DateTime?              @db.Timestamp(6)
+  payment_status                                                         String?                @default("unpaid") @db.VarChar
+  registration_note                                                      String?
+  wins                                                                   Int?                   @default(0)
+  losses                                                                 Int?                   @default(0)
+  draws                                                                  Int?                   @default(0)
+  points_for                                                             Int?                   @default(0)
+  points_against                                                         Int?                   @default(0)
+  point_difference                                                       Int?                   @default(0)
+  final_rank                                                             Int?
+  createdAt                                                              DateTime               @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt                                                              DateTime               @updatedAt @map("updated_at") @db.Timestamp(6)
+  tournamentId                                                           String                 @map("tournament_id") @db.Uuid
+  division                                                               String?                @db.VarChar
+  division_tier                                                          String?                @db.VarChar
+  play_by_plays                                                          play_by_plays[]
+  tournament_matches_tournament_matches_winner_team_idTotournament_teams TournamentMatch[]      @relation("tournament_matches_winner_team_idTotournament_teams")
+  homeMatches                                                            TournamentMatch[]      @relation("HomeTeam")
+  awayMatches                                                            TournamentMatch[]      @relation("AwayTeam")
+  players                                                                TournamentTeamPlayer[]
+  team                                                                   Team                   @relation(fields: [teamId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_020162b156")
+  users                                                                  User?                  @relation(fields: [registered_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_857f4513b9")
+  tournament                                                             Tournament             @relation(fields: [tournamentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_ce03d16b09")
+
+  @@unique([tournamentId, teamId], map: "index_tournament_teams_on_tournament_id_and_team_id")
+  @@index([tournamentId, division, division_tier], map: "index_tournament_teams_on_division_full")
+  @@index([registered_by_id], map: "index_tournament_teams_on_registered_by_id")
+  @@index([status], map: "index_tournament_teams_on_status")
+  @@index([teamId], map: "index_tournament_teams_on_team_id")
+  @@index([tournamentId, division], map: "index_tournament_teams_on_tournament_and_division")
+  @@index([tournamentId, groupName], map: "index_tournament_teams_on_tournament_and_group")
+  @@index([tournamentId], map: "index_tournament_teams_on_tournament_id")
+  @@index([tournamentId, seedNumber], map: "index_tournament_teams_on_tournament_id_and_seed_number")
+  @@map("tournament_teams")
+}
+
+model TournamentTeamPlayer {
+  id               BigInt            @id @default(autoincrement())
+  tournamentTeamId BigInt            @map("tournament_team_id")
+  userId           BigInt            @map("user_id")
+  jerseyNumber     Int?              @map("jersey_number")
+  role             String?           @default("player") @db.VarChar
+  position         String?           @db.VarChar
+  auto_registered  Boolean?          @default(false)
+  is_active        Boolean?          @default(true)
+  isStarter        Boolean?          @default(false) @map("is_starter")
+  games_played     Int?              @default(0)
+  total_points     Int?              @default(0)
+  total_rebounds   Int?              @default(0)
+  total_assists    Int?              @default(0)
+  total_steals     Int?              @default(0)
+  total_blocks     Int?              @default(0)
+  avg_points       Decimal?          @default(0.0) @db.Decimal(5, 1)
+  avg_rebounds     Decimal?          @default(0.0) @db.Decimal(5, 1)
+  avg_assists      Decimal?          @default(0.0) @db.Decimal(5, 1)
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamp(6)
+  playerStats      MatchPlayerStat[]
+  play_by_plays    play_by_plays[]
+  users            User              @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_4174bc8af3")
+  tournamentTeam   TournamentTeam    @relation(fields: [tournamentTeamId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_4ec2691050")
+
+  @@unique([tournamentTeamId, jerseyNumber], map: "idx_tournament_team_players_jersey")
+  @@unique([tournamentTeamId, userId], map: "idx_tournament_team_players_unique")
+  @@index([is_active], map: "index_tournament_team_players_on_is_active")
+  @@index([tournamentTeamId], map: "index_tournament_team_players_on_tournament_team_id")
+  @@index([userId], map: "index_tournament_team_players_on_user_id")
+  @@map("tournament_team_players")
+}
+
+model TournamentMatch {
+  id                                                                   BigInt            @id @default(autoincrement())
+  uuid                                                                 String            @unique(map: "index_tournament_matches_on_uuid") @default(uuid()) @db.VarChar
+  homeTeamId                                                           BigInt?           @map("home_team_id")
+  awayTeamId                                                           BigInt?           @map("away_team_id")
+  roundName                                                            String?           @map("round_name") @db.VarChar
+  round_number                                                         Int?
+  match_number                                                         Int?
+  group_name                                                           String?           @db.VarChar
+  bracket_position                                                     Int?
+  bracket_level                                                        Int?
+  scheduledAt                                                          DateTime?         @map("scheduled_at") @db.Timestamp(6)
+  started_at                                                           DateTime?         @db.Timestamp(6)
+  ended_at                                                             DateTime?         @db.Timestamp(6)
+  venue_id                                                             BigInt?
+  court_number                                                         String?           @db.VarChar
+  homeScore                                                            Int?              @default(0) @map("home_score")
+  awayScore                                                            Int?              @default(0) @map("away_score")
+  quarterScores                                                        Json?             @default("{\"away\": {\"ot\": [], \"q1\": 0, \"q2\": 0, \"q3\": 0, \"q4\": 0}, \"home\": {\"ot\": [], \"q1\": 0, \"q2\": 0, \"q3\": 0, \"q4\": 0}}") @map("quarter_scores")
+  status                                                               String?           @default("scheduled") @db.VarChar
+  winner_team_id                                                       BigInt?
+  next_match_id                                                        BigInt?
+  next_match_slot                                                      String?           @db.VarChar
+  mvp_player_id                                                        BigInt?
+  notes                                                                String?
+  settings                                                             Json?             @default("{}")
+  createdAt                                                            DateTime          @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt                                                            DateTime          @updatedAt @map("updated_at") @db.Timestamp(6)
+  tournamentId                                                         String            @map("tournament_id") @db.Uuid
+  venue_name                                                           String?           @db.VarChar
+  playerStats                                                          MatchPlayerStat[]
+  play_by_plays                                                        play_by_plays[]
+  tournament_teams_tournament_matches_winner_team_idTotournament_teams TournamentTeam?   @relation("tournament_matches_winner_team_idTotournament_teams", fields: [winner_team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_2fcdbd557c")
+  homeTeam                                                             TournamentTeam?   @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_3dae6e19e5")
+  users                                                                User?             @relation(fields: [mvp_player_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_5e679cd202")
+  tournament                                                           Tournament        @relation(fields: [tournamentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_94280ecdeb")
+  tournament_matches                                                   TournamentMatch?  @relation("tournament_matchesTotournament_matches", fields: [next_match_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_ca6ee2fd50")
+  other_tournament_matches                                             TournamentMatch[] @relation("tournament_matchesTotournament_matches")
+  courts                                                               courts?           @relation(fields: [venue_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_dcf69d6480")
+  awayTeam                                                             TournamentTeam?   @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_f45580aec7")
+
+  @@index([awayTeamId], map: "index_tournament_matches_on_away_team_id")
+  @@index([homeTeamId], map: "index_tournament_matches_on_home_team_id")
+  @@index([mvp_player_id], map: "index_tournament_matches_on_mvp_player_id")
+  @@index([next_match_id], map: "index_tournament_matches_on_next_match_id")
+  @@index([scheduledAt], map: "index_tournament_matches_on_scheduled_at")
+  @@index([status], map: "index_tournament_matches_on_status")
+  @@index([status, scheduledAt], map: "index_tournament_matches_on_status_and_scheduled_at")
+  @@index([tournamentId], map: "index_tournament_matches_on_tournament_id")
+  @@index([tournamentId, bracket_position], map: "index_tournament_matches_on_tournament_id_and_bracket_position")
+  @@index([venue_id], map: "index_tournament_matches_on_venue_id")
+  @@index([winner_team_id], map: "index_tournament_matches_on_winner_team_id")
+  @@map("tournament_matches")
+}
+
+model MatchPlayerStat {
+  id                       BigInt               @id @default(autoincrement())
+  tournamentMatchId        BigInt               @map("tournament_match_id")
+  tournamentTeamPlayerId   BigInt               @map("tournament_team_player_id")
+  isStarter                Boolean?             @default(false) @map("is_starter")
+  minutesPlayed            Int?                 @default(0) @map("minutes_played")
+  points                   Int?                 @default(0)
+  fieldGoalsMade           Int?                 @default(0) @map("field_goals_made")
+  fieldGoalsAttempted      Int?                 @default(0) @map("field_goals_attempted")
+  field_goal_percentage    Decimal?             @default(0.0) @db.Decimal(5, 1)
+  threePointersMade        Int?                 @default(0) @map("three_pointers_made")
+  threePointersAttempted   Int?                 @default(0) @map("three_pointers_attempted")
+  three_point_percentage   Decimal?             @default(0.0) @db.Decimal(5, 1)
+  freeThrowsMade           Int?                 @default(0) @map("free_throws_made")
+  freeThrowsAttempted      Int?                 @default(0) @map("free_throws_attempted")
+  free_throw_percentage    Decimal?             @default(0.0) @db.Decimal(5, 1)
+  offensive_rebounds       Int?                 @default(0)
+  defensive_rebounds       Int?                 @default(0)
+  total_rebounds           Int?                 @default(0)
+  assists                  Int?                 @default(0)
+  steals                   Int?                 @default(0)
+  blocks                   Int?                 @default(0)
+  turnovers                Int?                 @default(0)
+  personal_fouls           Int?                 @default(0)
+  plusMinus                Int?                 @default(0) @map("plus_minus")
+  efficiency               Decimal?             @default(0.0) @db.Decimal(6, 1)
+  true_shooting_percentage Decimal?             @default(0.0) @db.Decimal(5, 1)
+  effective_fg_percentage  Decimal?             @default(0.0) @db.Decimal(5, 1)
+  assist_turnover_ratio    Decimal?             @default(0.0) @db.Decimal(5, 2)
+  two_pointers_made        Int?                 @default(0)
+  two_pointers_attempted   Int?                 @default(0)
+  two_point_percentage     Decimal?             @default(0.0) @db.Decimal(5, 1)
+  fouled_out               Boolean?             @default(false)
+  ejected                  Boolean?             @default(false)
+  notes                    String?
+  createdAt                DateTime             @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt                DateTime             @updatedAt @map("updated_at") @db.Timestamp(6)
+  tournamentMatch          TournamentMatch      @relation(fields: [tournamentMatchId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_c638e8cafa")
+  tournamentTeamPlayer     TournamentTeamPlayer @relation(fields: [tournamentTeamPlayerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_e96e36662a")
+
+  @@unique([tournamentMatchId, tournamentTeamPlayerId], map: "idx_match_player_stats_unique")
+  @@index([assists], map: "index_match_player_stats_on_assists")
+  @@index([tournamentTeamPlayerId, points], map: "index_match_player_stats_on_player_points")
+  @@index([points], map: "index_match_player_stats_on_points")
+  @@index([total_rebounds], map: "index_match_player_stats_on_total_rebounds")
+  @@index([tournamentMatchId], map: "index_match_player_stats_on_tournament_match_id")
+  @@index([tournamentTeamPlayerId], map: "index_match_player_stats_on_tournament_team_player_id")
+  @@map("match_player_stats")
+}
+
+model TournamentSite {
+  id               BigInt        @id @default(autoincrement())
+  siteTemplateId   BigInt?       @map("site_template_id")
+  subdomain        String        @unique(map: "index_tournament_sites_on_subdomain") @db.VarChar
+  customDomain     String?       @unique(map: "index_tournament_sites_on_custom_domain") @map("custom_domain") @db.VarChar
+  site_name        String?       @db.VarChar
+  theme_settings   Json?         @default("{}")
+  primaryColor     String?       @default("#E53E3E") @map("primary_color") @db.VarChar
+  secondaryColor   String?       @default("#ED8936") @map("secondary_color") @db.VarChar
+  logoUrl          String?       @map("logo_url") @db.VarChar
+  hero_image_url   String?       @db.VarChar
+  favicon_url      String?       @db.VarChar
+  isPublished      Boolean?      @default(false) @map("is_published")
+  published_at     DateTime?     @db.Timestamp(6)
+  is_active        Boolean?      @default(true)
+  views_count      Int?          @default(0)
+  unique_visitors  Int?          @default(0)
+  meta_title       String?       @db.VarChar
+  meta_description String?
+  og_image_url     String?       @db.VarChar
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamp(6)
+  tournamentId     String        @map("tournament_id") @db.Uuid
+  site_pages       site_pages[]
+  tournament       Tournament    @relation(fields: [tournamentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_40e1dd73b5")
+  siteTemplate     SiteTemplate? @relation(fields: [siteTemplateId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_bfca4efdb2")
+
+  @@index([isPublished], map: "index_tournament_sites_on_is_published")
+  @@index([siteTemplateId], map: "index_tournament_sites_on_site_template_id")
+  @@index([tournamentId, isPublished], map: "index_tournament_sites_on_tournament_and_published")
+  @@index([tournamentId], map: "index_tournament_sites_on_tournament_id")
+  @@map("tournament_sites")
+}
+
+model SiteTemplate {
+  id              BigInt           @id @default(autoincrement())
+  name            String           @db.VarChar
+  slug            String           @unique(map: "index_site_templates_on_slug") @db.VarChar
+  description     String?
+  thumbnail_url   String?          @db.VarChar
+  preview_url     String?          @db.VarChar
+  category        String?          @default("general") @db.VarChar
+  default_theme   Json?            @default("{}")
+  default_pages   Json?            @default("[]")
+  is_premium      Boolean?         @default(false)
+  is_active       Boolean?         @default(true)
+  usage_count     Int?             @default(0)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamp(6)
+  tournamentSites TournamentSite[]
+
+  @@index([is_active, is_premium], map: "index_site_templates_on_active_and_premium")
+  @@index([category], map: "index_site_templates_on_category")
+  @@index([is_active], map: "index_site_templates_on_is_active")
+  @@map("site_templates")
+}
+
+model active_storage_attachments {
+  id                   String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String               @db.VarChar
+  record_type          String               @db.VarChar
+  record_id            String               @db.Uuid
+  blob_id              String               @db.Uuid
+  created_at           DateTime             @db.Timestamp(6)
+  active_storage_blobs active_storage_blobs @relation(fields: [blob_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_c3b3935057")
+
+  @@unique([record_type, record_id, name, blob_id], map: "index_active_storage_attachments_uniqueness")
+  @@index([blob_id], map: "index_active_storage_attachments_on_blob_id")
+}
+
+model active_storage_blobs {
+  id                             String                           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key                            String                           @unique(map: "index_active_storage_blobs_on_key") @db.VarChar
+  filename                       String                           @db.VarChar
+  content_type                   String?                          @db.VarChar
+  metadata                       String?
+  service_name                   String                           @db.VarChar
+  byte_size                      BigInt
+  checksum                       String?                          @db.VarChar
+  created_at                     DateTime                         @db.Timestamp(6)
+  active_storage_attachments     active_storage_attachments[]
+  active_storage_variant_records active_storage_variant_records[]
+}
+
+model active_storage_variant_records {
+  id                   String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  blob_id              String               @db.Uuid
+  variation_digest     String               @db.VarChar
+  active_storage_blobs active_storage_blobs @relation(fields: [blob_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_993965df05")
+
+  @@unique([blob_id, variation_digest], map: "index_active_storage_variant_records_uniqueness")
+}
+
+model admin_logs {
+  id              BigInt   @id @default(autoincrement())
+  admin_id        BigInt
+  target_type     String?  @db.VarChar
+  target_id       BigInt?
+  action          String   @db.VarChar
+  resource_type   String   @db.VarChar
+  resource_id     BigInt?
+  changes_made    Json?    @default("{}")
+  previous_values Json?    @default("{}")
+  description     String?
+  ip_address      String?  @db.VarChar
+  user_agent      String?  @db.VarChar
+  request_id      String?  @db.VarChar
+  severity        String?  @default("info") @db.VarChar
+  created_at      DateTime @db.Timestamp(6)
+  updated_at      DateTime @db.Timestamp(6)
+  users           User     @relation(fields: [admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_ee859ba416")
+
+  @@index([action], map: "index_admin_logs_on_action")
+  @@index([admin_id], map: "index_admin_logs_on_admin_id")
+  @@index([admin_id, created_at], map: "index_admin_logs_on_admin_id_and_created_at")
+  @@index([created_at], map: "index_admin_logs_on_created_at")
+  @@index([resource_type], map: "index_admin_logs_on_resource_type")
+  @@index([resource_type, resource_id], map: "index_admin_logs_on_resource_type_and_resource_id")
+  @@index([severity], map: "index_admin_logs_on_severity")
+  @@index([target_type, target_id], map: "index_admin_logs_on_target")
+}
+
+model ar_internal_metadata {
+  key        String   @id @db.VarChar
+  value      String?  @db.VarChar
+  created_at DateTime @db.Timestamp(6)
+  updated_at DateTime @db.Timestamp(6)
+}
+
+model board_favorites {
+  id         BigInt   @id @default(autoincrement())
+  user_id    BigInt
+  category   String   @db.VarChar
+  position   Int?     @default(0)
+  created_at DateTime @db.Timestamp(6)
+  updated_at DateTime @db.Timestamp(6)
+  users      User     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_7f40dbb9dd")
+
+  @@unique([user_id, category], map: "index_board_favorites_on_user_id_and_category")
+  @@index([user_id], map: "index_board_favorites_on_user_id")
+}
+
+model cafe_posts {
+  id             BigInt    @id @default(autoincrement())
+  cafe_code      String    @db.VarChar
+  board_id       String    @db.VarChar
+  board_name     String    @db.VarChar
+  dataid         String    @db.VarChar
+  title          String    @db.VarChar
+  content        String?
+  author         String?   @db.VarChar
+  original_date  String?   @db.VarChar
+  views_count    Int?      @default(0)
+  comments_count Int?      @default(0)
+  original_url   String?   @db.VarChar
+  home_team      String?   @db.VarChar
+  game_datetime  String?   @db.VarChar
+  location       String?   @db.VarChar
+  game_format    String?   @db.VarChar
+  guest_count    String?   @db.VarChar
+  cost           String?   @db.VarChar
+  contact        String?   @db.VarChar
+  required_info  String?   @db.VarChar
+  notes          String?
+  metadata       Json?     @default("{}")
+  crawled_at     DateTime? @db.Timestamp(6)
+  created_at     DateTime  @db.Timestamp(6)
+  updated_at     DateTime  @db.Timestamp(6)
+
+  @@unique([cafe_code, board_id, dataid], map: "idx_cafe_posts_unique")
+  @@index([board_id], map: "index_cafe_posts_on_board_id")
+  @@index([cafe_code], map: "index_cafe_posts_on_cafe_code")
+  @@index([created_at], map: "index_cafe_posts_on_created_at")
+  @@index([dataid], map: "index_cafe_posts_on_dataid")
+}
+
+model comments {
+  id               BigInt     @id @default(autoincrement())
+  commentable_type String     @db.VarChar
+  commentable_id   BigInt
+  user_id          BigInt
+  parent_id        BigInt?
+  content          String
+  depth            Int        @default(0)
+  likes_count      Int        @default(0)
+  replies_count    Int        @default(0)
+  status           String     @default("published") @db.VarChar
+  is_author        Boolean    @default(false)
+  metadata         Json?      @default("{}")
+  created_at       DateTime   @db.Timestamp(6)
+  updated_at       DateTime   @db.Timestamp(6)
+  public_id        String     @unique(map: "index_comments_on_public_id") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  users            User       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_03de2dc08c")
+  comments         comments?  @relation("commentsTocomments", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_31554e7034")
+  other_comments   comments[] @relation("commentsTocomments")
+
+  @@index([commentable_type, commentable_id], map: "index_comments_on_commentable")
+  @@index([commentable_type, commentable_id, created_at], map: "index_comments_on_commentable_and_created_at")
+  @@index([commentable_type, commentable_id, status], map: "index_comments_on_commentable_and_status")
+  @@index([depth], map: "index_comments_on_depth")
+  @@index([parent_id], map: "index_comments_on_parent_id")
+  @@index([parent_id, created_at], map: "index_comments_on_parent_id_and_created_at")
+  @@index([status], map: "index_comments_on_status")
+  @@index([user_id, created_at], map: "index_comments_on_user_and_created")
+  @@index([user_id], map: "index_comments_on_user_id")
+}
+
+model community_posts {
+  id               BigInt   @id @default(autoincrement())
+  user_id          BigInt
+  title            String   @db.VarChar
+  content          String?
+  category         String?  @default("general") @db.VarChar
+  view_count       Int?     @default(0)
+  status           String?  @default("published") @db.VarChar
+  created_at       DateTime @db.Timestamp(6)
+  updated_at       DateTime @db.Timestamp(6)
+  comments_count   Int      @default(0)
+  public_id        String   @unique(map: "index_community_posts_on_public_id") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  team_id          BigInt?
+  latitude         Decimal? @db.Decimal(10, 7)
+  longitude        Decimal? @db.Decimal(10, 7)
+  location_name    String?  @db.VarChar
+  location_address String?  @db.VarChar
+  price            Int?     @default(0)
+  negotiable       Boolean? @default(false)
+  share_contact    Boolean? @default(false)
+  trade_status     String?  @default("available") @db.VarChar
+  users            User     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_0b2d1de074")
+  teams            Team?    @relation(fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_e4a581c07d")
+
+  @@index([category], map: "index_community_posts_on_category")
+  @@index([category, created_at], map: "index_community_posts_on_category_and_created")
+  @@index([created_at], map: "index_community_posts_on_created_at")
+  @@index([status], map: "index_community_posts_on_status")
+  @@index([team_id], map: "index_community_posts_on_team_id")
+  @@index([user_id], map: "index_community_posts_on_user_id")
+}
+
+model content_presets {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                String   @db.VarChar
+  slug                String   @unique(map: "index_content_presets_on_slug") @db.VarChar
+  description         String?
+  category            String   @default("general") @db.VarChar
+  target_section_type String?  @default("text") @db.VarChar
+  target_page_types   String[] @default([]) @db.VarChar
+  content             Json     @default("{}")
+  default_settings    Json?    @default("{}")
+  background_color    String?  @db.VarChar
+  text_color          String?  @db.VarChar
+  is_active           Boolean? @default(true)
+  is_featured         Boolean? @default(false)
+  position            Int?     @default(0)
+  usage_count         Int?     @default(0)
+  created_at          DateTime @db.Timestamp(6)
+  updated_at          DateTime @db.Timestamp(6)
+
+  @@index([category], map: "index_content_presets_on_category")
+  @@index([is_active, category], map: "index_content_presets_on_is_active_and_category")
+  @@index([is_active, is_featured], map: "index_content_presets_on_is_active_and_is_featured")
+  @@index([target_section_type], map: "index_content_presets_on_target_section_type")
+}
+
+model court_checkins {
+  id              BigInt      @id @default(autoincrement())
+  court_info_id   BigInt
+  user_id         BigInt
+  latitude        Decimal     @db.Decimal(10, 7)
+  longitude       Decimal     @db.Decimal(10, 7)
+  distance_meters Decimal?    @db.Decimal(10, 2)
+  message         String?
+  created_at      DateTime    @db.Timestamp(6)
+  updated_at      DateTime    @db.Timestamp(6)
+  users           User        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_12ca4c17d3")
+  court_infos     court_infos @relation(fields: [court_info_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_e1c3129ca8")
+
+  @@index([court_info_id, user_id, created_at], map: "idx_court_checkins_court_user_time")
+  @@index([court_info_id], map: "index_court_checkins_on_court_info_id")
+  @@index([user_id], map: "index_court_checkins_on_user_id")
+}
+
+model court_infos {
+  id              BigInt           @id @default(autoincrement())
+  user_id         BigInt
+  name            String           @db.VarChar
+  description     String?
+  address         String           @db.VarChar
+  city            String           @db.VarChar
+  district        String?          @db.VarChar
+  latitude        Decimal          @db.Decimal(10, 7)
+  longitude       Decimal          @db.Decimal(10, 7)
+  court_type      String           @default("outdoor") @db.VarChar
+  hoops_count     Int?             @default(2)
+  surface_type    String?          @db.VarChar
+  is_free         Boolean          @default(true)
+  fee             Decimal?         @db.Decimal(10, 0)
+  operating_hours Json?            @default("{}")
+  facilities      Json?            @default("[]")
+  status          String           @default("active") @db.VarChar
+  reviews_count   Int              @default(0)
+  average_rating  Decimal?         @default(0.0) @db.Decimal(3, 2)
+  checkins_count  Int              @default(0)
+  metadata        Json?            @default("{}")
+  created_at      DateTime         @db.Timestamp(6)
+  updated_at      DateTime         @db.Timestamp(6)
+  court_checkins  court_checkins[]
+  users           User             @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d006c2c973")
+  court_reviews   court_reviews[]
+
+  @@index([average_rating], map: "index_court_infos_on_average_rating")
+  @@index([city], map: "index_court_infos_on_city")
+  @@index([city, district], map: "index_court_infos_on_city_and_district")
+  @@index([court_type], map: "index_court_infos_on_court_type")
+  @@index([is_free], map: "index_court_infos_on_is_free")
+  @@index([latitude, longitude], map: "index_court_infos_on_latitude_and_longitude")
+  @@index([status], map: "index_court_infos_on_status")
+  @@index([court_type, is_free], map: "index_court_infos_on_type_and_free")
+  @@index([user_id], map: "index_court_infos_on_user_id")
+}
+
+model court_reviews {
+  id                BigInt      @id @default(autoincrement())
+  court_info_id     BigInt
+  user_id           BigInt
+  rating            Int
+  content           String?
+  likes_count       Int         @default(0)
+  status            String      @default("published") @db.VarChar
+  is_checkin        Boolean     @default(false)
+  checkin_latitude  Decimal?    @db.Decimal(10, 7)
+  checkin_longitude Decimal?    @db.Decimal(10, 7)
+  metadata          Json?       @default("{}")
+  created_at        DateTime    @db.Timestamp(6)
+  updated_at        DateTime    @db.Timestamp(6)
+  court_infos       court_infos @relation(fields: [court_info_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_898a2b5629")
+  users             User        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_af1069aa7a")
+
+  @@index([court_info_id], map: "index_court_reviews_on_court_info_id")
+  @@index([is_checkin], map: "index_court_reviews_on_is_checkin")
+  @@index([rating], map: "index_court_reviews_on_rating")
+  @@index([status], map: "index_court_reviews_on_status")
+  @@index([user_id], map: "index_court_reviews_on_user_id")
+}
+
+model courts {
+  id                   BigInt                 @id @default(autoincrement())
+  name                 String                 @db.VarChar
+  address              String?                @db.VarChar
+  city                 String?                @db.VarChar
+  district             String?                @db.VarChar
+  latitude             Decimal?               @db.Decimal(10, 8)
+  longitude            Decimal?               @db.Decimal(11, 8)
+  indoor               Boolean?               @default(false)
+  facilities           String?
+  contact_name         String?                @db.VarChar
+  contact_phone        String?                @db.VarChar
+  parking_available    Boolean?               @default(false)
+  rental_fee           Int?                   @default(0)
+  opening_hours        String?                @db.VarChar
+  description          String?
+  is_active            Boolean?               @default(true)
+  status               String?                @default("active") @db.VarChar
+  games_count          Int?                   @default(0)
+  created_at           DateTime               @db.Timestamp(6)
+  updated_at           DateTime               @db.Timestamp(6)
+  public_id            String                 @unique(map: "index_courts_on_public_id") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  game_templates       game_templates[]
+  games                games[]
+  tournament_matches   TournamentMatch[]
+  tournaments          Tournament[]
+  user_favorite_courts user_favorite_courts[]
+
+  @@index([city], map: "index_courts_on_city")
+  @@index([district], map: "index_courts_on_district")
+  @@index([is_active], map: "index_courts_on_is_active")
+  @@index([latitude, longitude], map: "index_courts_on_latitude_and_longitude")
+}
+
+model game_applications {
+  id               BigInt    @id @default(autoincrement())
+  game_id          BigInt
+  user_id          BigInt
+  status           Int       @default(0)
+  message          String?
+  position         String?   @db.VarChar
+  is_guest         Boolean?  @default(false)
+  payment_required Boolean?  @default(false)
+  payment_status   Int?      @default(0)
+  paid_at          DateTime? @db.Timestamp(6)
+  payment_method   String?   @db.VarChar
+  admin_note       String?
+  approved_at      DateTime? @db.Timestamp(6)
+  rejected_at      DateTime? @db.Timestamp(6)
+  cancelled_at     DateTime? @db.Timestamp(6)
+  attended_at      DateTime? @db.Timestamp(6)
+  created_at       DateTime  @db.Timestamp(6)
+  updated_at       DateTime  @db.Timestamp(6)
+  users            User      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_3cac6c4ac4")
+  games            games     @relation(fields: [game_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_a07efcd68e")
+
+  @@unique([game_id, user_id], map: "index_game_applications_on_game_id_and_user_id")
+  @@index([game_id], map: "index_game_applications_on_game_id")
+  @@index([payment_status], map: "index_game_applications_on_payment_status")
+  @@index([status], map: "index_game_applications_on_status")
+  @@index([user_id], map: "index_game_applications_on_user_id")
+}
+
+model game_templates {
+  id               BigInt   @id @default(autoincrement())
+  user_id          BigInt
+  court_id         BigInt?
+  name             String   @db.VarChar
+  game_type        Int      @default(0)
+  default_settings Json?    @default("{}")
+  use_count        Int?     @default(0)
+  is_public        Boolean? @default(false)
+  created_at       DateTime @db.Timestamp(6)
+  updated_at       DateTime @db.Timestamp(6)
+  users            User     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_026a2bf28d")
+  courts           courts?  @relation(fields: [court_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_2366482652")
+  games            games[]
+
+  @@unique([user_id, name], map: "index_game_templates_on_user_id_and_name")
+  @@index([court_id], map: "index_game_templates_on_court_id")
+  @@index([game_type], map: "index_game_templates_on_game_type")
+  @@index([is_public], map: "index_game_templates_on_is_public")
+  @@index([user_id], map: "index_game_templates_on_user_id")
+}
+
+model games {
+  id                   BigInt              @id @default(autoincrement())
+  game_id              String              @unique(map: "index_games_on_game_id") @db.VarChar
+  uuid                 String?             @unique(map: "index_games_on_uuid") @db.Uuid
+  title                String?             @db.VarChar
+  game_type            Int                 @default(0)
+  description          String?
+  organizer_id         BigInt
+  court_id             BigInt?
+  city                 String?             @db.VarChar
+  district             String?             @db.VarChar
+  venue_name           String?             @db.VarChar
+  venue_address        String?             @db.VarChar
+  scheduled_at         DateTime            @db.Timestamp(6)
+  ended_at             DateTime?           @db.Timestamp(6)
+  duration_hours       Int?                @default(2)
+  max_participants     Int?                @default(10)
+  min_participants     Int?                @default(4)
+  current_participants Int?                @default(0)
+  fee_per_person       Int?                @default(0)
+  skill_level          String?             @default("all") @db.VarChar
+  uniform_home_color   String?             @default("#FF0000") @db.VarChar
+  uniform_away_color   String?             @default("#0000FF") @db.VarChar
+  requirements         String?
+  notes                String?
+  allow_guests         Boolean?            @default(true)
+  status               Int                 @default(0)
+  template_id          BigInt?
+  cloned_from_id       BigInt?
+  is_recurring         Boolean?            @default(false)
+  recurrence_rule      String?             @db.VarChar
+  applications_count   Int?                @default(0)
+  views_count          Int?                @default(0)
+  created_at           DateTime            @db.Timestamp(6)
+  updated_at           DateTime            @db.Timestamp(6)
+  game_applications    game_applications[]
+  game_templates       game_templates?     @relation(fields: [template_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_2188646eed")
+  courts               courts?             @relation(fields: [court_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_bca389c44d")
+  games                games?              @relation("gamesTogames", fields: [cloned_from_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d09f1fe2ce")
+  other_games          games[]             @relation("gamesTogames")
+  users                User                @relation(fields: [organizer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_f7c3e2a7f2")
+
+  @@index([city], map: "index_games_on_city")
+  @@index([city, game_type], map: "index_games_on_city_and_game_type")
+  @@index([city, scheduled_at], map: "index_games_on_city_and_scheduled_at")
+  @@index([cloned_from_id], map: "index_games_on_cloned_from_id")
+  @@index([court_id], map: "index_games_on_court_id")
+  @@index([game_type], map: "index_games_on_game_type")
+  @@index([is_recurring], map: "index_games_on_is_recurring")
+  @@index([organizer_id, status], map: "index_games_on_organizer_and_status")
+  @@index([organizer_id], map: "index_games_on_organizer_id")
+  @@index([scheduled_at], map: "index_games_on_scheduled_at")
+  @@index([status], map: "index_games_on_status")
+  @@index([status, scheduled_at], map: "index_games_on_status_and_scheduled_at")
+  @@index([template_id], map: "index_games_on_template_id")
+}
+
+model marketplace_items {
+  id                         BigInt                       @id @default(autoincrement())
+  user_id                    BigInt
+  title                      String                       @db.VarChar
+  description                String
+  category                   String                       @db.VarChar
+  condition                  String                       @db.VarChar
+  price                      Decimal                      @db.Decimal(10, 0)
+  original_price             Decimal?                     @db.Decimal(10, 0)
+  status                     String                       @default("active") @db.VarChar
+  location                   String?                      @db.VarChar
+  city                       String?                      @db.VarChar
+  district                   String?                      @db.VarChar
+  negotiable                 Boolean                      @default(false)
+  free_shipping              Boolean                      @default(false)
+  direct_deal                Boolean                      @default(true)
+  views_count                Int                          @default(0)
+  wishlist_count             Int                          @default(0)
+  inquiries_count            Int                          @default(0)
+  metadata                   Json?                        @default("{}")
+  created_at                 DateTime                     @db.Timestamp(6)
+  updated_at                 DateTime                     @db.Timestamp(6)
+  public_id                  String                       @unique(map: "index_marketplace_items_on_public_id") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  users                      User                         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_0e395230be")
+  marketplace_phone_requests marketplace_phone_requests[]
+  marketplace_wishlists      marketplace_wishlists[]
+
+  @@index([category], map: "index_marketplace_items_on_category")
+  @@index([category, status, created_at], map: "index_marketplace_items_on_category_status_created")
+  @@index([city, district], map: "index_marketplace_items_on_city_and_district")
+  @@index([condition], map: "index_marketplace_items_on_condition")
+  @@index([price], map: "index_marketplace_items_on_price")
+  @@index([status], map: "index_marketplace_items_on_status")
+  @@index([status, created_at], map: "index_marketplace_items_on_status_and_created_at")
+  @@index([user_id], map: "index_marketplace_items_on_user_id")
+}
+
+model marketplace_phone_requests {
+  id                                                   BigInt            @id @default(autoincrement())
+  marketplace_item_id                                  BigInt
+  requester_id                                         BigInt
+  seller_id                                            BigInt
+  status                                               String            @default("pending") @db.VarChar
+  message                                              String?
+  rejection_reason                                     String?
+  processed_at                                         DateTime?         @db.Timestamp(6)
+  created_at                                           DateTime          @db.Timestamp(6)
+  updated_at                                           DateTime          @db.Timestamp(6)
+  marketplace_items                                    marketplace_items @relation(fields: [marketplace_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_83a5ac3a66")
+  users_marketplace_phone_requests_seller_idTousers    User              @relation("marketplace_phone_requests_seller_idTousers", fields: [seller_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_cd46d6d2ac")
+  users_marketplace_phone_requests_requester_idTousers User              @relation("marketplace_phone_requests_requester_idTousers", fields: [requester_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d9ca2ae5a8")
+
+  @@unique([marketplace_item_id, requester_id], map: "idx_phone_requests_item_requester")
+  @@index([marketplace_item_id], map: "index_marketplace_phone_requests_on_marketplace_item_id")
+  @@index([requester_id], map: "index_marketplace_phone_requests_on_requester_id")
+  @@index([seller_id], map: "index_marketplace_phone_requests_on_seller_id")
+  @@index([status], map: "index_marketplace_phone_requests_on_status")
+}
+
+model marketplace_wishlists {
+  id                  BigInt            @id @default(autoincrement())
+  user_id             BigInt
+  marketplace_item_id BigInt
+  notify_price_drop   Boolean           @default(true)
+  target_price        Decimal?          @db.Decimal(10, 0)
+  created_at          DateTime          @db.Timestamp(6)
+  updated_at          DateTime          @db.Timestamp(6)
+  marketplace_items   marketplace_items @relation(fields: [marketplace_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_1181906009")
+  users               User              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_56631deddb")
+
+  @@unique([user_id, marketplace_item_id], map: "index_marketplace_wishlists_on_user_id_and_marketplace_item_id")
+  @@index([marketplace_item_id], map: "index_marketplace_wishlists_on_marketplace_item_id")
+  @@index([user_id], map: "index_marketplace_wishlists_on_user_id")
+}
+
+model memory_cards {
+  id              BigInt    @id @default(autoincrement())
+  user_id         BigInt
+  cardable_type   String?   @db.VarChar
+  cardable_id     BigInt?
+  card_type       String    @db.VarChar
+  title           String    @db.VarChar
+  description     String?
+  template        String?   @default("default") @db.VarChar
+  stats_data      Json?     @default("{}")
+  highlights      Json?     @default("[]")
+  image_url       String?   @db.VarChar
+  thumbnail_url   String?   @db.VarChar
+  share_url       String?   @db.VarChar
+  status          String    @default("pending") @db.VarChar
+  share_count     Int       @default(0)
+  view_count      Int       @default(0)
+  is_public       Boolean   @default(true)
+  share_platforms Json?     @default("{}")
+  last_shared_at  DateTime? @db.Timestamp(6)
+  metadata        Json?     @default("{}")
+  reference_date  DateTime? @db.Date
+  created_at      DateTime  @db.Timestamp(6)
+  updated_at      DateTime  @db.Timestamp(6)
+  users           User      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_bb322618f5")
+
+  @@index([card_type], map: "index_memory_cards_on_card_type")
+  @@index([cardable_type, cardable_id], map: "index_memory_cards_on_cardable")
+  @@index([cardable_type, cardable_id], map: "index_memory_cards_on_cardable_type_and_cardable_id")
+  @@index([created_at], map: "index_memory_cards_on_created_at")
+  @@index([is_public], map: "index_memory_cards_on_is_public")
+  @@index([reference_date], map: "index_memory_cards_on_reference_date")
+  @@index([status], map: "index_memory_cards_on_status")
+  @@index([user_id], map: "index_memory_cards_on_user_id")
+  @@index([user_id, card_type], map: "index_memory_cards_on_user_id_and_card_type")
+}
+
+model notifications {
+  id                BigInt    @id @default(autoincrement())
+  user_id           BigInt
+  notifiable_type   String?   @db.VarChar
+  notifiable_id     BigInt?
+  notification_type String    @db.VarChar
+  status            String    @default("unread") @db.VarChar
+  title             String    @db.VarChar
+  content           String?
+  action_url        String?   @db.VarChar
+  action_type       String?   @db.VarChar
+  metadata          Json?     @default("{}")
+  read_at           DateTime? @db.Timestamp(6)
+  sent_at           DateTime? @db.Timestamp(6)
+  expired_at        DateTime? @db.Timestamp(6)
+  created_at        DateTime  @db.Timestamp(6)
+  updated_at        DateTime  @db.Timestamp(6)
+  users             User      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_b080fb4855")
+
+  @@index([created_at], map: "index_notifications_on_created_at")
+  @@index([notifiable_type, notifiable_id], map: "index_notifications_on_notifiable")
+  @@index([notifiable_type, notifiable_id], map: "index_notifications_on_notifiable_type_and_notifiable_id")
+  @@index([notification_type], map: "index_notifications_on_notification_type")
+  @@index([read_at], map: "index_notifications_on_read_at")
+  @@index([status], map: "index_notifications_on_status")
+  @@index([user_id, created_at], map: "index_notifications_on_user_and_created")
+  @@index([user_id, read_at], map: "index_notifications_on_user_and_read")
+  @@index([user_id], map: "index_notifications_on_user_id")
+  @@index([user_id, notification_type], map: "index_notifications_on_user_id_and_notification_type")
+  @@index([user_id, status], map: "index_notifications_on_user_id_and_status")
+}
+
+model payments {
+  id                   BigInt    @id @default(autoincrement())
+  user_id              BigInt
+  payable_type         String    @db.VarChar
+  payable_id           BigInt
+  payment_code         String    @unique(map: "index_payments_on_payment_code") @db.VarChar
+  order_id             String    @unique(map: "index_payments_on_order_id") @db.VarChar
+  payment_key          String?   @db.VarChar
+  toss_payment_key     String?   @db.VarChar
+  toss_order_id        String?   @db.VarChar
+  toss_transaction_key String?   @db.VarChar
+  amount               Decimal   @db.Decimal(10, 0)
+  discount_amount      Decimal?  @default(0.0) @db.Decimal(10, 0)
+  final_amount         Decimal   @db.Decimal(10, 0)
+  currency             String?   @default("KRW") @db.VarChar
+  payment_method       String?   @db.VarChar
+  card_company         String?   @db.VarChar
+  card_number          String?   @db.VarChar
+  installment_months   Int?      @default(0)
+  receipt_url          String?   @db.VarChar
+  cash_receipt_url     String?   @db.VarChar
+  status               String    @default("pending") @db.VarChar
+  failure_reason       String?
+  failure_code         String?   @db.VarChar
+  paid_at              DateTime? @db.Timestamp(6)
+  cancelled_at         DateTime? @db.Timestamp(6)
+  refunded_at          DateTime? @db.Timestamp(6)
+  expired_at           DateTime? @db.Timestamp(6)
+  refund_amount        Decimal?  @db.Decimal(10, 0)
+  refund_reason        String?
+  refund_status        String?   @db.VarChar
+  description          String?   @db.VarChar
+  metadata             Json?     @default("{}")
+  toss_response        Json?     @default("{}")
+  created_at           DateTime  @db.Timestamp(6)
+  updated_at           DateTime  @db.Timestamp(6)
+  users                User      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_081dc04a02")
+
+  @@index([created_at], map: "index_payments_on_created_at")
+  @@index([paid_at], map: "index_payments_on_paid_at")
+  @@index([payable_type, payable_id], map: "index_payments_on_payable")
+  @@index([payable_type, payable_id], map: "index_payments_on_payable_type_and_payable_id")
+  @@index([status], map: "index_payments_on_status")
+  @@index([status, created_at], map: "index_payments_on_status_and_created_at")
+  @@index([toss_payment_key], map: "index_payments_on_toss_payment_key")
+  @@index([user_id], map: "index_payments_on_user_id")
+  @@index([user_id, status], map: "index_payments_on_user_id_and_status")
+}
+
+model play_by_plays {
+  id                        BigInt               @id @default(autoincrement())
+  local_id                  String               @unique(map: "index_play_by_plays_on_local_id") @db.VarChar
+  tournament_match_id       BigInt
+  tournament_team_player_id BigInt
+  tournament_team_id        BigInt
+  quarter                   Int
+  game_clock_seconds        Int
+  shot_clock_seconds        Int?
+  action_type               String               @db.VarChar
+  action_subtype            String?              @db.VarChar
+  is_made                   Boolean?
+  points_scored             Int?                 @default(0)
+  court_x                   Float?
+  court_y                   Float?
+  court_zone                Int?
+  shot_distance             Float?
+  home_score_at_time        Int
+  away_score_at_time        Int
+  assist_player_id          BigInt?
+  rebound_player_id         BigInt?
+  block_player_id           BigInt?
+  steal_player_id           BigInt?
+  fouled_player_id          BigInt?
+  sub_in_player_id          BigInt?
+  sub_out_player_id         BigInt?
+  is_flagrant               Boolean?             @default(false)
+  is_technical              Boolean?             @default(false)
+  is_fastbreak              Boolean?             @default(false)
+  is_second_chance          Boolean?             @default(false)
+  is_from_turnover          Boolean?             @default(false)
+  description               String?
+  created_at                DateTime             @db.Timestamp(6)
+  updated_at                DateTime             @db.Timestamp(6)
+  tournament_team_players   TournamentTeamPlayer @relation(fields: [tournament_team_player_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_7df9a7edee")
+  tournament_matches        TournamentMatch      @relation(fields: [tournament_match_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d6c4443091")
+  tournament_teams          TournamentTeam       @relation(fields: [tournament_team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d9baaba46c")
+
+  @@index([tournament_match_id, action_type], map: "idx_pbp_action")
+  @@index([tournament_match_id, quarter], map: "idx_pbp_match_quarter")
+  @@index([tournament_team_player_id, action_type], map: "idx_pbp_player_action")
+  @@index([tournament_match_id, quarter, game_clock_seconds], map: "idx_pbp_timeline")
+  @@index([tournament_match_id], map: "index_play_by_plays_on_tournament_match_id")
+  @@index([tournament_team_id], map: "index_play_by_plays_on_tournament_team_id")
+  @@index([tournament_team_player_id], map: "index_play_by_plays_on_tournament_team_player_id")
+}
+
+model posts {
+  id             BigInt    @id @default(autoincrement())
+  user_id        BigInt
+  post_code      String    @unique(map: "index_posts_on_post_code") @db.VarChar
+  title          String    @db.VarChar
+  content        String
+  category       String    @db.VarChar
+  status         String    @default("published") @db.VarChar
+  views_count    Int       @default(0)
+  comments_count Int       @default(0)
+  likes_count    Int       @default(0)
+  is_pinned      Boolean   @default(false)
+  is_notice      Boolean   @default(false)
+  allow_comments Boolean   @default(true)
+  metadata       Json?     @default("{}")
+  published_at   DateTime? @db.Timestamp(6)
+  created_at     DateTime  @db.Timestamp(6)
+  updated_at     DateTime  @db.Timestamp(6)
+  public_id      String    @unique(map: "index_posts_on_public_id") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  users          User      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_5b5ddfd518")
+
+  @@index([category], map: "index_posts_on_category")
+  @@index([category, is_pinned, created_at], map: "index_posts_on_category_and_is_pinned_and_created_at")
+  @@index([published_at], map: "index_posts_on_published_at")
+  @@index([status], map: "index_posts_on_status")
+  @@index([status, published_at], map: "index_posts_on_status_and_published_at")
+  @@index([user_id], map: "index_posts_on_user_id")
+  @@index([user_id, created_at], map: "index_posts_on_user_id_and_created_at")
+}
+
+model schema_migrations {
+  version String @id @db.VarChar
+}
+
+model site_pages {
+  id                 BigInt          @id @default(autoincrement())
+  tournament_site_id BigInt
+  title              String          @db.VarChar
+  slug               String          @db.VarChar
+  page_type          String          @default("custom") @db.VarChar
+  position           Int?            @default(0)
+  is_visible         Boolean?        @default(true)
+  show_in_nav        Boolean?        @default(true)
+  content            String?
+  meta_title         String?         @db.VarChar
+  meta_description   String?
+  created_at         DateTime        @db.Timestamp(6)
+  updated_at         DateTime        @db.Timestamp(6)
+  tournament_sites   TournamentSite  @relation(fields: [tournament_site_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_6bdfad07f8")
+  site_sections      site_sections[]
+
+  @@unique([tournament_site_id, slug], map: "index_site_pages_on_tournament_site_id_and_slug")
+  @@index([page_type], map: "index_site_pages_on_page_type")
+  @@index([tournament_site_id], map: "index_site_pages_on_tournament_site_id")
+  @@index([tournament_site_id, position], map: "index_site_pages_on_tournament_site_id_and_position")
+}
+
+model site_sections {
+  id               BigInt     @id @default(autoincrement())
+  site_page_id     BigInt
+  section_type     String     @db.VarChar
+  position         Int?       @default(0)
+  is_visible       Boolean?   @default(true)
+  content          Json?      @default("{}")
+  settings         Json?      @default("{}")
+  background_color String?    @db.VarChar
+  text_color       String?    @db.VarChar
+  padding_top      String?    @default("normal") @db.VarChar
+  padding_bottom   String?    @default("normal") @db.VarChar
+  created_at       DateTime   @db.Timestamp(6)
+  updated_at       DateTime   @db.Timestamp(6)
+  site_pages       site_pages @relation(fields: [site_page_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_146c17880e")
+
+  @@index([section_type], map: "index_site_sections_on_section_type")
+  @@index([site_page_id], map: "index_site_sections_on_site_page_id")
+  @@index([site_page_id, position], map: "index_site_sections_on_site_page_id_and_position")
+}
+
+model suggestions {
+  id                                       BigInt    @id @default(autoincrement())
+  user_id                                  BigInt
+  assigned_to_id                           BigInt?
+  title                                    String    @db.VarChar
+  content                                  String
+  category                                 String    @default("general") @db.VarChar
+  status                                   String    @default("pending") @db.VarChar
+  priority                                 Int?      @default(0)
+  admin_response                           String?
+  responded_at                             DateTime? @db.Timestamp(6)
+  responded_by_id                          BigInt?
+  metadata                                 Json?     @default("{}")
+  device_info                              String?   @db.VarChar
+  app_version                              String?   @db.VarChar
+  created_at                               DateTime  @db.Timestamp(6)
+  updated_at                               DateTime  @db.Timestamp(6)
+  uuid                                     String    @unique(map: "index_suggestions_on_uuid") @db.Uuid
+  users_suggestions_responded_by_idTousers User?     @relation("suggestions_responded_by_idTousers", fields: [responded_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_68f59b8661")
+  users_suggestions_assigned_to_idTousers  User?     @relation("suggestions_assigned_to_idTousers", fields: [assigned_to_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_cd0ce90296")
+  users_suggestions_user_idTousers         User      @relation("suggestions_user_idTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_e40b042562")
+
+  @@index([assigned_to_id], map: "index_suggestions_on_assigned_to_id")
+  @@index([category], map: "index_suggestions_on_category")
+  @@index([created_at], map: "index_suggestions_on_created_at")
+  @@index([priority], map: "index_suggestions_on_priority")
+  @@index([responded_by_id], map: "index_suggestions_on_responded_by_id")
+  @@index([status], map: "index_suggestions_on_status")
+  @@index([status, priority], map: "index_suggestions_on_status_and_priority")
+  @@index([user_id], map: "index_suggestions_on_user_id")
+}
+
+model system_settings {
+  id          BigInt   @id @default(autoincrement())
+  key         String   @unique(map: "index_system_settings_on_key") @db.VarChar
+  value       String?
+  value_type  String?  @default("string") @db.VarChar
+  category    String?  @default("general") @db.VarChar
+  description String?
+  is_public   Boolean? @default(false)
+  is_editable Boolean? @default(true)
+  created_at  DateTime @db.Timestamp(6)
+  updated_at  DateTime @db.Timestamp(6)
+
+  @@index([category], map: "index_system_settings_on_category")
+  @@index([is_public], map: "index_system_settings_on_is_public")
+}
+
+model team_join_requests {
+  id                                              BigInt    @id @default(autoincrement())
+  team_id                                         BigInt
+  user_id                                         BigInt
+  processed_by_id                                 BigInt?
+  status                                          String    @default("pending") @db.VarChar
+  message                                         String?
+  rejection_reason                                String?
+  preferred_position                              String?   @db.VarChar
+  preferred_jersey_number                         Int?
+  processed_at                                    DateTime? @db.Timestamp(6)
+  created_at                                      DateTime  @db.Timestamp(6)
+  updated_at                                      DateTime  @db.Timestamp(6)
+  teams                                           Team      @relation(fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_41b4637da3")
+  users_team_join_requests_user_idTousers         User      @relation("team_join_requests_user_idTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_8fb9d2e93f")
+  users_team_join_requests_processed_by_idTousers User?     @relation("team_join_requests_processed_by_idTousers", fields: [processed_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d806ed30c9")
+
+  @@index([processed_by_id], map: "index_team_join_requests_on_processed_by_id")
+  @@index([status], map: "index_team_join_requests_on_status")
+  @@index([team_id], map: "index_team_join_requests_on_team_id")
+  @@index([team_id, user_id, status], map: "index_team_join_requests_on_team_id_and_user_id_and_status")
+  @@index([user_id], map: "index_team_join_requests_on_user_id")
+}
+
+model team_member_histories {
+  id                                                 BigInt   @id @default(autoincrement())
+  user_id                                            BigInt
+  team_id                                            BigInt
+  action                                             String   @db.VarChar
+  role                                               String?  @db.VarChar
+  jersey_number                                      Int?
+  from_team_id                                       BigInt?
+  to_team_id                                         BigInt?
+  processed_by_id                                    BigInt?
+  note                                               String?
+  created_at                                         DateTime @db.Timestamp(6)
+  updated_at                                         DateTime @db.Timestamp(6)
+  teams_team_member_histories_team_idToteams         Team     @relation("team_member_histories_team_idToteams", fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_0379eb3df4")
+  users_team_member_histories_user_idTousers         User     @relation("team_member_histories_user_idTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_0eb11e6165")
+  users_team_member_histories_processed_by_idTousers User?    @relation("team_member_histories_processed_by_idTousers", fields: [processed_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_35681b45d1")
+  teams_team_member_histories_from_team_idToteams    Team?    @relation("team_member_histories_from_team_idToteams", fields: [from_team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_ba7900f691")
+  teams_team_member_histories_to_team_idToteams      Team?    @relation("team_member_histories_to_team_idToteams", fields: [to_team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_e269e22032")
+
+  @@index([action], map: "index_team_member_histories_on_action")
+  @@index([from_team_id], map: "index_team_member_histories_on_from_team_id")
+  @@index([processed_by_id], map: "index_team_member_histories_on_processed_by_id")
+  @@index([team_id], map: "index_team_member_histories_on_team_id")
+  @@index([team_id, action], map: "index_team_member_histories_on_team_id_and_action")
+  @@index([to_team_id], map: "index_team_member_histories_on_to_team_id")
+  @@index([user_id], map: "index_team_member_histories_on_user_id")
+  @@index([user_id, created_at], map: "index_team_member_histories_on_user_id_and_created_at")
+}
+
+model tournament_series {
+  id                BigInt       @id @default(autoincrement())
+  uuid              String       @unique(map: "index_tournament_series_on_uuid") @db.VarChar
+  name              String       @db.VarChar
+  slug              String       @unique(map: "index_tournament_series_on_slug") @db.VarChar
+  description       String?
+  logo_url          String?      @db.VarChar
+  organizer_id      BigInt
+  status            String?      @default("active") @db.VarChar
+  is_public         Boolean?     @default(true)
+  settings          Json?        @default("{}")
+  tournaments_count Int?         @default(0)
+  created_at        DateTime     @db.Timestamp(6)
+  updated_at        DateTime     @db.Timestamp(6)
+  users             User         @relation(fields: [organizer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_65d50a1bc6")
+  tournaments       Tournament[]
+
+  @@index([is_public], map: "index_tournament_series_on_is_public")
+  @@index([organizer_id], map: "index_tournament_series_on_organizer_id")
+  @@index([status], map: "index_tournament_series_on_status")
+}
+
+model user_favorite_courts {
+  id           BigInt    @id @default(autoincrement())
+  user_id      BigInt
+  court_id     BigInt
+  nickname     String?   @db.VarChar
+  use_count    Int       @default(0)
+  position     Int?      @default(0)
+  last_used_at DateTime? @db.Timestamp(6)
+  created_at   DateTime  @db.Timestamp(6)
+  updated_at   DateTime  @db.Timestamp(6)
+  courts       courts    @relation(fields: [court_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_64d0010263")
+  users        User      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_f0457391fc")
+
+  @@unique([user_id, court_id], map: "index_user_favorite_courts_on_user_id_and_court_id")
+  @@index([court_id], map: "index_user_favorite_courts_on_court_id")
+  @@index([user_id], map: "index_user_favorite_courts_on_user_id")
+  @@index([user_id, position], map: "index_user_favorite_courts_on_user_id_and_position")
+  @@index([user_id, use_count], map: "index_user_favorite_courts_on_user_id_and_use_count")
+}
