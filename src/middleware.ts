@@ -11,12 +11,19 @@ function getClientIp(req: NextRequest): string {
 }
 
 function extractSubdomain(hostname: string): string | null {
+  // localhost/개발 환경은 서브도메인 없음
+  if (hostname === "localhost" || hostname === "127.0.0.1") return null;
+
+  // Vercel 프리뷰/배포 URL은 서브도메인 감지 제외
+  if (hostname.endsWith(".vercel.app")) return null;
+
+  // 메인 도메인 설정 (예: mybdr.kr)
   const mainDomain = process.env.NEXT_PUBLIC_APP_URL
     ? new URL(process.env.NEXT_PUBLIC_APP_URL).hostname
-    : "localhost";
+    : null;
 
-  // localhost 개발 환경에서는 서브도메인 없음
-  if (hostname === "localhost" || hostname === "127.0.0.1") return null;
+  // NEXT_PUBLIC_APP_URL 미설정 시 서브도메인 감지 비활성화
+  if (!mainDomain) return null;
 
   // subdomain.mybdr.kr 형식에서 subdomain 추출
   const parts = hostname.split(".");
