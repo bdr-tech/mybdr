@@ -8,6 +8,7 @@ const navItems = [
   { href: "/admin", label: "대시보드", icon: "📊" },
   { href: "/admin/users", label: "유저 관리", icon: "👥" },
   { href: "/admin/tournaments", label: "토너먼트", icon: "🏆" },
+  { href: "/admin/plans", label: "요금제 관리", icon: "💰" },
   { href: "/admin/payments", label: "결제", icon: "💳" },
   { href: "/admin/suggestions", label: "건의사항", icon: "💡" },
   { href: "/admin/analytics", label: "분석", icon: "📈" },

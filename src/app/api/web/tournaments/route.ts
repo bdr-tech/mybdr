@@ -29,6 +29,19 @@ export async function POST(req: NextRequest) {
     }
 
     const organizerId = BigInt(session.sub);
+
+    // 구독 확인
+    const sub = await prisma.user_subscriptions.findFirst({
+      where: {
+        user_id: organizerId,
+        feature_key: "tournament_create",
+        status: "active",
+        OR: [{ expires_at: null }, { expires_at: { gte: new Date() } }],
+      },
+    });
+    if (!sub) {
+      return NextResponse.json({ error: "UPGRADE_REQUIRED", feature: "tournament_create" }, { status: 402 });
+    }
     const normalizedFormat = FORMAT_MAP[format] ?? format ?? "single_elimination";
 
     const tournament = await prisma.tournament.create({

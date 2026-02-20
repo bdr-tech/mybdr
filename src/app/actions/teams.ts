@@ -4,6 +4,21 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 import { getWebSession } from "@/lib/auth/web-session";
 
+async function checkSubscription(userId: bigint, featureKey: string): Promise<boolean> {
+  const sub = await prisma.user_subscriptions.findFirst({
+    where: {
+      user_id: userId,
+      feature_key: featureKey,
+      status: "active",
+      OR: [
+        { expires_at: null },
+        { expires_at: { gte: new Date() } },
+      ],
+    },
+  });
+  return !!sub;
+}
+
 export async function createTeamAction(_prevState: { error: string } | null, formData: FormData) {
   const session = await getWebSession();
   if (!session) redirect("/login");
@@ -20,6 +35,18 @@ export async function createTeamAction(_prevState: { error: string } | null, for
   let createdTeamId: bigint;
   try {
     const userId = BigInt(session.sub);
+
+    // 구독 확인
+    const hasAccess = await checkSubscription(userId, "team_create");
+    if (!hasAccess) {
+      return { error: "UPGRADE_REQUIRED", feature: "team_create" } as unknown as { error: string };
+    }
+
+    // 팀 2개 한도 확인
+    const teamCount = await prisma.team.count({ where: { captainId: userId } });
+    if (teamCount >= 2) {
+      return { error: "팀은 최대 2개까지 생성할 수 있습니다." };
+    }
 
     const team = await prisma.team.create({
       data: {

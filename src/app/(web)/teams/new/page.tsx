@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createTeamAction } from "@/app/actions/teams";
@@ -8,11 +9,27 @@ import { createTeamAction } from "@/app/actions/teams";
 export default function NewTeamPage() {
   const [state, formAction, pending] = useActionState(createTeamAction, null);
 
+  const isUpgradeRequired = (state as unknown as { error: string; feature?: string } | null)?.error === "UPGRADE_REQUIRED";
+
   return (
     <div>
       <h1 className="mb-6 text-2xl font-bold">팀 만들기</h1>
+
+      {isUpgradeRequired && (
+        <div className="mb-4 rounded-[16px] border border-[#F4A261]/30 bg-[rgba(244,162,97,0.08)] p-4">
+          <p className="mb-2 text-sm font-medium text-[#F4A261]">팀 생성은 유료 기능입니다.</p>
+          <p className="mb-3 text-xs text-[#A0A0A0]">팀 생성권을 구매하면 최대 2개의 팀을 만들 수 있습니다.</p>
+          <Link
+            href="/pricing"
+            className="inline-flex items-center gap-1 rounded-[10px] bg-[#F4A261] px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-[#E76F51]"
+          >
+            요금제 확인하기 →
+          </Link>
+        </div>
+      )}
+
       <Card>
-        {state?.error && (
+        {state?.error && !isUpgradeRequired && (
           <div className="mb-4 rounded-[12px] bg-red-500/10 px-4 py-3 text-sm text-red-400">
             {state.error}
           </div>

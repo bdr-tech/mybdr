@@ -4,6 +4,21 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 import { getWebSession } from "@/lib/auth/web-session";
 
+async function checkSubscription(userId: bigint, featureKey: string): Promise<boolean> {
+  const sub = await prisma.user_subscriptions.findFirst({
+    where: {
+      user_id: userId,
+      feature_key: featureKey,
+      status: "active",
+      OR: [
+        { expires_at: null },
+        { expires_at: { gte: new Date() } },
+      ],
+    },
+  });
+  return !!sub;
+}
+
 function generateGameId(gameType: number): string {
   const now = new Date();
   const dateStr = now.toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD
@@ -46,6 +61,14 @@ export async function createGameAction(_prevState: { error: string } | null, for
   const notes = (formData.get("notes") as string)?.trim() || null;
 
   const organizerId = BigInt(session.sub);
+
+  // 픽업 게임(타입 0)만 구독 게이팅
+  if (gameType === 0) {
+    const hasAccess = await checkSubscription(organizerId, "pickup_game");
+    if (!hasAccess) {
+      return { error: "UPGRADE_REQUIRED", feature: "pickup_game" } as unknown as { error: string };
+    }
+  }
 
   // redirect()는 try/catch 밖에서 호출해야 함 (내부적으로 예외를 throw하므로 catch에 잡힘)
   let createdGameId: string;

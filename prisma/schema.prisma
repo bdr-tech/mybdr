@@ -91,6 +91,7 @@ model User {
   tournaments_tournaments_organizer_idTousers                               Tournament[]                 @relation("tournaments_organizer_idTousers")
   tournaments_tournaments_mvp_player_idTousers                              Tournament[]                 @relation("tournaments_mvp_player_idTousers")
   user_favorite_courts                                                      user_favorite_courts[]
+  user_subscriptions                                                        user_subscriptions[]
 
   @@unique([provider, uid], map: "index_users_on_provider_and_uid")
   @@index([createdAt], map: "index_users_on_created_at")
@@ -1394,4 +1395,39 @@ model user_favorite_courts {
   @@index([user_id], map: "index_user_favorite_courts_on_user_id")
   @@index([user_id, position], map: "index_user_favorite_courts_on_user_id_and_position")
   @@index([user_id, use_count], map: "index_user_favorite_courts_on_user_id_and_use_count")
+}
+
+model plans {
+  id                 BigInt               @id @default(autoincrement())
+  name               String               @db.VarChar
+  description        String?              @db.VarChar
+  plan_type          String               @default("monthly") @db.VarChar
+  feature_key        String               @db.VarChar
+  price              Int
+  max_uses           Int?
+  is_active          Boolean              @default(true)
+  created_at         DateTime             @default(now()) @db.Timestamp(6)
+  updated_at         DateTime             @updatedAt @db.Timestamp(6)
+  user_subscriptions user_subscriptions[]
+
+  @@map("plans")
+}
+
+model user_subscriptions {
+  id          BigInt    @id @default(autoincrement())
+  user_id     BigInt
+  plan_id     BigInt
+  feature_key String    @db.VarChar
+  status      String    @default("active") @db.VarChar
+  started_at  DateTime  @default(now()) @db.Timestamp(6)
+  expires_at  DateTime? @db.Timestamp(6)
+  payment_key String?   @db.VarChar
+  order_id    String?   @db.VarChar
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+  updated_at  DateTime  @updatedAt @db.Timestamp(6)
+  users       User      @relation(fields: [user_id], references: [id])
+  plans       plans     @relation(fields: [plan_id], references: [id])
+
+  @@index([user_id, feature_key])
+  @@map("user_subscriptions")
 }
