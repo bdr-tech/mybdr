@@ -8,7 +8,7 @@ export default function WebLayout({ children }: { children: React.ReactNode }) {
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-24 pt-6 md:pb-6">
         {children}
       </main>
-      <div className="hidden lg:block">
+      <div className="pb-14 lg:pb-0">
         <Footer />
       </div>
     </div>
