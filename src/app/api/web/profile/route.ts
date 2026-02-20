@@ -38,7 +38,7 @@ export async function GET() {
 
     const gameApplications = await prisma.game_applications.findMany({
       where: { user_id: userId },
-      include: { games: { select: { id: true, title: true, scheduled_at: true, status: true } } },
+      include: { games: { select: { id: true, uuid: true, title: true, scheduled_at: true, status: true } } },
       orderBy: { created_at: "desc" },
       take: 10,
     });
@@ -57,7 +57,7 @@ export async function GET() {
         role: m.role ?? "member",
       })),
       recentGames: gameApplications.map((a) => ({
-        id: a.game_id.toString(),
+        id: a.games?.uuid ?? a.game_id.toString(),
         title: a.games?.title ?? null,
         scheduled_at: a.games?.scheduled_at?.toISOString() ?? null,
         status: a.games?.status ?? 0,

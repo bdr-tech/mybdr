@@ -45,7 +45,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 
 export default async function GameDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const game = await prisma.games.findUnique({ where: { id: BigInt(id) } }).catch(() => null);
+  const game = await prisma.games.findUnique({ where: { uuid: id } }).catch(() => null);
   if (!game) return notFound();
 
   const applications = await prisma.game_applications

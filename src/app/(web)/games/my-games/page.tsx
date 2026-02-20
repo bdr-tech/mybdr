@@ -26,7 +26,7 @@ export default async function MyGamesPage() {
   // 내가 신청한 경기
   const applications = await prisma.game_applications.findMany({
     where: { user_id: userId },
-    include: { games: { select: { id: true, title: true, scheduled_at: true, venue_name: true, status: true } } },
+    include: { games: { select: { id: true, uuid: true, title: true, scheduled_at: true, venue_name: true, status: true } } },
     orderBy: { created_at: "desc" },
     take: 10,
   }).catch(() => []);
@@ -41,7 +41,7 @@ export default async function MyGamesPage() {
         {hostedGames.length > 0 ? (
           <div className="space-y-2">
             {hostedGames.map((g) => (
-              <Link key={g.id.toString()} href={`/games/${g.id.toString()}`}>
+              <Link key={g.id.toString()} href={`/games/${g.uuid ?? g.id}`}>
                 <Card className="flex items-center justify-between hover:bg-[#252525] transition-colors">
                   <div>
                     <p className="font-medium">{g.title ?? "제목 없음"}</p>
@@ -67,7 +67,7 @@ export default async function MyGamesPage() {
         {applications.length > 0 ? (
           <div className="space-y-2">
             {applications.map((a) => (
-              <Link key={a.id.toString()} href={`/games/${a.game_id.toString()}`}>
+              <Link key={a.id.toString()} href={`/games/${a.games?.uuid ?? a.game_id}`}>
                 <Card className="flex items-center justify-between hover:bg-[#252525] transition-colors">
                   <div>
                     <p className="font-medium">{a.games?.title ?? "경기"}</p>

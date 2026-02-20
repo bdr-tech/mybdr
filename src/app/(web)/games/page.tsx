@@ -139,7 +139,7 @@ export default async function GamesPage({
           const max = g.max_participants ?? 0;
 
           return (
-            <Link key={g.id.toString()} href={`/games/${g.id}`}>
+            <Link key={g.id.toString()} href={`/games/${g.uuid ?? g.id}`}>
               <div
                 className="group relative overflow-hidden rounded-[16px] bg-[#1A1A1A] p-5 transition-all hover:bg-[#222222] hover:-translate-y-0.5 hover:shadow-lg"
                 style={{ borderLeft: `3px solid ${typeInfo.accent}` }}

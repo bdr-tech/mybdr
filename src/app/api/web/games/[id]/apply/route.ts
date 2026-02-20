@@ -19,10 +19,9 @@ export async function POST(
   if (!session) return NextResponse.json({ error: "세션이 만료되었습니다." }, { status: 401 });
 
   try {
-    const gameId = BigInt(id);
     const userId = BigInt(session.sub);
 
-    const game = await prisma.games.findUnique({ where: { id: gameId } });
+    const game = await prisma.games.findUnique({ where: { uuid: id } });
     if (!game) return NextResponse.json({ error: "경기를 찾을 수 없습니다." }, { status: 404 });
 
     // 2. 주최자 본인 신청 불가
@@ -50,7 +49,7 @@ export async function POST(
 
     // 6. 중복 신청 확인
     const existing = await prisma.game_applications.findUnique({
-      where: { game_id_user_id: { game_id: gameId, user_id: userId } },
+      where: { game_id_user_id: { game_id: game.id, user_id: userId } },
     });
     if (existing) {
       return NextResponse.json({ error: "이미 참가 신청한 경기입니다." }, { status: 409 });
@@ -58,7 +57,7 @@ export async function POST(
 
     await prisma.game_applications.create({
       data: {
-        game_id: gameId,
+        game_id: game.id,
         user_id: userId,
         status: 0, // pending
         payment_required: (game.fee_per_person ?? 0) > 0,
