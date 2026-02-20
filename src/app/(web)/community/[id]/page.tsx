@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CommentForm } from "./comment-form";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export default async function CommunityPostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

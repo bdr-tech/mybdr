@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60; // 1분 캐시
 
 // Rails home/index — hero + 추천경기 + 다가오는 대회 + 인기 대회
 export default async function HomePage() {

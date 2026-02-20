@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export default async function TournamentSeriesPage() {
   const series = await prisma.tournament_series.findMany({

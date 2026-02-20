@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export default async function SchedulePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

@@ -1,24 +1,48 @@
 import { prisma } from "@/lib/db/prisma";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 50;
+
 // FR-061: 유저 관리
-export default async function AdminUsersPage() {
-  const users = await prisma.user.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 50,
-    select: {
-      id: true,
-      email: true,
-      nickname: true,
-      membershipType: true,
-      isAdmin: true,
-      status: true,
-      createdAt: true,
-    },
-  });
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; q?: string }>;
+}) {
+  const { page: pageStr, q } = await searchParams;
+  const page = Math.max(1, parseInt(pageStr ?? "1", 10));
+  const skip = (page - 1) * PAGE_SIZE;
+
+  const where = q
+    ? { OR: [{ email: { contains: q, mode: "insensitive" as const } }, { nickname: { contains: q, mode: "insensitive" as const } }] }
+    : undefined;
+
+  const [users, totalCount] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: PAGE_SIZE,
+      skip,
+      select: {
+        id: true,
+        email: true,
+        nickname: true,
+        membershipType: true,
+        isAdmin: true,
+        status: true,
+        createdAt: true,
+      },
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const from = skip + 1;
+  const to = Math.min(skip + users.length, totalCount);
 
   const roleBadge = (type: number) => {
     const map: Record<number, { label: string; variant: "default" | "success" | "error" | "info" }> = {
@@ -34,8 +58,23 @@ export default async function AdminUsersPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">유저 관리</h1>
-        <span className="text-sm text-[#A0A0A0]">{users.length}명</span>
+        <div>
+          <h1 className="text-2xl font-bold">유저 관리</h1>
+          <p className="mt-1 text-sm text-[#A0A0A0]">
+            전체 <span className="font-semibold text-white">{totalCount.toLocaleString()}명</span>
+            {totalCount > 0 && <span className="ml-1">· {from}–{to}번째</span>}
+          </p>
+        </div>
+        {/* 검색 */}
+        <form method="GET" className="flex gap-2">
+          <input
+            name="q"
+            defaultValue={q ?? ""}
+            placeholder="닉네임/이메일 검색"
+            className="rounded-full border border-[#2A2A2A] bg-[#1A1A1A] px-4 py-2 text-sm text-white placeholder-[#555] outline-none focus:border-[#F4A261]"
+          />
+          <button type="submit" className="rounded-full bg-[#F4A261] px-4 py-2 text-sm font-semibold text-[#0A0A0A]">검색</button>
+        </form>
       </div>
 
       <Card className="overflow-hidden p-0">
@@ -79,6 +118,31 @@ export default async function AdminUsersPage() {
           </table>
         </div>
       </Card>
+
+      {/* 페이지네이션 */}
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-center gap-2">
+          {page > 1 && (
+            <Link
+              href={`?${new URLSearchParams({ ...(q ? { q } : {}), page: String(page - 1) })}`}
+              className="rounded-full border border-[#2A2A2A] px-4 py-2 text-sm text-[#A0A0A0] hover:bg-[#252525]"
+            >
+              이전
+            </Link>
+          )}
+          <span className="text-sm text-[#666666]">
+            {page} / {totalPages}
+          </span>
+          {page < totalPages && (
+            <Link
+              href={`?${new URLSearchParams({ ...(q ? { q } : {}), page: String(page + 1) })}`}
+              className="rounded-full border border-[#2A2A2A] px-4 py-2 text-sm text-[#A0A0A0] hover:bg-[#252525]"
+            >
+              다음
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { TournamentsFilter } from "./tournaments-filter";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 const STATUS_INFO: Record<string, { label: string; variant: "success" | "default" | "error" | "warning" | "info"; accent: string }> = {
   draft:               { label: "준비중",  variant: "default",  accent: "#555555" },

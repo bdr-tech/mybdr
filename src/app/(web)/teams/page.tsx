@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { TeamsFilter } from "./teams-filter";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 function resolveColor(primary: string | null): string {
   if (!primary || primary.toLowerCase() === "#ffffff" || primary.toLowerCase() === "#fff") {

@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { GameApplyButton } from "./apply-button";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 const STATUS_LABEL: Record<number, string> = {
   0: "대기",

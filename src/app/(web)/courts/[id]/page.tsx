@@ -3,7 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { Card } from "@/components/ui/card";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 type Params = { id: string };
 

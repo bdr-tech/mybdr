@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { Card } from "@/components/ui/card";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // 5분 캐시 (코트 정보는 자주 바뀌지 않음)
 
 export default async function CourtsPage() {
   const courts = await prisma.court_infos.findMany({

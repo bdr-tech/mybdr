@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { GamesFilter } from "./games-filter";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 const GAME_TYPE_INFO: Record<number, { emoji: string; label: string; accent: string }> = {
   0: { emoji: "🏀", label: "픽업",      accent: "#F4A261" },

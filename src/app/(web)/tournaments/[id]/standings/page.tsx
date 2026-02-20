@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { notFound } from "next/navigation";
 import { Card } from "@/components/ui/card";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export default async function StandingsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

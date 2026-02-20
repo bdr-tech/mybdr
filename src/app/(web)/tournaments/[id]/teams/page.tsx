@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { Card } from "@/components/ui/card";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function TournamentTeamsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

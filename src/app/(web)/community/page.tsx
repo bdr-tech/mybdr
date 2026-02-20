@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30; // 30초 캐시
 
 const categoryMap: Record<string, { label: string; variant: "default" | "success" | "info" | "warning" }> = {
   general: { label: "자유", variant: "default" },

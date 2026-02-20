@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { TeamJoinButton } from "./join-button";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 // primaryColor가 흰색 계열이면 secondaryColor를 accent로 사용
 function resolveAccent(primary: string | null, secondary: string | null): string {
