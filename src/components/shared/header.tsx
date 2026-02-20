@@ -21,16 +21,30 @@ const desktopNavItems = [
   { href: "/community", label: "커뮤니티" },
 ];
 
+interface SessionUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+}
+
 export function Header() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<SessionUser | null>(null);
 
   useEffect(() => {
-    // 프로필 API로 로그인 상태 확인
-    fetch("/api/web/profile")
-      .then((r) => setIsLoggedIn(r.ok))
-      .catch(() => setIsLoggedIn(false));
+    // JWT만 검증하는 가벼운 엔드포인트 (DB 쿼리 없음)
+    fetch("/api/web/me", { credentials: "include" })
+      .then(async (r) => {
+        if (r.ok) {
+          const data = await r.json();
+          setUser(data);
+        } else {
+          setUser(null);
+        }
+      })
+      .catch(() => setUser(null));
   }, [pathname]);
 
   const isActive = (href: string) =>
@@ -65,7 +79,7 @@ export function Header() {
 
           {/* Right: Notifications + User */}
           <div className="flex items-center gap-2">
-            {isLoggedIn ? (
+            {user ? (
               <>
                 <Link
                   href="/notifications"
@@ -73,7 +87,7 @@ export function Header() {
                 >
                   🔔
                 </Link>
-                <UserDropdown />
+                <UserDropdown name={user.name} />
               </>
             ) : (
               <Link
@@ -116,7 +130,7 @@ export function Header() {
         </div>
       </nav>
 
-      <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} isLoggedIn={isLoggedIn} />
+      <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} isLoggedIn={!!user} />
     </>
   );
 }
