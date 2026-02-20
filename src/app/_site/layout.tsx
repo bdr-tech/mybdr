@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 
 // FR-070, FR-076, FR-077: 토너먼트 사이트 레이아웃 (서브도메인)
@@ -51,9 +52,11 @@ export default async function SiteLayout({
             </span>
           </div>
           <nav className="flex gap-4 text-sm text-[#A0A0A0]">
-            <span className="cursor-pointer hover:text-white">일정</span>
-            <span className="cursor-pointer hover:text-white">순위</span>
-            <span className="cursor-pointer hover:text-white">대진표</span>
+            <Link href="/" className="hover:text-white">홈</Link>
+            <Link href="/teams" className="hover:text-white">팀</Link>
+            <Link href="/schedule" className="hover:text-white">일정</Link>
+            <Link href="/results" className="hover:text-white">결과</Link>
+            <Link href="/registration" className="hover:text-white">참가신청</Link>
           </nav>
         </div>
       </header>

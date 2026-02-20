@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { notFound } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CommentForm } from "./comment-form";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,6 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
   }).catch(() => null);
   if (!post) return notFound();
 
-  // Polymorphic 댓글 조회
   const comments = await prisma.comments.findMany({
     where: { commentable_type: "CommunityPost", commentable_id: post.id },
     orderBy: { created_at: "asc" },
@@ -39,7 +39,6 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
         </div>
       </Card>
 
-      {/* 댓글 */}
       <Card>
         <h2 className="mb-4 text-lg font-semibold">댓글 {comments.length}개</h2>
         <div className="space-y-3">
@@ -53,11 +52,7 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
             </div>
           ))}
         </div>
-        {/* 댓글 입력 */}
-        <div className="mt-4 flex gap-2">
-          <input type="text" className="flex-1 rounded-[16px] border-none bg-[#2A2A2A] px-4 py-3 text-sm text-white placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#F4A261]/50" placeholder="댓글 입력..." />
-          <button className="rounded-full bg-[#F4A261] px-4 py-2 text-sm font-semibold text-[#0A0A0A]">등록</button>
-        </div>
+        <CommentForm postId={id} />
       </Card>
     </div>
   );

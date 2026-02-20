@@ -1,33 +1,44 @@
 "use client";
 
+import { useActionState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { createTeamAction } from "@/app/actions/teams";
 
 export default function NewTeamPage() {
+  const [state, formAction, pending] = useActionState(createTeamAction, null);
+
   return (
     <div>
       <h1 className="mb-6 text-2xl font-bold">팀 만들기</h1>
       <Card>
-        <form className="space-y-4">
+        {state?.error && (
+          <div className="mb-4 rounded-[12px] bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {state.error}
+          </div>
+        )}
+        <form action={formAction} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm text-[#A0A0A0]">팀 이름</label>
-            <input type="text" className="w-full rounded-[16px] border-none bg-[#2A2A2A] px-4 py-3 text-white placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#F4A261]/50" placeholder="팀 이름" />
+            <label className="mb-1 block text-sm text-[#A0A0A0]">팀 이름 *</label>
+            <input name="name" type="text" required className="w-full rounded-[16px] border-none bg-[#2A2A2A] px-4 py-3 text-white placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#F4A261]/50" placeholder="팀 이름" />
           </div>
           <div>
             <label className="mb-1 block text-sm text-[#A0A0A0]">팀 소개</label>
-            <textarea rows={3} className="w-full rounded-[16px] border-none bg-[#2A2A2A] px-4 py-3 text-white placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#F4A261]/50" placeholder="팀 소개" />
+            <textarea name="description" rows={3} className="w-full rounded-[16px] border-none bg-[#2A2A2A] px-4 py-3 text-white placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#F4A261]/50" placeholder="팀 소개" />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm text-[#A0A0A0]">대표 색상</label>
-              <input type="color" defaultValue="#F4A261" className="h-12 w-full rounded-[16px] border-none bg-[#2A2A2A] p-1" />
+              <input name="primary_color" type="color" defaultValue="#F4A261" className="h-12 w-full rounded-[16px] border-none bg-[#2A2A2A] p-1" />
             </div>
             <div>
               <label className="mb-1 block text-sm text-[#A0A0A0]">보조 색상</label>
-              <input type="color" defaultValue="#E76F51" className="h-12 w-full rounded-[16px] border-none bg-[#2A2A2A] p-1" />
+              <input name="secondary_color" type="color" defaultValue="#E76F51" className="h-12 w-full rounded-[16px] border-none bg-[#2A2A2A] p-1" />
             </div>
           </div>
-          <Button className="w-full">팀 만들기</Button>
+          <Button type="submit" className="w-full" disabled={pending}>
+            {pending ? "생성 중..." : "팀 만들기"}
+          </Button>
         </form>
       </Card>
     </div>

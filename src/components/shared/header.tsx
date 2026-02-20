@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SlideMenu } from "./slide-menu";
 import { UserDropdown } from "./user-dropdown";
 
@@ -24,8 +24,14 @@ const desktopNavItems = [
 export function Header() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  // TODO: 실제 인증 상태 연동
-  const isLoggedIn = false;
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // 프로필 API로 로그인 상태 확인
+    fetch("/api/web/profile")
+      .then((r) => setIsLoggedIn(r.ok))
+      .catch(() => setIsLoggedIn(false));
+  }, [pathname]);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -40,7 +46,7 @@ export function Header() {
             <span className="text-lg font-bold text-[#F4A261]">BDR</span>
           </Link>
 
-          {/* Desktop Nav — pill 스타일 (Rails _navbar.html.erb) */}
+          {/* Desktop Nav */}
           <nav className="hidden items-center gap-1 lg:flex">
             {desktopNavItems.map((item) => (
               <Link
@@ -81,7 +87,7 @@ export function Header() {
         </div>
       </header>
 
-      {/* Mobile Bottom Nav — 5탭 (Rails _bottom_nav.html.erb) */}
+      {/* Mobile Bottom Nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#2A2A2A] bg-[#1A1A1A] lg:hidden">
         <div className="grid grid-cols-5">
           {navItems.map((item) => (
@@ -98,7 +104,6 @@ export function Header() {
               {item.label}
             </Link>
           ))}
-          {/* 전체 메뉴 (5번째 탭) */}
           <button
             onClick={() => setMenuOpen(true)}
             className={`flex flex-col items-center gap-0.5 py-2.5 text-[10px] ${
@@ -111,7 +116,6 @@ export function Header() {
         </div>
       </nav>
 
-      {/* Slide Menu */}
       <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} isLoggedIn={isLoggedIn} />
     </>
   );
