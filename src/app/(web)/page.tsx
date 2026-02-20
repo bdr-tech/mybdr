@@ -13,7 +13,7 @@ export default async function HomePage() {
       where: { status: { in: ["active", "published", "registration_open"] } },
       orderBy: { startDate: "asc" },
       take: 4,
-    }),
+    }).catch(() => []),
     prisma.games.findMany({
       where: { status: { in: [1, 2] } }, // 1=published, 2=confirmed
       orderBy: { scheduled_at: "asc" },
