@@ -52,6 +52,7 @@ async function postHandler(
   const bulkResult = bulkStatsSchema.safeParse(body);
   if (bulkResult.success) {
     // Zod 검증된 데이터를 실제 DB 컬럼명으로 매핑
+    const now = new Date();
     const mapStatToDb = (s: (typeof bulkResult.data.stats)[number]) => ({
       tournamentMatchId: matchIdBig,
       tournamentTeamPlayerId: BigInt(s.tournamentTeamPlayerId),
@@ -71,6 +72,8 @@ async function postHandler(
       minutesPlayed: s.minutesPlayed,
       isStarter: s.isStarter,
       plusMinus: s.plusMinus,
+      createdAt: now,
+      updatedAt: now,
     });
 
     const created = await prisma.matchPlayerStat.createMany({

@@ -40,3 +40,7 @@ prisma/migrations/
 
 # outputs (기획 산출물 — 별도 관리)
 /outputs/
+
+# DB dump (보안: 커밋 금지)
+local_dump.sql
+*.sql.dump

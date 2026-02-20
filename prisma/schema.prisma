@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -38,7 +39,7 @@ model User {
   total_games_hosted                                                        Int?                         @default(0)
   total_games_participated                                                  Int?                         @default(0)
   last_login_at                                                             DateTime?                    @db.Timestamp(6)
-  createdAt                                                                 DateTime                     @default(now()) @map("created_at") @db.Timestamp(6)
+  createdAt                                                                 DateTime                     @map("created_at") @db.Timestamp(6) @default(now())
   updatedAt                                                                 DateTime                     @updatedAt @map("updated_at") @db.Timestamp(6)
   public_id                                                                 String                       @unique(map: "index_users_on_public_id") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   provider                                                                  String?                      @db.VarChar
@@ -143,7 +144,7 @@ model Tournament {
   bank_name                              String?                 @db.VarChar
   bank_account                           String?                 @db.VarChar
   bank_holder                            String?                 @db.VarChar
-  createdAt                              DateTime                @default(now()) @map("created_at") @db.Timestamp(6)
+  createdAt                              DateTime                @map("created_at") @db.Timestamp(6) @default(now())
   updatedAt                              DateTime                @updatedAt @map("updated_at") @db.Timestamp(6)
   primary_color                          String?                 @db.VarChar
   secondary_color                        String?                 @db.VarChar
@@ -178,7 +179,7 @@ model TournamentAdminMember {
   role         String     @default("admin") @db.VarChar
   permissions  Json?      @default("{}")
   isActive     Boolean?   @default(true) @map("is_active")
-  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamp(6)
+  createdAt    DateTime   @map("created_at") @db.Timestamp(6) @default(now())
   updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamp(6)
   tournamentId String     @map("tournament_id") @db.Uuid
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_3f7d9c2d9b")
@@ -216,7 +217,7 @@ model Team {
   tournaments_count                                               Int?                    @default(0)
   primaryColor                                                    String?                 @default("#FFFFFF") @map("primary_color") @db.VarChar
   secondaryColor                                                  String?                 @default("#000000") @map("secondary_color") @db.VarChar
-  createdAt                                                       DateTime                @default(now()) @map("created_at") @db.Timestamp(6)
+  createdAt                                                       DateTime                @map("created_at") @db.Timestamp(6) @default(now())
   updatedAt                                                       DateTime                @updatedAt @map("updated_at") @db.Timestamp(6)
   team_code                                                       String?                 @unique(map: "index_teams_on_team_code") @db.VarChar
   auto_accept_members                                             Boolean                 @default(false)
@@ -250,7 +251,7 @@ model TeamMember {
   status       String?   @default("active") @db.VarChar
   joined_at    DateTime? @db.Timestamp(6)
   left_at      DateTime? @db.Timestamp(6)
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  createdAt    DateTime  @map("created_at") @db.Timestamp(6) @default(now())
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
   team         Team      @relation(fields: [teamId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_194b5b076d")
   user         User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_9ec2d5e75e")
@@ -282,7 +283,7 @@ model TournamentTeam {
   points_against                                                         Int?                   @default(0)
   point_difference                                                       Int?                   @default(0)
   final_rank                                                             Int?
-  createdAt                                                              DateTime               @default(now()) @map("created_at") @db.Timestamp(6)
+  createdAt                                                              DateTime               @map("created_at") @db.Timestamp(6) @default(now())
   updatedAt                                                              DateTime               @updatedAt @map("updated_at") @db.Timestamp(6)
   tournamentId                                                           String                 @map("tournament_id") @db.Uuid
   division                                                               String?                @db.VarChar
@@ -327,7 +328,7 @@ model TournamentTeamPlayer {
   avg_points       Decimal?          @default(0.0) @db.Decimal(5, 1)
   avg_rebounds     Decimal?          @default(0.0) @db.Decimal(5, 1)
   avg_assists      Decimal?          @default(0.0) @db.Decimal(5, 1)
-  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamp(6)
+  createdAt        DateTime          @map("created_at") @db.Timestamp(6) @default(now())
   updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamp(6)
   playerStats      MatchPlayerStat[]
   play_by_plays    play_by_plays[]
@@ -368,7 +369,7 @@ model TournamentMatch {
   mvp_player_id                                                        BigInt?
   notes                                                                String?
   settings                                                             Json?             @default("{}")
-  createdAt                                                            DateTime          @default(now()) @map("created_at") @db.Timestamp(6)
+  createdAt                                                            DateTime          @map("created_at") @db.Timestamp(6) @default(now())
   updatedAt                                                            DateTime          @updatedAt @map("updated_at") @db.Timestamp(6)
   tournamentId                                                         String            @map("tournament_id") @db.Uuid
   venue_name                                                           String?           @db.VarChar
@@ -432,7 +433,7 @@ model MatchPlayerStat {
   fouled_out               Boolean?             @default(false)
   ejected                  Boolean?             @default(false)
   notes                    String?
-  createdAt                DateTime             @default(now()) @map("created_at") @db.Timestamp(6)
+  createdAt                DateTime             @map("created_at") @db.Timestamp(6) @default(now())
   updatedAt                DateTime             @updatedAt @map("updated_at") @db.Timestamp(6)
   tournamentMatch          TournamentMatch      @relation(fields: [tournamentMatchId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_c638e8cafa")
   tournamentTeamPlayer     TournamentTeamPlayer @relation(fields: [tournamentTeamPlayerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_e96e36662a")
@@ -467,7 +468,7 @@ model TournamentSite {
   meta_title       String?       @db.VarChar
   meta_description String?
   og_image_url     String?       @db.VarChar
-  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
+  createdAt        DateTime      @map("created_at") @db.Timestamp(6) @default(now())
   updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamp(6)
   tournamentId     String        @map("tournament_id") @db.Uuid
   site_pages       site_pages[]
@@ -494,7 +495,7 @@ model SiteTemplate {
   is_premium      Boolean?         @default(false)
   is_active       Boolean?         @default(true)
   usage_count     Int?             @default(0)
-  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
+  createdAt       DateTime         @map("created_at") @db.Timestamp(6) @default(now())
   updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamp(6)
   tournamentSites TournamentSite[]
 
