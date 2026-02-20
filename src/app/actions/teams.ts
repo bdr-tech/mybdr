@@ -17,6 +17,7 @@ export async function createTeamAction(_prevState: { error: string } | null, for
     return { error: "팀 이름은 필수입니다." };
   }
 
+  let createdTeamId: bigint;
   try {
     const userId = BigInt(session.sub);
 
@@ -33,7 +34,6 @@ export async function createTeamAction(_prevState: { error: string } | null, for
       },
     });
 
-    // 생성자를 주장(captain)으로 자동 추가
     await prisma.teamMember.create({
       data: {
         teamId: team.id,
@@ -44,8 +44,10 @@ export async function createTeamAction(_prevState: { error: string } | null, for
       },
     });
 
-    redirect(`/teams/${team.id.toString()}`);
+    createdTeamId = team.id;
   } catch {
     return { error: "팀 생성 중 오류가 발생했습니다." };
   }
+
+  redirect(`/teams/${createdTeamId.toString()}`);
 }

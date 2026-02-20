@@ -47,6 +47,8 @@ export async function createGameAction(_prevState: { error: string } | null, for
 
   const organizerId = BigInt(session.sub);
 
+  // redirect()는 try/catch 밖에서 호출해야 함 (내부적으로 예외를 throw하므로 catch에 잡힘)
+  let createdGameId: bigint;
   try {
     const game = await prisma.games.create({
       data: {
@@ -126,8 +128,10 @@ export async function createGameAction(_prevState: { error: string } | null, for
       }
     }
 
-    redirect(`/games/${game.id.toString()}`);
+    createdGameId = game.id;
   } catch {
     return { error: "경기 생성 중 오류가 발생했습니다." };
   }
+
+  redirect(`/games/${createdGameId.toString()}`);
 }

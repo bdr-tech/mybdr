@@ -17,6 +17,7 @@ export async function createPostAction(_prevState: { error: string } | null, for
     return { error: "제목과 내용을 입력하세요." };
   }
 
+  let createdPostId: bigint;
   try {
     const post = await prisma.community_posts.create({
       data: {
@@ -30,10 +31,12 @@ export async function createPostAction(_prevState: { error: string } | null, for
       },
     });
 
-    redirect(`/community/${post.id.toString()}`);
+    createdPostId = post.id;
   } catch {
     return { error: "글 작성 중 오류가 발생했습니다." };
   }
+
+  redirect(`/community/${createdPostId.toString()}`);
 }
 
 export async function createCommentAction(_prevState: { error?: string; success?: boolean } | null, formData: FormData) {
