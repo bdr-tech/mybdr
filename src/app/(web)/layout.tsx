@@ -5,10 +5,10 @@ export default function WebLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex flex-col">
       <Header />
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-24 pt-6 md:pb-6">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-24 pt-6 lg:pb-6">
         {children}
       </main>
-      <div className="pb-14 lg:pb-0">
+      <div className="footer-mobile-space">
         <Footer />
       </div>
     </div>

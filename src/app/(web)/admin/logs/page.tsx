@@ -27,7 +27,7 @@ export default async function AdminLogsPage() {
                 <tr key={l.id.toString()} className="border-b border-[#1F1F1F]">
                   <td className="px-5 py-3">{l.action}</td>
                   <td className="px-5 py-3 text-[#A0A0A0]">{l.resource_type}</td>
-                  <td className="px-5 py-3 text-[#666666]">{l.created_at.toLocaleString("ko-KR")}</td>
+                  <td className="px-5 py-3 text-[#666666]">{l.created_at.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</td>
                 </tr>
               ))}
             </tbody>

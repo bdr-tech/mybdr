@@ -45,7 +45,7 @@ export default async function MyGamesPage() {
                 <Card className="flex items-center justify-between hover:bg-[#252525] transition-colors">
                   <div>
                     <p className="font-medium">{g.title ?? "제목 없음"}</p>
-                    <p className="text-xs text-[#A0A0A0]">{g.scheduled_at?.toLocaleString("ko-KR")} · {g.venue_name ?? g.city ?? "-"}</p>
+                    <p className="text-xs text-[#A0A0A0]">{g.scheduled_at?.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} · {g.venue_name ?? g.city ?? "-"}</p>
                   </div>
                   <Badge>{STATUS_LABEL[g.status] ?? "대기"}</Badge>
                 </Card>
@@ -71,7 +71,7 @@ export default async function MyGamesPage() {
                 <Card className="flex items-center justify-between hover:bg-[#252525] transition-colors">
                   <div>
                     <p className="font-medium">{a.games?.title ?? "경기"}</p>
-                    <p className="text-xs text-[#A0A0A0]">{a.games?.scheduled_at?.toLocaleString("ko-KR")} · {a.games?.venue_name ?? "-"}</p>
+                    <p className="text-xs text-[#A0A0A0]">{a.games?.scheduled_at?.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} · {a.games?.venue_name ?? "-"}</p>
                   </div>
                   <Badge variant={a.status === 1 ? "success" : a.status === 2 ? "error" : "default"}>
                     {APP_STATUS[a.status] ?? "대기"}

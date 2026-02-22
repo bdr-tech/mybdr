@@ -27,10 +27,10 @@ export default async function CommunityPage() {
       </div>
 
       {/* Category Filter */}
-      <div className="mb-4 flex gap-2 overflow-x-auto">
-        <Link href="/community" className="rounded-full bg-[rgba(244,162,97,0.12)] px-4 py-2 text-sm font-medium text-[#F4A261]">전체</Link>
+      <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+        <Link href="/community" className="shrink-0 whitespace-nowrap rounded-full bg-[rgba(244,162,97,0.12)] px-4 py-2 text-sm font-medium text-[#F4A261]">전체</Link>
         {Object.entries(categoryMap).map(([key, val]) => (
-          <Link key={key} href={`/community?category=${key}`} className="whitespace-nowrap rounded-full border border-[#2A2A2A] px-4 py-2 text-sm text-[#A0A0A0] hover:text-white">{val.label}</Link>
+          <Link key={key} href={`/community?category=${key}`} className="shrink-0 whitespace-nowrap rounded-full border border-[#2A2A2A] px-4 py-2 text-sm text-[#A0A0A0] hover:text-white">{val.label}</Link>
         ))}
       </div>
 
@@ -46,7 +46,7 @@ export default async function CommunityPage() {
                 </div>
                 <div className="mt-2 flex items-center gap-3 text-xs text-[#666666]">
                   <span>{p.users?.nickname ?? "익명"}</span>
-                  <span>{p.created_at.toLocaleDateString("ko-KR")}</span>
+                  <span>{p.created_at.toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })}</span>
                   <span>조회 {p.view_count ?? 0}</span>
                   <span>댓글 {p.comments_count ?? 0}</span>
                 </div>

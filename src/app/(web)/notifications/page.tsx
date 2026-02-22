@@ -61,7 +61,7 @@ function NotificationItem({ n }: { n: { title: string; content: string | null; c
       <div className="flex items-start justify-between gap-2">
         <p className="font-medium text-sm">{n.title}</p>
         <span className="whitespace-nowrap text-xs text-[#666666]">
-          {n.created_at.toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+          {n.created_at.toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Seoul" })}
         </span>
       </div>
       {n.content && <p className="mt-1 text-xs text-[#A0A0A0]">{n.content}</p>}

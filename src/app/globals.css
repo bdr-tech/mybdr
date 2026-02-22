@@ -47,3 +47,25 @@ body {
   color: var(--color-text-primary);
   font-family: var(--font-sans);
 }
+
+/* 모바일 터치 개선 */
+button,
+a,
+[role="button"] {
+  /* 300ms 탭 딜레이 제거, 더블탭 줌 방지 */
+  touch-action: manipulation;
+  /* iOS 탭 하이라이트 제거 (시각적 피드백은 active: 클래스로 대체) */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 스크롤 가능한 컨테이너 터치 개선 */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 모바일 하단 내비 영역 확보 (safe area 포함) */
+@media (max-width: 1023px) {
+  .footer-mobile-space {
+    padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}

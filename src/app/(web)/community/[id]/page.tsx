@@ -31,7 +31,7 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
         </div>
         <div className="mb-4 flex items-center gap-3 text-xs text-[#666666]">
           <span>{post.users?.nickname ?? "익명"}</span>
-          <span>{post.created_at.toLocaleString("ko-KR")}</span>
+          <span>{post.created_at.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</span>
           <span>조회 {post.view_count ?? 0}</span>
         </div>
         <div className="prose prose-invert max-w-none text-sm leading-relaxed text-[#A0A0A0]">
@@ -46,7 +46,7 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
             <div key={c.id.toString()} className="rounded-[12px] bg-[#252525] p-3">
               <div className="mb-1 flex items-center gap-2 text-xs text-[#666666]">
                 <span className="font-medium text-white">{c.users?.nickname ?? "익명"}</span>
-                <span>{c.created_at.toLocaleString("ko-KR")}</span>
+                <span>{c.created_at.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</span>
               </div>
               <p className="text-sm text-[#A0A0A0]">{c.content}</p>
             </div>

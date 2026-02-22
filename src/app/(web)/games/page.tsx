@@ -173,11 +173,11 @@ export default async function GamesPage({
                       <span>📅</span>
                       <span>
                         {g.scheduled_at.toLocaleDateString("ko-KR", {
-                          month: "long", day: "numeric", weekday: "short",
+                          month: "long", day: "numeric", weekday: "short", timeZone: "Asia/Seoul",
                         })}
                         {" "}
                         {g.scheduled_at.toLocaleTimeString("ko-KR", {
-                          hour: "2-digit", minute: "2-digit",
+                          hour: "2-digit", minute: "2-digit", timeZone: "Asia/Seoul",
                         })}
                       </span>
                     </div>

@@ -76,7 +76,7 @@ export default async function GameDetailPage({ params }: { params: Promise<{ id:
 
         {/* Core details */}
         <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-          <InfoRow label="일시" value={game.scheduled_at?.toLocaleString("ko-KR") ?? "-"} />
+          <InfoRow label="일시" value={game.scheduled_at?.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) ?? "-"} />
           <InfoRow
             label="경기 시간"
             value={game.duration_hours ? `${game.duration_hours}시간` : "-"}

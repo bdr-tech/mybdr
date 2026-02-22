@@ -102,13 +102,16 @@ export function Header() {
       </header>
 
       {/* Mobile Bottom Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#2A2A2A] bg-[#1A1A1A] lg:hidden">
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#2A2A2A] bg-[#1A1A1A] lg:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
         <div className="grid grid-cols-5">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-0.5 py-2.5 text-[10px] transition-colors ${
+              className={`flex flex-col items-center gap-0.5 py-2.5 text-[10px] transition-colors active:opacity-70 ${
                 isActive(item.href)
                   ? "text-[#F4A261]"
                   : "text-[#666666]"
@@ -120,7 +123,7 @@ export function Header() {
           ))}
           <button
             onClick={() => setMenuOpen(true)}
-            className={`flex flex-col items-center gap-0.5 py-2.5 text-[10px] ${
+            className={`flex flex-col items-center gap-0.5 py-2.5 text-[10px] active:opacity-70 ${
               menuOpen ? "text-[#F4A261]" : "text-[#666666]"
             }`}
           >
