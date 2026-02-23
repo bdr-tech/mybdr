@@ -31,7 +31,7 @@ export default function LoginPage() {
       {/* 브랜드 */}
       <div className="mb-8 text-center">
         <h1 className="text-4xl font-bold tracking-tight text-[#F4A261]">BDR</h1>
-        <p className="mt-2 text-sm text-[#6B7280]">농구 토너먼트 플랫폼</p>
+        <p className="mt-2 text-sm text-[#6B7280]">농구인을 위한 농구 플랫폼</p>
       </div>
 
       {/* 로그인 카드 */}
