@@ -81,11 +81,13 @@ export async function GET(req: NextRequest) {
     });
 
     if (!userInfoRes.ok) {
+      console.error("[OAuth] Userinfo failed:", userInfoRes.status, await userInfoRes.text());
       return redirectTo("/login?error=userinfo_failed");
     }
 
     const googleUser = (await userInfoRes.json()) as GoogleUserInfo;
     const { sub: googleSub, email, name = "", picture = null } = googleUser;
+    console.log("[OAuth] Got user info:", email);
 
     // 유저 조회: google uid → email 순
     let user = await prisma.user.findFirst({
@@ -146,7 +148,7 @@ export async function GET(req: NextRequest) {
     response.cookies.set(WEB_SESSION_COOKIE, token, COOKIE_OPTIONS);
     return response;
   } catch (err) {
-    console.error("Google OAuth callback error:", err);
+    console.error("[OAuth] Callback error:", String(err));
     return redirectTo("/login?error=server_error");
   }
 }
