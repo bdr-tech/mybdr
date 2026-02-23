@@ -100,7 +100,15 @@ export default async function AdminTournamentsPage({
 
       <Card className="overflow-hidden p-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full table-fixed text-left text-sm">
+            <colgroup>
+              <col />
+              <col className="w-[120px]" />
+              <col className="w-[95px]" />
+              <col className="w-[115px]" />
+              <col className="w-[245px]" />
+              <col className="w-[100px]" />
+            </colgroup>
             <thead className="border-b border-[#E8ECF0] bg-[#F5F7FA] text-[#6B7280]">
               <tr>
                 <th className="px-5 py-4 font-medium">대회명</th>
@@ -122,7 +130,7 @@ export default async function AdminTournamentsPage({
                     <td className="px-5 py-3">
                       <Link
                         href={`/tournament-admin/tournaments/${t.id}`}
-                        className="font-medium text-[#0066FF] hover:underline"
+                        className="block truncate font-medium text-[#0066FF] hover:underline"
                       >
                         {t.name}
                       </Link>
@@ -130,7 +138,7 @@ export default async function AdminTournamentsPage({
                         <p className="text-xs text-[#9CA3AF]">{t.startDate.toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })}</p>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-[#6B7280]">
+                    <td className="px-5 py-3 truncate text-[#6B7280]">
                       {organizer?.nickname ?? organizer?.email ?? "-"}
                     </td>
                     <td className="px-5 py-3 text-[#6B7280]">

@@ -75,7 +75,14 @@ export default async function AdminUsersPage({
 
       <Card className="overflow-hidden p-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full table-fixed text-left text-sm">
+            <colgroup>
+              <col className="w-[130px]" />
+              <col />
+              <col className="w-[290px]" />
+              <col className="w-[155px]" />
+              <col className="w-[105px]" />
+            </colgroup>
             <thead className="border-b border-[#E8ECF0] bg-[#F5F7FA] text-[#6B7280]">
               <tr>
                 <th className="px-5 py-4 font-medium">닉네임</th>
@@ -94,8 +101,8 @@ export default async function AdminUsersPage({
                     key={user.id.toString()}
                     className="border-b border-[#F1F5F9] hover:bg-[#EEF2FF] transition-colors"
                   >
-                    <td className="px-5 py-3 font-medium">{user.nickname ?? "-"}</td>
-                    <td className="px-5 py-3 text-[#6B7280]">{user.email}</td>
+                    <td className="px-5 py-3 font-medium truncate">{user.nickname ?? "-"}</td>
+                    <td className="px-5 py-3 text-[#6B7280] truncate">{user.email}</td>
 
                     {/* 역할 변경 */}
                     <td className="px-5 py-3">

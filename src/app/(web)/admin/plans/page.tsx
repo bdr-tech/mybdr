@@ -117,7 +117,15 @@ export default function AdminPlansPage() {
       ) : (
         <Card>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full table-fixed text-sm">
+              <colgroup>
+                <col />
+                <col className="w-[130px]" />
+                <col className="w-[90px]" />
+                <col className="w-[105px]" />
+                <col className="w-[75px]" />
+                <col className="w-[165px]" />
+              </colgroup>
               <thead>
                 <tr className="border-b border-[#EEF2FF] text-left text-xs text-[#9CA3AF]">
                   <th className="pb-3 pr-4">이름</th>
