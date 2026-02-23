@@ -1,9 +1,7 @@
 import { cookies } from "next/headers";
 import { verifyToken, type JwtPayload } from "./jwt";
 
-// __Host- prefix: domain 고정, path=/, secure 강제 (쿠키 스푸핑 방지)
-// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#cookie_prefixes
-export const WEB_SESSION_COOKIE = "__Host-bdr_session";
+export const WEB_SESSION_COOKIE = "bdr_session";
 
 /**
  * 서버 컴포넌트 / Server Action에서 현재 로그인 유저를 가져옵니다.

@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
 export async function GET() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -14,14 +13,6 @@ export async function GET() {
 
   // CSRF state
   const state = crypto.randomUUID();
-  const cookieStore = await cookies();
-  cookieStore.set("oauth_state", state, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 60 * 10, // 10분
-    path: "/",
-  });
 
   const params = new URLSearchParams({
     client_id: clientId,
@@ -33,7 +24,16 @@ export async function GET() {
     prompt: "select_account",
   });
 
-  return NextResponse.redirect(
+  // oauth_state 쿠키를 redirect 응답에 직접 첨부
+  const response = NextResponse.redirect(
     `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
   );
+  response.cookies.set("oauth_state", state, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    maxAge: 60 * 10, // 10분
+    path: "/",
+  });
+  return response;
 }
