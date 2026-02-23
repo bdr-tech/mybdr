@@ -41,8 +41,8 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      // nonce 기반으로 교체; 빌드 정적 헤더엔 'self'만
-      "script-src 'self' https://accounts.google.com",
+      // TODO: middleware에서 nonce 생성 구현 후 'unsafe-inline' 제거
+      "script-src 'self' 'unsafe-inline' https://accounts.google.com",
       "style-src 'self' 'unsafe-inline'", // Tailwind inline은 불가피
       "img-src 'self' data: https:",
       "font-src 'self' data:",
