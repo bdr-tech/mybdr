@@ -10,7 +10,8 @@ export const env = createEnv({
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),
     SENTRY_DSN: z.string().url().optional(),
-    CORS_ORIGIN: z.string().optional().default("*"),
+    // "*" 기본값 금지: 프로덕션에서 반드시 도메인 지정
+    CORS_ORIGIN: z.string().optional().default("https://mybdr.kr"),
   },
   client: {
     NEXT_PUBLIC_APP_URL: z.string().url(),

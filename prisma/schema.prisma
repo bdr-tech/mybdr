@@ -578,6 +578,16 @@ model ar_internal_metadata {
   updated_at DateTime @db.Timestamp(6)
 }
 
+model login_attempts {
+  id           BigInt   @id @default(autoincrement())
+  identifier   String   @db.VarChar(255)
+  ip_address   String?  @db.VarChar(45)
+  attempted_at DateTime @default(now()) @db.Timestamp(6)
+
+  @@index([identifier, attempted_at])
+  @@map("login_attempts")
+}
+
 model board_favorites {
   id         BigInt   @id @default(autoincrement())
   user_id    BigInt

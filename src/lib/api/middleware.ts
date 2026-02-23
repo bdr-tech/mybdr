@@ -33,9 +33,6 @@ function extractToken(req: NextRequest): string | null {
   const authHeader = req.headers.get("authorization");
   if (authHeader?.startsWith("Bearer ")) return authHeader.slice(7);
   if (authHeader?.startsWith("Token ")) return authHeader.slice(6);
-
-  const headerUserId = req.headers.get("x-user-id");
-  if (headerUserId) return null; // middleware already verified
   return null;
 }
 
@@ -44,7 +41,7 @@ export function withAuth(
   options?: { roles?: Role[] }
 ) {
   return async (req: NextRequest) => {
-    // ★ 보안: 항상 JWT 토큰을 직접 검증 (헤더 스푸핑 방지)
+    // 항상 JWT 토큰 직접 검증 (헤더 스푸핑 방지)
     const token = extractToken(req);
     if (!token) return unauthorized();
 
@@ -72,7 +69,7 @@ export function withValidation<T>(
     try {
       body = await req.json();
     } catch {
-      return validationError([{ message: "Invalid JSON body" }]);
+      return validationError([{ field: "body", message: "유효하지 않은 값입니다." }]);
     }
 
     const result = schema.safeParse(body);
@@ -89,8 +86,8 @@ export function withErrorHandler(handler: (req: NextRequest) => Promise<Response
     try {
       return await handler(req);
     } catch (error) {
-      console.error("[API Error]", error);
-      // TODO: Sentry.captureException(error)
+      // 내부 에러는 로그만, 상세 정보 절대 노출 금지
+      console.error("[API Error]", error instanceof Error ? error.message : "Unknown error");
       return internalError();
     }
   };

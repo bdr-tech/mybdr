@@ -1,37 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { getClientIp } from "@/lib/security/get-client-ip";
 import { verifyToken } from "@/lib/auth/jwt";
 
-function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown"
-  );
-}
-
 function extractSubdomain(hostname: string): string | null {
-  // localhost/개발 환경은 서브도메인 없음
   if (hostname === "localhost" || hostname === "127.0.0.1") return null;
-
-  // Vercel 프리뷰/배포 URL은 서브도메인 감지 제외
   if (hostname.endsWith(".vercel.app")) return null;
 
-  // 메인 도메인 설정 (예: mybdr.kr)
   const mainDomain = process.env.NEXT_PUBLIC_APP_URL
     ? new URL(process.env.NEXT_PUBLIC_APP_URL).hostname
     : null;
 
-  // NEXT_PUBLIC_APP_URL 미설정 시 서브도메인 감지 비활성화
   if (!mainDomain) return null;
 
-  // subdomain.mybdr.kr 형식에서 subdomain 추출
   const parts = hostname.split(".");
   const mainParts = mainDomain.split(".");
 
   if (parts.length > mainParts.length) {
     const subdomain = parts[0];
-    // www, api 등 예약어 제외
     if (["www", "api", "admin"].includes(subdomain)) return null;
     return subdomain;
   }
@@ -39,7 +25,6 @@ function extractSubdomain(hostname: string): string | null {
   return null;
 }
 
-// 인증 불필요한 API 경로
 const PUBLIC_API_ROUTES = [
   "/api/v1/auth/login",
   "/api/v1/site-templates",
@@ -71,21 +56,35 @@ export async function proxy(req: NextRequest) {
         {
           status: 429,
           headers: {
-            "Retry-After": String(
-              Math.ceil((result.resetAt - Date.now()) / 1000)
-            ),
+            "Retry-After": String(Math.ceil((result.resetAt - Date.now()) / 1000)),
+            "X-RateLimit-Limit": String(result.limit),
             "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": String(Math.ceil(result.resetAt / 1000)),
           },
         }
       );
     }
+
+    // Rate Limit 허용 헤더 추가 (응답에 주입)
+    const response = await processRequest(req, pathname, hostname);
+    response.headers.set("X-RateLimit-Limit", String(result.limit));
+    response.headers.set("X-RateLimit-Remaining", String(result.remaining));
+    response.headers.set("X-RateLimit-Reset", String(Math.ceil(result.resetAt / 1000)));
+    return response;
   }
 
+  return processRequest(req, pathname, hostname);
+}
+
+async function processRequest(
+  req: NextRequest,
+  pathname: string,
+  hostname: string
+): Promise<NextResponse> {
   // 2. 서브도메인 감지 → 토너먼트 사이트 라우팅
   const subdomain = extractSubdomain(hostname);
   if (subdomain) {
     const url = req.nextUrl.clone();
-    // (site) 라우트 그룹으로 리라이트
     url.pathname = `/_site${pathname}`;
     const response = NextResponse.rewrite(url);
     response.headers.set("x-tournament-subdomain", subdomain);
@@ -94,7 +93,6 @@ export async function proxy(req: NextRequest) {
 
   // 3. API JWT 인증
   if (pathname.startsWith("/api/v1") && !isPublicApiRoute(pathname)) {
-    // OPTIONS (CORS preflight) 허용
     if (req.method === "OPTIONS") {
       return NextResponse.next();
     }
@@ -122,7 +120,6 @@ export async function proxy(req: NextRequest) {
       );
     }
 
-    // 유저 정보를 헤더에 주입 → API Route에서 사용
     const requestHeaders = new Headers(req.headers);
     requestHeaders.set("x-user-id", payload.sub);
     requestHeaders.set("x-user-role", payload.role);
