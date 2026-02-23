@@ -35,7 +35,7 @@ export default async function AdminTournamentsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">토너먼트 관리</h1>
-        <span className="text-sm text-[#A0A0A0]">{tournaments.length}개</span>
+        <span className="text-sm text-[#6B7280]">{tournaments.length}개</span>
       </div>
 
       <div className="grid gap-4">
@@ -46,7 +46,7 @@ export default async function AdminTournamentsPage() {
                 <h3 className="font-semibold">{t.name}</h3>
                 <Badge variant={statusBadge(t.status ?? "draft")}>{t.status ?? "draft"}</Badge>
               </div>
-              <p className="mt-1 text-sm text-[#A0A0A0]">
+              <p className="mt-1 text-sm text-[#6B7280]">
                 {t.format} · {t._count.tournamentTeams}팀 · {t._count.tournamentMatches}경기
                 {t.startDate && ` · ${t.startDate.toLocaleDateString("ko-KR")}`}
               </p>
@@ -55,7 +55,7 @@ export default async function AdminTournamentsPage() {
         ))}
 
         {tournaments.length === 0 && (
-          <Card className="text-center text-[#A0A0A0]">
+          <Card className="text-center text-[#6B7280]">
             등록된 토너먼트가 없습니다.
           </Card>
         )}

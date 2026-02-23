@@ -31,7 +31,7 @@ const STATUS_COLOR: Record<string, string> = {
   pending: "text-[#FBBF24] bg-[rgba(251,191,36,0.1)]",
   approved: "text-[#4ADE80] bg-[rgba(74,222,128,0.1)]",
   rejected: "text-[#EF4444] bg-[rgba(239,68,68,0.1)]",
-  withdrawn: "text-[#666666] bg-[#252525]",
+  withdrawn: "text-[#9CA3AF] bg-[#EEF2FF]",
 };
 
 export default function TournamentTeamsPage() {
@@ -87,13 +87,13 @@ export default function TournamentTeamsPage() {
   };
 
   if (loading)
-    return <div className="flex h-40 items-center justify-center text-[#A0A0A0]">불러오는 중...</div>;
+    return <div className="flex h-40 items-center justify-center text-[#6B7280]">불러오는 중...</div>;
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <Link href={`/tournament-admin/tournaments/${id}`} className="text-sm text-[#A0A0A0] hover:text-white">← 대회 관리</Link>
+          <Link href={`/tournament-admin/tournaments/${id}`} className="text-sm text-[#6B7280] hover:text-[#111827]">← 대회 관리</Link>
           <h1 className="mt-1 text-2xl font-bold">참가팀 관리</h1>
         </div>
       </div>
@@ -105,7 +105,7 @@ export default function TournamentTeamsPage() {
             key={s}
             onClick={() => setFilter(s)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-sm transition-colors ${
-              filter === s ? "bg-[#F4A261] font-semibold text-[#0A0A0A]" : "bg-[#252525] text-[#A0A0A0] hover:text-white"
+              filter === s ? "bg-[#0066FF] font-semibold text-white" : "bg-[#EEF2FF] text-[#6B7280] hover:text-[#111827]"
             }`}
           >
             {s === "all" ? "전체" : STATUS_LABEL[s]}
@@ -115,7 +115,7 @@ export default function TournamentTeamsPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <Card className="py-12 text-center text-[#A0A0A0]">
+        <Card className="py-12 text-center text-[#6B7280]">
           <div className="mb-2 text-3xl">🏀</div>
           {filter === "all" ? "참가 신청한 팀이 없습니다." : `${STATUS_LABEL[filter]} 상태의 팀이 없습니다.`}
         </Card>
@@ -132,7 +132,7 @@ export default function TournamentTeamsPage() {
                   />
                   <div>
                     <p className="font-semibold">{tt.team.name}</p>
-                    <p className="text-xs text-[#A0A0A0]">
+                    <p className="text-xs text-[#6B7280]">
                       선수 {tt.players.length}명 ·{" "}
                       {new Date(tt.createdAt).toLocaleDateString("ko-KR")} 신청
                     </p>
@@ -143,7 +143,7 @@ export default function TournamentTeamsPage() {
                   {/* 시드 배정 */}
                   {tt.status === "approved" && (
                     <div className="flex items-center gap-1">
-                      <label className="text-xs text-[#A0A0A0]">시드</label>
+                      <label className="text-xs text-[#6B7280]">시드</label>
                       <input
                         type="number"
                         min={1}
@@ -151,7 +151,7 @@ export default function TournamentTeamsPage() {
                         onBlur={(e) =>
                           updateSeed(tt.id, e.target.value ? Number(e.target.value) : null)
                         }
-                        className="w-16 rounded-[8px] border-none bg-[#252525] px-2 py-1 text-center text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#F4A261]/50"
+                        className="w-16 rounded-[8px] border-none bg-[#EEF2FF] px-2 py-1 text-center text-sm text-[#111827] focus:outline-none focus:ring-1 focus:ring-[#0066FF]/50"
                         placeholder="-"
                       />
                     </div>

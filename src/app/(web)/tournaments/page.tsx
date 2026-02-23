@@ -7,7 +7,7 @@ import { TournamentsFilter } from "./tournaments-filter";
 export const revalidate = 30;
 
 const STATUS_INFO: Record<string, { label: string; variant: "success" | "default" | "error" | "warning" | "info"; accent: string }> = {
-  draft:               { label: "준비중",  variant: "default",  accent: "#555555" },
+  draft:               { label: "준비중",  variant: "default",  accent: "#6B7280" },
   registration:        { label: "모집중",  variant: "success",  accent: "#4ADE80" },
   registration_open:   { label: "모집중",  variant: "success",  accent: "#4ADE80" },
   registration_closed: { label: "접수마감", variant: "warning",  accent: "#FBBF24" },
@@ -28,13 +28,13 @@ function TeamCountBar({ current, max }: { current: number; max: number }) {
   const color = pct >= 100 ? "#EF4444" : pct >= 75 ? "#FBBF24" : "#4ADE80";
   return (
     <div className="flex items-center gap-2">
-      <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-[#2A2A2A]">
+      <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-[#E8ECF0]">
         <div
           className="absolute left-0 top-0 h-full rounded-full transition-all"
           style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </div>
-      <span className="flex-shrink-0 text-xs text-[#A0A0A0]">
+      <span className="flex-shrink-0 text-xs text-[#6B7280]">
         {current}/{max}팀
       </span>
     </div>
@@ -87,7 +87,7 @@ export default async function TournamentsPage({
         <h1 className="text-2xl font-bold">대회</h1>
         <Link
           href="/tournaments/new"
-          className="rounded-full bg-[#F4A261] px-4 py-2 text-sm font-semibold text-[#0A0A0A] hover:bg-[#E8934E] transition-colors"
+          className="rounded-full bg-[#0066FF] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0052CC] transition-colors"
         >
           대회 만들기
         </Link>
@@ -100,8 +100,8 @@ export default async function TournamentsPage({
 
       {/* 결과 카운트 */}
       {status && status !== "all" && (
-        <p className="mb-4 text-sm text-[#666666]">
-          검색 결과 <span className="text-white">{tournaments.length}개</span>
+        <p className="mb-4 text-sm text-[#9CA3AF]">
+          검색 결과 <span className="text-[#111827]">{tournaments.length}개</span>
         </p>
       )}
 
@@ -109,7 +109,7 @@ export default async function TournamentsPage({
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {tournaments.map((t) => {
           const st = t.status ?? "draft";
-          const info = STATUS_INFO[st] ?? { label: st, variant: "default" as const, accent: "#555555" };
+          const info = STATUS_INFO[st] ?? { label: st, variant: "default" as const, accent: "#6B7280" };
           const formatLabel = FORMAT_LABEL[t.format ?? ""] ?? t.format ?? "";
           const dateRange = formatDateRange(t.startDate, t.endDate);
           const teamCount = t._count.tournamentTeams;
@@ -120,32 +120,32 @@ export default async function TournamentsPage({
           return (
             <Link key={t.id} href={`/tournaments/${t.id}`}>
               <div
-                className="group relative overflow-hidden rounded-[16px] bg-[#1A1A1A] p-5 transition-all hover:bg-[#222222] hover:-translate-y-0.5 hover:shadow-lg"
+                className="group relative overflow-hidden rounded-[16px] bg-[#FFFFFF] p-5 transition-all hover:bg-[#F5F5F5] hover:-translate-y-0.5 hover:shadow-lg"
                 style={{ borderLeft: `3px solid ${info.accent}` }}
               >
                 {/* 형식 + 상태 */}
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="text-xs font-medium text-[#A0A0A0]">
+                  <span className="text-xs font-medium text-[#6B7280]">
                     {formatLabel}
                   </span>
                   <Badge variant={info.variant}>{info.label}</Badge>
                 </div>
 
                 {/* 대회명 */}
-                <h3 className="mb-3 font-semibold leading-snug text-white line-clamp-2">
+                <h3 className="mb-3 font-semibold leading-snug text-[#111827] line-clamp-2">
                   {t.name}
                 </h3>
 
                 {/* 장소 + 날짜 */}
                 <div className="mb-3 space-y-1">
                   {location && (
-                    <div className="flex items-center gap-1.5 text-xs text-[#A0A0A0]">
+                    <div className="flex items-center gap-1.5 text-xs text-[#6B7280]">
                       <span>📍</span>
                       <span className="truncate">{location}</span>
                     </div>
                   )}
                   {dateRange && (
-                    <div className="flex items-center gap-1.5 text-xs text-[#A0A0A0]">
+                    <div className="flex items-center gap-1.5 text-xs text-[#6B7280]">
                       <span>📅</span>
                       <span>{dateRange}</span>
                     </div>
@@ -153,13 +153,13 @@ export default async function TournamentsPage({
                 </div>
 
                 {/* 구분선 */}
-                <div className="mb-3 h-px bg-[#2A2A2A]" />
+                <div className="mb-3 h-px bg-[#E8ECF0]" />
 
                 {/* 참가팀 현황 바 */}
                 <TeamCountBar current={teamCount} max={maxTeams} />
 
                 {/* 참가비 */}
-                <div className="mt-2 text-xs text-[#666666]">
+                <div className="mt-2 text-xs text-[#9CA3AF]">
                   {hasFee
                     ? `💰 참가비 ${Number(t.entry_fee).toLocaleString()}원`
                     : "무료"}
@@ -172,7 +172,7 @@ export default async function TournamentsPage({
         {tournaments.length === 0 && (
           <div className="col-span-full py-20 text-center">
             <div className="mb-3 text-4xl">🏆</div>
-            <p className="text-[#A0A0A0]">
+            <p className="text-[#6B7280]">
               {status && status !== "all"
                 ? "조건에 맞는 대회가 없습니다."
                 : "등록된 대회가 없습니다."}

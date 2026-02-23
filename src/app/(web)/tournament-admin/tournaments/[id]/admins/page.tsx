@@ -79,12 +79,12 @@ export default function TournamentAdminsPage() {
   };
 
   if (loading)
-    return <div className="flex h-40 items-center justify-center text-[#A0A0A0]">불러오는 중...</div>;
+    return <div className="flex h-40 items-center justify-center text-[#6B7280]">불러오는 중...</div>;
 
   return (
     <div>
       <div className="mb-6">
-        <Link href={`/tournament-admin/tournaments/${id}`} className="text-sm text-[#A0A0A0] hover:text-white">← 대회 관리</Link>
+        <Link href={`/tournament-admin/tournaments/${id}`} className="text-sm text-[#6B7280] hover:text-[#111827]">← 대회 관리</Link>
         <h1 className="mt-1 text-2xl font-bold">관리자 관리</h1>
       </div>
 
@@ -99,13 +99,13 @@ export default function TournamentAdminsPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="이메일 주소"
-            className="flex-1 rounded-[16px] border-none bg-[#2A2A2A] px-4 py-3 text-white placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#F4A261]/50"
+            className="flex-1 rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
             onKeyDown={(e) => e.key === "Enter" && addAdmin()}
           />
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="rounded-[16px] border-none bg-[#2A2A2A] px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#F4A261]/50"
+            className="rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
           >
             <option value="admin">관리자</option>
             <option value="staff">스태프</option>
@@ -119,7 +119,7 @@ export default function TournamentAdminsPage() {
 
       {/* 관리자 목록 */}
       {admins.length === 0 ? (
-        <Card className="py-12 text-center text-[#A0A0A0]">
+        <Card className="py-12 text-center text-[#6B7280]">
           <div className="mb-2 text-3xl">👥</div>
           추가된 관리자가 없습니다.
         </Card>
@@ -129,16 +129,16 @@ export default function TournamentAdminsPage() {
             <Card key={admin.id}>
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#252525] text-sm font-bold text-[#F4A261]">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EEF2FF] text-sm font-bold text-[#F4A261]">
                     {(admin.user.nickname ?? admin.user.email)[0].toUpperCase()}
                   </div>
                   <div>
                     <p className="font-medium">{admin.user.nickname ?? "이름 없음"}</p>
-                    <p className="text-xs text-[#A0A0A0]">{admin.user.email}</p>
+                    <p className="text-xs text-[#6B7280]">{admin.user.email}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="rounded-full bg-[#252525] px-3 py-1 text-xs text-[#A0A0A0]">
+                  <span className="rounded-full bg-[#EEF2FF] px-3 py-1 text-xs text-[#6B7280]">
                     {ROLE_LABEL[admin.role] ?? admin.role}
                   </span>
                   <button

@@ -36,8 +36,8 @@ export function TournamentsFilter() {
             onClick={() => setStatus(s.value)}
             className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all ${
               active
-                ? "bg-[#F4A261] text-[#0A0A0A]"
-                : "border border-[#2A2A2A] text-[#A0A0A0] hover:border-[#F4A261]/40 hover:text-white"
+                ? "bg-[#0066FF] text-white"
+                : "border border-[#E8ECF0] text-[#6B7280] hover:border-[#0066FF]/40 hover:text-[#111827]"
             }`}
           >
             {s.label}

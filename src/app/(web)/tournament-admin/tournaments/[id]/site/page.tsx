@@ -102,17 +102,17 @@ export default function TournamentSitePage() {
     }
   };
 
-  const inputCls = "w-full rounded-[16px] border-none bg-[#2A2A2A] px-4 py-3 text-white placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#F4A261]/50";
-  const labelCls = "mb-1 block text-sm text-[#A0A0A0]";
+  const inputCls = "w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50";
+  const labelCls = "mb-1 block text-sm text-[#6B7280]";
 
   if (loading)
-    return <div className="flex h-40 items-center justify-center text-[#A0A0A0]">불러오는 중...</div>;
+    return <div className="flex h-40 items-center justify-center text-[#6B7280]">불러오는 중...</div>;
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <Link href={`/tournament-admin/tournaments/${id}`} className="text-sm text-[#A0A0A0] hover:text-white">← 대회 관리</Link>
+          <Link href={`/tournament-admin/tournaments/${id}`} className="text-sm text-[#6B7280] hover:text-[#111827]">← 대회 관리</Link>
           <h1 className="mt-1 text-2xl font-bold">사이트 관리</h1>
         </div>
         {site && (
@@ -122,7 +122,7 @@ export default function TournamentSitePage() {
                 href={`https://${site.subdomain}.mybdr.kr`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-full border border-[#2A2A2A] px-4 py-2 text-sm text-[#A0A0A0] hover:text-white"
+                className="rounded-full border border-[#E8ECF0] px-4 py-2 text-sm text-[#6B7280] hover:text-[#111827]"
               >
                 미리보기 ↗
               </a>
@@ -146,10 +146,10 @@ export default function TournamentSitePage() {
         <Card className="mb-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-[#A0A0A0]">현재 URL</p>
+              <p className="text-sm text-[#6B7280]">현재 URL</p>
               <p className="font-mono text-[#F4A261]">{site.subdomain}.mybdr.kr</p>
             </div>
-            <span className={`text-sm font-semibold ${site.isPublished ? "text-[#4ADE80]" : "text-[#A0A0A0]"}`}>
+            <span className={`text-sm font-semibold ${site.isPublished ? "text-[#4ADE80]" : "text-[#6B7280]"}`}>
               {site.isPublished ? "● 공개 중" : "○ 비공개"}
             </span>
           </div>
@@ -165,12 +165,12 @@ export default function TournamentSitePage() {
               <label className={labelCls}>서브도메인</label>
               <div className="flex items-center gap-2">
                 <input
-                  className="flex-1 rounded-[16px] border-none bg-[#2A2A2A] px-4 py-3 text-white placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#F4A261]/50"
+                  className="flex-1 rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
                   value={form.subdomain}
                   onChange={(e) => set("subdomain", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
                   placeholder="my-tournament"
                 />
-                <span className="whitespace-nowrap text-sm text-[#A0A0A0]">.mybdr.kr</span>
+                <span className="whitespace-nowrap text-sm text-[#6B7280]">.mybdr.kr</span>
               </div>
             </div>
             <div>
@@ -194,7 +194,7 @@ export default function TournamentSitePage() {
                     onChange={(e) => set("primaryColor", e.target.value)}
                     className="h-10 w-14 cursor-pointer rounded-[8px] border-none bg-transparent p-0"
                   />
-                  <span className="text-xs text-[#A0A0A0]">{form.primaryColor}</span>
+                  <span className="text-xs text-[#6B7280]">{form.primaryColor}</span>
                 </div>
               </div>
               <div>
@@ -206,7 +206,7 @@ export default function TournamentSitePage() {
                     onChange={(e) => set("secondaryColor", e.target.value)}
                     className="h-10 w-14 cursor-pointer rounded-[8px] border-none bg-transparent p-0"
                   />
-                  <span className="text-xs text-[#A0A0A0]">{form.secondaryColor}</span>
+                  <span className="text-xs text-[#6B7280]">{form.secondaryColor}</span>
                 </div>
               </div>
             </div>

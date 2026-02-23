@@ -22,9 +22,9 @@ const ROLE_LABEL: Record<string, string> = {
 
 function StatBox({ value, label }: { value: number | string; label: string }) {
   return (
-    <div className="flex flex-col items-center rounded-[12px] bg-[#252525] px-4 py-3 min-w-[64px]">
-      <span className="text-lg font-bold text-white">{value}</span>
-      <span className="mt-0.5 text-[10px] text-[#A0A0A0]">{label}</span>
+    <div className="flex flex-col items-center rounded-[12px] bg-[#EEF2FF] px-4 py-3 min-w-[64px]">
+      <span className="text-lg font-bold text-[#111827]">{value}</span>
+      <span className="mt-0.5 text-[10px] text-[#6B7280]">{label}</span>
     </div>
   );
 }
@@ -67,40 +67,40 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
   return (
     <div className="space-y-4">
       {/* 프로필 히어로 */}
-      <div className="relative overflow-hidden rounded-[20px] bg-[#1A1A1A] p-6">
+      <div className="relative overflow-hidden rounded-[20px] bg-[#FFFFFF] p-6">
         {/* 배경 장식 */}
-        <div className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 rounded-full bg-[#F4A261] opacity-5" />
+        <div className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 rounded-full bg-[#0066FF] opacity-5" />
 
         <div className="relative flex items-start gap-4">
           {/* 아바타 */}
-          <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-[rgba(244,162,97,0.15)] text-3xl font-black text-[#F4A261] border-2 border-[#F4A261]/30">
+          <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-[rgba(0,102,255,0.15)] text-3xl font-black text-[#F4A261] border-2 border-[#0066FF]/30">
             {initial}
           </div>
 
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-black text-white">{displayName}</h1>
+            <h1 className="text-2xl font-black text-[#111827]">{displayName}</h1>
 
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               {user.position && (
-                <span className="rounded-full bg-[rgba(244,162,97,0.12)] px-2.5 py-0.5 text-xs font-medium text-[#F4A261]">
+                <span className="rounded-full bg-[rgba(0,102,255,0.12)] px-2.5 py-0.5 text-xs font-medium text-[#F4A261]">
                   {user.position}
                   {POSITION_LABEL[user.position] ? ` · ${POSITION_LABEL[user.position]}` : ""}
                 </span>
               )}
               {location && (
-                <span className="text-sm text-[#A0A0A0]">📍 {location}</span>
+                <span className="text-sm text-[#6B7280]">📍 {location}</span>
               )}
             </div>
 
             {user.height && (
-              <p className="mt-1 text-sm text-[#666666]">키 {user.height}cm</p>
+              <p className="mt-1 text-sm text-[#9CA3AF]">키 {user.height}cm</p>
             )}
           </div>
         </div>
 
         {/* 바이오 */}
         {user.bio && (
-          <p className="relative mt-4 border-t border-[#2A2A2A] pt-4 text-sm leading-relaxed text-[#A0A0A0]">
+          <p className="relative mt-4 border-t border-[#E8ECF0] pt-4 text-sm leading-relaxed text-[#6B7280]">
             {user.bio}
           </p>
         )}
@@ -114,10 +114,10 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
       </div>
 
       {/* 소속 팀 */}
-      <div className="rounded-[16px] bg-[#1A1A1A] p-5">
+      <div className="rounded-[16px] bg-[#FFFFFF] p-5">
         <h2 className="mb-4 font-semibold">
           소속 팀
-          <span className="ml-2 text-sm font-normal text-[#666666]">
+          <span className="ml-2 text-sm font-normal text-[#9CA3AF]">
             {user.teamMembers.length}개
           </span>
         </h2>
@@ -134,7 +134,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
                 <Link
                   key={m.id.toString()}
                   href={`/teams/${m.team.id}`}
-                  className="flex items-center gap-3 rounded-[12px] bg-[#252525] px-4 py-3 hover:bg-[#2A2A2A] transition-colors"
+                  className="flex items-center gap-3 rounded-[12px] bg-[#EEF2FF] px-4 py-3 hover:bg-[#E8ECF0] transition-colors"
                 >
                   <div
                     className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold"
@@ -143,9 +143,9 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
                     {m.team.name.charAt(0)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-white">{m.team.name}</p>
+                    <p className="truncate font-medium text-[#111827]">{m.team.name}</p>
                     {m.team.city && (
-                      <p className="text-xs text-[#666666]">{m.team.city}</p>
+                      <p className="text-xs text-[#9CA3AF]">{m.team.city}</p>
                     )}
                   </div>
                   <span
@@ -153,7 +153,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
                     style={
                       m.role === "captain"
                         ? { backgroundColor: `${accentSafe}22`, color: accentSafe }
-                        : { backgroundColor: "#2A2A2A", color: "#6B7280" }
+                        : { backgroundColor: "#E8ECF0", color: "#6B7280" }
                     }
                   >
                     {ROLE_LABEL[m.role ?? "member"] ?? m.role}
@@ -163,7 +163,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
             })}
           </div>
         ) : (
-          <p className="text-center text-sm text-[#555555]">소속 팀이 없습니다.</p>
+          <p className="text-center text-sm text-[#6B7280]">소속 팀이 없습니다.</p>
         )}
       </div>
     </div>

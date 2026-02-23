@@ -26,7 +26,7 @@ export default async function AdminDashboard() {
 
       <Card>
         <h2 className="mb-4 text-lg font-semibold">최근 활동</h2>
-        <p className="text-sm text-[#A0A0A0]">
+        <p className="text-sm text-[#6B7280]">
           관리자 활동 로그가 여기에 표시됩니다.
         </p>
       </Card>

@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { createGameAction } from "@/app/actions/games";
 
 const inputCls =
-  "w-full rounded-[16px] border-none bg-[#2A2A2A] px-4 py-3 text-white placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#F4A261]/50";
-const labelCls = "mb-1 block text-sm text-[#A0A0A0]";
+  "w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50";
+const labelCls = "mb-1 block text-sm text-[#6B7280]";
 
 const GAME_TYPES = [
   { value: "0", label: "픽업", emoji: "🏀", desc: "자유로운 픽업 게임" },
@@ -34,7 +34,7 @@ function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void 
       type="button"
       onClick={onToggle}
       className={`relative h-6 w-12 flex-shrink-0 rounded-full transition-colors ${
-        enabled ? "bg-[#F4A261]" : "bg-[#444444]"
+        enabled ? "bg-[#0066FF]" : "bg-[#94A3B8]"
       }`}
     >
       <span
@@ -82,13 +82,13 @@ export default function NewGamePage() {
                 onClick={() => setGameType(type.value)}
                 className={`flex flex-col items-center gap-2 rounded-[16px] border-2 p-4 transition-all ${
                   gameType === type.value
-                    ? "border-[#F4A261] bg-[#F4A261]/10"
-                    : "border-[#333333] bg-[#1E1E1E] hover:border-[#F4A261]/50"
+                    ? "border-[#0066FF] bg-[#0066FF]/10"
+                    : "border-[#CBD5E1] bg-[#FAFAFA] hover:border-[#0066FF]/50"
                 }`}
               >
                 <span className="text-3xl">{type.emoji}</span>
                 <span className="text-sm font-medium">{type.label}</span>
-                <span className="text-center text-xs text-[#A0A0A0]">{type.desc}</span>
+                <span className="text-center text-xs text-[#6B7280]">{type.desc}</span>
               </button>
             ))}
           </div>
@@ -235,10 +235,10 @@ export default function NewGamePage() {
               </select>
             </div>
           </div>
-          <div className="flex items-center justify-between rounded-[16px] bg-[#2A2A2A] px-4 py-3">
+          <div className="flex items-center justify-between rounded-[16px] bg-[#E8ECF0] px-4 py-3">
             <div>
               <p className="font-medium">게스트 허용</p>
-              <p className="text-xs text-[#A0A0A0]">팀에 속하지 않은 개인 참가 허용</p>
+              <p className="text-xs text-[#6B7280]">팀에 속하지 않은 개인 참가 허용</p>
             </div>
             <Toggle enabled={allowGuests} onToggle={() => setAllowGuests(!allowGuests)} />
           </div>
@@ -259,33 +259,33 @@ export default function NewGamePage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className={labelCls}>홈 유니폼 색상</label>
-              <div className="flex items-center gap-3 rounded-[16px] bg-[#2A2A2A] px-4 py-3">
+              <div className="flex items-center gap-3 rounded-[16px] bg-[#E8ECF0] px-4 py-3">
                 <input
                   name="uniform_home_color"
                   type="color"
                   defaultValue="#FF0000"
                   className="h-8 w-8 cursor-pointer rounded-full border-none bg-transparent"
                 />
-                <span className="text-sm text-[#A0A0A0]">홈팀 색상</span>
+                <span className="text-sm text-[#6B7280]">홈팀 색상</span>
               </div>
             </div>
             <div>
               <label className={labelCls}>어웨이 유니폼 색상</label>
-              <div className="flex items-center gap-3 rounded-[16px] bg-[#2A2A2A] px-4 py-3">
+              <div className="flex items-center gap-3 rounded-[16px] bg-[#E8ECF0] px-4 py-3">
                 <input
                   name="uniform_away_color"
                   type="color"
                   defaultValue="#0000FF"
                   className="h-8 w-8 cursor-pointer rounded-full border-none bg-transparent"
                 />
-                <span className="text-sm text-[#A0A0A0]">어웨이팀 색상</span>
+                <span className="text-sm text-[#6B7280]">어웨이팀 색상</span>
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-between rounded-[16px] bg-[#2A2A2A] px-4 py-3">
+          <div className="flex items-center justify-between rounded-[16px] bg-[#E8ECF0] px-4 py-3">
             <div>
               <p className="font-medium">반복 경기</p>
-              <p className="text-xs text-[#A0A0A0]">정기적으로 반복되는 경기</p>
+              <p className="text-xs text-[#6B7280]">정기적으로 반복되는 경기</p>
             </div>
             <Toggle enabled={isRecurring} onToggle={() => setIsRecurring(!isRecurring)} />
           </div>

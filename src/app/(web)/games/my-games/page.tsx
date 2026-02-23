@@ -42,10 +42,10 @@ export default async function MyGamesPage() {
           <div className="space-y-2">
             {hostedGames.map((g) => (
               <Link key={g.id.toString()} href={`/games/${g.uuid ?? g.id}`}>
-                <Card className="flex items-center justify-between hover:bg-[#252525] transition-colors">
+                <Card className="flex items-center justify-between hover:bg-[#EEF2FF] transition-colors">
                   <div>
                     <p className="font-medium">{g.title ?? "제목 없음"}</p>
-                    <p className="text-xs text-[#A0A0A0]">{g.scheduled_at?.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} · {g.venue_name ?? g.city ?? "-"}</p>
+                    <p className="text-xs text-[#6B7280]">{g.scheduled_at?.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} · {g.venue_name ?? g.city ?? "-"}</p>
                   </div>
                   <Badge>{STATUS_LABEL[g.status] ?? "대기"}</Badge>
                 </Card>
@@ -53,7 +53,7 @@ export default async function MyGamesPage() {
             ))}
           </div>
         ) : (
-          <Card className="py-8 text-center text-[#A0A0A0]">
+          <Card className="py-8 text-center text-[#6B7280]">
             <div className="mb-2 text-3xl">🏀</div>
             만든 경기가 없습니다.{" "}
             <Link href="/games/new" className="text-[#F4A261] hover:underline">경기 만들기</Link>
@@ -68,10 +68,10 @@ export default async function MyGamesPage() {
           <div className="space-y-2">
             {applications.map((a) => (
               <Link key={a.id.toString()} href={`/games/${a.games?.uuid ?? a.game_id}`}>
-                <Card className="flex items-center justify-between hover:bg-[#252525] transition-colors">
+                <Card className="flex items-center justify-between hover:bg-[#EEF2FF] transition-colors">
                   <div>
                     <p className="font-medium">{a.games?.title ?? "경기"}</p>
-                    <p className="text-xs text-[#A0A0A0]">{a.games?.scheduled_at?.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} · {a.games?.venue_name ?? "-"}</p>
+                    <p className="text-xs text-[#6B7280]">{a.games?.scheduled_at?.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} · {a.games?.venue_name ?? "-"}</p>
                   </div>
                   <Badge variant={a.status === 1 ? "success" : a.status === 2 ? "error" : "default"}>
                     {APP_STATUS[a.status] ?? "대기"}
@@ -81,7 +81,7 @@ export default async function MyGamesPage() {
             ))}
           </div>
         ) : (
-          <Card className="py-8 text-center text-[#A0A0A0]">
+          <Card className="py-8 text-center text-[#6B7280]">
             <div className="mb-2 text-3xl">🏀</div>
             참가 신청한 경기가 없습니다.
           </Card>

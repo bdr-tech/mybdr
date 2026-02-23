@@ -115,7 +115,7 @@ function DescriptionSections({ text }: { text: string }) {
               <dl className="space-y-2">
                 {sec.items.map(([k, v]) => (
                   <div key={k} className="flex justify-between gap-4 text-sm">
-                    <dt className="text-[#A0A0A0]">{k}</dt>
+                    <dt className="text-[#6B7280]">{k}</dt>
                     <dd className="text-right font-medium">{v}</dd>
                   </div>
                 ))}
@@ -131,7 +131,7 @@ function DescriptionSections({ text }: { text: string }) {
               <ol className="space-y-2">
                 {sec.items.map((item, j) => (
                   <li key={j} className="flex gap-3 text-sm">
-                    <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#F4A261]/20 text-xs font-bold text-[#F4A261]">
+                    <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#0066FF]/20 text-xs font-bold text-[#F4A261]">
                       {j + 1}
                     </span>
                     <span>{item}</span>
@@ -149,7 +149,7 @@ function DescriptionSections({ text }: { text: string }) {
               <ul className="space-y-2">
                 {sec.items.map((item, j) => (
                   <li key={j} className="flex gap-2 text-sm">
-                    <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#F4A261]" />
+                    <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#0066FF]" />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -162,21 +162,21 @@ function DescriptionSections({ text }: { text: string }) {
           return (
             <Card key={i}>
               <h3 className="mb-3 text-sm font-semibold text-[#F4A261]">{sec.title}</h3>
-              <div className="overflow-hidden rounded-[12px] border border-[#2A2A2A]">
+              <div className="overflow-hidden rounded-[12px] border border-[#E8ECF0]">
                 <table className="w-full text-sm">
-                  <thead className="bg-[#252525]">
+                  <thead className="bg-[#EEF2FF]">
                     <tr>
-                      <th className="px-4 py-2 text-left text-[#A0A0A0]">순위</th>
-                      <th className="px-4 py-2 text-left text-[#A0A0A0]">시상</th>
+                      <th className="px-4 py-2 text-left text-[#6B7280]">순위</th>
+                      <th className="px-4 py-2 text-left text-[#6B7280]">시상</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sec.items.map((prize, j) => (
-                      <tr key={j} className="border-t border-[#2A2A2A]">
+                      <tr key={j} className="border-t border-[#E8ECF0]">
                         <td className="px-4 py-2.5 font-medium">
                           {PRIZE_EMOJI[prize.rank] ?? ""} {prize.rank}
                         </td>
-                        <td className="px-4 py-2.5 text-[#A0A0A0]">
+                        <td className="px-4 py-2.5 text-[#6B7280]">
                           {prize.items.join(" + ")}
                         </td>
                       </tr>
@@ -198,7 +198,7 @@ function DescriptionSections({ text }: { text: string }) {
                   return (
                     <div key={j} className="text-sm">
                       {item.label && (
-                        <span className="mr-1 text-[#A0A0A0]">{item.label}:</span>
+                        <span className="mr-1 text-[#6B7280]">{item.label}:</span>
                       )}
                       <a
                         href={item.url}
@@ -216,11 +216,11 @@ function DescriptionSections({ text }: { text: string }) {
                   <div key={j} className="text-sm">
                     {item.label ? (
                       <>
-                        <span className="text-[#A0A0A0]">{item.label}: </span>
+                        <span className="text-[#6B7280]">{item.label}: </span>
                         <span>{item.value.replace(`${item.label}: `, "")}</span>
                       </>
                     ) : (
-                      <span className="text-[#A0A0A0]">{item.value}</span>
+                      <span className="text-[#6B7280]">{item.value}</span>
                     )}
                   </div>
                 );
@@ -232,12 +232,12 @@ function DescriptionSections({ text }: { text: string }) {
         if (sec.type === "sponsors") {
           return (
             <Card key={i}>
-              <p className="mb-2 text-xs text-[#A0A0A0]">Sponsored By</p>
+              <p className="mb-2 text-xs text-[#6B7280]">Sponsored By</p>
               <div className="flex flex-wrap gap-2">
                 {sec.sponsors.map((s) => (
                   <span
                     key={s}
-                    className="rounded-full bg-[#252525] px-3 py-1 text-sm font-medium"
+                    className="rounded-full bg-[#EEF2FF] px-3 py-1 text-sm font-medium"
                   >
                     {s}
                   </span>
@@ -304,7 +304,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           <h1 className="text-2xl font-bold">{tournament.name}</h1>
           <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
         </div>
-        <p className="mt-2 text-sm text-[#A0A0A0]">
+        <p className="mt-2 text-sm text-[#6B7280]">
           {tournament.format}
           {" · "}
           {tournament.tournamentTeams.length}팀
@@ -313,12 +313,12 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         </p>
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
           {tournament.venue_name && (
-            <span className="text-[#A0A0A0]">
+            <span className="text-[#6B7280]">
               📍 {[tournament.city, tournament.venue_name].filter(Boolean).join(" ")}
             </span>
           )}
           {tournament.entry_fee && Number(tournament.entry_fee) > 0 && (
-            <span className="text-[#A0A0A0]">
+            <span className="text-[#6B7280]">
               💰 참가비 {Number(tournament.entry_fee).toLocaleString()}원
             </span>
           )}
@@ -331,7 +331,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           <Link
             key={t.href}
             href={t.href}
-            className="whitespace-nowrap rounded-full border border-[#2A2A2A] px-4 py-2 text-sm text-[#A0A0A0] hover:bg-[#252525] hover:text-white"
+            className="whitespace-nowrap rounded-full border border-[#E8ECF0] px-4 py-2 text-sm text-[#6B7280] hover:bg-[#EEF2FF] hover:text-[#111827]"
           >
             {t.label}
           </Link>
@@ -353,14 +353,14 @@ export default async function TournamentDetailPage({ params }: { params: Promise
             {tournament.tournamentMatches.map((m) => (
               <Card key={m.id.toString()} className="flex items-center justify-between py-3">
                 <span className="text-sm font-medium">{m.homeTeam?.team.name ?? "TBD"}</span>
-                <span className="rounded-full bg-[#252525] px-3 py-1 text-sm font-bold">
+                <span className="rounded-full bg-[#EEF2FF] px-3 py-1 text-sm font-bold">
                   {m.homeScore}:{m.awayScore}
                 </span>
                 <span className="text-sm font-medium">{m.awayTeam?.team.name ?? "TBD"}</span>
               </Card>
             ))}
             {tournament.tournamentMatches.length === 0 && (
-              <Card className="text-center text-sm text-[#A0A0A0]">경기가 없습니다.</Card>
+              <Card className="text-center text-sm text-[#6B7280]">경기가 없습니다.</Card>
             )}
           </div>
         </div>
@@ -369,7 +369,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           <h2 className="mb-3 font-semibold">순위</h2>
           <Card className="overflow-hidden p-0">
             <table className="w-full text-sm">
-              <thead className="border-b border-[#2A2A2A] text-[#A0A0A0]">
+              <thead className="border-b border-[#E8ECF0] text-[#6B7280]">
                 <tr>
                   <th className="px-4 py-2 text-left">#</th>
                   <th className="px-4 py-2 text-left">팀</th>
@@ -379,7 +379,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
               </thead>
               <tbody>
                 {tournament.tournamentTeams.map((t, i) => (
-                  <tr key={t.id.toString()} className="border-b border-[#1F1F1F]">
+                  <tr key={t.id.toString()} className="border-b border-[#F1F5F9]">
                     <td className="px-4 py-2 font-bold text-[#F4A261]">{i + 1}</td>
                     <td className="px-4 py-2">{t.team.name}</td>
                     <td className="px-4 py-2 text-center">{t.wins ?? 0}</td>
@@ -388,7 +388,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                 ))}
                 {tournament.tournamentTeams.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-4 py-4 text-center text-[#A0A0A0]">
+                    <td colSpan={4} className="px-4 py-4 text-center text-[#6B7280]">
                       팀이 없습니다.
                     </td>
                   </tr>

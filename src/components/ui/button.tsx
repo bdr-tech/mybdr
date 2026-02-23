@@ -4,11 +4,11 @@ type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-[#F4A261] text-[#0A0A0A] font-semibold hover:bg-[#E8934E]",
+    "bg-[#0066FF] text-white font-semibold hover:bg-[#0052CC]",
   secondary:
-    "bg-[#2A2A2A] text-white border border-[#2A2A2A] hover:bg-[#252525]",
+    "bg-[#FFFFFF] text-[#374151] border border-[#CBD5E1] hover:bg-[#F5F7FA] hover:border-[#0066FF]",
   ghost:
-    "text-[#F4A261] hover:bg-[rgba(244,162,97,0.12)]",
+    "text-[#F4A261] hover:bg-[rgba(0,102,255,0.12)]",
   danger:
     "bg-[rgba(239,68,68,0.2)] text-[#EF4444] hover:bg-[rgba(239,68,68,0.3)]",
 };

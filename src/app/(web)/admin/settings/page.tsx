@@ -8,13 +8,13 @@ export default function AdminSettingsPage() {
       <div className="space-y-4">
         <Card>
           <div className="flex items-center justify-between">
-            <div><h3 className="font-semibold">점검 모드</h3><p className="text-sm text-[#A0A0A0]">사이트를 점검 모드로 전환합니다.</p></div>
+            <div><h3 className="font-semibold">점검 모드</h3><p className="text-sm text-[#6B7280]">사이트를 점검 모드로 전환합니다.</p></div>
             <Button variant="danger">활성화</Button>
           </div>
         </Card>
         <Card>
           <div className="flex items-center justify-between">
-            <div><h3 className="font-semibold">캐시 초기화</h3><p className="text-sm text-[#A0A0A0]">서버 캐시를 초기화합니다.</p></div>
+            <div><h3 className="font-semibold">캐시 초기화</h3><p className="text-sm text-[#6B7280]">서버 캐시를 초기화합니다.</p></div>
             <Button variant="secondary">실행</Button>
           </div>
         </Card>

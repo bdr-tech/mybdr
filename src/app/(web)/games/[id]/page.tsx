@@ -37,7 +37,7 @@ const RECURRENCE_RULE_LABEL: Record<string, string> = {
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex justify-between gap-2">
-      <span className="text-[#A0A0A0]">{label}</span>
+      <span className="text-[#6B7280]">{label}</span>
       <span className="text-right">{value}</span>
     </div>
   );
@@ -106,14 +106,14 @@ export default async function GameDetailPage({ params }: { params: Promise<{ id:
         {/* Uniform colors */}
         {(game.uniform_home_color || game.uniform_away_color) && (
           <div className="mt-4 flex items-center gap-4">
-            <span className="text-sm text-[#A0A0A0]">유니폼</span>
+            <span className="text-sm text-[#6B7280]">유니폼</span>
             <div className="flex items-center gap-2">
               <div
                 className="h-6 w-6 rounded-full border border-white/20"
                 style={{ backgroundColor: game.uniform_home_color ?? "#FF0000" }}
                 title="홈"
               />
-              <span className="text-xs text-[#A0A0A0]">홈</span>
+              <span className="text-xs text-[#6B7280]">홈</span>
             </div>
             <div className="flex items-center gap-2">
               <div
@@ -121,7 +121,7 @@ export default async function GameDetailPage({ params }: { params: Promise<{ id:
                 style={{ backgroundColor: game.uniform_away_color ?? "#0000FF" }}
                 title="어웨이"
               />
-              <span className="text-xs text-[#A0A0A0]">어웨이</span>
+              <span className="text-xs text-[#6B7280]">어웨이</span>
             </div>
           </div>
         )}
@@ -129,7 +129,7 @@ export default async function GameDetailPage({ params }: { params: Promise<{ id:
         {/* Recurring badge */}
         {game.is_recurring && (
           <div className="mt-3 flex items-center gap-2">
-            <span className="text-sm text-[#A0A0A0]">반복 경기</span>
+            <span className="text-sm text-[#6B7280]">반복 경기</span>
             <Badge variant="default">
               🔄 {RECURRENCE_RULE_LABEL[game.recurrence_rule ?? ""] ?? game.recurrence_rule}
             </Badge>
@@ -138,21 +138,21 @@ export default async function GameDetailPage({ params }: { params: Promise<{ id:
 
         {/* Description */}
         {game.description && (
-          <p className="mt-4 text-sm text-[#A0A0A0]">{game.description}</p>
+          <p className="mt-4 text-sm text-[#6B7280]">{game.description}</p>
         )}
 
         {/* Requirements */}
         {game.requirements && (
-          <div className="mt-4 rounded-[12px] bg-[#252525] px-4 py-3">
-            <p className="mb-1 text-xs text-[#A0A0A0]">참가 조건</p>
+          <div className="mt-4 rounded-[12px] bg-[#EEF2FF] px-4 py-3">
+            <p className="mb-1 text-xs text-[#6B7280]">참가 조건</p>
             <p className="text-sm">{game.requirements}</p>
           </div>
         )}
 
         {/* Notes */}
         {game.notes && (
-          <div className="mt-3 rounded-[12px] bg-[#252525] px-4 py-3">
-            <p className="mb-1 text-xs text-[#A0A0A0]">비고</p>
+          <div className="mt-3 rounded-[12px] bg-[#EEF2FF] px-4 py-3">
+            <p className="mb-1 text-xs text-[#6B7280]">비고</p>
             <p className="text-sm">{game.notes}</p>
           </div>
         )}
@@ -172,7 +172,7 @@ export default async function GameDetailPage({ params }: { params: Promise<{ id:
             {applications.map((a) => (
               <div
                 key={a.id.toString()}
-                className="flex items-center justify-between rounded-[12px] bg-[#252525] px-4 py-2"
+                className="flex items-center justify-between rounded-[12px] bg-[#EEF2FF] px-4 py-2"
               >
                 <span className="text-sm">{a.users?.nickname ?? "익명"}</span>
                 <Badge
@@ -186,7 +186,7 @@ export default async function GameDetailPage({ params }: { params: Promise<{ id:
             ))}
           </div>
         ) : (
-          <p className="text-sm text-[#A0A0A0]">아직 참가 신청이 없습니다.</p>
+          <p className="text-sm text-[#6B7280]">아직 참가 신청이 없습니다.</p>
         )}
       </Card>
     </div>

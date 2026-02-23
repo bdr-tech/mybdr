@@ -60,7 +60,7 @@ export default async function TeamsPage({
         <h1 className="text-2xl font-bold">팀</h1>
         <Link
           href="/teams/new"
-          className="rounded-full bg-[#F4A261] px-4 py-2 text-sm font-semibold text-[#0A0A0A] hover:bg-[#E8934E] transition-colors"
+          className="rounded-full bg-[#0066FF] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0052CC] transition-colors"
         >
           팀 만들기
         </Link>
@@ -73,15 +73,15 @@ export default async function TeamsPage({
 
       {/* 결과 카운트 */}
       {(q || (city && city !== "all")) && (
-        <p className="mb-3 text-sm text-[#666666]">
-          검색 결과 <span className="text-white">{teams.length}개</span>
+        <p className="mb-3 text-sm text-[#9CA3AF]">
+          검색 결과 <span className="text-[#111827]">{teams.length}개</span>
         </p>
       )}
 
       {/* 게시판 리스트 */}
-      <div className="overflow-hidden rounded-[16px] border border-[#2A2A2A] bg-[#1A1A1A]">
+      <div className="overflow-hidden rounded-[16px] border border-[#E8ECF0] bg-[#FFFFFF]">
         {/* 헤더 행 */}
-        <div className="grid grid-cols-[1fr_auto] items-center border-b border-[#2A2A2A] bg-[#161616] px-4 py-2.5 text-xs text-[#555555] sm:grid-cols-[auto_1fr_auto_auto_auto]">
+        <div className="grid grid-cols-[1fr_auto] items-center border-b border-[#E8ECF0] bg-[#161616] px-4 py-2.5 text-xs text-[#6B7280] sm:grid-cols-[auto_1fr_auto_auto_auto]">
           <span className="hidden sm:block w-5" />
           <span>팀명</span>
           <span className="hidden sm:block w-20 text-center">전적</span>
@@ -92,7 +92,7 @@ export default async function TeamsPage({
         {teams.length === 0 ? (
           <div className="py-16 text-center">
             <div className="mb-2 text-3xl">🏅</div>
-            <p className="text-sm text-[#A0A0A0]">
+            <p className="text-sm text-[#6B7280]">
               {q || city ? "조건에 맞는 팀이 없습니다." : "등록된 팀이 없습니다."}
             </p>
           </div>
@@ -108,13 +108,13 @@ export default async function TeamsPage({
             return (
               <Link key={team.id.toString()} href={`/teams/${team.id}`}>
                 <div
-                  className={`grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-[#222222] sm:grid-cols-[auto_1fr_auto_auto_auto] ${
+                  className={`grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-[#F5F5F5] sm:grid-cols-[auto_1fr_auto_auto_auto] ${
                     idx !== 0 ? "border-t border-[#242424]" : ""
                   }`}
                 >
                   {/* 컬러 점 */}
                   <div
-                    className="hidden sm:flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                    className="hidden sm:flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-[#111827]"
                     style={{ backgroundColor: `${accent}55` }}
                   >
                     {team.name.charAt(0).toUpperCase()}
@@ -125,32 +125,32 @@ export default async function TeamsPage({
                     <div className="flex items-center gap-2">
                       {/* 모바일용 컬러 점 */}
                       <div
-                        className="sm:hidden flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                        className="sm:hidden flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-[#111827]"
                         style={{ backgroundColor: `${accent}55` }}
                       >
                         {team.name.charAt(0).toUpperCase()}
                       </div>
-                      <span className="truncate font-medium text-white">{team.name}</span>
+                      <span className="truncate font-medium text-[#111827]">{team.name}</span>
                     </div>
                     {location && (
-                      <span className="text-xs text-[#666666]">{location}</span>
+                      <span className="text-xs text-[#9CA3AF]">{location}</span>
                     )}
                   </div>
 
                   {/* 전적 */}
                   <div className="hidden sm:flex w-20 items-center justify-center">
                     {hasRecord ? (
-                      <span className="text-sm text-[#A0A0A0]">
-                        <span className="font-medium text-white">{wins}</span>승{" "}
-                        <span className="font-medium text-[#A0A0A0]">{losses}</span>패
+                      <span className="text-sm text-[#6B7280]">
+                        <span className="font-medium text-[#111827]">{wins}</span>승{" "}
+                        <span className="font-medium text-[#6B7280]">{losses}</span>패
                       </span>
                     ) : (
-                      <span className="text-xs text-[#444444]">-</span>
+                      <span className="text-xs text-[#94A3B8]">-</span>
                     )}
                   </div>
 
                   {/* 멤버 */}
-                  <div className="hidden sm:flex w-16 items-center justify-center text-sm text-[#A0A0A0]">
+                  <div className="hidden sm:flex w-16 items-center justify-center text-sm text-[#6B7280]">
                     👥 {memberCount}
                   </div>
 
@@ -160,12 +160,12 @@ export default async function TeamsPage({
                       <Badge variant="success">모집중</Badge>
                     )}
                     {(team.tournaments_count ?? 0) > 0 && (
-                      <span className="hidden sm:inline text-[10px] text-[#555555]">
+                      <span className="hidden sm:inline text-[10px] text-[#6B7280]">
                         대회 {team.tournaments_count}
                       </span>
                     )}
                     {/* 모바일: 멤버 수 */}
-                    <span className="sm:hidden text-xs text-[#555555]">
+                    <span className="sm:hidden text-xs text-[#6B7280]">
                       {memberCount}명
                     </span>
                   </div>
@@ -178,7 +178,7 @@ export default async function TeamsPage({
 
       {/* 총 카운트 */}
       {teams.length > 0 && (
-        <p className="mt-3 text-right text-xs text-[#444444]">총 {teams.length}개 팀</p>
+        <p className="mt-3 text-right text-xs text-[#94A3B8]">총 {teams.length}개 팀</p>
       )}
     </div>
   );

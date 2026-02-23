@@ -53,7 +53,7 @@ export function Header() {
   return (
     <>
       {/* Top Navbar */}
-      <header className="sticky top-0 z-50 border-b border-[#2A2A2A] bg-[#0A0A0A]/95 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-[#E8ECF0] bg-[#FFFFFF]/95 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-1.5">
@@ -68,8 +68,8 @@ export function Header() {
                 href={item.href}
                 className={`rounded-full px-4 py-2 text-sm transition-colors ${
                   isActive(item.href)
-                    ? "bg-[rgba(244,162,97,0.12)] font-medium text-[#F4A261]"
-                    : "text-[#A0A0A0] hover:text-white"
+                    ? "bg-[rgba(0,102,255,0.12)] font-medium text-[#0066FF]"
+                    : "text-[#6B7280] hover:text-[#111827]"
                 }`}
               >
                 {item.label}
@@ -83,7 +83,7 @@ export function Header() {
               <>
                 <Link
                   href="/notifications"
-                  className="relative rounded-full p-2 text-[#A0A0A0] hover:bg-[#252525] hover:text-white"
+                  className="relative rounded-full p-2 text-[#6B7280] hover:bg-[#EEF2FF] hover:text-[#111827]"
                 >
                   🔔
                 </Link>
@@ -92,7 +92,7 @@ export function Header() {
             ) : (
               <Link
                 href="/login"
-                className="rounded-full bg-[#F4A261] px-4 py-2 text-sm font-semibold text-[#0A0A0A] hover:bg-[#E8934E]"
+                className="rounded-full bg-[#0066FF] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0052CC]"
               >
                 로그인
               </Link>
@@ -103,7 +103,7 @@ export function Header() {
 
       {/* Mobile Bottom Nav */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#2A2A2A] bg-[#1A1A1A] lg:hidden"
+        className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#E8ECF0] bg-[#FFFFFF] lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="grid grid-cols-5">
@@ -114,7 +114,7 @@ export function Header() {
               className={`flex flex-col items-center gap-0.5 py-2.5 text-[10px] transition-colors active:opacity-70 ${
                 isActive(item.href)
                   ? "text-[#F4A261]"
-                  : "text-[#666666]"
+                  : "text-[#9CA3AF]"
               }`}
             >
               <span className="text-lg">{item.icon}</span>
@@ -124,7 +124,7 @@ export function Header() {
           <button
             onClick={() => setMenuOpen(true)}
             className={`flex flex-col items-center gap-0.5 py-2.5 text-[10px] active:opacity-70 ${
-              menuOpen ? "text-[#F4A261]" : "text-[#666666]"
+              menuOpen ? "text-[#F4A261]" : "text-[#9CA3AF]"
             }`}
           >
             <span className="text-lg">☰</span>

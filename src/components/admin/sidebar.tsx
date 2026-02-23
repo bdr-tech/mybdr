@@ -20,7 +20,7 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[260px] flex-col border-r border-[#2A2A2A] bg-[#1A1A1A] p-4 lg:flex">
+    <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[260px] flex-col border-r border-[#E8ECF0] bg-[#FFFFFF] p-4 lg:flex">
       <Link href="/admin" className="mb-8 flex items-center gap-2 px-3">
         <span className="text-xl font-bold text-[#F4A261]">MyBDR</span>
         <span className="rounded-full bg-[rgba(239,68,68,0.2)] px-2 py-0.5 text-[10px] font-bold text-[#EF4444]">Admin</span>
@@ -34,7 +34,7 @@ export function AdminSidebar() {
               key={item.href}
               href={item.href}
               className={`flex items-center gap-3 rounded-[16px] px-4 py-3 text-sm transition-colors ${
-                isActive ? "bg-[rgba(244,162,97,0.12)] text-[#F4A261] font-medium" : "text-[#A0A0A0] hover:bg-[#252525] hover:text-white"
+                isActive ? "bg-[rgba(0,102,255,0.12)] text-[#0066FF] font-medium" : "text-[#6B7280] hover:bg-[#EEF2FF] hover:text-[#111827]"
               }`}
             >
               <span>{item.icon}</span>{item.label}
@@ -43,8 +43,8 @@ export function AdminSidebar() {
         })}
       </nav>
 
-      <div className="border-t border-[#2A2A2A] pt-4">
-        <Link href="/" className="flex items-center gap-3 rounded-[16px] px-4 py-3 text-sm text-[#A0A0A0] hover:bg-[#252525] hover:text-white">
+      <div className="border-t border-[#E8ECF0] pt-4">
+        <Link href="/" className="flex items-center gap-3 rounded-[16px] px-4 py-3 text-sm text-[#6B7280] hover:bg-[#EEF2FF] hover:text-[#111827]">
           ← 사이트로 돌아가기
         </Link>
       </div>

@@ -46,13 +46,13 @@ export default async function SitePage() {
             <Card key={m.id} className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <span className="font-semibold">{m.homeTeam?.team.name ?? "TBD"}</span>
-                <span className="rounded-full bg-[#252525] px-3 py-1 text-sm font-bold">
+                <span className="rounded-full bg-[#EEF2FF] px-3 py-1 text-sm font-bold">
                   {m.homeScore} : {m.awayScore}
                 </span>
                 <span className="font-semibold">{m.awayTeam?.team.name ?? "TBD"}</span>
               </div>
               <div className="flex items-center gap-2">
-                {m.roundName && <span className="text-xs text-[#666666]">{m.roundName}</span>}
+                {m.roundName && <span className="text-xs text-[#9CA3AF]">{m.roundName}</span>}
                 <Badge
                   variant={
                     m.status === "completed" ? "info" : m.status === "live" ? "error" : "default"
@@ -64,7 +64,7 @@ export default async function SitePage() {
             </Card>
           ))}
           {matches.length === 0 && (
-            <Card className="text-center text-[#A0A0A0]">경기 일정이 없습니다.</Card>
+            <Card className="text-center text-[#6B7280]">경기 일정이 없습니다.</Card>
           )}
         </div>
       </section>
@@ -73,7 +73,7 @@ export default async function SitePage() {
         <h2 className="mb-4 text-xl font-bold">순위</h2>
         <Card className="overflow-hidden p-0">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-[#2A2A2A] text-[#A0A0A0]">
+            <thead className="border-b border-[#E8ECF0] text-[#6B7280]">
               <tr>
                 <th className="px-5 py-3 font-medium">#</th>
                 <th className="px-5 py-3 font-medium">팀</th>
@@ -87,7 +87,7 @@ export default async function SitePage() {
                 const total = (t.wins ?? 0) + (t.losses ?? 0);
                 const winPct = total > 0 ? ((t.wins ?? 0) / total).toFixed(3) : ".000";
                 return (
-                  <tr key={t.id} className="border-b border-[#1F1F1F]">
+                  <tr key={t.id} className="border-b border-[#F1F5F9]">
                     <td className="px-5 py-3 font-bold text-[#F4A261]">{i + 1}</td>
                     <td className="px-5 py-3 font-medium">{t.team.name}</td>
                     <td className="px-5 py-3 text-center">{t.wins ?? 0}</td>
@@ -99,7 +99,7 @@ export default async function SitePage() {
             </tbody>
           </table>
           {teams.length === 0 && (
-            <div className="p-6 text-center text-[#A0A0A0]">참가 팀이 없습니다.</div>
+            <div className="p-6 text-center text-[#6B7280]">참가 팀이 없습니다.</div>
           )}
         </Card>
       </section>

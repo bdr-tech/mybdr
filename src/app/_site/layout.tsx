@@ -27,11 +27,11 @@ export default async function SiteLayout({
 
   if (!site.isPublished) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0A0A0A]">
-        <div className="rounded-[16px] bg-[#1A1A1A] p-12 text-center shadow-[0_4px_24px_rgba(0,0,0,0.3)]">
+      <div className="flex min-h-screen items-center justify-center bg-[#FFFFFF]">
+        <div className="rounded-[16px] bg-[#FFFFFF] p-12 text-center shadow-[0_4px_24px_rgba(0,0,0,0.08)]">
           <div className="mb-4 text-5xl">🏗️</div>
           <h1 className="mb-2 text-xl font-bold">{site.tournament.name}</h1>
-          <p className="text-[#A0A0A0]">사이트 준비 중입니다</p>
+          <p className="text-[#6B7280]">사이트 준비 중입니다</p>
         </div>
       </div>
     );
@@ -40,8 +40,8 @@ export default async function SiteLayout({
   const primaryColor = site.primaryColor ?? "#F4A261";
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
-      <header className="border-b border-[#2A2A2A] bg-[#1A1A1A]">
+    <div className="min-h-screen bg-[#FFFFFF]">
+      <header className="border-b border-[#E8ECF0] bg-[#FFFFFF]">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
           <div className="flex items-center gap-3">
             {site.logoUrl && (
@@ -51,12 +51,12 @@ export default async function SiteLayout({
               {site.site_name ?? site.tournament.name}
             </span>
           </div>
-          <nav className="flex gap-4 text-sm text-[#A0A0A0]">
-            <Link href="/" className="hover:text-white">홈</Link>
-            <Link href="/teams" className="hover:text-white">팀</Link>
-            <Link href="/schedule" className="hover:text-white">일정</Link>
-            <Link href="/results" className="hover:text-white">결과</Link>
-            <Link href="/registration" className="hover:text-white">참가신청</Link>
+          <nav className="flex gap-4 text-sm text-[#6B7280]">
+            <Link href="/" className="hover:text-[#111827]">홈</Link>
+            <Link href="/teams" className="hover:text-[#111827]">팀</Link>
+            <Link href="/schedule" className="hover:text-[#111827]">일정</Link>
+            <Link href="/results" className="hover:text-[#111827]">결과</Link>
+            <Link href="/registration" className="hover:text-[#111827]">참가신청</Link>
           </nav>
         </div>
       </header>
@@ -70,7 +70,7 @@ export default async function SiteLayout({
         <h1 className="text-3xl font-bold md:text-4xl" style={{ color: primaryColor }}>
           {site.tournament.name}
         </h1>
-        <p className="mt-2 text-[#A0A0A0]">
+        <p className="mt-2 text-[#6B7280]">
           {site.tournament.format}
           {site.tournament.startDate &&
             ` · ${site.tournament.startDate.toLocaleDateString("ko-KR")}`}

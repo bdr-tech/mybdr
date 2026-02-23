@@ -33,7 +33,7 @@ export default async function NotificationsPage() {
           {notifications.map((n) => (
             <Card
               key={n.id.toString()}
-              className={`transition-colors ${n.status === "unread" ? "border-l-2 border-[#F4A261]" : "opacity-70"}`}
+              className={`transition-colors ${n.status === "unread" ? "border-l-2 border-[#0066FF]" : "opacity-70"}`}
             >
               {n.action_url ? (
                 <Link href={n.action_url} className="block">
@@ -46,7 +46,7 @@ export default async function NotificationsPage() {
           ))}
         </div>
       ) : (
-        <Card className="py-12 text-center text-[#A0A0A0]">
+        <Card className="py-12 text-center text-[#6B7280]">
           <div className="mb-2 text-3xl">🔔</div>
           새로운 알림이 없습니다.
         </Card>
@@ -60,11 +60,11 @@ function NotificationItem({ n }: { n: { title: string; content: string | null; c
     <div>
       <div className="flex items-start justify-between gap-2">
         <p className="font-medium text-sm">{n.title}</p>
-        <span className="whitespace-nowrap text-xs text-[#666666]">
+        <span className="whitespace-nowrap text-xs text-[#9CA3AF]">
           {n.created_at.toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Seoul" })}
         </span>
       </div>
-      {n.content && <p className="mt-1 text-xs text-[#A0A0A0]">{n.content}</p>}
+      {n.content && <p className="mt-1 text-xs text-[#6B7280]">{n.content}</p>}
     </div>
   );
 }

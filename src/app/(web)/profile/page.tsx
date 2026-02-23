@@ -78,8 +78,8 @@ function EditModal({
   };
 
   const inputCls =
-    "w-full rounded-[16px] border-none bg-[#2A2A2A] px-4 py-3 text-white placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#F4A261]/50";
-  const labelCls = "mb-1 block text-sm text-[#A0A0A0]";
+    "w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50";
+  const labelCls = "mb-1 block text-sm text-[#6B7280]";
 
   return (
     <div
@@ -87,7 +87,7 @@ function EditModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-[20px] border border-[#2A2A2A] bg-[#1A1A1A] p-6"
+        className="w-full max-w-md rounded-[20px] border border-[#E8ECF0] bg-[#FFFFFF] p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="mb-5 text-lg font-bold">프로필 수정</h3>
@@ -180,7 +180,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center text-[#A0A0A0]">
+      <div className="flex min-h-[60vh] items-center justify-center text-[#6B7280]">
         <div className="text-center">
           <div className="mb-2 text-3xl">⏳</div>
           <p>로딩 중...</p>
@@ -193,8 +193,8 @@ export default function ProfilePage() {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
-          <p className="mb-4 text-[#A0A0A0]">로그인이 필요합니다.</p>
-          <Link href="/login" className="rounded-full bg-[#F4A261] px-6 py-2 text-sm font-semibold text-[#0A0A0A]">
+          <p className="mb-4 text-[#6B7280]">로그인이 필요합니다.</p>
+          <Link href="/login" className="rounded-full bg-[#0066FF] px-6 py-2 text-sm font-semibold text-white">
             로그인
           </Link>
         </div>
@@ -208,14 +208,14 @@ export default function ProfilePage() {
     <div>
       <Card className="mb-6">
         <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-[#F4A261] text-2xl font-bold text-[#0A0A0A]">
+          <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-[#0066FF] text-2xl font-bold text-white">
             {initial}
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="truncate text-xl font-bold">{user.nickname ?? "사용자"}</h1>
-            <p className="truncate text-sm text-[#A0A0A0]">{user.email}</p>
+            <p className="truncate text-sm text-[#6B7280]">{user.email}</p>
             {user.position && (
-              <span className="mt-1 inline-block rounded-full bg-[rgba(244,162,97,0.12)] px-2 py-0.5 text-xs text-[#F4A261]">
+              <span className="mt-1 inline-block rounded-full bg-[rgba(0,102,255,0.12)] px-2 py-0.5 text-xs text-[#F4A261]">
                 {user.position}
               </span>
             )}
@@ -237,8 +237,8 @@ export default function ProfilePage() {
             onClick={() => setActiveTab(tab.id)}
             className={`whitespace-nowrap rounded-full px-4 py-2 text-sm transition-colors ${
               activeTab === tab.id
-                ? "bg-[rgba(244,162,97,0.12)] font-medium text-[#F4A261]"
-                : "text-[#A0A0A0] hover:text-white"
+                ? "bg-[rgba(0,102,255,0.12)] font-medium text-[#F4A261]"
+                : "text-[#6B7280] hover:text-[#111827]"
             }`}
           >
             {tab.label}
@@ -250,23 +250,23 @@ export default function ProfilePage() {
         {activeTab === "info" && (
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-[#A0A0A0]">닉네임</span>
+              <span className="text-[#6B7280]">닉네임</span>
               <span>{user.nickname ?? "-"}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#A0A0A0]">포지션</span>
+              <span className="text-[#6B7280]">포지션</span>
               <span>{user.position ?? "-"}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#A0A0A0]">키</span>
+              <span className="text-[#6B7280]">키</span>
               <span>{user.height ? `${user.height}cm` : "-"}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#A0A0A0]">지역</span>
+              <span className="text-[#6B7280]">지역</span>
               <span>{user.city ?? "-"}</span>
             </div>
             {user.bio && (
-              <div className="mt-2 rounded-[12px] bg-[#252525] px-4 py-3 text-sm text-[#A0A0A0]">
+              <div className="mt-2 rounded-[12px] bg-[#EEF2FF] px-4 py-3 text-sm text-[#6B7280]">
                 {user.bio}
               </div>
             )}
@@ -279,10 +279,10 @@ export default function ProfilePage() {
                 <Link
                   key={g.id}
                   href={`/games/${g.id}`}
-                  className="flex items-center justify-between rounded-[12px] bg-[#252525] px-4 py-2 hover:bg-[#2A2A2A]"
+                  className="flex items-center justify-between rounded-[12px] bg-[#EEF2FF] px-4 py-2 hover:bg-[#E8ECF0]"
                 >
                   <span className="text-sm">{g.title ?? "경기"}</span>
-                  <span className="text-xs text-[#A0A0A0]">
+                  <span className="text-xs text-[#6B7280]">
                     {g.scheduled_at
                       ? new Date(g.scheduled_at).toLocaleDateString("ko-KR")
                       : "-"}
@@ -291,12 +291,12 @@ export default function ProfilePage() {
               ))}
             </div>
           ) : (
-            <p className="text-[#A0A0A0]">참여한 경기 이력이 없습니다.</p>
+            <p className="text-[#6B7280]">참여한 경기 이력이 없습니다.</p>
           ))}
         {activeTab === "stats" && (
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-[#A0A0A0]">총 참가 경기</span>
+              <span className="text-[#6B7280]">총 참가 경기</span>
               <span>{user.total_games_participated ?? 0}회</span>
             </div>
           </div>
@@ -308,7 +308,7 @@ export default function ProfilePage() {
                 <Link
                   key={t.id}
                   href={`/teams/${t.id}`}
-                  className="flex items-center justify-between rounded-[12px] bg-[#252525] px-4 py-2 hover:bg-[#2A2A2A]"
+                  className="flex items-center justify-between rounded-[12px] bg-[#EEF2FF] px-4 py-2 hover:bg-[#E8ECF0]"
                 >
                   <span className="text-sm font-medium">{t.name}</span>
                   <Badge>{t.role === "captain" ? "주장" : "멤버"}</Badge>
@@ -316,7 +316,7 @@ export default function ProfilePage() {
               ))}
             </div>
           ) : (
-            <p className="text-[#A0A0A0]">소속 팀이 없습니다.</p>
+            <p className="text-[#6B7280]">소속 팀이 없습니다.</p>
           ))}
         {activeTab === "tournaments" &&
           (tournaments.length > 0 ? (
@@ -325,15 +325,15 @@ export default function ProfilePage() {
                 <Link
                   key={t.id}
                   href={`/tournaments/${t.id}`}
-                  className="flex items-center justify-between rounded-[12px] bg-[#252525] px-4 py-2 hover:bg-[#2A2A2A]"
+                  className="flex items-center justify-between rounded-[12px] bg-[#EEF2FF] px-4 py-2 hover:bg-[#E8ECF0]"
                 >
                   <span className="text-sm">{t.name}</span>
-                  <span className="text-xs text-[#A0A0A0]">{t.status ?? "-"}</span>
+                  <span className="text-xs text-[#6B7280]">{t.status ?? "-"}</span>
                 </Link>
               ))}
             </div>
           ) : (
-            <p className="text-[#A0A0A0]">참가한 대회가 없습니다.</p>
+            <p className="text-[#6B7280]">참가한 대회가 없습니다.</p>
           ))}
       </Card>
 

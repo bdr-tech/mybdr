@@ -29,12 +29,12 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
           {post.category && <Badge>{post.category}</Badge>}
           <h1 className="text-xl font-bold">{post.title}</h1>
         </div>
-        <div className="mb-4 flex items-center gap-3 text-xs text-[#666666]">
+        <div className="mb-4 flex items-center gap-3 text-xs text-[#9CA3AF]">
           <span>{post.users?.nickname ?? "익명"}</span>
           <span>{post.created_at.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</span>
           <span>조회 {post.view_count ?? 0}</span>
         </div>
-        <div className="prose prose-invert max-w-none text-sm leading-relaxed text-[#A0A0A0]">
+        <div className="prose prose-invert max-w-none text-sm leading-relaxed text-[#6B7280]">
           {post.content}
         </div>
       </Card>
@@ -43,12 +43,12 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
         <h2 className="mb-4 text-lg font-semibold">댓글 {comments.length}개</h2>
         <div className="space-y-3">
           {comments.map((c) => (
-            <div key={c.id.toString()} className="rounded-[12px] bg-[#252525] p-3">
-              <div className="mb-1 flex items-center gap-2 text-xs text-[#666666]">
-                <span className="font-medium text-white">{c.users?.nickname ?? "익명"}</span>
+            <div key={c.id.toString()} className="rounded-[12px] bg-[#EEF2FF] p-3">
+              <div className="mb-1 flex items-center gap-2 text-xs text-[#9CA3AF]">
+                <span className="font-medium text-[#111827]">{c.users?.nickname ?? "익명"}</span>
                 <span>{c.created_at.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</span>
               </div>
-              <p className="text-sm text-[#A0A0A0]">{c.content}</p>
+              <p className="text-sm text-[#6B7280]">{c.content}</p>
             </div>
           ))}
         </div>

@@ -1,23 +1,24 @@
 @import "tailwindcss";
 
 @theme {
-  /* Dark Mode Colors (참조 이미지 기반) */
-  --color-background: #0A0A0A;
-  --color-card: #1A1A1A;
-  --color-elevated: #252525;
-  --color-surface: #2A2A2A;
+  /* Light Mode Colors (Toss Blue + Orange Accent) */
+  --color-background: #F5F7FA;
+  --color-card: #FFFFFF;
+  --color-elevated: #EEF2FF;
+  --color-surface: #E8ECF0;
 
-  /* Warm Orange Accent */
-  --color-primary: #F4A261;
-  --color-primary-hover: #E8934E;
-  --color-primary-light: rgba(244, 162, 97, 0.12);
-  --color-accent-coral: #E76F51;
+  /* Toss Blue Primary + Orange Accent */
+  --color-primary: #0066FF;
+  --color-primary-hover: #0052CC;
+  --color-primary-light: rgba(0, 102, 255, 0.08);
+  --color-accent: #F4A261;
+  --color-accent-coral: #F4A261;
 
   /* Text */
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #A0A0A0;
-  --color-text-muted: #666666;
-  --color-text-on-primary: #0A0A0A;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-text-muted: #9CA3AF;
+  --color-text-on-primary: #FFFFFF;
 
   /* Status */
   --color-success: #4ADE80;
@@ -26,8 +27,8 @@
   --color-info: #60A5FA;
 
   /* Border */
-  --color-border: #2A2A2A;
-  --color-border-subtle: #1F1F1F;
+  --color-border: #E8ECF0;
+  --color-border-subtle: #F1F5F9;
 
   /* Border Radius */
   --radius-card: 16px;
@@ -35,8 +36,8 @@
   --radius-pill: 9999px;
 
   /* Shadows */
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3);
-  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.08);
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.12);
 
   /* Font */
   --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;

@@ -32,13 +32,13 @@ function ParticipantBar({ current, max }: { current: number; max: number }) {
   const color = pct >= 100 ? "#EF4444" : pct >= 80 ? "#FBBF24" : "#4ADE80";
   return (
     <div className="flex items-center gap-2">
-      <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-[#2A2A2A]">
+      <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-[#E8ECF0]">
         <div
           className="absolute left-0 top-0 h-full rounded-full transition-all"
           style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </div>
-      <span className="flex-shrink-0 text-xs text-[#A0A0A0]">
+      <span className="flex-shrink-0 text-xs text-[#6B7280]">
         {current}/{max}명
       </span>
     </div>
@@ -104,13 +104,13 @@ export default async function GamesPage({
         <div className="flex gap-2">
           <Link
             href="/games/my-games"
-            className="rounded-full border border-[#2A2A2A] px-4 py-2 text-sm text-[#A0A0A0] hover:bg-[#252525] hover:text-white transition-colors"
+            className="rounded-full border border-[#E8ECF0] px-4 py-2 text-sm text-[#6B7280] hover:bg-[#EEF2FF] hover:text-[#111827] transition-colors"
           >
             내 경기
           </Link>
           <Link
             href="/games/new"
-            className="rounded-full bg-[#F4A261] px-4 py-2 text-sm font-semibold text-[#0A0A0A] hover:bg-[#E8934E] transition-colors"
+            className="rounded-full bg-[#0066FF] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0052CC] transition-colors"
           >
             경기 만들기
           </Link>
@@ -124,8 +124,8 @@ export default async function GamesPage({
 
       {/* 결과 카운트 */}
       {(q || (type && type !== "all") || (city && city !== "all") || (date && date !== "all")) && (
-        <p className="mb-4 text-sm text-[#666666]">
-          검색 결과 <span className="text-white">{games.length}개</span>
+        <p className="mb-4 text-sm text-[#9CA3AF]">
+          검색 결과 <span className="text-[#111827]">{games.length}개</span>
         </p>
       )}
 
@@ -141,7 +141,7 @@ export default async function GamesPage({
           return (
             <Link key={g.id.toString()} href={`/games/${g.uuid ?? g.id}`}>
               <div
-                className="group relative overflow-hidden rounded-[16px] bg-[#1A1A1A] p-5 transition-all hover:bg-[#222222] hover:-translate-y-0.5 hover:shadow-lg"
+                className="group relative overflow-hidden rounded-[16px] bg-[#FFFFFF] p-5 transition-all hover:bg-[#F5F5F5] hover:-translate-y-0.5 hover:shadow-lg"
                 style={{ borderLeft: `3px solid ${typeInfo.accent}` }}
               >
                 {/* 유형 + 상태 */}
@@ -156,20 +156,20 @@ export default async function GamesPage({
                 </div>
 
                 {/* 제목 */}
-                <h3 className="mb-3 font-semibold leading-snug text-white line-clamp-2">
+                <h3 className="mb-3 font-semibold leading-snug text-[#111827] line-clamp-2">
                   {g.title}
                 </h3>
 
                 {/* 장소 + 날짜 */}
                 <div className="mb-3 space-y-1">
                   {location && (
-                    <div className="flex items-center gap-1.5 text-xs text-[#A0A0A0]">
+                    <div className="flex items-center gap-1.5 text-xs text-[#6B7280]">
                       <span>📍</span>
                       <span className="truncate">{location}</span>
                     </div>
                   )}
                   {g.scheduled_at && (
-                    <div className="flex items-center gap-1.5 text-xs text-[#A0A0A0]">
+                    <div className="flex items-center gap-1.5 text-xs text-[#6B7280]">
                       <span>📅</span>
                       <span>
                         {g.scheduled_at.toLocaleDateString("ko-KR", {
@@ -185,20 +185,20 @@ export default async function GamesPage({
                 </div>
 
                 {/* 구분선 */}
-                <div className="mb-3 h-px bg-[#2A2A2A]" />
+                <div className="mb-3 h-px bg-[#E8ECF0]" />
 
                 {/* 참가 현황 */}
                 {max > 0 && <ParticipantBar current={cur} max={max} />}
 
                 {/* 참가비 + 기술수준 */}
-                <div className="mt-2 flex items-center justify-between text-xs text-[#666666]">
+                <div className="mt-2 flex items-center justify-between text-xs text-[#9CA3AF]">
                   <span>
                     {g.fee_per_person && g.fee_per_person > 0
                       ? `💰 ${Number(g.fee_per_person).toLocaleString()}원`
                       : "무료"}
                   </span>
                   {g.skill_level && g.skill_level !== "all" && (
-                    <span className="rounded-full bg-[#252525] px-2 py-0.5 text-[#A0A0A0]">
+                    <span className="rounded-full bg-[#EEF2FF] px-2 py-0.5 text-[#6B7280]">
                       {SKILL_LABEL[g.skill_level] ?? g.skill_level}
                     </span>
                   )}
@@ -211,7 +211,7 @@ export default async function GamesPage({
         {games.length === 0 && (
           <div className="col-span-full py-20 text-center">
             <div className="mb-3 text-4xl">🏀</div>
-            <p className="text-[#A0A0A0]">
+            <p className="text-[#6B7280]">
               {q || type || city || date ? "조건에 맞는 경기가 없습니다." : "등록된 경기가 없습니다."}
             </p>
           </div>

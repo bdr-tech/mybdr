@@ -22,7 +22,7 @@ export default async function TournamentAdminDashboard() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">대회 관리 대시보드</h1>
-        <Link href="/tournament-admin/tournaments/new/wizard" className="rounded-full bg-[#F4A261] px-4 py-2 text-sm font-semibold text-[#0A0A0A]">새 대회 만들기</Link>
+        <Link href="/tournament-admin/tournaments/new/wizard" className="rounded-full bg-[#0066FF] px-4 py-2 text-sm font-semibold text-white">새 대회 만들기</Link>
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -34,15 +34,15 @@ export default async function TournamentAdminDashboard() {
       <Card>
         <h2 className="mb-4 text-lg font-semibold">빠른 시작</h2>
         <div className="grid gap-3 sm:grid-cols-3">
-          <Link href="/tournament-admin/tournaments/new/wizard" className="rounded-[16px] bg-[#252525] p-4 text-center hover:bg-[#2A2A2A] transition-colors">
+          <Link href="/tournament-admin/tournaments/new/wizard" className="rounded-[16px] bg-[#EEF2FF] p-4 text-center hover:bg-[#E8ECF0] transition-colors">
             <div className="mb-2 text-2xl">🏆</div>
             <p className="text-sm font-medium">대회 만들기</p>
           </Link>
-          <Link href="/tournament-admin/tournaments" className="rounded-[16px] bg-[#252525] p-4 text-center hover:bg-[#2A2A2A] transition-colors">
+          <Link href="/tournament-admin/tournaments" className="rounded-[16px] bg-[#EEF2FF] p-4 text-center hover:bg-[#E8ECF0] transition-colors">
             <div className="mb-2 text-2xl">📋</div>
             <p className="text-sm font-medium">내 대회 목록</p>
           </Link>
-          <Link href="/tournament-admin/templates" className="rounded-[16px] bg-[#252525] p-4 text-center hover:bg-[#2A2A2A] transition-colors">
+          <Link href="/tournament-admin/templates" className="rounded-[16px] bg-[#EEF2FF] p-4 text-center hover:bg-[#E8ECF0] transition-colors">
             <div className="mb-2 text-2xl">🎨</div>
             <p className="text-sm font-medium">템플릿 둘러보기</p>
           </Link>

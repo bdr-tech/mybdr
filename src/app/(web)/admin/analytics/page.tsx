@@ -77,15 +77,15 @@ export default async function AdminAnalyticsPage() {
       {/* 누적 통계 */}
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <Card>
-          <p className="text-xs text-[#A0A0A0]">전체 유저</p>
+          <p className="text-xs text-[#6B7280]">전체 유저</p>
           <p className="mt-1 text-2xl font-bold">{data.totalUsers.toLocaleString()}</p>
         </Card>
         <Card>
-          <p className="text-xs text-[#A0A0A0]">전체 대회</p>
+          <p className="text-xs text-[#6B7280]">전체 대회</p>
           <p className="mt-1 text-2xl font-bold">{data.totalTournaments.toLocaleString()}</p>
         </Card>
         <Card>
-          <p className="text-xs text-[#A0A0A0]">전체 경기</p>
+          <p className="text-xs text-[#6B7280]">전체 경기</p>
           <p className="mt-1 text-2xl font-bold">{data.totalGames.toLocaleString()}</p>
         </Card>
       </div>
@@ -102,11 +102,11 @@ export default async function AdminAnalyticsPage() {
                   <span className="text-xs font-semibold text-[#F4A261]">{m.count}</span>
                   <div className="flex w-full flex-col justify-end" style={{ height: "140px" }}>
                     <div
-                      className="w-full rounded-t-[6px] bg-[#F4A261] transition-all"
+                      className="w-full rounded-t-[6px] bg-[#0066FF] transition-all"
                       style={{ height: `${Math.max(heightPct, 4)}%` }}
                     />
                   </div>
-                  <span className="text-[10px] text-[#666666]">
+                  <span className="text-[10px] text-[#9CA3AF]">
                     {m.month.slice(5)}월
                   </span>
                 </div>
@@ -114,7 +114,7 @@ export default async function AdminAnalyticsPage() {
             })}
           </div>
         ) : (
-          <div className="flex h-48 items-center justify-center text-[#A0A0A0]">
+          <div className="flex h-48 items-center justify-center text-[#6B7280]">
             데이터가 없습니다.
           </div>
         )}

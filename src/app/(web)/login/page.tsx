@@ -37,7 +37,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-bold text-[#F4A261]">BDR</h1>
-          <p className="mt-1 text-sm text-[#A0A0A0]">농구 토너먼트 플랫폼</p>
+          <p className="mt-1 text-sm text-[#6B7280]">농구 토너먼트 플랫폼</p>
         </div>
 
         {/* Google OAuth 에러 */}
@@ -55,7 +55,7 @@ export default function LoginPage() {
         {/* Google 로그인 */}
         <a
           href="/api/auth/google"
-          className="mb-4 flex w-full items-center justify-center gap-3 rounded-[16px] border border-[#333333] bg-white px-4 py-3 text-sm font-medium text-[#1A1A1A] transition-opacity hover:opacity-90 active:opacity-80"
+          className="mb-4 flex w-full items-center justify-center gap-3 rounded-[16px] border border-[#CBD5E1] bg-white px-4 py-3 text-sm font-medium text-[#374151] transition-opacity hover:opacity-90 active:opacity-80"
         >
           <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
             <path
@@ -80,30 +80,30 @@ export default function LoginPage() {
 
         {/* 구분선 */}
         <div className="mb-4 flex items-center gap-3">
-          <div className="h-px flex-1 bg-[#333333]" />
-          <span className="text-xs text-[#666666]">또는</span>
-          <div className="h-px flex-1 bg-[#333333]" />
+          <div className="h-px flex-1 bg-[#CBD5E1]" />
+          <span className="text-xs text-[#9CA3AF]">또는</span>
+          <div className="h-px flex-1 bg-[#CBD5E1]" />
         </div>
 
         {/* 이메일/비밀번호 로그인 */}
         <form action={formAction} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm text-[#A0A0A0]">이메일</label>
+            <label className="mb-1 block text-sm text-[#6B7280]">이메일</label>
             <input
               name="email"
               type="email"
               required
-              className="w-full rounded-[16px] border-none bg-[#2A2A2A] px-4 py-3 text-white placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#F4A261]/50"
+              className="w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
               placeholder="email@example.com"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm text-[#A0A0A0]">비밀번호</label>
+            <label className="mb-1 block text-sm text-[#6B7280]">비밀번호</label>
             <input
               name="password"
               type="password"
               required
-              className="w-full rounded-[16px] border-none bg-[#2A2A2A] px-4 py-3 text-white placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#F4A261]/50"
+              className="w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
               placeholder="비밀번호 입력"
             />
           </div>
@@ -112,7 +112,7 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-[#A0A0A0]">
+        <p className="mt-6 text-center text-sm text-[#6B7280]">
           계정이 없으신가요?{" "}
           <Link href="/signup" className="text-[#F4A261] hover:underline">
             회원가입

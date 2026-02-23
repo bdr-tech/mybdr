@@ -11,19 +11,19 @@ export default function PaymentSuccessPage({
         <span className="text-4xl">✅</span>
       </div>
       <h1 className="mb-2 text-2xl font-bold">결제 완료!</h1>
-      <p className="mb-8 text-[#A0A0A0]">
+      <p className="mb-8 text-[#6B7280]">
         구독이 활성화되었습니다. 이제 모든 기능을 이용하실 수 있습니다.
       </p>
       <div className="flex flex-col gap-3 sm:flex-row">
         <Link
           href="/"
-          className="rounded-[12px] bg-[#F4A261] px-6 py-3 font-semibold text-black transition-colors hover:bg-[#E76F51]"
+          className="rounded-[12px] bg-[#0066FF] px-6 py-3 font-semibold text-black transition-colors hover:bg-[#0052CC]"
         >
           홈으로
         </Link>
         <Link
           href="/pricing"
-          className="rounded-[12px] border border-[#2A2A2A] px-6 py-3 text-sm text-[#A0A0A0] transition-colors hover:border-[#F4A261]/50 hover:text-white"
+          className="rounded-[12px] border border-[#E8ECF0] px-6 py-3 text-sm text-[#6B7280] transition-colors hover:border-[#0066FF]/50 hover:text-[#111827]"
         >
           요금제 목록
         </Link>

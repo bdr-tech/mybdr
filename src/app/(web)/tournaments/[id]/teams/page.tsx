@@ -25,14 +25,14 @@ export default async function TournamentTeamsPage({ params }: { params: Promise<
               </div>
               <div>
                 <h3 className="font-semibold">{t.team.name}</h3>
-                <p className="text-xs text-[#666666]">{t.groupName && `${t.groupName} · `}{t.players.length}명</p>
+                <p className="text-xs text-[#9CA3AF]">{t.groupName && `${t.groupName} · `}{t.players.length}명</p>
               </div>
             </div>
             <div className="space-y-1">
               {t.players.map((p) => (
                 <div key={p.id.toString()} className="flex justify-between text-sm">
-                  <span className="text-[#A0A0A0]">#{p.jerseyNumber ?? "-"} {p.users?.nickname ?? "선수"}</span>
-                  <span className="text-xs text-[#666666]">{p.position ?? ""}</span>
+                  <span className="text-[#6B7280]">#{p.jerseyNumber ?? "-"} {p.users?.nickname ?? "선수"}</span>
+                  <span className="text-xs text-[#9CA3AF]">{p.position ?? ""}</span>
                 </div>
               ))}
             </div>

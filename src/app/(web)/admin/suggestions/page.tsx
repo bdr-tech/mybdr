@@ -20,10 +20,10 @@ export default async function AdminSuggestionsPage() {
               <h3 className="font-semibold">{s.title}</h3>
               <Badge>{s.status ?? "open"}</Badge>
             </div>
-            <p className="mt-1 text-sm text-[#A0A0A0]">{s.content}</p>
+            <p className="mt-1 text-sm text-[#6B7280]">{s.content}</p>
           </Card>
         ))}
-        {suggestions.length === 0 && <Card className="text-center py-12 text-[#A0A0A0]">건의사항이 없습니다.</Card>}
+        {suggestions.length === 0 && <Card className="text-center py-12 text-[#6B7280]">건의사항이 없습니다.</Card>}
       </div>
     </div>
   );

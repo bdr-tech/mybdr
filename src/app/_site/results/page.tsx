@@ -35,7 +35,7 @@ export default async function SiteResultsPage() {
       <h2 className="mb-6 text-2xl font-bold">경기 결과</h2>
 
       {completed.length === 0 ? (
-        <Card className="py-12 text-center text-[#A0A0A0]">
+        <Card className="py-12 text-center text-[#6B7280]">
           <div className="mb-2 text-3xl">📋</div>
           아직 종료된 경기가 없습니다.
         </Card>
@@ -47,7 +47,7 @@ export default async function SiteResultsPage() {
 
             return (
               <div key={roundNum}>
-                <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#A0A0A0]">
+                <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#6B7280]">
                   {label}
                 </h3>
                 <div className="space-y-2">
@@ -71,7 +71,7 @@ export default async function SiteResultsPage() {
                                 />
                               )}
                               <span
-                                className={`font-semibold ${homeWin ? "text-[#F4A261]" : "text-white"}`}
+                                className={`font-semibold ${homeWin ? "text-[#F4A261]" : "text-[#111827]"}`}
                               >
                                 {m.homeTeam?.team.name ?? "TBD"}
                               </span>
@@ -85,7 +85,7 @@ export default async function SiteResultsPage() {
                             >
                               {m.homeScore}
                             </span>
-                            <span className="text-[#666666]">:</span>
+                            <span className="text-[#9CA3AF]">:</span>
                             <span
                               className={`min-w-[2rem] text-center text-2xl font-bold ${awayWin ? "text-[#F4A261]" : ""}`}
                             >
@@ -103,7 +103,7 @@ export default async function SiteResultsPage() {
                                 />
                               )}
                               <span
-                                className={`font-semibold ${awayWin ? "text-[#F4A261]" : "text-white"}`}
+                                className={`font-semibold ${awayWin ? "text-[#F4A261]" : "text-[#111827]"}`}
                               >
                                 {m.awayTeam?.team.name ?? "TBD"}
                               </span>
@@ -115,7 +115,7 @@ export default async function SiteResultsPage() {
                         </div>
 
                         {m.scheduledAt && (
-                          <p className="mt-1 text-center text-xs text-[#666666]">
+                          <p className="mt-1 text-center text-xs text-[#9CA3AF]">
                             {m.scheduledAt.toLocaleDateString("ko-KR")}
                             {m.venue_name ? ` · ${m.venue_name}` : ""}
                           </p>
