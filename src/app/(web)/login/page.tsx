@@ -1,12 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { useActionState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { loginAction } from "@/app/actions/auth";
+import Link from "next/link";
 
 const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
   google_denied: "Google 로그인이 취소되었습니다.",
@@ -30,8 +27,6 @@ function GoogleErrorBanner() {
 }
 
 export default function LoginPage() {
-  const [state, formAction, pending] = useActionState(loginAction, null);
-
   return (
     <div className="flex min-h-[80vh] items-center justify-center">
       <Card className="w-full max-w-md">
@@ -45,17 +40,10 @@ export default function LoginPage() {
           <GoogleErrorBanner />
         </Suspense>
 
-        {/* 이메일/비밀번호 에러 */}
-        {state?.error && (
-          <div className="mb-4 rounded-[12px] bg-red-500/10 px-4 py-3 text-sm text-red-400">
-            {state.error}
-          </div>
-        )}
-
         {/* Google 로그인 */}
         <a
           href="/api/auth/google"
-          className="mb-4 flex w-full items-center justify-center gap-3 rounded-[16px] border border-[#CBD5E1] bg-white px-4 py-3 text-sm font-medium text-[#374151] transition-opacity hover:opacity-90 active:opacity-80"
+          className="flex w-full items-center justify-center gap-3 rounded-[16px] border border-[#CBD5E1] bg-white px-4 py-3 text-sm font-medium text-[#374151] transition-opacity hover:opacity-90 active:opacity-80"
         >
           <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
             <path
@@ -77,40 +65,6 @@ export default function LoginPage() {
           </svg>
           Google로 로그인
         </a>
-
-        {/* 구분선 */}
-        <div className="mb-4 flex items-center gap-3">
-          <div className="h-px flex-1 bg-[#CBD5E1]" />
-          <span className="text-xs text-[#9CA3AF]">또는</span>
-          <div className="h-px flex-1 bg-[#CBD5E1]" />
-        </div>
-
-        {/* 이메일/비밀번호 로그인 */}
-        <form action={formAction} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm text-[#6B7280]">이메일</label>
-            <input
-              name="email"
-              type="email"
-              required
-              className="w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
-              placeholder="email@example.com"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm text-[#6B7280]">비밀번호</label>
-            <input
-              name="password"
-              type="password"
-              required
-              className="w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
-              placeholder="비밀번호 입력"
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={pending}>
-            {pending ? "로그인 중..." : "로그인"}
-          </Button>
-        </form>
 
         <p className="mt-6 text-center text-sm text-[#6B7280]">
           계정이 없으신가요?{" "}
