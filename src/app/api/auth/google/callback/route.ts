@@ -43,8 +43,6 @@ export async function GET(req: NextRequest) {
   const savedState = cookieStore.get("oauth_state")?.value;
   cookieStore.delete("oauth_state");
 
-  console.log("[OAuth] state check - savedState:", savedState ? "exists" : "MISSING", "matches:", savedState === state);
-
   if (!savedState || savedState !== state) {
     return redirectTo("/login?error=invalid_state");
   }
@@ -81,8 +79,6 @@ export async function GET(req: NextRequest) {
       console.error("[OAuth] No access_token in token data. Keys:", Object.keys(tokenData).join(", "));
       return redirectTo("/login?error=no_access_token");
     }
-    console.log("[OAuth] Token exchange success, getting user info");
-
     // 유저 정보 조회
     const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -95,7 +91,6 @@ export async function GET(req: NextRequest) {
 
     const googleUser = (await userInfoRes.json()) as GoogleUserInfo;
     const { sub: googleSub, email, name = "", picture = null } = googleUser;
-    console.log("[OAuth] Got user info:", email);
 
     // 유저 조회: google uid → email 순
     let user = await prisma.user.findFirst({
@@ -151,7 +146,6 @@ export async function GET(req: NextRequest) {
 
     // JWT 발급 후 쿠키를 redirect 응답에 직접 설정 (cookies().set()은 redirect에 미적용됨)
     const token = await generateToken(user);
-    console.log("[OAuth] JWT generated, setting cookie and redirecting to /");
     const response = NextResponse.redirect(`${baseUrl}/`);
     response.cookies.set(WEB_SESSION_COOKIE, token, COOKIE_OPTIONS);
     return response;
