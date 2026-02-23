@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const key = searchParams.get("key");
 
-  if (key !== process.env.TEST_SESSION_KEY) {
+  if (key !== (process.env.TEST_SESSION_KEY ?? "").trim()) {
     return NextResponse.json({ error: "disabled" }, { status: 404 });
   }
 
