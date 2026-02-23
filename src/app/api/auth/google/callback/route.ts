@@ -6,7 +6,7 @@ import { WEB_SESSION_COOKIE } from "@/lib/auth/web-session";
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: true, // __Host- prefix는 항상 secure 필수
   sameSite: "lax" as const,
   maxAge: 60 * 60 * 24 * 30, // 30일
   path: "/",
@@ -133,11 +133,11 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // 기존 bdr_session JWT 발급 (Flutter API와 동일 형식)
+    // JWT 발급 후 쿠키를 redirect 응답에 직접 설정 (cookies().set()은 redirect에 미적용됨)
     const token = await generateToken(user);
-    cookieStore.set(WEB_SESSION_COOKIE, token, COOKIE_OPTIONS);
-
-    return redirectTo("/");
+    const response = NextResponse.redirect(`${baseUrl}/`);
+    response.cookies.set(WEB_SESSION_COOKIE, token, COOKIE_OPTIONS);
+    return response;
   } catch (err) {
     console.error("Google OAuth callback error:", err);
     return redirectTo("/login?error=server_error");
