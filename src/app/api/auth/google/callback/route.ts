@@ -29,10 +29,12 @@ export async function GET(req: NextRequest) {
   const state = searchParams.get("state");
   const error = searchParams.get("error");
 
-  if (error === "access_denied") {
-    return redirectTo("/login?error=google_denied");
+  if (error) {
+    console.error("[OAuth] Google returned error:", error);
+    return redirectTo(`/login?error=${error === "access_denied" ? "google_denied" : "google_error"}`);
   }
   if (!code) {
+    console.error("[OAuth] No code in callback");
     return redirectTo("/login?error=no_code");
   }
 
@@ -40,6 +42,8 @@ export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
   const savedState = cookieStore.get("oauth_state")?.value;
   cookieStore.delete("oauth_state");
+
+  console.log("[OAuth] state check - savedState:", savedState ? "exists" : "MISSING", "matches:", savedState === state);
 
   if (!savedState || savedState !== state) {
     return redirectTo("/login?error=invalid_state");
@@ -62,12 +66,14 @@ export async function GET(req: NextRequest) {
     });
 
     if (!tokenRes.ok) {
-      console.error("Token exchange failed:", await tokenRes.text());
+      const errText = await tokenRes.text();
+      console.error("[OAuth] Token exchange failed:", errText);
       return redirectTo("/login?error=token_exchange");
     }
 
     const tokenData = await tokenRes.json();
     const accessToken = tokenData.access_token as string;
+    console.log("[OAuth] Token exchange success, getting user info");
 
     // 유저 정보 조회
     const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
@@ -135,6 +141,7 @@ export async function GET(req: NextRequest) {
 
     // JWT 발급 후 쿠키를 redirect 응답에 직접 설정 (cookies().set()은 redirect에 미적용됨)
     const token = await generateToken(user);
+    console.log("[OAuth] JWT generated, setting cookie and redirecting to /");
     const response = NextResponse.redirect(`${baseUrl}/`);
     response.cookies.set(WEB_SESSION_COOKIE, token, COOKIE_OPTIONS);
     return response;
