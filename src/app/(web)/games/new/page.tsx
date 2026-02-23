@@ -19,6 +19,7 @@ const SKILL_LEVELS = [
   { value: "all", label: "전체" },
   { value: "beginner", label: "초급" },
   { value: "intermediate", label: "중급" },
+  { value: "intermediate_advanced", label: "중고급" },
   { value: "advanced", label: "고급" },
 ];
 

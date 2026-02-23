@@ -1,6 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
+
+const TOURNAMENT_STATUS_LABEL: Record<string, string> = {
+  draft: "준비중",
+  active: "모집중",
+  published: "모집중",
+  registration_open: "모집중",
+  registration_closed: "접수마감",
+  ongoing: "진행중",
+  completed: "완료",
+  cancelled: "취소",
+};
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -328,7 +339,7 @@ export default function ProfilePage() {
                   className="flex items-center justify-between rounded-[12px] bg-[#EEF2FF] px-4 py-2 hover:bg-[#E8ECF0]"
                 >
                   <span className="text-sm">{t.name}</span>
-                  <span className="text-xs text-[#6B7280]">{t.status ?? "-"}</span>
+                  <span className="text-xs text-[#6B7280]">{TOURNAMENT_STATUS_LABEL[t.status ?? ""] ?? t.status ?? "-"}</span>
                 </Link>
               ))}
             </div>

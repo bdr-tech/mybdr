@@ -22,9 +22,10 @@ const STATUS_INFO: Record<number, { label: string; variant: "success" | "default
 
 const SKILL_LABEL: Record<string, string> = {
   all:          "전체",
-  beginner:     "초급",
-  intermediate: "중급",
-  advanced:     "고급",
+  beginner:              "초급",
+  intermediate:          "중급",
+  intermediate_advanced: "중고급",
+  advanced:              "고급",
 };
 
 function ParticipantBar({ current, max }: { current: number; max: number }) {

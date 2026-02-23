@@ -8,6 +8,8 @@ export const revalidate = 30;
 
 const STATUS_INFO: Record<string, { label: string; variant: "success" | "default" | "error" | "warning" | "info"; accent: string }> = {
   draft:               { label: "준비중",  variant: "default",  accent: "#6B7280" },
+  active:              { label: "모집중",  variant: "success",  accent: "#4ADE80" },
+  published:           { label: "모집중",  variant: "success",  accent: "#4ADE80" },
   registration:        { label: "모집중",  variant: "success",  accent: "#4ADE80" },
   registration_open:   { label: "모집중",  variant: "success",  accent: "#4ADE80" },
   registration_closed: { label: "접수마감", variant: "warning",  accent: "#FBBF24" },

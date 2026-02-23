@@ -255,8 +255,17 @@ function DescriptionSections({ text }: { text: string }) {
 
 // ── 메인 페이지 ────────────────────────────────────────────
 
+const FORMAT_LABEL: Record<string, string> = {
+  single_elimination: "싱글 엘리미",
+  double_elimination: "더블 엘리미",
+  round_robin: "리그전",
+  hybrid: "혼합",
+};
+
 const STATUS_LABEL: Record<string, { label: string; variant: "default" | "success" | "error" | "warning" | "info" }> = {
   draft:              { label: "준비중",  variant: "default" },
+  active:             { label: "모집중",  variant: "info" },
+  published:          { label: "모집중",  variant: "info" },
   registration:       { label: "참가접수", variant: "info" },
   registration_open:  { label: "참가접수", variant: "info" },
   registration_closed:{ label: "접수마감", variant: "warning" },
@@ -305,7 +314,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
         </div>
         <p className="mt-2 text-sm text-[#6B7280]">
-          {tournament.format}
+          {FORMAT_LABEL[tournament.format ?? ""] ?? tournament.format ?? ""}
           {" · "}
           {tournament.tournamentTeams.length}팀
           {tournament.startDate && ` · ${tournament.startDate.toLocaleDateString("ko-KR")}`}

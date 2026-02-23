@@ -6,6 +6,24 @@ import { Badge } from "@/components/ui/badge";
 
 export const revalidate = 60; // 1분 캐시
 
+const TOURNAMENT_STATUS: Record<string, string> = {
+  draft: "준비중",
+  active: "모집중",
+  published: "모집중",
+  registration_open: "모집중",
+  registration_closed: "접수마감",
+  ongoing: "진행중",
+  completed: "완료",
+  cancelled: "취소",
+};
+
+const TOURNAMENT_FORMAT: Record<string, string> = {
+  single_elimination: "싱글 엘리미",
+  double_elimination: "더블 엘리미",
+  round_robin: "리그전",
+  hybrid: "혼합",
+};
+
 // Rails home/index — hero + 추천경기 + 다가오는 대회 + 인기 대회
 export default async function HomePage() {
   const [upcomingTournaments, recentGames] = await Promise.all([
@@ -27,10 +45,10 @@ export default async function HomePage() {
       <section className="rounded-[24px] bg-gradient-to-br from-[#0066FF]/15 to-[#F4A261]/10 p-8 text-center md:p-12 border border-[#E8ECF0]">
         <h1 className="mb-2 text-3xl font-bold md:text-4xl">
           <span className="text-[#F4A261]">B</span>asketball
-          <span className="text-[#F4A261]"> D</span>evelopment
-          <span className="text-[#F4A261]"> R</span>oad
+          <span className="text-[#F4A261]"> D</span>aily
+          <span className="text-[#F4A261]"> R</span>outine
         </h1>
-        <p className="mb-6 text-[#6B7280]">농구 대회를 만들고, 관리하고, 함께 즐기세요</p>
+        <p className="mb-6 text-[#6B7280]">농구 경기와 대회를 쉽고 빠르게 찾고, 즐기세요  </p>
         <div className="flex justify-center gap-3">
           <Link href="/games"><Button>경기 찾기</Button></Link>
           <Link href="/tournaments"><Button variant="secondary">대회 둘러보기</Button></Link>
@@ -66,10 +84,10 @@ export default async function HomePage() {
               <Card className="hover:bg-[#EEF2FF] transition-colors cursor-pointer">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold">{t.name}</h3>
-                  <Badge>{t.status ?? "draft"}</Badge>
+                  <Badge>{TOURNAMENT_STATUS[t.status ?? "draft"] ?? t.status ?? "draft"}</Badge>
                 </div>
                 <p className="mt-1 text-xs text-[#9CA3AF]">
-                  {t.format}{t.startDate && ` · ${t.startDate.toLocaleDateString("ko-KR")}`}
+                  {TOURNAMENT_FORMAT[t.format ?? ""] ?? t.format ?? ""}{t.startDate && ` · ${t.startDate.toLocaleDateString("ko-KR")}`}
                 </p>
               </Card>
             </Link>

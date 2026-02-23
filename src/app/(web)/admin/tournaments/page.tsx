@@ -4,6 +4,24 @@ import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 
+const STATUS_LABEL: Record<string, string> = {
+  draft: "준비중",
+  active: "모집중",
+  published: "모집중",
+  registration_open: "모집중",
+  registration_closed: "접수마감",
+  ongoing: "진행중",
+  completed: "완료",
+  cancelled: "취소",
+};
+
+const FORMAT_LABEL: Record<string, string> = {
+  single_elimination: "싱글 엘리미",
+  double_elimination: "더블 엘리미",
+  round_robin: "리그전",
+  hybrid: "혼합",
+};
+
 // FR-062: 토너먼트 관리 (Admin)
 export default async function AdminTournamentsPage() {
   const tournaments = await prisma.tournament.findMany({
@@ -44,10 +62,10 @@ export default async function AdminTournamentsPage() {
             <div>
               <div className="flex items-center gap-3">
                 <h3 className="font-semibold">{t.name}</h3>
-                <Badge variant={statusBadge(t.status ?? "draft")}>{t.status ?? "draft"}</Badge>
+                <Badge variant={statusBadge(t.status ?? "draft")}>{STATUS_LABEL[t.status ?? "draft"] ?? t.status ?? "draft"}</Badge>
               </div>
               <p className="mt-1 text-sm text-[#6B7280]">
-                {t.format} · {t._count.tournamentTeams}팀 · {t._count.tournamentMatches}경기
+                {FORMAT_LABEL[t.format ?? ""] ?? t.format ?? ""} · {t._count.tournamentTeams}팀 · {t._count.tournamentMatches}경기
                 {t.startDate && ` · ${t.startDate.toLocaleDateString("ko-KR")}`}
               </p>
             </div>

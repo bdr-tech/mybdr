@@ -8,9 +8,13 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 const STATUS_LABEL: Record<string, string> = {
-  draft: "초안",
-  registration: "등록 중",
-  active: "진행 중",
+  draft: "준비중",
+  active: "모집중",
+  published: "모집중",
+  registration: "모집중",
+  registration_open: "모집중",
+  registration_closed: "접수마감",
+  ongoing: "진행중",
   completed: "완료",
   cancelled: "취소",
 };

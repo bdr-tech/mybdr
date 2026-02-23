@@ -25,6 +25,7 @@ const SKILL_LEVEL_LABEL: Record<string, string> = {
   all: "전체",
   beginner: "초급",
   intermediate: "중급",
+  intermediate_advanced: "중고급",
   advanced: "고급",
 };
 
