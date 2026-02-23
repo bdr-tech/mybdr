@@ -72,7 +72,15 @@ export async function GET(req: NextRequest) {
     }
 
     const tokenData = await tokenRes.json();
+    if (tokenData.error) {
+      console.error("[OAuth] Token data error:", tokenData.error, tokenData.error_description);
+      return redirectTo("/login?error=token_data_error");
+    }
     const accessToken = tokenData.access_token as string;
+    if (!accessToken) {
+      console.error("[OAuth] No access_token in token data. Keys:", Object.keys(tokenData).join(", "));
+      return redirectTo("/login?error=no_access_token");
+    }
     console.log("[OAuth] Token exchange success, getting user info");
 
     // 유저 정보 조회
