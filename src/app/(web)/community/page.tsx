@@ -38,7 +38,7 @@ export default async function CommunityPage() {
         {posts.map((p) => {
           const cat = categoryMap[p.category ?? ""] ?? { label: p.category ?? "기타", variant: "default" as const };
           return (
-            <Link key={p.id.toString()} href={`/community/${p.id}`}>
+            <Link key={p.id.toString()} href={`/community/${p.public_id}`}>
               <Card className="hover:bg-[#EEF2FF] transition-colors cursor-pointer">
                 <div className="flex items-center gap-2">
                   <Badge variant={cat.variant}>{cat.label}</Badge>

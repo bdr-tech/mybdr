@@ -9,7 +9,7 @@ export const revalidate = 30;
 export default async function CommunityPostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const post = await prisma.community_posts.findUnique({
-    where: { id: BigInt(id) },
+    where: { public_id: id },
     include: {
       users: { select: { nickname: true } },
     },

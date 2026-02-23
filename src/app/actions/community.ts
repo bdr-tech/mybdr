@@ -17,7 +17,7 @@ export async function createPostAction(_prevState: { error: string } | null, for
     return { error: "제목과 내용을 입력하세요." };
   }
 
-  let createdPostId: bigint;
+  let publicId: string;
   try {
     const post = await prisma.community_posts.create({
       data: {
@@ -31,28 +31,34 @@ export async function createPostAction(_prevState: { error: string } | null, for
       },
     });
 
-    createdPostId = post.id;
+    publicId = post.public_id;
   } catch {
     return { error: "글 작성 중 오류가 발생했습니다." };
   }
 
-  redirect(`/community/${createdPostId.toString()}`);
+  redirect(`/community/${publicId}`);
 }
 
 export async function createCommentAction(_prevState: { error?: string; success?: boolean } | null, formData: FormData) {
   const session = await getWebSession();
   if (!session) return { error: "로그인이 필요합니다." };
 
-  const postId = formData.get("post_id") as string;
+  const publicId = formData.get("post_id") as string;
   const content = (formData.get("content") as string)?.trim();
 
   if (!content) return { error: "댓글 내용을 입력하세요." };
 
   try {
+    const post = await prisma.community_posts.findUnique({
+      where: { public_id: publicId },
+      select: { id: true },
+    });
+    if (!post) return { error: "게시글을 찾을 수 없습니다." };
+
     await prisma.comments.create({
       data: {
         commentable_type: "CommunityPost",
-        commentable_id: BigInt(postId),
+        commentable_id: post.id,
         user_id: BigInt(session.sub),
         content,
         status: "published",
@@ -63,11 +69,11 @@ export async function createCommentAction(_prevState: { error?: string; success?
 
     // 댓글 수 업데이트
     await prisma.community_posts.update({
-      where: { id: BigInt(postId) },
+      where: { id: post.id },
       data: { comments_count: { increment: 1 } },
     });
 
-    revalidatePath(`/community/${postId}`);
+    revalidatePath(`/community/${publicId}`);
     return { success: true };
   } catch {
     return { error: "댓글 등록 중 오류가 발생했습니다." };
