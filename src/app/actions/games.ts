@@ -62,8 +62,8 @@ export async function createGameAction(_prevState: { error: string } | null, for
 
   const organizerId = BigInt(session.sub);
 
-  // 픽업 게임(타입 0)만 구독 게이팅
-  if (gameType === 0) {
+  // 픽업 게임(타입 0)만 구독 게이팅 (슈퍼관리자 무료 이용)
+  if (gameType === 0 && session.role !== "super_admin") {
     const hasAccess = await checkSubscription(organizerId, "pickup_game");
     if (!hasAccess) {
       return { error: "UPGRADE_REQUIRED", feature: "pickup_game" } as unknown as { error: string };

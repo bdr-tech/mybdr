@@ -1431,3 +1431,11 @@ model user_subscriptions {
   @@index([user_id, feature_key])
   @@map("user_subscriptions")
 }
+
+model site_settings {
+  key        String   @id @db.VarChar
+  value      String   @default("") @db.Text
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  @@map("site_settings")
+}

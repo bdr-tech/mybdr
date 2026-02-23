@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth/jwt";
-import { WEB_SESSION_COOKIE } from "@/lib/auth/web-session";
+import { getWebSession } from "@/lib/auth/web-session";
 import { prisma } from "@/lib/db/prisma";
+import { adminLog } from "@/lib/admin/log";
 
 async function requireAdmin() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(WEB_SESSION_COOKIE)?.value;
-  if (!token) return null;
-  const session = await verifyToken(token);
-  if (!session) return null;
-  const user = await prisma.user.findUnique({ where: { id: BigInt(session.sub) }, select: { isAdmin: true } }).catch(() => null);
-  if (!user?.isAdmin) return null;
+  const session = await getWebSession();
+  if (!session || session.role !== "super_admin") return null;
   return session;
 }
 
@@ -58,6 +52,12 @@ export async function POST(req: NextRequest) {
       price: parseInt(price),
       max_uses: max_uses ? parseInt(max_uses) : null,
     },
+  });
+
+  await adminLog("plan.create", "Plan", {
+    resourceId: plan.id,
+    description: `요금제 생성: ${plan.name}`,
+    changesMade: { name: plan.name, feature_key: plan.feature_key, price: plan.price, plan_type: plan.plan_type },
   });
 
   return NextResponse.json({ id: plan.id.toString() }, { status: 201 });

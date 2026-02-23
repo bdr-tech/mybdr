@@ -36,10 +36,12 @@ export async function createTeamAction(_prevState: { error: string } | null, for
   try {
     const userId = BigInt(session.sub);
 
-    // 구독 확인
-    const hasAccess = await checkSubscription(userId, "team_create");
-    if (!hasAccess) {
-      return { error: "UPGRADE_REQUIRED", feature: "team_create" } as unknown as { error: string };
+    // 구독 확인 (슈퍼관리자 무료 이용)
+    if (session.role !== "super_admin") {
+      const hasAccess = await checkSubscription(userId, "team_create");
+      if (!hasAccess) {
+        return { error: "UPGRADE_REQUIRED", feature: "team_create" } as unknown as { error: string };
+      }
     }
 
     // 팀 2개 한도 확인
