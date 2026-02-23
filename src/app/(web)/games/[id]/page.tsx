@@ -46,7 +46,20 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 
 export default async function GameDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const game = await prisma.games.findUnique({ where: { uuid: id } }).catch(() => null);
+
+  // 8자리 short ID → uuid prefix로 full UUID 조회 후 findUnique, 전체 UUID → 직접 조회
+  let game = null;
+  if (id.length === 8) {
+    const rows = await prisma.$queryRaw<{ uuid: string }[]>`
+      SELECT uuid::text AS uuid FROM games WHERE uuid::text LIKE ${id + "%"} LIMIT 1
+    `;
+    const fullUuid = rows[0]?.uuid;
+    if (fullUuid) {
+      game = await prisma.games.findUnique({ where: { uuid: fullUuid } }).catch(() => null);
+    }
+  } else {
+    game = await prisma.games.findUnique({ where: { uuid: id } }).catch(() => null);
+  }
   if (!game) return notFound();
 
   const applications = await prisma.game_applications

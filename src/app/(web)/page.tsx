@@ -106,7 +106,7 @@ export default async function HomePage() {
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {recentGames.map((g) => (
-            <Link key={g.id.toString()} href={`/games/${g.uuid ?? g.id}`}>
+            <Link key={g.id.toString()} href={`/games/${g.uuid?.slice(0, 8) ?? g.id}`}>
               <Card className="hover:bg-[#EEF2FF] transition-colors cursor-pointer">
                 <h3 className="font-semibold">{g.title}</h3>
                 <p className="mt-1 text-xs text-[#9CA3AF]">

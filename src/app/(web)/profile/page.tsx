@@ -289,7 +289,7 @@ export default function ProfilePage() {
               {recentGames.map((g) => (
                 <Link
                   key={g.id}
-                  href={`/games/${g.id}`}
+                  href={`/games/${g.id.slice(0, 8)}`}
                   className="flex items-center justify-between rounded-[12px] bg-[#EEF2FF] px-4 py-2 hover:bg-[#E8ECF0]"
                 >
                   <span className="text-sm">{g.title ?? "경기"}</span>

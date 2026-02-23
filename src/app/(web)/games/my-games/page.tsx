@@ -41,7 +41,7 @@ export default async function MyGamesPage() {
         {hostedGames.length > 0 ? (
           <div className="space-y-2">
             {hostedGames.map((g) => (
-              <Link key={g.id.toString()} href={`/games/${g.uuid ?? g.id}`}>
+              <Link key={g.id.toString()} href={`/games/${g.uuid?.slice(0, 8) ?? g.id}`}>
                 <Card className="flex items-center justify-between hover:bg-[#EEF2FF] transition-colors">
                   <div>
                     <p className="font-medium">{g.title ?? "제목 없음"}</p>
@@ -67,7 +67,7 @@ export default async function MyGamesPage() {
         {applications.length > 0 ? (
           <div className="space-y-2">
             {applications.map((a) => (
-              <Link key={a.id.toString()} href={`/games/${a.games?.uuid ?? a.game_id}`}>
+              <Link key={a.id.toString()} href={`/games/${a.games?.uuid?.slice(0, 8) ?? a.game_id}`}>
                 <Card className="flex items-center justify-between hover:bg-[#EEF2FF] transition-colors">
                   <div>
                     <p className="font-medium">{a.games?.title ?? "경기"}</p>
