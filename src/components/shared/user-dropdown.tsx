@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { logoutAction } from "@/app/actions/auth";
 
-export function UserDropdown({ name }: { name?: string }) {
+export function UserDropdown({ name, role }: { name?: string; role?: string }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const initial = (name && name.trim()) ? name.trim()[0].toUpperCase() : "U";
+  const isSuperAdmin = role === "super_admin";
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -38,7 +39,7 @@ export function UserDropdown({ name }: { name?: string }) {
               { href: "/profile", label: "프로필" },
               { href: "/games/my-games", label: "내 경기" },
               { href: "/tournament-admin", label: "대회 관리" },
-              { href: "/admin", label: "관리자" },
+              ...(isSuperAdmin ? [{ href: "/admin", label: "관리자" }] : []),
             ].map((item) => (
               <Link
                 key={item.href}

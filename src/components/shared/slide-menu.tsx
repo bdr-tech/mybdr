@@ -24,10 +24,12 @@ export function SlideMenu({
   open,
   onClose,
   isLoggedIn,
+  role,
 }: {
   open: boolean;
   onClose: () => void;
   isLoggedIn: boolean;
+  role?: string;
 }) {
   return (
     <>
@@ -90,17 +92,23 @@ export function SlideMenu({
               {/* 기타 */}
               <div className="mb-6">
                 <p className="mb-2 text-xs font-medium text-[#9CA3AF]">기타</p>
-                {menuSections.etc.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={onClose}
-                    className="flex items-center gap-2 rounded-[12px] px-3 py-2.5 text-sm text-[#6B7280] hover:bg-[#EEF2FF] hover:text-[#111827]"
-                  >
-                    {item.icon && <span>{item.icon}</span>}
-                    {item.label}
-                  </Link>
-                ))}
+                {menuSections.etc
+                  .filter((item) => {
+                    if (item.superAdminOnly) return role === "super_admin";
+                    if (item.adminOnly) return role === "super_admin" || role === "tournament_admin";
+                    return true;
+                  })
+                  .map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={onClose}
+                      className="flex items-center gap-2 rounded-[12px] px-3 py-2.5 text-sm text-[#6B7280] hover:bg-[#EEF2FF] hover:text-[#111827]"
+                    >
+                      {item.icon && <span>{item.icon}</span>}
+                      {item.label}
+                    </Link>
+                  ))}
               </div>
 
               {/* 로그아웃 */}

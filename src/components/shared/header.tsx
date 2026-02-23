@@ -87,7 +87,7 @@ export function Header() {
                 >
                   🔔
                 </Link>
-                <UserDropdown name={user.name} />
+                <UserDropdown name={user.name} role={user.role} />
               </>
             ) : (
               <Link
@@ -133,7 +133,7 @@ export function Header() {
         </div>
       </nav>
 
-      <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} isLoggedIn={!!user} />
+      <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} isLoggedIn={!!user} role={user?.role} />
     </>
   );
 }

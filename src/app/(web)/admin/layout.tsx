@@ -1,12 +1,18 @@
+import { redirect } from "next/navigation";
 import { AdminSidebar } from "@/components/admin/sidebar";
+import { getWebSession } from "@/lib/auth/web-session";
 
 // FR-060~063: Admin 레이아웃 (super_admin 전용)
-// 실제 인증 검사는 middleware.ts + NextAuth session에서 처리
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getWebSession();
+  if (!session || session.role !== "super_admin") {
+    redirect("/");
+  }
+
   return (
     <div className="min-h-screen bg-[#F5F7FA]">
       <AdminSidebar />

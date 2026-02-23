@@ -1,5 +1,13 @@
 import * as jose from "jose";
 
+const MEMBERSHIP_TO_ROLE: Record<number, string> = {
+  0: "free",
+  1: "pro",
+  2: "pickup_host",
+  3: "tournament_admin",
+  4: "super_admin",
+};
+
 const getSecret = () => new TextEncoder().encode(process.env.JWT_SECRET);
 
 const ALGORITHM = "HS256";
@@ -25,7 +33,7 @@ export async function generateToken(user: {
     sub: user.id.toString(),
     email: user.email,
     name: user.nickname ?? "",
-    role: String(user.membershipType),
+    role: MEMBERSHIP_TO_ROLE[user.membershipType] ?? "free",
   })
     .setProtectedHeader({ alg: ALGORITHM })
     .setIssuedAt()
