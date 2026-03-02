@@ -44,3 +44,13 @@ prisma/migrations/
 # DB dump (보안: 커밋 금지)
 local_dump.sql
 *.sql.dump
+
+# PWA: Serwist 빌드 산출물 (build-time generated)
+/public/sw.js
+/public/swe-worker-*.js
+
+# Vercel local env (보안: 커밋 금지)
+.env.vercel.local
+
+# Playwright MCP (도구 산출물)
+.playwright-mcp/

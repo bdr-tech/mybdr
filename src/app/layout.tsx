@@ -4,6 +4,13 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "MyBDR - Basketball Tournament Platform",
   description: "농구 토너먼트 관리 플랫폼",
+  // PWA: iOS 홈 화면 추가 지원
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "MyBDR",
+  },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {

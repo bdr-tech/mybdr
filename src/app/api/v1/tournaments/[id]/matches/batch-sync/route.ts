@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { withAuth, withErrorHandler, type AuthContext } from "@/lib/api/middleware";
 import { batchSyncSchema } from "@/lib/validation/match";
 import { apiSuccess, forbidden, validationError } from "@/lib/api/response";
+import { advanceWinner, updateTeamStandings } from "@/lib/tournaments/update-standings";
 
 // FR-025: 매치 일괄 동기화
 async function handler(req: NextRequest, ctx: AuthContext, tournamentId: string) {
@@ -39,6 +40,12 @@ async function handler(req: NextRequest, ctx: AuthContext, tournamentId: string)
           },
         });
       });
+
+      // 경기 완료 시 승자 진출 + 전적 업데이트 (fire-and-forget)
+      if (match.status === "completed") {
+        advanceWinner(BigInt(match.matchId)).catch(() => {});
+        updateTeamStandings(BigInt(match.matchId)).catch(() => {});
+      }
       synced++;
     } catch (err) {
       failed++;

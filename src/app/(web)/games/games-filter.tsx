@@ -6,7 +6,7 @@ import { useCallback, useRef } from "react";
 const GAME_TYPES = [
   { value: "all", label: "전체 유형" },
   { value: "0",   label: "🏀 픽업" },
-  { value: "1",   label: "🤝 용병 모집" },
+  { value: "1",   label: "🤝 게스트 모집" },
   { value: "2",   label: "⚔️ 팀 대결" },
 ];
 

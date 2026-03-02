@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { QuickMenu } from "@/components/home/quick-menu";
 
 export const revalidate = 60; // 1분 캐시
 
@@ -54,6 +55,9 @@ export default async function HomePage() {
           <Link href="/tournaments"><Button variant="secondary">대회 둘러보기</Button></Link>
         </div>
       </section>
+
+      {/* 퀵 메뉴 — 사용자 커스텀 즐겨찾기 (§10) */}
+      <QuickMenu />
 
       {/* Quick Actions (Rails _quick_action.html.erb) */}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">

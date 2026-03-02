@@ -1,0 +1,351 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
+const MAX_FREE_VERSIONS = 3;
+
+type TeamInfo = { id: string; team: { name: string; primaryColor: string | null } };
+
+type Match = {
+  id: string;
+  roundName: string | null;
+  round_number: number | null;
+  bracket_position: number | null;
+  match_number: number | null;
+  status: string;
+  homeTeamId: string | null;
+  awayTeamId: string | null;
+  homeScore: number;
+  awayScore: number;
+  homeTeam: TeamInfo | null;
+  awayTeam: TeamInfo | null;
+};
+
+type ApprovedTeam = { id: string; seedNumber: number | null; team: { name: string } };
+
+type BracketVersion = {
+  id: string;
+  version_number: number;
+  created_at: string;
+  is_active: boolean;
+};
+
+type BracketData = {
+  canCreate: boolean;
+  needsApproval: boolean;
+  currentVersion: number;
+  activeVersion: number | null;
+  versions: BracketVersion[];
+  matches: Match[];
+  approvedTeams: ApprovedTeam[];
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: "대기",
+  scheduled: "예정",
+  in_progress: "진행 중",
+  completed: "종료",
+  cancelled: "취소",
+  bye: "부전승",
+};
+
+export default function BracketAdminPage() {
+  const { id } = useParams<{ id: string }>();
+  const [data, setData] = useState<BracketData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [activating, setActivating] = useState(false);
+  const [savingMatch, setSavingMatch] = useState<string | null>(null);
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/web/tournaments/${id}/bracket`);
+      if (res.ok) setData(await res.json());
+    } catch { /* ignore */ } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const generate = async (clear = false) => {
+    if (clear && !confirm("기존 경기를 모두 삭제하고 재생성하시겠습니까?")) return;
+    setGenerating(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/web/tournaments/${id}/bracket`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clear }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? "생성 실패");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "오류 발생");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const activate = async () => {
+    setActivating(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/web/tournaments/${id}/bracket`, { method: "PATCH" });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? "확정 실패");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "오류 발생");
+    } finally {
+      setActivating(false);
+    }
+  };
+
+  const updateMatchTeam = async (matchId: string, field: "homeTeamId" | "awayTeamId", value: string | null) => {
+    setSavingMatch(matchId);
+    try {
+      await fetch(`/api/web/tournaments/${id}/matches/${matchId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      });
+      await load();
+    } catch { /* ignore */ } finally {
+      setSavingMatch(null);
+    }
+  };
+
+  if (loading)
+    return <div className="flex h-40 items-center justify-center text-[#6B7280]">불러오는 중...</div>;
+
+  const round1Matches = data?.matches.filter((m) => m.round_number === 1) ?? [];
+  const hasMatches = (data?.matches.length ?? 0) > 0;
+  const versionUsed = data?.currentVersion ?? 0;
+  const versionLimit = MAX_FREE_VERSIONS;
+  const canGenerate = versionUsed < versionLimit;
+  const isActivated = data?.activeVersion != null;
+
+  return (
+    <div>
+      {/* 헤더 */}
+      <div className="mb-6">
+        <Link
+          href={`/tournament-admin/tournaments/${id}`}
+          className="text-sm text-[#6B7280] hover:text-[#111827]"
+        >
+          ← 대회 관리
+        </Link>
+        <h1 className="mt-1 text-2xl font-bold">대진표 생성</h1>
+      </div>
+
+      {error && (
+        <div className="mb-4 rounded-[12px] bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
+      )}
+
+      {/* 버전 현황 */}
+      <Card className="mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-[#111827]">생성 횟수</p>
+            <div className="mt-2 flex items-center gap-1">
+              {Array.from({ length: versionLimit }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-3 w-8 rounded-full ${
+                    i < versionUsed ? "bg-[#0066FF]" : "bg-[#E8ECF0]"
+                  }`}
+                />
+              ))}
+              <span className="ml-2 text-sm text-[#6B7280]">
+                {versionUsed}/{versionLimit} 사용
+              </span>
+            </div>
+            {!canGenerate && (
+              <p className="mt-1 text-xs text-[#EF4444]">
+                슈퍼관리자 승인 후 추가 생성 가능합니다.
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {isActivated && (
+              <span className="rounded-full bg-[rgba(74,222,128,0.1)] px-3 py-1 text-xs font-medium text-[#4ADE80]">
+                ✓ 확정됨 (v{data?.activeVersion})
+              </span>
+            )}
+            {hasMatches && (
+              <button
+                onClick={activate}
+                disabled={activating || isActivated}
+                className="rounded-full bg-[rgba(0,102,255,0.08)] px-4 py-2 text-sm font-medium text-[#0066FF] hover:bg-[rgba(0,102,255,0.15)] disabled:opacity-50"
+              >
+                {activating ? "처리 중..." : "최신 버전 확정"}
+              </button>
+            )}
+            {hasMatches ? (
+              <Button
+                variant="secondary"
+                onClick={() => generate(true)}
+                disabled={generating || !canGenerate}
+                className="text-sm"
+              >
+                {generating ? "생성 중..." : "재생성"}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => generate(false)}
+                disabled={generating || !canGenerate}
+              >
+                {generating ? "생성 중..." : "대진표 생성"}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* 버전 히스토리 */}
+        {(data?.versions.length ?? 0) > 0 && (
+          <div className="mt-4 border-t border-[#F1F5F9] pt-4">
+            <p className="mb-2 text-xs font-medium text-[#9CA3AF]">버전 히스토리</p>
+            <div className="flex flex-wrap gap-2">
+              {data?.versions.map((v) => (
+                <div
+                  key={v.id}
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs ${
+                    v.is_active
+                      ? "bg-[rgba(74,222,128,0.1)] text-[#4ADE80]"
+                      : "bg-[#EEF2FF] text-[#6B7280]"
+                  }`}
+                >
+                  <span className="font-medium">v{v.version_number}</span>
+                  <span>{new Date(v.created_at).toLocaleDateString("ko-KR")}</span>
+                  {v.is_active && <span>✓</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* 1라운드 팀 배치 편집 */}
+      {round1Matches.length > 0 && (
+        <div className="mb-6">
+          <h2 className="mb-3 text-sm font-semibold text-[#6B7280] uppercase tracking-wide">
+            1라운드 팀 배치 편집
+          </h2>
+          <div className="space-y-3">
+            {round1Matches.map((match) => (
+              <Card key={match.id} className={match.status === "bye" ? "opacity-60" : ""}>
+                <div className="flex items-center gap-3">
+                  <span className="w-6 shrink-0 text-center text-xs text-[#9CA3AF]">
+                    #{match.match_number ?? "-"}
+                  </span>
+
+                  {/* 홈팀 */}
+                  <div className="flex-1">
+                    <label className="mb-1 block text-[10px] text-[#9CA3AF]">홈팀</label>
+                    <select
+                      disabled={match.status === "bye" || savingMatch === match.id}
+                      value={match.homeTeamId ?? ""}
+                      onChange={(e) => updateMatchTeam(match.id, "homeTeamId", e.target.value || null)}
+                      className="w-full rounded-[10px] border-none bg-[#EEF2FF] px-3 py-2 text-sm text-[#111827] disabled:opacity-50"
+                    >
+                      <option value="">미정</option>
+                      {data?.approvedTeams.map((t) => (
+                        <option key={t.id} value={t.id}>{t.team.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <span className="mt-4 text-[#9CA3AF]">vs</span>
+
+                  {/* 원정팀 */}
+                  <div className="flex-1">
+                    <label className="mb-1 block text-[10px] text-[#9CA3AF]">원정팀</label>
+                    <select
+                      disabled={match.status === "bye" || savingMatch === match.id}
+                      value={match.awayTeamId ?? ""}
+                      onChange={(e) => updateMatchTeam(match.id, "awayTeamId", e.target.value || null)}
+                      className="w-full rounded-[10px] border-none bg-[#EEF2FF] px-3 py-2 text-sm text-[#111827] disabled:opacity-50"
+                    >
+                      <option value="">미정</option>
+                      {data?.approvedTeams.map((t) => (
+                        <option key={t.id} value={t.id}>{t.team.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {match.status === "bye" && (
+                    <span className="mt-4 rounded-full bg-[#EEF2FF] px-2 py-0.5 text-[10px] text-[#9CA3AF]">
+                      부전승
+                    </span>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 전체 경기 목록 */}
+      {hasMatches && (
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-[#6B7280] uppercase tracking-wide">
+              전체 경기 ({data?.matches.length}경기)
+            </h2>
+            <Link
+              href={`/tournament-admin/tournaments/${id}/matches`}
+              className="text-xs text-[#0066FF] hover:underline"
+            >
+              경기 관리로 이동 →
+            </Link>
+          </div>
+          <div className="space-y-1.5">
+            {Array.from(new Set(data?.matches.map((m) => m.round_number))).sort((a, b) => (a ?? 0) - (b ?? 0)).map((rn) => {
+              const rMatches = data?.matches.filter((m) => m.round_number === rn) ?? [];
+              return (
+                <div key={rn ?? "x"}>
+                  <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">
+                    {rMatches[0]?.roundName ?? `라운드 ${rn}`}
+                  </p>
+                  {rMatches.map((m) => (
+                    <div key={m.id} className="mb-1 flex items-center gap-2 rounded-[10px] bg-[#F5F7FA] px-3 py-2 text-sm">
+                      <span className="w-5 text-center text-xs text-[#9CA3AF]">#{m.match_number ?? "-"}</span>
+                      <span className={`flex-1 text-right font-medium ${m.homeTeamId == null ? "text-[#9CA3AF]" : ""}`}>
+                        {m.homeTeam?.team.name ?? "미정"}
+                      </span>
+                      <span className="text-xs text-[#9CA3AF]">vs</span>
+                      <span className={`flex-1 font-medium ${m.awayTeamId == null ? "text-[#9CA3AF]" : ""}`}>
+                        {m.awayTeam?.team.name ?? "미정"}
+                      </span>
+                      <span className={`text-[10px] ${STATUS_LABEL[m.status] ? "text-[#6B7280]" : ""}`}>
+                        {STATUS_LABEL[m.status] ?? m.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {!hasMatches && (
+        <Card className="py-16 text-center text-[#6B7280]">
+          <div className="mb-3 text-4xl">🏆</div>
+          <p className="font-medium">대진표가 없습니다</p>
+          <p className="mt-1 text-sm">
+            승인된 팀 {data?.approvedTeams.length ?? 0}팀이 있습니다.
+          </p>
+        </Card>
+      )}
+    </div>
+  );
+}

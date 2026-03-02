@@ -2,21 +2,62 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ProfileIncompleteModal } from "./_modals/profile-incomplete-modal";
 
-export function GameApplyButton({ gameId }: { gameId: string }) {
+interface GameApplyButtonProps {
+  gameId: string;
+  profileCompleted: boolean;
+  missingFields: string[];
+  gameStatus: number;
+}
+
+export function GameApplyButton({
+  gameId,
+  profileCompleted,
+  missingFields,
+  gameStatus,
+}: GameApplyButtonProps) {
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [message, setMessage] = useState<{
+    text: string;
+    type: "success" | "error";
+  } | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  // 모집중(1)이 아니면 버튼 비활성화
+  if (gameStatus !== 1) {
+    const labels: Record<number, string> = {
+      0: "모집 전",
+      2: "신청 마감",
+      3: "경기 완료",
+      4: "취소된 경기",
+    };
+    return (
+      <Button className="w-full" disabled>
+        {labels[gameStatus] ?? "신청 불가"}
+      </Button>
+    );
+  }
 
   async function handleApply() {
+    if (!profileCompleted) {
+      setShowModal(true);
+      return;
+    }
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch(`/api/web/games/${gameId}/apply`, { method: "POST" });
-      const data = await res.json();
+      const res = await fetch(`/api/web/games/${gameId}/apply`, {
+        method: "POST",
+      });
+      const data = await res.json() as { message?: string; error?: string };
       if (res.ok) {
         setMessage({ text: data.message ?? "신청 완료!", type: "success" });
       } else {
-        setMessage({ text: data.error ?? "오류가 발생했습니다.", type: "error" });
+        setMessage({
+          text: data.error ?? "오류가 발생했습니다.",
+          type: "error",
+        });
       }
     } catch {
       setMessage({ text: "네트워크 오류가 발생했습니다.", type: "error" });
@@ -26,15 +67,27 @@ export function GameApplyButton({ gameId }: { gameId: string }) {
   }
 
   return (
-    <div className="space-y-2">
-      {message && (
-        <p className={`text-sm ${message.type === "success" ? "text-green-400" : "text-red-400"}`}>
-          {message.text}
-        </p>
+    <>
+      {showModal && (
+        <ProfileIncompleteModal
+          missingFields={missingFields}
+          onClose={() => setShowModal(false)}
+        />
       )}
-      <Button className="w-full" onClick={handleApply} disabled={loading}>
-        {loading ? "신청 중..." : "참가 신청"}
-      </Button>
-    </div>
+      <div className="space-y-2">
+        {message && (
+          <p
+            className={`text-sm ${
+              message.type === "success" ? "text-green-600" : "text-red-500"
+            }`}
+          >
+            {message.text}
+          </p>
+        )}
+        <Button className="w-full" onClick={handleApply} disabled={loading}>
+          {loading ? "신청 중..." : "참가 신청"}
+        </Button>
+      </div>
+    </>
   );
 }

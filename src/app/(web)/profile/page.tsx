@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const TOURNAMENT_STATUS_LABEL: Record<string, string> = {
   draft: "준비중",
@@ -12,10 +16,6 @@ const TOURNAMENT_STATUS_LABEL: Record<string, string> = {
   completed: "완료",
   cancelled: "취소",
 };
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
 
 const tabs = [
   { id: "info", label: "정보" },
@@ -24,8 +24,6 @@ const tabs = [
   { id: "teams", label: "팀" },
   { id: "tournaments", label: "대회" },
 ];
-
-const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
 
 interface ProfileData {
   user: {
@@ -43,140 +41,10 @@ interface ProfileData {
   tournaments: { id: string; name: string; status: string | null }[];
 }
 
-function EditModal({
-  user,
-  onClose,
-  onSaved,
-}: {
-  user: ProfileData["user"];
-  onClose: () => void;
-  onSaved: (updated: Partial<ProfileData["user"]>) => void;
-}) {
-  const [form, setForm] = useState({
-    nickname: user.nickname ?? "",
-    position: user.position ?? "",
-    height: user.height?.toString() ?? "",
-    city: user.city ?? "",
-    bio: user.bio ?? "",
-  });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  const save = async () => {
-    setSaving(true);
-    setError("");
-    try {
-      const res = await fetch("/api/web/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nickname: form.nickname || null,
-          position: form.position || null,
-          height: form.height ? Number(form.height) : null,
-          city: form.city || null,
-          bio: form.bio || null,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "저장 실패");
-      onSaved(data);
-      onClose();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "오류 발생");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const inputCls =
-    "w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50";
-  const labelCls = "mb-1 block text-sm text-[#6B7280]";
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md rounded-[20px] border border-[#E8ECF0] bg-[#FFFFFF] p-6"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="mb-5 text-lg font-bold">프로필 수정</h3>
-
-        {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
-
-        <div className="space-y-4">
-          <div>
-            <label className={labelCls}>닉네임</label>
-            <input
-              className={inputCls}
-              value={form.nickname}
-              onChange={(e) => setForm((p) => ({ ...p, nickname: e.target.value }))}
-              placeholder="닉네임"
-            />
-          </div>
-          <div>
-            <label className={labelCls}>포지션</label>
-            <select
-              className={inputCls}
-              value={form.position}
-              onChange={(e) => setForm((p) => ({ ...p, position: e.target.value }))}
-            >
-              <option value="">선택 안 함</option>
-              {POSITIONS.map((pos) => (
-                <option key={pos} value={pos}>{pos}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className={labelCls}>키 (cm)</label>
-            <input
-              type="number"
-              className={inputCls}
-              value={form.height}
-              onChange={(e) => setForm((p) => ({ ...p, height: e.target.value }))}
-              placeholder="예: 180"
-              min={100}
-              max={250}
-            />
-          </div>
-          <div>
-            <label className={labelCls}>지역</label>
-            <input
-              className={inputCls}
-              value={form.city}
-              onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
-              placeholder="예: 서울, 부산"
-            />
-          </div>
-          <div>
-            <label className={labelCls}>소개</label>
-            <textarea
-              className={inputCls}
-              rows={3}
-              value={form.bio}
-              onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))}
-              placeholder="자기소개를 입력하세요"
-            />
-          </div>
-        </div>
-
-        <div className="mt-5 flex gap-2">
-          <Button variant="secondary" onClick={onClose} className="flex-1">취소</Button>
-          <Button onClick={save} disabled={saving} className="flex-1">
-            {saving ? "저장 중..." : "저장"}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("info");
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showEdit, setShowEdit] = useState(false);
 
   useEffect(() => {
     fetch("/api/web/profile")
@@ -231,13 +99,10 @@ export default function ProfilePage() {
               </span>
             )}
           </div>
-          <Button
-            variant="secondary"
-            className="text-xs flex-shrink-0"
-            onClick={() => setShowEdit(true)}
-          >
-            프로필 수정
-          </Button>
+          {/* 기존 onClick 모달 → /profile/edit 전용 페이지로 변경 */}
+          <Link href="/profile/edit" className="flex-shrink-0">
+            <Button variant="secondary" className="text-xs">프로필 수정</Button>
+          </Link>
         </div>
       </Card>
 
@@ -347,18 +212,6 @@ export default function ProfilePage() {
             <p className="text-[#6B7280]">참가한 대회가 없습니다.</p>
           ))}
       </Card>
-
-      {showEdit && (
-        <EditModal
-          user={user}
-          onClose={() => setShowEdit(false)}
-          onSaved={(updated) => {
-            setProfile((prev) =>
-              prev ? { ...prev, user: { ...prev.user, ...updated } } : prev
-            );
-          }}
-        />
-      )}
     </div>
   );
 }

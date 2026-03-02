@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth/jwt";
 import { WEB_SESSION_COOKIE } from "@/lib/auth/web-session";
 import { prisma } from "@/lib/db/prisma";
+import { createNotification } from "@/lib/notifications/create";
+import { NOTIFICATION_TYPES } from "@/lib/notifications/types";
 
 export async function POST(
   _req: NextRequest,
@@ -21,7 +23,19 @@ export async function POST(
   try {
     const userId = BigInt(session.sub);
 
-    const game = await prisma.games.findUnique({ where: { uuid: id } });
+    // 8자리 short ID → full UUID 변환 (상세페이지와 동일한 처리)
+    let game = null;
+    if (id.length === 8) {
+      const rows = await prisma.$queryRaw<{ uuid: string }[]>`
+        SELECT uuid::text AS uuid FROM games WHERE uuid::text LIKE ${id + "%"} LIMIT 1
+      `;
+      const fullUuid = rows[0]?.uuid;
+      if (fullUuid) {
+        game = await prisma.games.findUnique({ where: { uuid: fullUuid } });
+      }
+    } else {
+      game = await prisma.games.findUnique({ where: { uuid: id } });
+    }
     if (!game) return NextResponse.json({ error: "경기를 찾을 수 없습니다." }, { status: 404 });
 
     // 2. 주최자 본인 신청 불가
@@ -55,6 +69,20 @@ export async function POST(
       return NextResponse.json({ error: "이미 참가 신청한 경기입니다." }, { status: 409 });
     }
 
+    // 7. 신청자 프로필 조회 (호스트에게 전달할 정보)
+    const applicant = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        name: true,
+        nickname: true,
+        phone: true,
+        position: true,
+        city: true,
+        district: true,
+        profile_image: true,
+      },
+    });
+
     await prisma.game_applications.create({
       data: {
         game_id: game.id,
@@ -65,6 +93,29 @@ export async function POST(
         updated_at: new Date(),
       },
     });
+
+    // 8. 주최자에게 신청 알림 발송 (fire-and-forget)
+    createNotification({
+      userId: game.organizer_id,
+      notificationType: NOTIFICATION_TYPES.GAME_APPLICATION_RECEIVED,
+      title: "새 참가 신청",
+      content: `${applicant?.nickname ?? "참가자"}님이 "${game.title}"에 참가 신청했습니다.`,
+      actionUrl: `/games/${game.uuid}`,
+      notifiableType: "game",
+      notifiableId: game.id,
+      metadata: {
+        applicant: {
+          id: userId.toString(),
+          name: applicant?.name ?? null,
+          nickname: applicant?.nickname ?? null,
+          phone: applicant?.phone ?? null,
+          position: applicant?.position ?? null,
+          city: applicant?.city ?? null,
+          district: applicant?.district ?? null,
+          profile_image: applicant?.profile_image ?? null,
+        },
+      },
+    }).catch(() => {});
 
     return NextResponse.json({ success: true, message: "참가 신청이 완료되었습니다." });
   } catch {

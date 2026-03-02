@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import withSerwistInit from "@serwist/next";
 
 // CSP nonce는 middleware(proxy.ts)에서 생성 → x-nonce 헤더로 전달
 // 빌드 시점 정적 헤더용 fallback (nonce 없는 경로)
@@ -42,11 +43,12 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       // TODO: middleware에서 nonce 생성 구현 후 'unsafe-inline' 제거
-      "script-src 'self' 'unsafe-inline' https://accounts.google.com",
+      "script-src 'self' 'unsafe-inline' https://accounts.google.com https://t1.daumcdn.net",
       "style-src 'self' 'unsafe-inline'", // Tailwind inline은 불가피
       "img-src 'self' data: https:",
       "font-src 'self' data:",
       "connect-src 'self' https:",
+      "frame-src https://postcode.map.daum.net http://postcode.map.daum.net https://t1.daumcdn.net", // 카카오 우편번호
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -55,11 +57,23 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Serwist(@serwist/next)가 webpack config를 추가함 → Turbopack이 경고 발생
+  // dev는 disable:true로 SW 비활성화, 프로덕션 빌드(webpack)만 Serwist 사용
+  // turbopack: {} → "이 설정을 인지했다"고 Next.js에 알림 (경고 억제)
+  turbopack: {},
   async headers() {
     return [
       {
         source: "/(.*)",
         headers: securityHeaders,
+      },
+      // SW는 캐시 금지 (항상 최신 버전 사용)
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+        ],
       },
       {
         source: "/api/v1/:path*",
@@ -84,4 +98,11 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// PWA: Serwist 래퍼 (개발 환경에서는 SW 비활성화 → Turbopack 충돌 방지)
+const withSerwist = withSerwistInit({
+  swSrc: "src/app/sw.ts",
+  swDest: "public/sw.js",
+  disable: process.env.NODE_ENV === "development",
+});
+
+export default withSerwist(nextConfig);

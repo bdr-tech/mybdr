@@ -3,31 +3,25 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 import { getWebSession } from "@/lib/auth/web-session";
-
-async function checkSubscription(userId: bigint, featureKey: string): Promise<boolean> {
-  const sub = await prisma.user_subscriptions.findFirst({
-    where: {
-      user_id: userId,
-      feature_key: featureKey,
-      status: "active",
-      OR: [
-        { expires_at: null },
-        { expires_at: { gte: new Date() } },
-      ],
-    },
-  });
-  return !!sub;
-}
+import { canHostPickup, canCreateTeam } from "@/lib/auth/roles";
 
 function generateGameId(gameType: number): string {
   const now = new Date();
-  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD
+  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
   const typeCode = gameType === 1 ? "GST" : gameType === 2 ? "TVT" : "PIK";
-  const rand = Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4).padEnd(4, "0");
+  const rand = Math.random()
+    .toString(36)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 4)
+    .padEnd(4, "0");
   return `GAME-${dateStr}-${typeCode}-${rand}`;
 }
 
-export async function createGameAction(_prevState: { error: string } | null, formData: FormData) {
+export async function createGameAction(
+  _prevState: { error: string } | null,
+  formData: FormData
+) {
   const session = await getWebSession();
   if (!session) redirect("/login");
 
@@ -39,6 +33,27 @@ export async function createGameAction(_prevState: { error: string } | null, for
   }
 
   const gameType = parseInt(formData.get("game_type") as string) || 0;
+
+  // 권한 체크: membershipType 기반 (서버사이드 2차 검증)
+  const organizerId = BigInt(session.sub);
+  if (gameType === 0 || gameType === 2) {
+    const user = await prisma.user.findUnique({
+      where: { id: organizerId },
+      select: { membershipType: true, isAdmin: true },
+    });
+    const mt = user?.membershipType ?? 0;
+    const isAdmin = user?.isAdmin ?? false;
+
+    if (!isAdmin) {
+      if (gameType === 0 && !canHostPickup(mt)) {
+        return { error: "픽업 게임을 개설하려면 픽업 호스트 이상 계정이 필요합니다." };
+      }
+      if (gameType === 2 && !canCreateTeam(mt)) {
+        return { error: "팀 대결을 개설하려면 팀장 이상 계정이 필요합니다." };
+      }
+    }
+  }
+
   const venueName = (formData.get("venue_name") as string)?.trim() || null;
   const maxParticipants = parseInt(formData.get("max_participants") as string) || 10;
   const feePerPerson = parseInt(formData.get("fee_per_person") as string) || 0;
@@ -59,18 +74,10 @@ export async function createGameAction(_prevState: { error: string } | null, for
   const recurrenceRule = (formData.get("recurrence_rule") as string) || null;
   const recurringCount = parseInt(formData.get("recurring_count") as string) || 0;
   const notes = (formData.get("notes") as string)?.trim() || null;
+  // 픽업 전용 필드
+  const contactPhone = (formData.get("contact_phone") as string)?.trim() || null;
+  const entryFeeNote = (formData.get("entry_fee_note") as string)?.trim() || null;
 
-  const organizerId = BigInt(session.sub);
-
-  // 픽업 게임(타입 0)만 구독 게이팅 (슈퍼관리자 무료 이용)
-  if (gameType === 0 && session.role !== "super_admin") {
-    const hasAccess = await checkSubscription(organizerId, "pickup_game");
-    if (!hasAccess) {
-      return { error: "UPGRADE_REQUIRED", feature: "pickup_game" } as unknown as { error: string };
-    }
-  }
-
-  // redirect()는 try/catch 밖에서 호출해야 함 (내부적으로 예외를 throw하므로 catch에 잡힘)
   let createdGameId: string;
   try {
     const game = await prisma.games.create({
@@ -99,22 +106,26 @@ export async function createGameAction(_prevState: { error: string } | null, for
         is_recurring: isRecurring,
         recurrence_rule: isRecurring ? recurrenceRule : null,
         notes,
-        status: 1, // published / open
+        contact_phone: contactPhone,
+        entry_fee_note: entryFeeNote,
+        status: 1,
         created_at: new Date(),
         updated_at: new Date(),
       },
     });
 
-    // Create recurring copies if needed
     if (isRecurring && recurringCount > 1 && recurrenceRule) {
       const baseDate = new Date(scheduledAt);
       const copies = [];
 
       for (let i = 1; i < recurringCount; i++) {
         const nextDate = new Date(baseDate);
-        if (recurrenceRule === "weekly") nextDate.setDate(nextDate.getDate() + 7 * i);
-        else if (recurrenceRule === "biweekly") nextDate.setDate(nextDate.getDate() + 14 * i);
-        else if (recurrenceRule === "monthly") nextDate.setMonth(nextDate.getMonth() + i);
+        if (recurrenceRule === "weekly")
+          nextDate.setDate(nextDate.getDate() + 7 * i);
+        else if (recurrenceRule === "biweekly")
+          nextDate.setDate(nextDate.getDate() + 14 * i);
+        else if (recurrenceRule === "monthly")
+          nextDate.setMonth(nextDate.getMonth() + i);
 
         copies.push({
           game_id: generateGameId(gameType),
@@ -140,6 +151,8 @@ export async function createGameAction(_prevState: { error: string } | null, for
           is_recurring: true,
           recurrence_rule: recurrenceRule,
           notes,
+          contact_phone: contactPhone,
+          entry_fee_note: entryFeeNote,
           status: 1,
           cloned_from_id: game.id,
           created_at: new Date(),

@@ -2,33 +2,34 @@ import { prisma } from "@/lib/db/prisma";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { updateUserRoleAction, updateUserStatusAction } from "@/app/actions/admin-users";
+import { updateUserRoleAction, updateUserStatusAction, toggleUserAdminAction } from "@/app/actions/admin-users";
 
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 50;
 
 const ROLE_MAP: Record<number, { label: string; variant: "default" | "success" | "error" | "info" | "warning" }> = {
-  0: { label: "일반회원", variant: "default" },
-  1: { label: "PRO", variant: "info" },
-  2: { label: "팀운영자", variant: "warning" },
+  0: { label: "일반유저", variant: "default" },
+  1: { label: "픽업호스트", variant: "info" },
+  2: { label: "팀장", variant: "warning" },
   3: { label: "대회관리자", variant: "info" },
-  4: { label: "슈퍼관리자", variant: "error" },
 };
 
 // FR-061: 유저 관리
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string }>;
+  searchParams: Promise<{ page?: string; q?: string; error?: string }>;
 }) {
-  const { page: pageStr, q } = await searchParams;
+  const { page: pageStr, q, error } = await searchParams;
   const page = Math.max(1, parseInt(pageStr ?? "1", 10));
   const skip = (page - 1) * PAGE_SIZE;
 
   const where = q
     ? { OR: [{ email: { contains: q, mode: "insensitive" as const } }, { nickname: { contains: q, mode: "insensitive" as const } }] }
     : undefined;
+
+  const superAdminCount = await prisma.user.count({ where: { isAdmin: true } });
 
   const [users, totalCount] = await Promise.all([
     prisma.user.findMany({
@@ -41,6 +42,7 @@ export default async function AdminUsersPage({
         email: true,
         nickname: true,
         membershipType: true,
+        isAdmin: true,
         status: true,
         createdAt: true,
       },
@@ -60,6 +62,9 @@ export default async function AdminUsersPage({
           <p className="mt-1 text-sm text-[#6B7280]">
             전체 <span className="font-semibold text-[#111827]">{totalCount.toLocaleString()}명</span>
             {totalCount > 0 && <span className="ml-1">· {from}–{to}번째</span>}
+            <span className="ml-2 rounded-full bg-[rgba(239,68,68,0.1)] px-2 py-0.5 text-xs text-[#EF4444]">
+              슈퍼관리자 {superAdminCount}/4
+            </span>
           </p>
         </div>
         <form method="GET" className="flex gap-2">
@@ -73,14 +78,19 @@ export default async function AdminUsersPage({
         </form>
       </div>
 
+      {error && (
+        <div className="mb-4 rounded-[12px] bg-[rgba(239,68,68,0.1)] px-4 py-3 text-sm text-[#EF4444]">{error}</div>
+      )}
+
       <Card className="overflow-hidden p-0">
         <div className="overflow-x-auto">
           <table className="w-full table-fixed text-left text-sm">
             <colgroup>
               <col className="w-[130px]" />
               <col />
-              <col className="w-[290px]" />
-              <col className="w-[155px]" />
+              <col className="w-[260px]" />
+              <col className="w-[120px]" />
+              <col className="w-[130px]" />
               <col className="w-[105px]" />
             </colgroup>
             <thead className="border-b border-[#E8ECF0] bg-[#F5F7FA] text-[#6B7280]">
@@ -88,6 +98,7 @@ export default async function AdminUsersPage({
                 <th className="px-5 py-4 font-medium">닉네임</th>
                 <th className="px-5 py-4 font-medium">이메일</th>
                 <th className="px-5 py-4 font-medium">역할 변경</th>
+                <th className="px-5 py-4 font-medium">슈퍼관리자</th>
                 <th className="px-5 py-4 font-medium">상태</th>
                 <th className="px-5 py-4 font-medium">가입일</th>
               </tr>
@@ -99,10 +110,13 @@ export default async function AdminUsersPage({
                 return (
                   <tr
                     key={user.id.toString()}
-                    className="border-b border-[#F1F5F9] hover:bg-[#EEF2FF] transition-colors"
+                    className={`border-b border-[#F1F5F9] transition-colors hover:bg-[#EEF2FF] ${user.isAdmin ? "bg-[rgba(239,68,68,0.02)]" : ""}`}
                   >
-                    <td className="px-5 py-3 font-medium truncate">{user.nickname ?? "-"}</td>
-                    <td className="px-5 py-3 text-[#6B7280] truncate">{user.email}</td>
+                    <td className="truncate px-5 py-3 font-medium">
+                      {user.isAdmin && <span className="mr-1 text-[#EF4444]">★</span>}
+                      {user.nickname ?? "-"}
+                    </td>
+                    <td className="truncate px-5 py-3 text-[#6B7280]">{user.email}</td>
 
                     {/* 역할 변경 */}
                     <td className="px-5 py-3">
@@ -114,17 +128,34 @@ export default async function AdminUsersPage({
                           defaultValue={user.membershipType}
                           className="rounded-full border border-[#E8ECF0] bg-[#FFFFFF] px-3 py-1 text-xs text-[#374151] outline-none focus:border-[#0066FF]"
                         >
-                          <option value={0}>일반회원</option>
-                          <option value={1}>PRO</option>
-                          <option value={2}>팀운영자</option>
+                          <option value={0}>일반유저</option>
+                          <option value={1}>픽업호스트</option>
+                          <option value={2}>팀장</option>
                           <option value={3}>대회관리자</option>
-                          <option value={4}>슈퍼관리자</option>
                         </select>
                         <button
                           type="submit"
                           className="rounded-full bg-[#0066FF] px-3 py-1 text-xs font-semibold text-white hover:bg-[#0052CC]"
                         >
                           변경
+                        </button>
+                      </form>
+                    </td>
+
+                    {/* 슈퍼관리자 토글 */}
+                    <td className="px-5 py-3">
+                      <form action={toggleUserAdminAction}>
+                        <input type="hidden" name="user_id" value={user.id.toString()} />
+                        <input type="hidden" name="make_admin" value={user.isAdmin ? "false" : "true"} />
+                        <button
+                          type="submit"
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            user.isAdmin
+                              ? "bg-[rgba(239,68,68,0.1)] text-[#EF4444] hover:bg-[rgba(239,68,68,0.2)]"
+                              : "bg-[#EEF2FF] text-[#6B7280] hover:text-[#111827]"
+                          }`}
+                        >
+                          {user.isAdmin ? "해제" : "지정"}
                         </button>
                       </form>
                     </td>

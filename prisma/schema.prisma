@@ -55,6 +55,7 @@ model User {
   preferred_divisions                                                       Json                         @default("[]")
   preferred_board_categories                                                Json                         @default("[]")
   profile_completed                                                         Boolean                      @default(false)
+  profileReminderShownAt                                                    DateTime?                    @map("profile_reminder_shown_at") @db.Timestamp(6)
   admin_logs                                                                admin_logs[]
   board_favorites                                                           board_favorites[]
   comments                                                                  comments[]
@@ -92,6 +93,9 @@ model User {
   tournaments_tournaments_mvp_player_idTousers                              Tournament[]                 @relation("tournaments_mvp_player_idTousers")
   user_favorite_courts                                                      user_favorite_courts[]
   user_subscriptions                                                        user_subscriptions[]
+  bracket_versions_created                                                  tournament_bracket_versions[] @relation("bracket_version_creator")
+  bracket_versions_approved                                                 tournament_bracket_versions[] @relation("bracket_version_approver")
+  quickMenuItems                                                            String[]                     @default(["find_game", "my_team", "tournaments", "pickup"]) @map("quick_menu_items")
 
   @@unique([provider, uid], map: "index_users_on_provider_and_uid")
   @@index([createdAt], map: "index_users_on_created_at")
@@ -154,6 +158,7 @@ model Tournament {
   tournamentMatches                      TournamentMatch[]
   tournamentSite                         TournamentSite[]
   tournamentTeams                        TournamentTeam[]
+  tournament_bracket_versions            tournament_bracket_versions[]
   teams                                  Team?                   @relation(fields: [champion_team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_18732ad2a6")
   tournament_series                      tournament_series?      @relation(fields: [series_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_228d987a3d")
   courts                                 courts?                 @relation(fields: [venue_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_4ed1e7dadb")
@@ -397,6 +402,23 @@ model TournamentMatch {
   @@index([venue_id], map: "index_tournament_matches_on_venue_id")
   @@index([winner_team_id], map: "index_tournament_matches_on_winner_team_id")
   @@map("tournament_matches")
+}
+
+model tournament_bracket_versions {
+  id             BigInt       @id @default(autoincrement())
+  tournament_id  String       @db.Uuid
+  version_number Int
+  created_at     DateTime     @default(now()) @db.Timestamp(6)
+  created_by     BigInt?
+  approved_by    BigInt?
+  is_active      Boolean?     @default(false)
+  notes          String?
+  tournament     Tournament   @relation(fields: [tournament_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  creator        User?        @relation("bracket_version_creator", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  approver       User?        @relation("bracket_version_approver", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([tournament_id], map: "idx_tournament_bracket_versions_tournament_id")
+  @@index([tournament_id, is_active], map: "idx_tournament_bracket_versions_is_active")
 }
 
 model MatchPlayerStat {
@@ -916,6 +938,8 @@ model games {
   notes                String?
   allow_guests         Boolean?            @default(true)
   status               Int                 @default(0)
+  contact_phone        String?             @db.VarChar(20)
+  entry_fee_note       String?             @db.VarChar(100)
   template_id          BigInt?
   cloned_from_id       BigInt?
   is_recurring         Boolean?            @default(false)

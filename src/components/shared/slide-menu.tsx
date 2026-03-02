@@ -14,6 +14,7 @@ const menuSections = {
   etc: [
     { href: "/teams", label: "내 팀", icon: "👕" },
     { href: "/courts", label: "코트 찾기", icon: "📍" },
+    // { href: "/pricing", label: "요금제", icon: "💳" },
     { href: "/profile", label: "프로필", icon: "👤" },
     { href: "/tournament-admin", label: "대회 관리", icon: "⚙️", adminOnly: true },
     { href: "/admin", label: "관리자", icon: "🔧", superAdminOnly: true },

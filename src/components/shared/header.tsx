@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { SlideMenu } from "./slide-menu";
 import { UserDropdown } from "./user-dropdown";
+import { BellIcon } from "./bell-icon";
 
 const navItems = [
   { href: "/", label: "홈", icon: "🏠" },
@@ -19,6 +20,7 @@ const desktopNavItems = [
   { href: "/teams", label: "팀" },
   { href: "/tournaments", label: "대회" },
   { href: "/community", label: "커뮤니티" },
+  // { href: "/pricing", label: "요금제" },
 ];
 
 interface SessionUser {
@@ -32,13 +34,14 @@ export function Header() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState<SessionUser | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     // JWT만 검증하는 가벼운 엔드포인트 (DB 쿼리 없음)
     fetch("/api/web/me", { credentials: "include" })
       .then(async (r) => {
         if (r.ok) {
-          const data = await r.json();
+          const data = await r.json() as SessionUser;
           setUser(data);
         } else {
           setUser(null);
@@ -46,6 +49,21 @@ export function Header() {
       })
       .catch(() => setUser(null));
   }, [pathname]);
+
+  useEffect(() => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+    fetch("/api/web/notifications", { credentials: "include" })
+      .then(async (r) => {
+        if (r.ok) {
+          const data = await r.json() as { unreadCount: number };
+          setUnreadCount(data.unreadCount);
+        }
+      })
+      .catch(() => {});
+  }, [user, pathname]);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -77,16 +95,11 @@ export function Header() {
             ))}
           </nav>
 
-          {/* Right: Notifications + User */}
+          {/* Right: Bell + User */}
           <div className="flex items-center gap-2">
             {user ? (
               <>
-                <Link
-                  href="/notifications"
-                  className="relative rounded-full p-2 text-[#6B7280] hover:bg-[#EEF2FF] hover:text-[#111827]"
-                >
-                  🔔
-                </Link>
+                <BellIcon unreadCount={unreadCount} />
                 <UserDropdown name={user.name} role={user.role} />
               </>
             ) : (

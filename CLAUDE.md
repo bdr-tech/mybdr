@@ -1,4 +1,21 @@
 # MyBDR - Basketball Tournament Platform
+.claude 에 있는 CLAUDE.md 파일을 항상 바라보고, 여기에 있는 에이전트를 우선 활용해. 
+그리고 프로젝트 내 Dev/plan.md의 수정내역을 항상 체크해야하. 
+
+## 이 프로젝트의 4단계 방어체계를 지키자. 
+1. 리서치(research.md)가 무지한 변경을 막아주고
+2. 계획(plan.md) 가 잘못된 변경을 막아주고
+3. 주석(plan.md의 내용을 사용자가 수정)으로 내 판단을 주입하고 
+4. 구현 명령이 방해 없이 실행됨. 
+
+
+
+## 리서치 / 기획 파일 위치 정보 
+1. Research.md (/Users/grizrider/CC/mybdr/Dev/research.md)
+2. plan.md (/Users/grizrider/CC/mybdr/Dev/plan.md)
+
+
+이 두 파일을 기준으로 프로젝트를 
 
 ## 프로젝트 개요
 Rails 8.0 기반 BDR Platform을 Next.js 15로 전환한 프로젝트.

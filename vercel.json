@@ -2,5 +2,11 @@
   "buildCommand": "prisma generate && next build",
   "outputDirectory": ".next",
   "framework": "nextjs",
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "crons": [
+    {
+      "path": "/api/cron/tournament-reminders",
+      "schedule": "0 0 * * *"
+    }
+  ]
 }

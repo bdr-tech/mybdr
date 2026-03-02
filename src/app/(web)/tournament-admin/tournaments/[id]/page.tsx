@@ -7,6 +7,15 @@ import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 
+function getDDay(startDate: Date): string {
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+  const start = new Date(startDate.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+  const diff = Math.ceil((start.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff < 0) return "진행중";
+  if (diff === 0) return "D-Day";
+  return `D-${diff}`;
+}
+
 const STATUS_LABEL: Record<string, string> = {
   draft: "초안",
   registration: "참가 접수 중",
@@ -69,10 +78,16 @@ export default async function TournamentAdminDetailPage({
       desc: `${tournament._count.tournamentTeams}팀 등록됨`,
     },
     {
+      href: `/tournament-admin/tournaments/${id}/bracket`,
+      label: "대진표 생성",
+      icon: "🏆",
+      desc: "자동 생성 · 팀 배치 편집 · 버전 관리",
+    },
+    {
       href: `/tournament-admin/tournaments/${id}/matches`,
       label: "경기 관리",
       icon: "📋",
-      desc: `${tournament._count.tournamentMatches}경기 · 대진표 편집`,
+      desc: `${tournament._count.tournamentMatches}경기 · 스코어 입력`,
     },
     {
       href: `/tournament-admin/tournaments/${id}/site`,
@@ -107,10 +122,15 @@ export default async function TournamentAdminDetailPage({
                 ● {STATUS_LABEL[status] ?? status}
               </span>
               {tournament.startDate && (
-                <span className="text-[#6B7280]">
-                  {tournament.startDate.toLocaleDateString("ko-KR")}
-                  {tournament.endDate && ` ~ ${tournament.endDate.toLocaleDateString("ko-KR")}`}
-                </span>
+                <>
+                  <span className="text-[#6B7280]">
+                    {tournament.startDate.toLocaleDateString("ko-KR")}
+                    {tournament.endDate && ` ~ ${tournament.endDate.toLocaleDateString("ko-KR")}`}
+                  </span>
+                  <span className="rounded-full bg-[rgba(244,162,97,0.12)] px-2 py-0.5 text-xs font-semibold text-[#F4A261]">
+                    {getDDay(tournament.startDate)}
+                  </span>
+                </>
               )}
               <span className="text-[#6B7280]">{tournament.format ?? "싱글 엘리미네이션"}</span>
             </div>

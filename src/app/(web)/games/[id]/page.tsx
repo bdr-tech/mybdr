@@ -3,6 +3,12 @@ import { notFound } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { GameApplyButton } from "./apply-button";
+import { ProfileIncompleteBanner } from "./profile-banner";
+import { PickupDetail } from "./_sections/pickup-detail";
+import { GuestDetail } from "./_sections/guest-detail";
+import { TeamMatchDetail } from "./_sections/team-match-detail";
+import { getWebSession } from "@/lib/auth/web-session";
+import { getMissingFields } from "@/lib/profile/completion";
 
 export const revalidate = 30;
 
@@ -15,39 +21,20 @@ const STATUS_LABEL: Record<number, string> = {
   5: "취소",
 };
 
-const GAME_TYPE_LABEL: Record<number, { label: string; emoji: string }> = {
-  0: { label: "픽업", emoji: "🏀" },
-  1: { label: "용병 모집", emoji: "🤝" },
-  2: { label: "팀 대결", emoji: "⚔️" },
+const GAME_TYPE_LABEL: Record<number, { label: string; emoji: string; accent: string }> = {
+  0: { label: "픽업",        emoji: "🏀", accent: "#F4A261" },
+  1: { label: "게스트 모집",  emoji: "🤝", accent: "#60A5FA" },
+  2: { label: "팀 대결",     emoji: "⚔️", accent: "#4ADE80" },
 };
 
-const SKILL_LEVEL_LABEL: Record<string, string> = {
-  all: "전체",
-  beginner: "초급",
-  intermediate: "중급",
-  intermediate_advanced: "중고급",
-  advanced: "고급",
-};
-
-const RECURRENCE_RULE_LABEL: Record<string, string> = {
-  weekly: "매주",
-  biweekly: "2주마다",
-  monthly: "매월",
-};
-
-function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex justify-between gap-2">
-      <span className="text-[#6B7280]">{label}</span>
-      <span className="text-right">{value}</span>
-    </div>
-  );
-}
-
-export default async function GameDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function GameDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
 
-  // 8자리 short ID → uuid prefix로 full UUID 조회 후 findUnique, 전체 UUID → 직접 조회
+  // 8자리 short ID → full UUID
   let game = null;
   if (id.length === 8) {
     const rows = await prisma.$queryRaw<{ uuid: string }[]>`
@@ -55,12 +42,64 @@ export default async function GameDetailPage({ params }: { params: Promise<{ id:
     `;
     const fullUuid = rows[0]?.uuid;
     if (fullUuid) {
-      game = await prisma.games.findUnique({ where: { uuid: fullUuid } }).catch(() => null);
+      game = await prisma.games
+        .findUnique({ where: { uuid: fullUuid } })
+        .catch(() => null);
     }
   } else {
-    game = await prisma.games.findUnique({ where: { uuid: id } }).catch(() => null);
+    game = await prisma.games
+      .findUnique({ where: { uuid: id } })
+      .catch(() => null);
   }
   if (!game) return notFound();
+
+  // 로그인 유저 → 프로필 완성 여부 확인
+  const session = await getWebSession();
+  let profileCompleted = true;
+  let missingFields: string[] = [];
+  let showProfileBanner = false;
+
+  if (session) {
+    const user = await prisma.user
+      .findUnique({
+        where: { id: BigInt(session.sub) },
+        select: {
+          name: true,
+          nickname: true,
+          phone: true,
+          position: true,
+          city: true,
+          district: true,
+          profile_completed: true,
+          profileReminderShownAt: true,
+        },
+      })
+      .catch(() => null);
+
+    if (user) {
+      profileCompleted = user.profile_completed;
+      missingFields = getMissingFields({
+        name: user.name,
+        nickname: user.nickname,
+        phone: user.phone,
+        position: user.position,
+        city: user.city,
+        district: user.district,
+      });
+
+      // 1일 1회 안내 배너 판단 (KST 기준 오늘 0시)
+      if (!profileCompleted) {
+        const now = new Date(
+          new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" })
+        );
+        const todayStart = new Date(now);
+        todayStart.setHours(0, 0, 0, 0);
+        showProfileBanner =
+          !user.profileReminderShownAt ||
+          user.profileReminderShownAt < todayStart;
+      }
+    }
+  }
 
   const applications = await prisma.game_applications
     .findMany({
@@ -69,114 +108,57 @@ export default async function GameDetailPage({ params }: { params: Promise<{ id:
     })
     .catch(() => []);
 
-  const gameTypeInfo = GAME_TYPE_LABEL[game.game_type] ?? { label: "픽업", emoji: "🏀" };
-  const locationParts = [game.city, game.district, game.venue_name].filter(Boolean);
-  const locationStr = locationParts.length > 0 ? locationParts.join(" ") : "-";
+  const gameTypeInfo = GAME_TYPE_LABEL[game.game_type] ?? GAME_TYPE_LABEL[0];
+  const statusLabel = STATUS_LABEL[game.status] ?? "대기";
 
   return (
     <div className="space-y-6">
-      {/* Main info card */}
+      {/* 프로필 미완성 안내 배너 (1일 1회) */}
+      {showProfileBanner && <ProfileIncompleteBanner />}
+
+      {/* 메인 정보 카드 */}
       <Card>
-        <div className="flex flex-wrap items-start gap-3">
-          <div className="flex-1">
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              <span className="text-xl">{gameTypeInfo.emoji}</span>
-              <Badge variant="default">{gameTypeInfo.label}</Badge>
-              <Badge>{STATUS_LABEL[game.status] ?? "대기"}</Badge>
-            </div>
-            <h1 className="text-2xl font-bold">{game.title}</h1>
-          </div>
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="text-xl">{gameTypeInfo.emoji}</span>
+          <Badge variant="default">{gameTypeInfo.label}</Badge>
+          <Badge
+            variant={
+              game.status === 1
+                ? "success"
+                : game.status === 4 || game.status === 5
+                ? "error"
+                : "default"
+            }
+          >
+            {statusLabel}
+          </Badge>
         </div>
+        <h1 className="mb-4 text-2xl font-bold">{game.title}</h1>
 
-        {/* Core details */}
-        <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-          <InfoRow label="일시" value={game.scheduled_at?.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) ?? "-"} />
-          <InfoRow
-            label="경기 시간"
-            value={game.duration_hours ? `${game.duration_hours}시간` : "-"}
-          />
-          <InfoRow label="장소" value={locationStr} />
-          {game.venue_address && (
-            <InfoRow label="주소" value={game.venue_address} />
-          )}
-          <InfoRow
-            label="참가비"
-            value={game.fee_per_person ? `${game.fee_per_person.toLocaleString()}원` : "무료"}
-          />
-          <InfoRow
-            label="모집 인원"
-            value={`${game.min_participants ?? 4}~${game.max_participants ?? 10}명`}
-          />
-          <InfoRow
-            label="기술 수준"
-            value={SKILL_LEVEL_LABEL[game.skill_level ?? "all"] ?? game.skill_level ?? "-"}
-          />
-          <InfoRow
-            label="게스트"
-            value={game.allow_guests ? "허용" : "불허"}
-          />
-        </div>
+        {/* 게임 타입별 상세 섹션 */}
+        {game.game_type === 0 && <PickupDetail game={game} />}
+        {game.game_type === 1 && <GuestDetail game={game} />}
+        {game.game_type === 2 && <TeamMatchDetail game={game} />}
 
-        {/* Uniform colors */}
-        {(game.uniform_home_color || game.uniform_away_color) && (
-          <div className="mt-4 flex items-center gap-4">
-            <span className="text-sm text-[#6B7280]">유니폼</span>
-            <div className="flex items-center gap-2">
-              <div
-                className="h-6 w-6 rounded-full border border-white/20"
-                style={{ backgroundColor: game.uniform_home_color ?? "#FF0000" }}
-                title="홈"
-              />
-              <span className="text-xs text-[#6B7280]">홈</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div
-                className="h-6 w-6 rounded-full border border-white/20"
-                style={{ backgroundColor: game.uniform_away_color ?? "#0000FF" }}
-                title="어웨이"
-              />
-              <span className="text-xs text-[#6B7280]">어웨이</span>
-            </div>
-          </div>
-        )}
-
-        {/* Recurring badge */}
-        {game.is_recurring && (
-          <div className="mt-3 flex items-center gap-2">
-            <span className="text-sm text-[#6B7280]">반복 경기</span>
-            <Badge variant="default">
-              🔄 {RECURRENCE_RULE_LABEL[game.recurrence_rule ?? ""] ?? game.recurrence_rule}
-            </Badge>
-          </div>
-        )}
-
-        {/* Description */}
+        {/* 설명 */}
         {game.description && (
           <p className="mt-4 text-sm text-[#6B7280]">{game.description}</p>
         )}
 
-        {/* Requirements */}
-        {game.requirements && (
-          <div className="mt-4 rounded-[12px] bg-[#EEF2FF] px-4 py-3">
-            <p className="mb-1 text-xs text-[#6B7280]">참가 조건</p>
-            <p className="text-sm">{game.requirements}</p>
+        {/* 신청 버튼 (로그인 유저에게만) */}
+        {session && (
+          <div className="mt-6">
+            <GameApplyButton
+              gameId={id}
+              profileCompleted={profileCompleted}
+              missingFields={missingFields}
+              gameStatus={game.status}
+            />
           </div>
         )}
-
-        {/* Notes */}
-        {game.notes && (
-          <div className="mt-3 rounded-[12px] bg-[#EEF2FF] px-4 py-3">
-            <p className="mb-1 text-xs text-[#6B7280]">비고</p>
-            <p className="text-sm">{game.notes}</p>
-          </div>
-        )}
-
-        <div className="mt-6">
-          <GameApplyButton gameId={id} />
-        </div>
       </Card>
 
-      {/* Participants card */}
+      {/* 참가자 카드 */}
       <Card>
         <h2 className="mb-4 text-lg font-semibold">
           참가자 ({applications.length} / {game.max_participants ?? "∞"}명)
@@ -191,7 +173,11 @@ export default async function GameDetailPage({ params }: { params: Promise<{ id:
                 <span className="text-sm">{a.users?.nickname ?? "익명"}</span>
                 <Badge
                   variant={
-                    a.status === 1 ? "success" : a.status === 2 ? "error" : "default"
+                    a.status === 1
+                      ? "success"
+                      : a.status === 2
+                      ? "error"
+                      : "default"
                   }
                 >
                   {a.status === 1 ? "승인" : a.status === 2 ? "거부" : "대기"}

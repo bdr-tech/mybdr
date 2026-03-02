@@ -1,11 +1,13 @@
 import * as jose from "jose";
 
+// membershipType 매핑 (낮은→높은 순서)
+// 0=일반유저, 1=픽업호스트, 2=팀장, 3=대회관리자
+// isAdmin=true → super_admin (별도 처리)
 const MEMBERSHIP_TO_ROLE: Record<number, string> = {
   0: "free",
-  1: "pro",
-  2: "pickup_host",
+  1: "pickup_host",
+  2: "team_leader",
   3: "tournament_admin",
-  4: "super_admin",
 };
 
 const getSecret = () => new TextEncoder().encode(process.env.JWT_SECRET);
