@@ -26,11 +26,15 @@ export function SlideMenu({
   onClose,
   isLoggedIn,
   role,
+  name,
+  email,
 }: {
   open: boolean;
   onClose: () => void;
   isLoggedIn: boolean;
   role?: string;
+  name?: string;
+  email?: string;
 }) {
   return (
     <>
@@ -65,12 +69,12 @@ export function SlideMenu({
               {/* User Info */}
               <div className="mb-6 rounded-[16px] bg-[#EEF2FF] p-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0066FF] text-sm font-bold text-white">
-                    U
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#0066FF] text-sm font-bold text-white">
+                    {name?.trim() ? name.trim()[0].toUpperCase() : "U"}
                   </div>
-                  <div>
-                    <p className="font-semibold">사용자</p>
-                    <p className="text-xs text-[#6B7280]">user@email.com</p>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{name || "사용자"}</p>
+                    {email && <p className="truncate text-xs text-[#6B7280]">{email}</p>}
                   </div>
                 </div>
               </div>

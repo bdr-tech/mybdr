@@ -145,7 +145,7 @@ export function Header() {
         </div>
       </nav>
 
-      <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} isLoggedIn={!!user} role={user?.role} />
+      <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} isLoggedIn={!!user} role={user?.role} name={user?.name} email={user?.email} />
     </>
   );
 }
