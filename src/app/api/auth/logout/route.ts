@@ -4,13 +4,18 @@ import { verifyToken } from "@/lib/auth/jwt";
 import { WEB_SESSION_COOKIE } from "@/lib/auth/web-session";
 import { prisma } from "@/lib/db/prisma";
 
+const CLEAR_COOKIE = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  path: "/",
+  maxAge: 0,
+};
+
 export async function GET() {
   const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3030";
   const cookieStore = await cookies();
   const token = cookieStore.get(WEB_SESSION_COOKIE)?.value;
-
-  // 세션 쿠키 삭제
-  cookieStore.delete(WEB_SESSION_COOKIE);
 
   // 카카오 유저이면 카카오 세션도 함께 종료
   if (token) {
@@ -30,7 +35,10 @@ export async function GET() {
               `https://kauth.kakao.com/oauth/logout` +
               `?client_id=${clientId}` +
               `&logout_redirect_uri=${encodeURIComponent(logoutRedirectUri)}`;
-            return NextResponse.redirect(kakaoLogoutUrl);
+            const kakaoRes = NextResponse.redirect(kakaoLogoutUrl);
+            // 세션 쿠키 삭제 — redirect 응답에 직접 설정해야 반영됨
+            kakaoRes.cookies.set(WEB_SESSION_COOKIE, "", CLEAR_COOKIE);
+            return kakaoRes;
           }
         }
       }
@@ -39,5 +47,8 @@ export async function GET() {
     }
   }
 
-  return NextResponse.redirect(`${baseUrl}/login`);
+  const response = NextResponse.redirect(`${baseUrl}/login`);
+  // 세션 쿠키 삭제 — redirect 응답에 직접 설정해야 반영됨
+  response.cookies.set(WEB_SESSION_COOKIE, "", CLEAR_COOKIE);
+  return response;
 }

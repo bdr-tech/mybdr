@@ -12,6 +12,7 @@ const menuSections = {
     { href: "/community?category=marketplace", label: "장터게시판" },
   ],
   etc: [
+    { href: "/games/my-games", label: "내 경기", icon: "🏀" },
     { href: "/teams", label: "내 팀", icon: "👕" },
     { href: "/courts", label: "코트 찾기", icon: "📍" },
     // { href: "/pricing", label: "요금제", icon: "💳" },
@@ -66,18 +67,21 @@ export function SlideMenu({
         <div className="overflow-y-auto p-4" style={{ height: "calc(100% - 57px)" }}>
           {isLoggedIn ? (
             <>
-              {/* User Info */}
-              <div className="mb-6 rounded-[16px] bg-[#EEF2FF] p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#0066FF] text-sm font-bold text-white">
-                    {name?.trim() ? name.trim()[0].toUpperCase() : "U"}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">{name || "사용자"}</p>
-                    {email && <p className="truncate text-xs text-[#6B7280]">{email}</p>}
-                  </div>
+              {/* User Info — /profile 링크 */}
+              <Link
+                href="/profile"
+                onClick={onClose}
+                className="mb-6 flex items-center gap-3 rounded-[16px] bg-[#EEF2FF] p-4 transition-colors hover:bg-[#E8ECF0] active:opacity-80"
+              >
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#0066FF] text-sm font-bold text-white">
+                  {name?.trim() ? name.trim()[0].toUpperCase() : "U"}
                 </div>
-              </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{name || "사용자"}</p>
+                  {email && <p className="truncate text-xs text-[#6B7280]">{email}</p>}
+                </div>
+                <span className="flex-shrink-0 text-xs text-[#9CA3AF]">›</span>
+              </Link>
 
               {/* 게시판 */}
               <div className="mb-6">

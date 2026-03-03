@@ -55,7 +55,7 @@ export default function ProfilePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const initial = profile?.user.nickname?.charAt(0).toUpperCase() ?? "U";
+  const initial = profile?.user.nickname?.trim()?.[0]?.toUpperCase() || "U";
 
   if (loading) {
     return (
