@@ -19,7 +19,12 @@ const serwist = new Serwist({
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: [
-    // 인증/보안 API → 절대 캐시 금지
+    // 인증/로그아웃/OAuth 콜백 → 절대 캐시 금지 (Set-Cookie가 SW 캐시에서 strip됨)
+    {
+      matcher: /^\/api\/auth\//,
+      handler: new NetworkOnly(),
+    },
+    // 인증/보안 웹 API → 절대 캐시 금지
     {
       matcher: /^\/api\/web\/auth\//,
       handler: new NetworkOnly(),
