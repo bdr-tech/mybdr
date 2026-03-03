@@ -36,34 +36,33 @@ export function Header() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // 마운트 시 1회: me + notifications 병렬 fetch (waterfall 제거)
   useEffect(() => {
-    // JWT만 검증하는 가벼운 엔드포인트 (DB 쿼리 없음)
-    fetch("/api/web/me", { credentials: "include" })
-      .then(async (r) => {
-        if (r.ok) {
-          const data = await r.json() as SessionUser;
-          setUser(data);
-        } else {
-          setUser(null);
-        }
-      })
-      .catch(() => setUser(null));
-  }, [pathname]);
+    Promise.all([
+      fetch("/api/web/me", { credentials: "include" })
+        .then(async (r) => (r.ok ? (r.json() as Promise<SessionUser>) : null))
+        .catch(() => null),
+      fetch("/api/web/notifications", { credentials: "include" })
+        .then(async (r) => (r.ok ? (r.json() as Promise<{ unreadCount: number }>) : null))
+        .catch(() => null),
+    ]).then(([userData, notifData]) => {
+      setUser(userData);
+      if (userData && notifData) setUnreadCount(notifData.unreadCount ?? 0);
+    });
+  }, []);
 
+  // 페이지 이동 시: 알림 카운트만 갱신 (me 재호출 없음)
   useEffect(() => {
-    if (!user) {
-      setUnreadCount(0);
-      return;
-    }
+    if (!user) return;
     fetch("/api/web/notifications", { credentials: "include" })
       .then(async (r) => {
         if (r.ok) {
           const data = await r.json() as { unreadCount: number };
-          setUnreadCount(data.unreadCount);
+          setUnreadCount(data.unreadCount ?? 0);
         }
       })
       .catch(() => {});
-  }, [user, pathname]);
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);

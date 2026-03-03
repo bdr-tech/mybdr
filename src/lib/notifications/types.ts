@@ -2,6 +2,7 @@
 export const NOTIFICATION_TYPES = {
   // 경기 관련
   GAME_APPLICATION_RECEIVED: "game.application.received",     // 주최자: 신청 접수
+  GAME_APPLICATION_SUBMITTED: "game.application.submitted",   // 신청자: 신청 완료
   GAME_APPLICATION_APPROVED: "game.application.approved",     // 신청자: 승인됨
   GAME_APPLICATION_REJECTED: "game.application.rejected",     // 신청자: 거부됨
   GAME_CANCELLED: "game.cancelled",                           // 참가자: 경기 취소

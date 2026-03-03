@@ -113,9 +113,12 @@ export function SlideMenu({
               </div>
 
               {/* 로그아웃 */}
-              <button className="w-full rounded-[12px] px-3 py-2.5 text-left text-sm text-[#EF4444] hover:bg-[rgba(239,68,68,0.1)]">
+              <a
+                href="/api/auth/logout"
+                className="block w-full rounded-[12px] px-3 py-2.5 text-left text-sm text-[#EF4444] hover:bg-[rgba(239,68,68,0.1)]"
+              >
                 로그아웃
-              </button>
+              </a>
             </>
           ) : (
             <div className="flex flex-col items-center py-12 text-center">

@@ -4,20 +4,22 @@ import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
 
-const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
+const ERROR_MESSAGES: Record<string, string> = {
   google_denied: "Google 로그인이 취소되었습니다.",
   google_not_configured: "Google 로그인이 아직 설정되지 않았습니다.",
+  kakao_denied: "카카오 로그인이 취소되었습니다.",
+  kakao_not_configured: "카카오 로그인이 아직 설정되지 않았습니다.",
   invalid_state: "보안 검증에 실패했습니다. 다시 시도해주세요.",
-  token_exchange: "Google 인증에 실패했습니다. 다시 시도해주세요.",
-  userinfo_failed: "Google 계정 정보를 가져오지 못했습니다.",
+  token_exchange: "인증에 실패했습니다. 다시 시도해주세요.",
+  userinfo_failed: "계정 정보를 가져오지 못했습니다.",
   server_error: "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
 };
 
-function GoogleErrorBanner() {
+function ErrorBanner() {
   const params = useSearchParams();
   const errorKey = params.get("error");
   if (!errorKey) return null;
-  const msg = GOOGLE_ERROR_MESSAGES[errorKey] ?? "로그인 중 오류가 발생했습니다.";
+  const msg = ERROR_MESSAGES[errorKey] ?? "로그인 중 오류가 발생했습니다.";
   return (
     <div className="mb-5 rounded-[12px] bg-red-500/10 px-4 py-3 text-sm text-red-400">
       {msg}
@@ -37,9 +39,28 @@ export default function LoginPage() {
       {/* 로그인 카드 */}
       <div className="w-full max-w-sm rounded-[20px] border border-[#E8ECF0] bg-[#FFFFFF] px-8 py-8 shadow-[0_4px_24px_rgba(0,0,0,0.07)]">
         <Suspense>
-          <GoogleErrorBanner />
+          <ErrorBanner />
         </Suspense>
 
+        {/* 카카오 로그인 */}
+        <a
+          href="/api/auth/kakao"
+          className="flex w-full items-center justify-center gap-3 rounded-[14px] bg-[#FEE500] px-4 py-3.5 text-sm font-medium text-[#191919] shadow-sm transition-all hover:brightness-95 active:scale-[0.99]"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path fillRule="evenodd" clipRule="evenodd" d="M9 0C4.029 0 0 3.134 0 7c0 2.467 1.561 4.633 3.906 5.896L2.91 17.07a.25.25 0 0 0 .377.287L8.46 13.94A10.8 10.8 0 0 0 9 14c4.971 0 9-3.134 9-7S13.971 0 9 0z" fill="#191919" />
+          </svg>
+          카카오로 계속하기
+        </a>
+
+        {/* 구분선 */}
+        <div className="my-3 flex items-center gap-3">
+          <div className="h-px flex-1 bg-[#E8ECF0]" />
+          <span className="text-xs text-[#9CA3AF]">또는</span>
+          <div className="h-px flex-1 bg-[#E8ECF0]" />
+        </div>
+
+        {/* 구글 로그인 */}
         <a
           href="/api/auth/google"
           className="flex w-full items-center justify-center gap-3 rounded-[14px] border border-[#E8ECF0] bg-[#FFFFFF] px-4 py-3.5 text-sm font-medium text-[#374151] shadow-sm transition-all hover:border-[#CBD5E1] hover:shadow-md active:scale-[0.99]"

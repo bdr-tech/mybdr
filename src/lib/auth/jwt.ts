@@ -30,12 +30,17 @@ export async function generateToken(user: {
   email: string;
   nickname: string | null;
   membershipType: number;
+  isAdmin?: boolean | null;
 }): Promise<string> {
+  const role = user.isAdmin
+    ? "super_admin"
+    : (MEMBERSHIP_TO_ROLE[user.membershipType] ?? "free");
+
   return new jose.SignJWT({
     sub: user.id.toString(),
     email: user.email,
     name: user.nickname ?? "",
-    role: MEMBERSHIP_TO_ROLE[user.membershipType] ?? "free",
+    role,
   })
     .setProtectedHeader({ alg: ALGORITHM })
     .setIssuedAt()

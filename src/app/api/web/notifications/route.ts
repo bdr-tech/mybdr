@@ -18,7 +18,10 @@ export async function GET() {
     })
     .catch(() => 0);
 
-  return NextResponse.json({ unreadCount });
+  const response = NextResponse.json({ unreadCount });
+  // 30초 캐시: 빠른 연속 페이지 이동 시 DB 재쿼리 방지
+  response.headers.set("Cache-Control", "private, max-age=30");
+  return response;
 }
 
 // PATCH /api/web/notifications — 전체 읽음 처리

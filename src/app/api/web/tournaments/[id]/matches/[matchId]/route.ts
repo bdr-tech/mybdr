@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { requireTournamentAdmin, toJSON } from "@/lib/auth/tournament-auth";
+import { updateTeamStandings } from "@/lib/tournaments/update-standings";
 
 type Ctx = { params: Promise<{ id: string; matchId: string }> };
 
@@ -66,6 +67,11 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
         status: "scheduled",
       },
     });
+  }
+
+  // 경기 완료 시 팀 전적 자동 갱신 (fire-and-forget)
+  if (status === "completed") {
+    updateTeamStandings(BigInt(matchId)).catch(() => {});
   }
 
   return toJSON(updated);

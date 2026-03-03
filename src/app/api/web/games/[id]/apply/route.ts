@@ -94,6 +94,15 @@ export async function POST(
       },
     });
 
+    // current_participants 카운트 갱신 (pending 포함)
+    const participantCount = await prisma.game_applications.count({
+      where: { game_id: game.id },
+    });
+    await prisma.games.update({
+      where: { id: game.id },
+      data: { current_participants: participantCount },
+    });
+
     // 8. 주최자에게 신청 알림 발송 (fire-and-forget)
     createNotification({
       userId: game.organizer_id,
@@ -115,6 +124,17 @@ export async function POST(
           profile_image: applicant?.profile_image ?? null,
         },
       },
+    }).catch(() => {});
+
+    // 9. 신청자에게 신청 완료 알림 발송 (fire-and-forget)
+    createNotification({
+      userId,
+      notificationType: NOTIFICATION_TYPES.GAME_APPLICATION_SUBMITTED,
+      title: "참가 신청 완료",
+      content: `"${game.title}" 경기에 참가 신청이 완료되었습니다. 호스트 승인 후 확정됩니다.`,
+      actionUrl: `/games/${game.uuid}`,
+      notifiableType: "game",
+      notifiableId: game.id,
     }).catch(() => {});
 
     return NextResponse.json({ success: true, message: "참가 신청이 완료되었습니다." });

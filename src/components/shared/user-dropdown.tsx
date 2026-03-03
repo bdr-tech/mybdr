@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { logoutAction } from "@/app/actions/auth";
 
 export function UserDropdown({ name, role }: { name?: string; role?: string }) {
   const [open, setOpen] = useState(false);
@@ -53,11 +52,12 @@ export function UserDropdown({ name, role }: { name?: string; role?: string }) {
           </div>
 
           <div className="border-t border-[#E8ECF0] pt-1">
-            <form action={logoutAction}>
-              <button type="submit" className="w-full px-4 py-2 text-left text-sm text-[#EF4444] hover:bg-[rgba(239,68,68,0.1)]">
-                로그아웃
-              </button>
-            </form>
+            <a
+              href="/api/auth/logout"
+              className="block w-full px-4 py-2 text-left text-sm text-[#EF4444] hover:bg-[rgba(239,68,68,0.1)]"
+            >
+              로그아웃
+            </a>
           </div>
         </div>
       )}
