@@ -100,115 +100,130 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     );
   }
 
-  const teams = await prisma.tournamentTeam.findMany({
-    where: { tournamentId: id, status: "approved" },
-    orderBy: [{ seedNumber: "asc" }, { createdAt: "asc" }],
-    select: { id: true, seedNumber: true },
-  });
+  // TC-003: 브라켓 생성 전 DB 어드바이저리 락으로 동시 생성 race condition 방지
+  let result: { matchCounter: number; totalRounds: number };
+  try {
+  result = await prisma.$transaction(async (tx) => {
+    // tournament_id 기반 advisory lock (동일 대회 동시 요청 직렬화)
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${id})::bigint)`;
 
-  if (teams.length < 2)
-    return NextResponse.json({ error: "2팀 이상 승인되어야 대진표를 생성할 수 있습니다." }, { status: 400 });
+    const teams = await tx.tournamentTeam.findMany({
+      where: { tournamentId: id, status: "approved" },
+      orderBy: [{ seedNumber: "asc" }, { createdAt: "asc" }],
+      select: { id: true, seedNumber: true },
+    });
 
-  if (body.clear) {
-    await prisma.tournamentMatch.deleteMany({ where: { tournamentId: id } });
-  } else {
-    const existing = await prisma.tournamentMatch.count({ where: { tournamentId: id } });
-    if (existing > 0)
-      return NextResponse.json(
-        { error: "이미 경기가 존재합니다. clear=true로 재생성하세요." },
-        { status: 409 }
-      );
-  }
+    if (teams.length < 2) throw Object.assign(new Error("TEAMS_INSUFFICIENT"), { code: "TEAMS_INSUFFICIENT" });
 
-  const n = teams.length;
-  const slots = nextPow2(n);
-  const totalRounds = Math.log2(slots);
-  const roundMatchIds: Record<number, bigint[]> = {};
-  let matchCounter = 1;
+    if (body.clear) {
+      await tx.tournamentMatch.deleteMany({ where: { tournamentId: id } });
+    } else {
+      const existing = await tx.tournamentMatch.count({ where: { tournamentId: id } });
+      if (existing > 0) throw Object.assign(new Error("ALREADY_EXISTS"), { code: "ALREADY_EXISTS" });
+    }
 
-  for (let r = totalRounds; r >= 1; r--) {
-    const matchCount = slots / Math.pow(2, r);
-    roundMatchIds[r] = [];
+    const n = teams.length;
+    const slots = nextPow2(n);
+    const totalRounds = Math.log2(slots);
+    const roundMatchIds: Record<number, bigint[]> = {};
+    let matchCounter = 1;
 
-    for (let pos = 1; pos <= matchCount; pos++) {
-      let homeTeamId: bigint | null = null;
-      let awayTeamId: bigint | null = null;
+    for (let r = totalRounds; r >= 1; r--) {
+      const matchCount = slots / Math.pow(2, r);
+      roundMatchIds[r] = [];
 
-      if (r === 1) {
-        const homeIdx = (pos - 1) * 2;
-        const awayIdx = homeIdx + 1;
-        homeTeamId = teams[homeIdx]?.id ?? null;
-        awayTeamId = teams[awayIdx]?.id ?? null;
-      }
+      for (let pos = 1; pos <= matchCount; pos++) {
+        let homeTeamId: bigint | null = null;
+        let awayTeamId: bigint | null = null;
 
-      let nextMatchId: bigint | null = null;
-      let nextMatchSlot: string | null = null;
+        if (r === 1) {
+          const homeIdx = (pos - 1) * 2;
+          const awayIdx = homeIdx + 1;
+          homeTeamId = teams[homeIdx]?.id ?? null;
+          awayTeamId = teams[awayIdx]?.id ?? null;
+        }
 
-      if (r < totalRounds) {
-        const nextPos = Math.ceil(pos / 2);
-        nextMatchId = roundMatchIds[r + 1]?.[nextPos - 1] ?? null;
-        nextMatchSlot = pos % 2 === 1 ? "home" : "away";
-      }
+        let nextMatchId: bigint | null = null;
+        let nextMatchSlot: string | null = null;
 
-      if (r === 1 && homeTeamId && !awayTeamId) {
-        if (nextMatchId && nextMatchSlot) {
-          await prisma.tournamentMatch.update({
-            where: { id: nextMatchId },
+        if (r < totalRounds) {
+          const nextPos = Math.ceil(pos / 2);
+          nextMatchId = roundMatchIds[r + 1]?.[nextPos - 1] ?? null;
+          nextMatchSlot = pos % 2 === 1 ? "home" : "away";
+        }
+
+        if (r === 1 && homeTeamId && !awayTeamId) {
+          if (nextMatchId && nextMatchSlot) {
+            await tx.tournamentMatch.update({
+              where: { id: nextMatchId },
+              data: {
+                ...(nextMatchSlot === "home" && { homeTeamId }),
+                ...(nextMatchSlot === "away" && { awayTeamId: homeTeamId }),
+              },
+            });
+          }
+          const match = await tx.tournamentMatch.create({
             data: {
-              ...(nextMatchSlot === "home" && { homeTeamId }),
-              ...(nextMatchSlot === "away" && { awayTeamId: homeTeamId }),
+              tournamentId: id,
+              homeTeamId,
+              awayTeamId: null,
+              roundName: roundName(r, totalRounds),
+              round_number: r,
+              bracket_level: r,
+              bracket_position: pos,
+              match_number: matchCounter++,
+              status: "bye",
+              winner_team_id: homeTeamId,
+              next_match_id: nextMatchId,
+              next_match_slot: nextMatchSlot,
             },
           });
+          roundMatchIds[r].push(match.id);
+          continue;
         }
-        const match = await prisma.tournamentMatch.create({
+
+        const match = await tx.tournamentMatch.create({
           data: {
             tournamentId: id,
             homeTeamId,
-            awayTeamId: null,
+            awayTeamId,
             roundName: roundName(r, totalRounds),
             round_number: r,
             bracket_level: r,
             bracket_position: pos,
             match_number: matchCounter++,
-            status: "bye",
-            winner_team_id: homeTeamId,
+            status: r === 1 ? "scheduled" : "pending",
             next_match_id: nextMatchId,
             next_match_slot: nextMatchSlot,
           },
         });
         roundMatchIds[r].push(match.id);
-        continue;
       }
-
-      const match = await prisma.tournamentMatch.create({
-        data: {
-          tournamentId: id,
-          homeTeamId,
-          awayTeamId,
-          roundName: roundName(r, totalRounds),
-          round_number: r,
-          bracket_level: r,
-          bracket_position: pos,
-          match_number: matchCounter++,
-          status: r === 1 ? "scheduled" : "pending",
-          next_match_id: nextMatchId,
-          next_match_slot: nextMatchSlot,
-        },
-      });
-      roundMatchIds[r].push(match.id);
     }
+
+    const total = await tx.tournamentMatch.count({ where: { tournamentId: id } });
+    await tx.tournament.update({ where: { id }, data: { matches_count: total } });
+
+    return { matchCounter, totalRounds };
+  }, { timeout: 30000 });
+  } catch (e) {
+    const err = e as { code?: string; message?: string };
+    if (err.code === "TEAMS_INSUFFICIENT" || err.message === "TEAMS_INSUFFICIENT") {
+      return NextResponse.json({ error: "2팀 이상 승인되어야 대진표를 생성할 수 있습니다." }, { status: 400 });
+    }
+    if (err.code === "ALREADY_EXISTS" || err.message === "ALREADY_EXISTS") {
+      return NextResponse.json({ error: "이미 경기가 존재합니다. clear=true로 재생성하세요." }, { status: 409 });
+    }
+    throw e;
   }
 
-  const total = await prisma.tournamentMatch.count({ where: { tournamentId: id } });
-  await prisma.tournament.update({ where: { id }, data: { matches_count: total } });
-
-  // Record new bracket version
+  // Record new bracket version (트랜잭션 외부)
   await createBracketVersion(id, auth.userId);
 
   return toJSON({
     success: true,
-    matchesCreated: matchCounter - 1,
-    rounds: totalRounds,
+    matchesCreated: result.matchCounter - 1,
+    rounds: result.totalRounds,
     versionNumber: versionStatus.currentVersion + 1,
   });
 }

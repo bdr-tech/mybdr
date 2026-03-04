@@ -18,35 +18,55 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
+  // TC-NEW-005: BigInt 변환 실패 방지
+  let teamBigInt: bigint;
+  try {
+    teamBigInt = BigInt(teamId);
+  } catch {
+    return NextResponse.json({ error: "팀을 찾을 수 없습니다." }, { status: 404 });
+  }
+
   const tt = await prisma.tournamentTeam.findFirst({
-    where: { id: BigInt(teamId), tournamentId: id },
+    where: { id: teamBigInt, tournamentId: id },
   });
   if (!tt)
     return NextResponse.json({ error: "팀을 찾을 수 없습니다." }, { status: 404 });
 
   const { status, seedNumber, groupName, division } = body as Record<string, string | number | null | undefined>;
 
+  // TC-NEW-006: 시드 번호 범위 검증
+  if (seedNumber !== undefined && seedNumber !== null) {
+    const n = Number(seedNumber);
+    if (!Number.isInteger(n) || n < 1) {
+      return NextResponse.json({ error: "시드 번호는 1 이상의 정수여야 합니다." }, { status: 400 });
+    }
+  }
+
   const wasApproved = tt.status === "approved";
   const nowApproved = status === "approved";
   const nowRejected = status === "rejected";
 
-  const updated = await prisma.tournamentTeam.update({
-    where: { id: BigInt(teamId) },
-    data: {
-      ...(status !== undefined && { status: String(status) }),
-      ...(seedNumber !== undefined && { seedNumber: seedNumber ? Number(seedNumber) : null }),
-      ...(groupName !== undefined && { groupName: groupName ? String(groupName) : null }),
-      ...(division !== undefined && { division: division ? String(division) : null }),
-      ...(!wasApproved && nowApproved && { approved_at: new Date() }),
-    },
-  });
+  // TC-NEW-007: 팀 업데이트 + teams_count 동기화를 원자적 트랜잭션으로 처리
+  const updated = await prisma.$transaction(async (tx) => {
+    const u = await tx.tournamentTeam.update({
+      where: { id: teamBigInt },
+      data: {
+        ...(status !== undefined && { status: String(status) }),
+        ...(seedNumber !== undefined && { seedNumber: seedNumber ? Number(seedNumber) : null }),
+        ...(groupName !== undefined && { groupName: groupName ? String(groupName) : null }),
+        ...(division !== undefined && { division: division ? String(division) : null }),
+        ...(!wasApproved && nowApproved && { approved_at: new Date() }),
+      },
+    });
 
-  // teams_count 동기화
-  if (!wasApproved && nowApproved) {
-    await prisma.tournament.update({ where: { id }, data: { teams_count: { increment: 1 } } });
-  } else if (wasApproved && (nowRejected || status === "withdrawn")) {
-    await prisma.tournament.update({ where: { id }, data: { teams_count: { decrement: 1 } } });
-  }
+    if (!wasApproved && nowApproved) {
+      await tx.tournament.update({ where: { id }, data: { teams_count: { increment: 1 } } });
+    } else if (wasApproved && (nowRejected || status === "withdrawn")) {
+      await tx.tournament.update({ where: { id }, data: { teams_count: { decrement: 1 } } });
+    }
+
+    return u;
+  });
 
   return toJSON(updated);
 }
@@ -57,17 +77,27 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
   const auth = await requireTournamentAdmin(id);
   if ("error" in auth) return auth.error;
 
+  // TC-NEW-005: BigInt 변환 실패 방지
+  let teamBigInt: bigint;
+  try {
+    teamBigInt = BigInt(teamId);
+  } catch {
+    return NextResponse.json({ error: "팀을 찾을 수 없습니다." }, { status: 404 });
+  }
+
   const tt = await prisma.tournamentTeam.findFirst({
-    where: { id: BigInt(teamId), tournamentId: id },
+    where: { id: teamBigInt, tournamentId: id },
   });
   if (!tt)
     return NextResponse.json({ error: "팀을 찾을 수 없습니다." }, { status: 404 });
 
-  await prisma.tournamentTeam.delete({ where: { id: BigInt(teamId) } });
-
-  if (tt.status === "approved") {
-    await prisma.tournament.update({ where: { id }, data: { teams_count: { decrement: 1 } } });
-  }
+  // TC-NEW-009: 삭제 + teams_count decrement 원자적 트랜잭션
+  await prisma.$transaction(async (tx) => {
+    await tx.tournamentTeam.delete({ where: { id: teamBigInt } });
+    if (tt.status === "approved") {
+      await tx.tournament.update({ where: { id }, data: { teams_count: { decrement: 1 } } });
+    }
+  });
 
   return NextResponse.json({ deleted: true });
 }

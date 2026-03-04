@@ -30,27 +30,42 @@ export async function POST(req: NextRequest) {
 
     const organizerId = BigInt(session.sub);
 
-    // 구독 확인
-    const sub = await prisma.user_subscriptions.findFirst({
-      where: {
-        user_id: organizerId,
-        feature_key: "tournament_create",
-        status: "active",
-        OR: [{ expires_at: null }, { expires_at: { gte: new Date() } }],
-      },
-    });
-    if (!sub) {
-      return NextResponse.json({ error: "UPGRADE_REQUIRED", feature: "tournament_create" }, { status: 402 });
+    // 슈퍼관리자는 구독 체크 우회
+    if (session.role !== "super_admin") {
+      const sub = await prisma.user_subscriptions.findFirst({
+        where: {
+          user_id: organizerId,
+          feature_key: "tournament_create",
+          status: "active",
+          OR: [{ expires_at: null }, { expires_at: { gte: new Date() } }],
+        },
+      });
+      if (!sub) {
+        return NextResponse.json({ error: "UPGRADE_REQUIRED", feature: "tournament_create" }, { status: 402 });
+      }
     }
     const normalizedFormat = FORMAT_MAP[format] ?? format ?? "single_elimination";
+
+    // TC-NEW-022: 날짜 유효성 검사 (Invalid Date 방지)
+    const parsedStart = startDate ? new Date(startDate) : null;
+    const parsedEnd = endDate ? new Date(endDate) : null;
+    if (parsedStart && isNaN(parsedStart.getTime())) {
+      return NextResponse.json({ error: "유효하지 않은 시작일입니다." }, { status: 400 });
+    }
+    if (parsedEnd && isNaN(parsedEnd.getTime())) {
+      return NextResponse.json({ error: "유효하지 않은 종료일입니다." }, { status: 400 });
+    }
+    if (parsedStart && parsedEnd && parsedStart > parsedEnd) {
+      return NextResponse.json({ error: "시작일이 종료일보다 늦을 수 없습니다." }, { status: 400 });
+    }
 
     const tournament = await prisma.tournament.create({
       data: {
         name: name.trim(),
         organizerId,
         format: normalizedFormat,
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
+        startDate: parsedStart,
+        endDate: parsedEnd,
         primary_color: primaryColor || "#F4A261",
         secondary_color: secondaryColor || "#E76F51",
         status: "draft",

@@ -52,6 +52,34 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     auto_approve_teams, primary_color, secondary_color,
   } = body as Record<string, string | number | boolean | null | undefined>;
 
+  // TC-NEW-020: 숫자 필드 범위 및 논리 관계 검증
+  if (entry_fee !== undefined && entry_fee !== null && Number(entry_fee) < 0) {
+    return NextResponse.json({ error: "참가비는 0 이상이어야 합니다." }, { status: 400 });
+  }
+  if (maxTeams !== undefined && maxTeams !== null && Number(maxTeams) < 1) {
+    return NextResponse.json({ error: "최대 팀 수는 1 이상이어야 합니다." }, { status: 400 });
+  }
+  if (roster_min !== undefined && roster_max !== undefined &&
+      roster_min !== null && roster_max !== null &&
+      Number(roster_min) > Number(roster_max)) {
+    return NextResponse.json({ error: "최소 로스터 수가 최대 로스터 수보다 클 수 없습니다." }, { status: 400 });
+  }
+  if (startDate && endDate) {
+    const s = new Date(String(startDate));
+    const e = new Date(String(endDate));
+    if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && s > e) {
+      return NextResponse.json({ error: "시작일이 종료일보다 늦을 수 없습니다." }, { status: 400 });
+    }
+  }
+
+  // TC-NEW-021: 문자열 길이 제한
+  if (name !== undefined && String(name).trim().length > 100) {
+    return NextResponse.json({ error: "대회명은 100자 이하여야 합니다." }, { status: 400 });
+  }
+  if (description !== undefined && description && String(description).length > 5000) {
+    return NextResponse.json({ error: "설명은 5000자 이하여야 합니다." }, { status: 400 });
+  }
+
   const updated = await prisma.tournament.update({
     where: { id },
     data: {

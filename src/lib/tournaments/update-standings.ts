@@ -57,9 +57,17 @@ export async function updateTeamStandings(
   if (!match || match.homeTeamId === null || match.awayTeamId === null) return;
   if (match.homeScore === null || match.awayScore === null) return;
 
-  const homeWon = (match.winner_team_id ?? 0) === match.homeTeamId;
-  const awayWon = (match.winner_team_id ?? 0) === match.awayTeamId;
-  const isDraw = !homeWon && !awayWon;
+  // TC-NEW-025: 무승부(winner_team_id === null)와 잘못된 데이터(neither team) 구별
+  const winnerId = match.winner_team_id;
+  const homeWon = winnerId !== null && winnerId === match.homeTeamId;
+  const awayWon = winnerId !== null && winnerId === match.awayTeamId;
+  const isDraw = winnerId === null;
+
+  // winner_team_id가 있지만 home/away 어느 쪽도 아닌 경우 → 데이터 오류, 전적 갱신 중단
+  if (winnerId !== null && !homeWon && !awayWon) {
+    console.error(`[updateTeamStandings] matchId=${matchId}: winner_team_id(${winnerId})가 home(${match.homeTeamId}) / away(${match.awayTeamId}) 어느 쪽도 아닙니다. 전적 갱신을 건너뜁니다.`);
+    return;
+  }
 
   await prisma.$transaction([
     prisma.tournamentTeam.updateMany({

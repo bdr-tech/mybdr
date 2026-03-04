@@ -24,8 +24,12 @@ export async function POST(
     const userId = BigInt(session.sub);
 
     // 8자리 short ID → full UUID 변환 (상세페이지와 동일한 처리)
+    // TC-042: short UUID는 hex 8자리만 허용 (% 와일드카드 인젝션 방지)
     let game = null;
     if (id.length === 8) {
+      if (!/^[a-f0-9]{8}$/.test(id)) {
+        return NextResponse.json({ error: "경기를 찾을 수 없습니다." }, { status: 404 });
+      }
       const rows = await prisma.$queryRaw<{ uuid: string }[]>`
         SELECT uuid::text AS uuid FROM games WHERE uuid::text LIKE ${id + "%"} LIMIT 1
       `;
@@ -53,15 +57,7 @@ export async function POST(
       return NextResponse.json({ error: "이미 시작된 경기에는 신청할 수 없습니다." }, { status: 400 });
     }
 
-    // 5. 정원 초과 확인
-    if (
-      game.max_participants !== null &&
-      (game.current_participants ?? 0) >= game.max_participants
-    ) {
-      return NextResponse.json({ error: "정원이 마감된 경기입니다." }, { status: 400 });
-    }
-
-    // 6. 중복 신청 확인
+    // 5. 중복 신청 사전 확인 (트랜잭션 진입 전 빠른 검사)
     const existing = await prisma.game_applications.findUnique({
       where: { game_id_user_id: { game_id: game.id, user_id: userId } },
     });
@@ -69,7 +65,7 @@ export async function POST(
       return NextResponse.json({ error: "이미 참가 신청한 경기입니다." }, { status: 409 });
     }
 
-    // 7. 신청자 프로필 조회 (호스트에게 전달할 정보)
+    // 6. 신청자 프로필 조회 (호스트에게 전달할 정보)
     const applicant = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -83,25 +79,49 @@ export async function POST(
       },
     });
 
-    await prisma.game_applications.create({
-      data: {
-        game_id: game.id,
-        user_id: userId,
-        status: 0, // pending
-        payment_required: (game.fee_per_person ?? 0) > 0,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-    });
+    // TC-001: 정원 확인 + 신청 생성 + 카운트 갱신을 원자적 트랜잭션으로 처리
+    // current_participants를 조건부 UPDATE로 race condition 방지
+    try {
+      await prisma.$transaction(async (tx) => {
+        // 정원이 있을 때만 원자적 증가 (max_participants 초과 시 0 rows 반환)
+        if (game!.max_participants !== null) {
+          const reserved = await tx.$executeRaw`
+            UPDATE games
+            SET current_participants = current_participants + 1, updated_at = NOW()
+            WHERE id = ${game!.id}
+              AND current_participants < max_participants
+          `;
+          if (reserved === 0) throw Object.assign(new Error("FULL"), { code: "FULL" });
+        } else {
+          // 정원 제한 없는 경우 단순 증가
+          await tx.games.update({
+            where: { id: game!.id },
+            data: { current_participants: { increment: 1 } },
+          });
+        }
 
-    // current_participants 카운트 갱신 (pending 포함)
-    const participantCount = await prisma.game_applications.count({
-      where: { game_id: game.id },
-    });
-    await prisma.games.update({
-      where: { id: game.id },
-      data: { current_participants: participantCount },
-    });
+        await tx.game_applications.create({
+          data: {
+            game_id: game!.id,
+            user_id: userId,
+            status: 0, // pending
+            payment_required: (game!.fee_per_person ?? 0) > 0,
+            created_at: new Date(),
+            updated_at: new Date(),
+          },
+        });
+      });
+    } catch (e) {
+      const err = e as { code?: string; message?: string };
+      if (err.code === "FULL" || err.message === "FULL") {
+        return NextResponse.json({ error: "정원이 마감된 경기입니다." }, { status: 400 });
+      }
+      // P2002: unique constraint violation (동시 중복 신청)
+      if ((err as { code?: string }).code === "P2002") {
+        return NextResponse.json({ error: "이미 참가 신청한 경기입니다." }, { status: 409 });
+      }
+      throw e;
+    }
 
     // 8. 주최자에게 신청 알림 발송 (fire-and-forget)
     createNotification({
@@ -109,7 +129,7 @@ export async function POST(
       notificationType: NOTIFICATION_TYPES.GAME_APPLICATION_RECEIVED,
       title: "새 참가 신청",
       content: `${applicant?.nickname ?? "참가자"}님이 "${game.title}"에 참가 신청했습니다.`,
-      actionUrl: `/games/${game.uuid}`,
+      actionUrl: `/games/${game.uuid?.slice(0, 8) ?? game.id}`,
       notifiableType: "game",
       notifiableId: game.id,
       metadata: {
@@ -132,7 +152,7 @@ export async function POST(
       notificationType: NOTIFICATION_TYPES.GAME_APPLICATION_SUBMITTED,
       title: "참가 신청 완료",
       content: `"${game.title}" 경기에 참가 신청이 완료되었습니다. 호스트 승인 후 확정됩니다.`,
-      actionUrl: `/games/${game.uuid}`,
+      actionUrl: `/games/${game.uuid?.slice(0, 8) ?? game.id}`,
       notifiableType: "game",
       notifiableId: game.id,
     }).catch(() => {});

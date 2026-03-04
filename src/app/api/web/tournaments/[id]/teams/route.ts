@@ -38,7 +38,13 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   if (!body.teamId)
     return NextResponse.json({ error: "teamId가 필요합니다." }, { status: 400 });
 
-  const teamId = BigInt(body.teamId);
+  // TC-NEW-004: BigInt 변환 실패 방지
+  let teamId: bigint;
+  try {
+    teamId = BigInt(body.teamId);
+  } catch {
+    return NextResponse.json({ error: "유효하지 않은 팀 ID입니다." }, { status: 400 });
+  }
 
   const existing = await prisma.tournamentTeam.findUnique({
     where: { tournamentId_teamId: { tournamentId: id, teamId } },
@@ -46,20 +52,22 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   if (existing)
     return NextResponse.json({ error: "이미 등록된 팀입니다." }, { status: 409 });
 
-  const tt = await prisma.tournamentTeam.create({
-    data: {
-      tournamentId: id,
-      teamId,
-      status: "approved",
-      registered_by_id: auth.userId,
-      approved_at: new Date(),
-    },
-  });
-
-  // teams_count 증가
-  await prisma.tournament.update({
-    where: { id },
-    data: { teams_count: { increment: 1 } },
+  // TC-NEW-008: create + teams_count increment 원자적 처리
+  const tt = await prisma.$transaction(async (tx) => {
+    const created = await tx.tournamentTeam.create({
+      data: {
+        tournamentId: id,
+        teamId,
+        status: "approved",
+        registered_by_id: auth.userId,
+        approved_at: new Date(),
+      },
+    });
+    await tx.tournament.update({
+      where: { id },
+      data: { teams_count: { increment: 1 } },
+    });
+    return created;
   });
 
   return toJSON(tt);

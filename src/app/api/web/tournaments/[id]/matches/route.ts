@@ -41,22 +41,35 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   const { homeTeamId, awayTeamId, roundName, round_number, scheduledAt, venue_name } =
     body as Record<string, string | null | undefined>;
 
-  const match = await prisma.tournamentMatch.create({
-    data: {
-      tournamentId: id,
-      homeTeamId: homeTeamId ? BigInt(homeTeamId) : null,
-      awayTeamId: awayTeamId ? BigInt(awayTeamId) : null,
-      roundName: roundName ?? null,
-      round_number: round_number ? Number(round_number) : null,
-      scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
-      venue_name: venue_name ?? null,
-      status: "scheduled",
-    },
-  });
+  // TC-NEW-010: BigInt 변환 실패 방지
+  let homeBigInt: bigint | null = null;
+  let awayBigInt: bigint | null = null;
+  try {
+    if (homeTeamId) homeBigInt = BigInt(homeTeamId);
+    if (awayTeamId) awayBigInt = BigInt(awayTeamId);
+  } catch {
+    return NextResponse.json({ error: "유효하지 않은 팀 ID입니다." }, { status: 400 });
+  }
 
-  await prisma.tournament.update({
-    where: { id },
-    data: { matches_count: { increment: 1 } },
+  // TC-NEW-010: create + matches_count increment 원자적 처리
+  const match = await prisma.$transaction(async (tx) => {
+    const m = await tx.tournamentMatch.create({
+      data: {
+        tournamentId: id,
+        homeTeamId: homeBigInt,
+        awayTeamId: awayBigInt,
+        roundName: roundName ?? null,
+        round_number: round_number ? Number(round_number) : null,
+        scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+        venue_name: venue_name ?? null,
+        status: "scheduled",
+      },
+    });
+    await tx.tournament.update({
+      where: { id },
+      data: { matches_count: { increment: 1 } },
+    });
+    return m;
   });
 
   return toJSON(match);

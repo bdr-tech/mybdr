@@ -29,9 +29,12 @@ export async function PATCH(
   try {
     const hostId = BigInt(session.sub);
 
-    // 경기 조회 (short UUID 지원)
+    // TC-NEW-002: short UUID hex 검증 (LIKE 와일드카드 인젝션 방지)
     let game = null;
     if (id.length === 8) {
+      if (!/^[a-f0-9]{8}$/.test(id)) {
+        return NextResponse.json({ error: "경기를 찾을 수 없습니다." }, { status: 404 });
+      }
       const rows = await prisma.$queryRaw<{ uuid: string }[]>`
         SELECT uuid::text AS uuid FROM games WHERE uuid::text LIKE ${id + "%"} LIMIT 1
       `;
@@ -47,9 +50,17 @@ export async function PATCH(
       return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
     }
 
+    // TC-NEW-003: BigInt 변환 실패 방지
+    let appBigInt: bigint;
+    try {
+      appBigInt = BigInt(appId);
+    } catch {
+      return NextResponse.json({ error: "신청 내역을 찾을 수 없습니다." }, { status: 404 });
+    }
+
     // 신청 조회
     const application = await prisma.game_applications.findUnique({
-      where: { id: BigInt(appId) },
+      where: { id: appBigInt },
     });
     if (!application || application.game_id !== game.id) {
       return NextResponse.json({ error: "신청 내역을 찾을 수 없습니다." }, { status: 404 });
@@ -61,14 +72,24 @@ export async function PATCH(
     const now = new Date();
     const newStatus = body.action === "approve" ? 1 : 2;
 
-    await prisma.game_applications.update({
-      where: { id: application.id },
-      data: {
-        status: newStatus,
-        approved_at: body.action === "approve" ? now : null,
-        rejected_at: body.action === "reject" ? now : null,
-        updated_at: now,
-      },
+    // TC-NEW-024: 거절 시 current_participants 감소 (트랜잭션)
+    await prisma.$transaction(async (tx) => {
+      await tx.game_applications.update({
+        where: { id: application.id },
+        data: {
+          status: newStatus,
+          approved_at: body.action === "approve" ? now : null,
+          rejected_at: body.action === "reject" ? now : null,
+          updated_at: now,
+        },
+      });
+
+      if (body.action === "reject") {
+        await tx.games.update({
+          where: { id: game!.id },
+          data: { current_participants: { decrement: 1 } },
+        });
+      }
     });
 
     // 신청자에게 결과 알림

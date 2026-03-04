@@ -22,8 +22,12 @@ export async function DELETE(
   try {
     const userId = BigInt(session.sub);
 
+    // TC-NEW-001: short UUID hex 검증 (LIKE 와일드카드 인젝션 방지)
     let game = null;
     if (id.length === 8) {
+      if (!/^[a-f0-9]{8}$/.test(id)) {
+        return NextResponse.json({ error: "경기를 찾을 수 없습니다." }, { status: 404 });
+      }
       const rows = await prisma.$queryRaw<{ uuid: string }[]>`
         SELECT uuid::text AS uuid FROM games WHERE uuid::text LIKE ${id + "%"} LIMIT 1
       `;
@@ -46,17 +50,13 @@ export async function DELETE(
       return NextResponse.json({ error: "신청 내역이 없습니다." }, { status: 404 });
     }
 
-    await prisma.game_applications.delete({
-      where: { id: application.id },
-    });
-
-    // current_participants 카운트 갱신
-    const participantCount = await prisma.game_applications.count({
-      where: { game_id: game.id },
-    });
-    await prisma.games.update({
-      where: { id: game.id },
-      data: { current_participants: participantCount },
+    // TC-NEW-023: 삭제 + current_participants 감소를 원자적 트랜잭션으로 처리
+    await prisma.$transaction(async (tx) => {
+      await tx.game_applications.delete({ where: { id: application.id } });
+      await tx.games.update({
+        where: { id: game!.id },
+        data: { current_participants: { decrement: 1 } },
+      });
     });
 
     return NextResponse.json({ success: true, message: "신청이 취소되었습니다." });
