@@ -84,23 +84,15 @@ export default async function AdminUsersPage({
 
       <Card className="overflow-hidden p-0">
         <div className="overflow-x-auto">
-          <table className="w-full table-fixed text-left text-sm">
-            <colgroup>
-              <col className="w-[130px]" />
-              <col />
-              <col className="w-[260px]" />
-              <col className="w-[120px]" />
-              <col className="w-[130px]" />
-              <col className="w-[105px]" />
-            </colgroup>
+          <table className="w-full text-left text-sm">
             <thead className="border-b border-[#E8ECF0] bg-[#F5F7FA] text-[#6B7280]">
               <tr>
-                <th className="px-5 py-4 font-medium">닉네임</th>
-                <th className="px-5 py-4 font-medium">이메일</th>
-                <th className="px-5 py-4 font-medium">역할 변경</th>
-                <th className="px-5 py-4 font-medium">슈퍼관리자</th>
-                <th className="px-5 py-4 font-medium">상태</th>
-                <th className="px-5 py-4 font-medium">가입일</th>
+                <th className="whitespace-nowrap px-5 py-4 font-medium">닉네임</th>
+                <th className="whitespace-nowrap px-5 py-4 font-medium">이메일</th>
+                <th className="whitespace-nowrap px-5 py-4 font-medium">역할 변경</th>
+                <th className="whitespace-nowrap px-5 py-4 font-medium">슈퍼관리자</th>
+                <th className="whitespace-nowrap px-5 py-4 font-medium">상태</th>
+                <th className="whitespace-nowrap px-5 py-4 font-medium">가입일</th>
               </tr>
             </thead>
             <tbody>
@@ -112,14 +104,14 @@ export default async function AdminUsersPage({
                     key={user.id.toString()}
                     className={`border-b border-[#F1F5F9] transition-colors hover:bg-[#EEF2FF] ${user.isAdmin ? "bg-[rgba(239,68,68,0.02)]" : ""}`}
                   >
-                    <td className="truncate px-5 py-3 font-medium">
+                    <td className="whitespace-nowrap px-5 py-3 font-medium">
                       {user.isAdmin && <span className="mr-1 text-[#EF4444]">★</span>}
                       {user.nickname ?? "-"}
                     </td>
-                    <td className="truncate px-5 py-3 text-[#6B7280]">{user.email}</td>
+                    <td className="whitespace-nowrap px-5 py-3 text-[#6B7280]">{user.email}</td>
 
                     {/* 역할 변경 */}
-                    <td className="px-5 py-3">
+                    <td className="whitespace-nowrap px-5 py-3">
                       <form action={updateUserRoleAction} className="flex items-center gap-2">
                         <input type="hidden" name="user_id" value={user.id.toString()} />
                         <Badge variant={role.variant}>{role.label}</Badge>
@@ -143,7 +135,7 @@ export default async function AdminUsersPage({
                     </td>
 
                     {/* 슈퍼관리자 토글 */}
-                    <td className="px-5 py-3">
+                    <td className="whitespace-nowrap px-5 py-3">
                       <form action={toggleUserAdminAction}>
                         <input type="hidden" name="user_id" value={user.id.toString()} />
                         <input type="hidden" name="make_admin" value={user.isAdmin ? "false" : "true"} />
@@ -161,7 +153,7 @@ export default async function AdminUsersPage({
                     </td>
 
                     {/* 상태 변경 */}
-                    <td className="px-5 py-3">
+                    <td className="whitespace-nowrap px-5 py-3">
                       <form action={updateUserStatusAction} className="flex items-center gap-2">
                         <input type="hidden" name="user_id" value={user.id.toString()} />
                         <input type="hidden" name="status" value={isActive ? "suspended" : "active"} />
@@ -181,7 +173,7 @@ export default async function AdminUsersPage({
                       </form>
                     </td>
 
-                    <td className="px-5 py-3 text-[#9CA3AF]">
+                    <td className="whitespace-nowrap px-5 py-3 text-[#9CA3AF]">
                       {user.createdAt.toLocaleDateString("ko-KR")}
                     </td>
                   </tr>

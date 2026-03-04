@@ -129,19 +129,42 @@ export function SlideMenu({
               </a>
             </>
           ) : (
-            <div className="flex flex-col items-center py-12 text-center">
-              <p className="mb-4 text-[#6B7280]">로그인하고 BDR의 모든 기능을 이용하세요</p>
+            <div className="flex flex-col">
+              {/* 브랜드 */}
+              <div className="mb-6 rounded-[16px] bg-[#EEF2FF] px-5 py-6 text-center">
+                <p className="text-2xl font-bold text-[#F4A261]">BDR</p>
+                <p className="mt-1 text-xs text-[#6B7280]">농구인을 위한 농구 플랫폼</p>
+              </div>
+
+              {/* 기능 소개 */}
+              <div className="mb-6 space-y-3">
+                {[
+                  { icon: "🏀", title: "픽업게임", desc: "내 주변 경기 참가" },
+                  { icon: "👕", title: "팀 관리", desc: "팀원 모집 · 매니지먼트" },
+                  { icon: "🏆", title: "토너먼트", desc: "대회 참가 · 전적 관리" },
+                ].map((f) => (
+                  <div key={f.title} className="flex items-center gap-3 rounded-[12px] px-3 py-2">
+                    <span className="text-xl">{f.icon}</span>
+                    <div>
+                      <p className="text-sm font-medium text-[#111827]">{f.title}</p>
+                      <p className="text-xs text-[#9CA3AF]">{f.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA 버튼 */}
               <Link
                 href="/login"
                 onClick={onClose}
-                className="mb-2 w-full rounded-full bg-[#0066FF] py-3 text-center text-sm font-semibold text-white"
+                className="mb-2 w-full rounded-full bg-[#0066FF] py-3 text-center text-sm font-semibold text-white hover:bg-[#0052CC]"
               >
                 로그인
               </Link>
               <Link
                 href="/signup"
                 onClick={onClose}
-                className="w-full rounded-full border border-[#E8ECF0] py-3 text-center text-sm text-[#6B7280]"
+                className="w-full rounded-full border border-[#E8ECF0] py-3 text-center text-sm font-medium text-[#6B7280] hover:bg-[#F5F7FA]"
               >
                 회원가입
               </Link>
