@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db/prisma";
-import { requireTournamentAdmin, toJSON } from "@/lib/auth/tournament-auth";
+import { type NextRequest } from "next/server";
+import { requireTournamentAdmin } from "@/lib/auth/tournament-auth";
+import { updateTournamentSchema } from "@/lib/validation/tournament";
+import { apiSuccess, apiError } from "@/lib/api/response";
+import { getTournament, updateTournament } from "@/lib/services/tournament";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -10,24 +12,12 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   const auth = await requireTournamentAdmin(id);
   if ("error" in auth) return auth.error;
 
-  const tournament = await prisma.tournament.findUnique({
-    where: { id },
-    include: {
-      tournamentSite: { select: { id: true, subdomain: true, isPublished: true, primaryColor: true, secondaryColor: true } },
-      adminMembers: {
-        where: { isActive: true },
-        select: { id: true, userId: true, role: true },
-      },
-      _count: {
-        select: { tournamentTeams: true, tournamentMatches: true },
-      },
-    },
-  });
+  const tournament = await getTournament(id);
 
   if (!tournament)
-    return NextResponse.json({ error: "대회를 찾을 수 없습니다." }, { status: 404 });
+    return apiError("대회를 찾을 수 없습니다.", 404);
 
-  return toJSON(tournament);
+  return apiSuccess(tournament);
 }
 
 // PATCH /api/web/tournaments/[id]
@@ -36,82 +26,48 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   const auth = await requireTournamentAdmin(id);
   if ("error" in auth) return auth.error;
 
-  let body: Record<string, unknown>;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
+    return apiError("잘못된 요청입니다.", 400);
   }
 
-  const {
-    name, format, startDate, endDate, status,
-    venue_name, venue_address, city, district,
-    maxTeams, team_size, roster_min, roster_max,
-    entry_fee, registration_start_at, registration_end_at,
-    description, rules, prize_info, is_public,
-    auto_approve_teams, primary_color, secondary_color,
-  } = body as Record<string, string | number | boolean | null | undefined>;
-
-  // TC-NEW-020: 숫자 필드 범위 및 논리 관계 검증
-  if (entry_fee !== undefined && entry_fee !== null && Number(entry_fee) < 0) {
-    return NextResponse.json({ error: "참가비는 0 이상이어야 합니다." }, { status: 400 });
-  }
-  if (maxTeams !== undefined && maxTeams !== null && Number(maxTeams) < 1) {
-    return NextResponse.json({ error: "최대 팀 수는 1 이상이어야 합니다." }, { status: 400 });
-  }
-  if (roster_min !== undefined && roster_max !== undefined &&
-      roster_min !== null && roster_max !== null &&
-      Number(roster_min) > Number(roster_max)) {
-    return NextResponse.json({ error: "최소 로스터 수가 최대 로스터 수보다 클 수 없습니다." }, { status: 400 });
-  }
-  if (startDate && endDate) {
-    const s = new Date(String(startDate));
-    const e = new Date(String(endDate));
-    if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && s > e) {
-      return NextResponse.json({ error: "시작일이 종료일보다 늦을 수 없습니다." }, { status: 400 });
-    }
+  const result = updateTournamentSchema.safeParse(body);
+  if (!result.success) {
+    const firstIssue = result.error.issues[0];
+    return apiError(firstIssue?.message ?? "유효하지 않은 값입니다.", 400);
   }
 
-  // TC-NEW-021: 문자열 길이 제한
-  if (name !== undefined && String(name).trim().length > 100) {
-    return NextResponse.json({ error: "대회명은 100자 이하여야 합니다." }, { status: 400 });
-  }
-  if (description !== undefined && description && String(description).length > 5000) {
-    return NextResponse.json({ error: "설명은 5000자 이하여야 합니다." }, { status: 400 });
-  }
+  const data = result.data;
 
-  const updated = await prisma.tournament.update({
-    where: { id },
-    data: {
-      ...(name !== undefined && { name: String(name).trim() }),
-      ...(format !== undefined && { format: String(format) }),
-      ...(startDate !== undefined && { startDate: startDate ? new Date(String(startDate)) : null }),
-      ...(endDate !== undefined && { endDate: endDate ? new Date(String(endDate)) : null }),
-      ...(status !== undefined && { status: String(status) }),
-      ...(venue_name !== undefined && { venue_name: venue_name ? String(venue_name) : null }),
-      ...(venue_address !== undefined && { venue_address: venue_address ? String(venue_address) : null }),
-      ...(city !== undefined && { city: city ? String(city) : null }),
-      ...(district !== undefined && { district: district ? String(district) : null }),
-      ...(maxTeams !== undefined && { maxTeams: Number(maxTeams) }),
-      ...(team_size !== undefined && { team_size: Number(team_size) }),
-      ...(roster_min !== undefined && { roster_min: Number(roster_min) }),
-      ...(roster_max !== undefined && { roster_max: Number(roster_max) }),
-      ...(entry_fee !== undefined && { entry_fee: Number(entry_fee) }),
-      ...(registration_start_at !== undefined && {
-        registration_start_at: registration_start_at ? new Date(String(registration_start_at)) : null,
-      }),
-      ...(registration_end_at !== undefined && {
-        registration_end_at: registration_end_at ? new Date(String(registration_end_at)) : null,
-      }),
-      ...(description !== undefined && { description: description ? String(description) : null }),
-      ...(rules !== undefined && { rules: rules ? String(rules) : null }),
-      ...(prize_info !== undefined && { prize_info: prize_info ? String(prize_info) : null }),
-      ...(is_public !== undefined && { is_public: Boolean(is_public) }),
-      ...(auto_approve_teams !== undefined && { auto_approve_teams: Boolean(auto_approve_teams) }),
-      ...(primary_color !== undefined && { primary_color: primary_color ? String(primary_color) : null }),
-      ...(secondary_color !== undefined && { secondary_color: secondary_color ? String(secondary_color) : null }),
-    },
-  });
+  // Zod 검증 통과된 데이터를 Prisma update 형식으로 변환
+  const updateData: Record<string, unknown> = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.format !== undefined) updateData.format = data.format;
+  if (data.startDate !== undefined) updateData.startDate = data.startDate ? new Date(data.startDate) : null;
+  if (data.endDate !== undefined) updateData.endDate = data.endDate ? new Date(data.endDate) : null;
+  if (data.status !== undefined) updateData.status = data.status;
+  if (data.venue_name !== undefined) updateData.venue_name = data.venue_name;
+  if (data.venue_address !== undefined) updateData.venue_address = data.venue_address;
+  if (data.city !== undefined) updateData.city = data.city;
+  if (data.district !== undefined) updateData.district = data.district;
+  if (data.maxTeams !== undefined) updateData.maxTeams = data.maxTeams;
+  if (data.team_size !== undefined) updateData.team_size = data.team_size;
+  if (data.roster_min !== undefined) updateData.roster_min = data.roster_min;
+  if (data.roster_max !== undefined) updateData.roster_max = data.roster_max;
+  if (data.entry_fee !== undefined) updateData.entry_fee = data.entry_fee;
+  if (data.registration_start_at !== undefined) updateData.registration_start_at = data.registration_start_at ? new Date(data.registration_start_at) : null;
+  if (data.registration_end_at !== undefined) updateData.registration_end_at = data.registration_end_at ? new Date(data.registration_end_at) : null;
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.rules !== undefined) updateData.rules = data.rules;
+  if (data.prize_info !== undefined) updateData.prize_info = data.prize_info;
+  if (data.is_public !== undefined) updateData.is_public = data.is_public;
+  if (data.auto_approve_teams !== undefined) updateData.auto_approve_teams = data.auto_approve_teams;
+  if (data.primary_color !== undefined) updateData.primary_color = data.primary_color;
+  if (data.secondary_color !== undefined) updateData.secondary_color = data.secondary_color;
 
-  return toJSON(updated);
+  const updated = await updateTournament(id, updateData);
+
+  return apiSuccess(updated);
 }

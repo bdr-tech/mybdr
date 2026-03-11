@@ -1,27 +1,22 @@
 import { type NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { getWebSession } from "@/lib/auth/web-session";
+import { withWebAuth, type WebAuthContext } from "@/lib/auth/web-session";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { createNotification } from "@/lib/notifications/create";
 import { NOTIFICATION_TYPES } from "@/lib/notifications/types";
 
-// GET /api/web/teams/[id]/members — 팀장: 가입신청 목록 조회
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  const session = await getWebSession();
-  if (!session) return apiError("UNAUTHORIZED", 401);
+type RouteCtx = { params: Promise<{ id: string }> };
 
-  const { id } = await params;
+// GET /api/web/teams/[id]/members -- 팀장: 가입신청 목록 조회
+export const GET = withWebAuth(async (_req: Request, routeCtx: RouteCtx, ctx: WebAuthContext) => {
+  const { id } = await routeCtx.params;
   const teamId = BigInt(id);
-  const userId = BigInt(session.sub);
 
   // IDOR: 요청자가 해당 팀의 captain인지 확인
   const isCaptain = await prisma.teamMember.findFirst({
-    where: { teamId, userId, role: "captain", status: "active" },
+    where: { teamId, userId: ctx.userId, role: "captain", status: "active" },
   });
-  if (!isCaptain && session.role !== "super_admin") {
+  if (!isCaptain && ctx.session.role !== "super_admin") {
     return apiError("FORBIDDEN", 403);
   }
 
@@ -55,25 +50,18 @@ export async function GET(
       created_at: r.created_at.toISOString(),
     })),
   );
-}
+});
 
-// PATCH /api/web/teams/[id]/members — 팀장: 가입신청 승인/거부
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  const session = await getWebSession();
-  if (!session) return apiError("UNAUTHORIZED", 401);
-
-  const { id } = await params;
+// PATCH /api/web/teams/[id]/members -- 팀장: 가입신청 승인/거부
+export const PATCH = withWebAuth(async (req: Request, routeCtx: RouteCtx, ctx: WebAuthContext) => {
+  const { id } = await routeCtx.params;
   const teamId = BigInt(id);
-  const userId = BigInt(session.sub);
 
   // IDOR: 요청자가 해당 팀의 captain인지 확인
   const isCaptain = await prisma.teamMember.findFirst({
-    where: { teamId, userId, role: "captain", status: "active" },
+    where: { teamId, userId: ctx.userId, role: "captain", status: "active" },
   });
-  if (!isCaptain && session.role !== "super_admin") {
+  if (!isCaptain && ctx.session.role !== "super_admin") {
     return apiError("FORBIDDEN", 403);
   }
 
@@ -109,7 +97,7 @@ export async function PATCH(
     await prisma.$transaction([
       prisma.team_join_requests.update({
         where: { id: BigInt(requestId) },
-        data: { status: "approved", processed_by_id: userId, processed_at: new Date() },
+        data: { status: "approved", processed_by_id: ctx.userId, processed_at: new Date() },
       }),
       prisma.teamMember.create({
         data: {
@@ -136,7 +124,7 @@ export async function PATCH(
   } else {
     await prisma.team_join_requests.update({
       where: { id: BigInt(requestId) },
-      data: { status: "rejected", processed_by_id: userId, processed_at: new Date() },
+      data: { status: "rejected", processed_by_id: ctx.userId, processed_at: new Date() },
     });
 
     createNotification({
@@ -149,4 +137,4 @@ export async function PATCH(
   }
 
   return apiSuccess({ action, request_id: requestId });
-}
+});

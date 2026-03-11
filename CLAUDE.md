@@ -1,6 +1,9 @@
 # MyBDR - Basketball Tournament Platform
-.claude 에 있는 CLAUDE.md 파일을 항상 바라보고, 여기에 있는 에이전트를 우선 활용해. 
-그리고 프로젝트 내 Dev/plan.md의 수정내역을 항상 체크해야하. 
+
+## 개발팀 스킬 (`/team:*`)
+
+역할별 전문가를 슬래시 커맨드로 호출. `/team:dev`, `/team:architect` 등.
+작업 전 Dev/plan.md 승인 주석을 항상 확인할 것.
 
 ## 이 프로젝트의 4단계 방어체계를 지키자. 
 1. 리서치(research.md)가 무지한 변경을 막아주고

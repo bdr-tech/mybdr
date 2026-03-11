@@ -1,65 +1,13 @@
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth/jwt";
-import { WEB_SESSION_COOKIE } from "@/lib/auth/web-session";
-import { prisma } from "@/lib/db/prisma";
+import { withWebAuth, type WebAuthContext } from "@/lib/auth/web-session";
 import { encryptAccount, maskAccount } from "@/lib/security/account-crypto";
+import { apiSuccess, apiError } from "@/lib/api/response";
+import { getProfile, updateProfile } from "@/lib/services/user";
 
-export async function GET() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(WEB_SESSION_COOKIE)?.value;
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const session = await verifyToken(token);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const GET = withWebAuth(async (ctx: WebAuthContext) => {
   try {
-    const userId = BigInt(session.sub);
+    const { user, teams, gameApplications, tournamentTeams } = await getProfile(ctx.userId);
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        // 기존 필드 (profile 조회용)
-        nickname: true,
-        email: true,
-        position: true,
-        height: true,
-        city: true,
-        bio: true,
-        profile_image_url: true,
-        total_games_participated: true,
-        // 신규 필드 (profile/edit 용)
-        name: true,
-        phone: true,
-        birth_date: true,
-        district: true,
-        weight: true,
-        bank_name: true,
-        bank_code: true,
-        account_number: true,
-        account_holder: true,
-      },
-    });
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
-
-    const teams = await prisma.teamMember.findMany({
-      where: { userId, status: "active" },
-      include: { team: { select: { id: true, name: true } } },
-      take: 10,
-    });
-
-    const gameApplications = await prisma.game_applications.findMany({
-      where: { user_id: userId },
-      include: { games: { select: { id: true, uuid: true, title: true, scheduled_at: true, status: true } } },
-      orderBy: { created_at: "desc" },
-      take: 10,
-    });
-
-    const tournamentTeams = await prisma.tournamentTeamPlayer.findMany({
-      where: { userId },
-      include: { tournamentTeam: { include: { tournament: { select: { id: true, name: true, status: true } } } } },
-      take: 10,
-    });
+    if (!user) return apiError("User not found", 404);
 
     // account_number는 마스킹 처리 후 전송
     const { account_number, ...userRest } = user;
@@ -67,7 +15,7 @@ export async function GET() {
       ? maskAccount(account_number.startsWith("enc:") ? account_number : account_number)
       : null;
 
-    return NextResponse.json({
+    return apiSuccess({
       user: {
         ...userRest,
         birth_date: user.birth_date?.toISOString().slice(0, 10) ?? null,
@@ -92,20 +40,12 @@ export async function GET() {
       })),
     });
   } catch {
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    return apiError("Internal error", 500);
   }
-}
+});
 
-export async function PATCH(req: Request) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(WEB_SESSION_COOKIE)?.value;
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const session = await verifyToken(token);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const PATCH = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
   try {
-    const userId = BigInt(session.sub);
     const body = await req.json() as Record<string, unknown>;
 
     const {
@@ -128,26 +68,22 @@ export async function PATCH(req: Request) {
       }
     }
 
-    const updated = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        ...(nickname !== undefined && { nickname: nickname as string || null }),
-        ...(position !== undefined && { position: position as string || null }),
-        ...(height !== undefined && { height: height ? Number(height) : null }),
-        ...(city !== undefined && { city: city as string || null }),
-        ...(bio !== undefined && { bio: bio as string || null }),
-        ...(name !== undefined && { name: name as string || null }),
-        ...(phone !== undefined && { phone: phone as string || null }),
-        ...(birth_date !== undefined && { birth_date: birth_date ? new Date(birth_date as string) : null }),
-        ...(district !== undefined && { district: district as string || null }),
-        ...(weight !== undefined && { weight: weight ? Number(weight) : null }),
-        ...bankUpdate,
-      },
-      select: { nickname: true, position: true, height: true, city: true, bio: true, name: true },
+    const updated = await updateProfile(ctx.userId, {
+      ...(nickname !== undefined && { nickname: nickname as string || null }),
+      ...(position !== undefined && { position: position as string || null }),
+      ...(height !== undefined && { height: height ? Number(height) : null }),
+      ...(city !== undefined && { city: city as string || null }),
+      ...(bio !== undefined && { bio: bio as string || null }),
+      ...(name !== undefined && { name: name as string || null }),
+      ...(phone !== undefined && { phone: phone as string || null }),
+      ...(birth_date !== undefined && { birth_date: birth_date ? new Date(birth_date as string) : null }),
+      ...(district !== undefined && { district: district as string || null }),
+      ...(weight !== undefined && { weight: weight ? Number(weight) : null }),
+      ...bankUpdate,
     });
 
-    return NextResponse.json(updated);
+    return apiSuccess(updated);
   } catch {
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    return apiError("Internal error", 500);
   }
-}
+});

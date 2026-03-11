@@ -49,6 +49,9 @@ export function SlideMenu({
 
       {/* Panel */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="전체 메뉴"
         className={`fixed right-0 top-0 z-[70] h-full w-[300px] transform bg-[#FFFFFF] transition-transform duration-300 ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
@@ -58,6 +61,7 @@ export function SlideMenu({
           <span className="font-bold text-[#F4A261]">메뉴</span>
           <button
             onClick={onClose}
+            aria-label="메뉴 닫기"
             className="rounded-full p-2 text-[#6B7280] hover:bg-[#EEF2FF]"
           >
             ✕

@@ -1,21 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-const TOURNAMENT_STATUS_LABEL: Record<string, string> = {
-  draft: "준비중",
-  active: "모집중",
-  published: "모집중",
-  registration_open: "모집중",
-  registration_closed: "접수마감",
-  ongoing: "진행중",
-  completed: "완료",
-  cancelled: "취소",
-};
+import { TOURNAMENT_STATUS_LABEL } from "@/lib/constants/tournament-status";
 
 const tabs = [
   { id: "info", label: "정보" },
@@ -43,21 +34,14 @@ interface ProfileData {
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("info");
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/web/profile")
-      .then((r) => r.json())
-      .then((data) => {
-        if (!data.error) setProfile(data);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: profile, isLoading } = useSWR<ProfileData>("/api/web/profile", {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000, // 60초 내 중복 요청 방지
+  });
 
   const initial = profile?.user.nickname?.trim()?.[0]?.toUpperCase() || "U";
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center text-[#6B7280]">
         <div className="text-center">
@@ -68,7 +52,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!profile) {
+  if (!profile || "error" in profile) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">

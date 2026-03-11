@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { requireTournamentAdmin, toJSON } from "@/lib/auth/tournament-auth";
+import { requireTournamentAdmin } from "@/lib/auth/tournament-auth";
+import { apiSuccess, apiError } from "@/lib/api/response";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -20,7 +21,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     include: { site_pages: true },
   });
 
-  return toJSON(site);
+  return apiSuccess(site);
 }
 
 // PATCH /api/web/tournaments/[id]/site
@@ -33,7 +34,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
+    return apiError("잘못된 요청입니다.", 400);
   }
 
   const { subdomain, primaryColor, secondaryColor, site_name, meta_title, meta_description, siteTemplateSlug } =
@@ -43,19 +44,16 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (subdomain !== undefined && subdomain !== null && subdomain.trim() !== "") {
     const sub = subdomain.trim().toLowerCase();
     if (!SUBDOMAIN_RE.test(sub)) {
-      return NextResponse.json(
-        { error: "서브도메인은 영문 소문자, 숫자, 하이픈만 사용 가능합니다 (3-63자)." },
-        { status: 400 }
-      );
+      return apiError("서브도메인은 영문 소문자, 숫자, 하이픈만 사용 가능합니다 (3-63자).", 400);
     }
   }
 
   // TC-NEW-019: HEX 색상 코드 검증
   if (primaryColor !== undefined && primaryColor !== null && !HEX_COLOR_RE.test(primaryColor)) {
-    return NextResponse.json({ error: "유효하지 않은 primaryColor 색상 코드입니다." }, { status: 400 });
+    return apiError("유효하지 않은 primaryColor 색상 코드입니다.", 400);
   }
   if (secondaryColor !== undefined && secondaryColor !== null && !HEX_COLOR_RE.test(secondaryColor)) {
-    return NextResponse.json({ error: "유효하지 않은 secondaryColor 색상 코드입니다." }, { status: 400 });
+    return apiError("유효하지 않은 secondaryColor 색상 코드입니다.", 400);
   }
 
   // 템플릿 slug → id 변환
@@ -74,7 +72,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (!existing) {
     // 사이트 없으면 생성
     if (!subdomain?.trim())
-      return NextResponse.json({ error: "서브도메인이 필요합니다." }, { status: 400 });
+      return apiError("서브도메인이 필요합니다.", 400);
 
     try {
       const site = await prisma.tournamentSite.create({
@@ -90,11 +88,11 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
           ...(siteTemplateId !== undefined && { siteTemplateId }),
         },
       });
-      return toJSON(site);
+      return apiSuccess(site);
     } catch (e) {
       // TC-NEW-018: 동시 중복 서브도메인 요청 처리
       if ((e as { code?: string }).code === "P2002") {
-        return NextResponse.json({ error: "이미 사용 중인 서브도메인입니다." }, { status: 409 });
+        return apiError("이미 사용 중인 서브도메인입니다.", 409);
       }
       throw e;
     }
@@ -106,7 +104,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
       where: { subdomain: subdomain.trim().toLowerCase(), id: { not: existing.id } },
     });
     if (dup)
-      return NextResponse.json({ error: "이미 사용 중인 서브도메인입니다." }, { status: 409 });
+      return apiError("이미 사용 중인 서브도메인입니다.", 409);
   }
 
   try {
@@ -123,11 +121,11 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
       },
     });
 
-    return toJSON(updated);
+    return apiSuccess(updated);
   } catch (e) {
     // TC-NEW-018: 동시 중복 서브도메인 요청 처리
     if ((e as { code?: string }).code === "P2002") {
-      return NextResponse.json({ error: "이미 사용 중인 서브도메인입니다." }, { status: 409 });
+      return apiError("이미 사용 중인 서브도메인입니다.", 409);
     }
     throw e;
   }

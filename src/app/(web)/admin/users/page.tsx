@@ -84,7 +84,7 @@ export default async function AdminUsersPage({
 
       <Card className="overflow-hidden p-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="min-w-max text-left text-sm">
             <thead className="border-b border-[#E8ECF0] bg-[#F5F7FA] text-[#6B7280]">
               <tr>
                 <th className="whitespace-nowrap px-5 py-4 font-medium">닉네임</th>

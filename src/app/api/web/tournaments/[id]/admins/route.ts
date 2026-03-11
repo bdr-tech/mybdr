@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { requireTournamentAdmin, toJSON } from "@/lib/auth/tournament-auth";
+import { requireTournamentAdmin } from "@/lib/auth/tournament-auth";
+import { apiSuccess, apiError } from "@/lib/api/response";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -18,7 +19,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     orderBy: { createdAt: "asc" },
   });
 
-  return toJSON(admins);
+  return apiSuccess(admins);
 }
 
 // POST /api/web/tournaments/[id]/admins
@@ -32,18 +33,18 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
+    return apiError("잘못된 요청입니다.", 400);
   }
 
   if (!body.email?.trim())
-    return NextResponse.json({ error: "이메일이 필요합니다." }, { status: 400 });
+    return apiError("이메일이 필요합니다.", 400);
 
   const user = await prisma.user.findUnique({
     where: { email: body.email.trim().toLowerCase() },
     select: { id: true, nickname: true, email: true },
   });
   if (!user)
-    return NextResponse.json({ error: "해당 이메일의 유저를 찾을 수 없습니다." }, { status: 404 });
+    return apiError("해당 이메일의 유저를 찾을 수 없습니다.", 404);
 
   // 이미 관리자인지 확인
   const existing = await prisma.tournamentAdminMember.findFirst({
@@ -52,13 +53,13 @@ export async function POST(req: NextRequest, { params }: Ctx) {
 
   if (existing) {
     if (existing.isActive)
-      return NextResponse.json({ error: "이미 관리자로 등록된 유저입니다." }, { status: 409 });
+      return apiError("이미 관리자로 등록된 유저입니다.", 409);
     // 비활성 → 재활성화
     const reactivated = await prisma.tournamentAdminMember.update({
       where: { id: existing.id },
       data: { isActive: true, role: body.role ?? "admin" },
     });
-    return toJSON(reactivated);
+    return apiSuccess(reactivated);
   }
 
   const member = await prisma.tournamentAdminMember.create({
@@ -70,5 +71,5 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     },
   });
 
-  return toJSON({ ...member, user });
+  return apiSuccess({ ...member, user });
 }

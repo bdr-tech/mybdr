@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { requireTournamentAdmin, toJSON } from "@/lib/auth/tournament-auth";
+import { requireTournamentAdmin } from "@/lib/auth/tournament-auth";
+import { parseBigIntParam } from "@/lib/utils/parse-bigint";
+import { apiSuccess, apiError } from "@/lib/api/response";
 
 type Ctx = { params: Promise<{ id: string; teamId: string }> };
 
@@ -15,22 +17,20 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
+    return apiError("잘못된 요청입니다.", 400);
   }
 
   // TC-NEW-005: BigInt 변환 실패 방지
-  let teamBigInt: bigint;
-  try {
-    teamBigInt = BigInt(teamId);
-  } catch {
-    return NextResponse.json({ error: "팀을 찾을 수 없습니다." }, { status: 404 });
+  const teamBigInt = parseBigIntParam(teamId);
+  if (teamBigInt === null) {
+    return apiError("팀을 찾을 수 없습니다.", 404);
   }
 
   const tt = await prisma.tournamentTeam.findFirst({
     where: { id: teamBigInt, tournamentId: id },
   });
   if (!tt)
-    return NextResponse.json({ error: "팀을 찾을 수 없습니다." }, { status: 404 });
+    return apiError("팀을 찾을 수 없습니다.", 404);
 
   const { status, seedNumber, groupName, division } = body as Record<string, string | number | null | undefined>;
 
@@ -38,7 +38,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (seedNumber !== undefined && seedNumber !== null) {
     const n = Number(seedNumber);
     if (!Number.isInteger(n) || n < 1) {
-      return NextResponse.json({ error: "시드 번호는 1 이상의 정수여야 합니다." }, { status: 400 });
+      return apiError("시드 번호는 1 이상의 정수여야 합니다.", 400);
     }
   }
 
@@ -68,7 +68,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     return u;
   });
 
-  return toJSON(updated);
+  return apiSuccess(updated);
 }
 
 // DELETE /api/web/tournaments/[id]/teams/[teamId]
@@ -78,18 +78,16 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
   if ("error" in auth) return auth.error;
 
   // TC-NEW-005: BigInt 변환 실패 방지
-  let teamBigInt: bigint;
-  try {
-    teamBigInt = BigInt(teamId);
-  } catch {
-    return NextResponse.json({ error: "팀을 찾을 수 없습니다." }, { status: 404 });
+  const teamBigInt = parseBigIntParam(teamId);
+  if (teamBigInt === null) {
+    return apiError("팀을 찾을 수 없습니다.", 404);
   }
 
   const tt = await prisma.tournamentTeam.findFirst({
     where: { id: teamBigInt, tournamentId: id },
   });
   if (!tt)
-    return NextResponse.json({ error: "팀을 찾을 수 없습니다." }, { status: 404 });
+    return apiError("팀을 찾을 수 없습니다.", 404);
 
   // TC-NEW-009: 삭제 + teams_count decrement 원자적 트랜잭션
   await prisma.$transaction(async (tx) => {
@@ -99,5 +97,5 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
     }
   });
 
-  return NextResponse.json({ deleted: true });
+  return apiSuccess({ deleted: true });
 }

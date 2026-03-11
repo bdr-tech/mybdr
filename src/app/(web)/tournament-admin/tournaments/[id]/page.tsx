@@ -103,6 +103,12 @@ export default async function TournamentAdminDetailPage({
       icon: "👥",
       desc: "스태프 권한 관리",
     },
+    {
+      href: `/tournament-admin/tournaments/${id}/recorders`,
+      label: "기록원",
+      icon: "📋",
+      desc: "스탯 기록원 지정",
+    },
   ];
 
   return (

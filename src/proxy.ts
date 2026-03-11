@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { getClientIp } from "@/lib/security/get-client-ip";
-import { verifyToken } from "@/lib/auth/jwt";
 
-function extractSubdomain(hostname: string): string | null {
+function extractSubdomain(hostname: string, searchParams?: URLSearchParams): string | null {
+  // 개발 환경: ?_sub=rookie 로 서브도메인 시뮬레이션
+  if (process.env.NODE_ENV === "development") {
+    const devSub = searchParams?.get("_sub");
+    if (devSub && !["www", "api", "admin"].includes(devSub)) return devSub;
+  }
+
   if (hostname === "localhost" || hostname === "127.0.0.1") return null;
   if (hostname.endsWith(".vercel.app")) return null;
 
@@ -28,6 +33,7 @@ function extractSubdomain(hostname: string): string | null {
 const PUBLIC_API_ROUTES = [
   "/api/v1/auth/login",
   "/api/v1/site-templates",
+  "/api/v1/tournaments/connect", // 대회 API 토큰 연결 (JWT 불필요, 토큰 자체가 인증)
 ];
 
 function isPublicApiRoute(pathname: string): boolean {
@@ -48,7 +54,7 @@ export async function proxy(req: NextRequest) {
   if (pathname.startsWith("/api/")) {
     const ip = getClientIp(req);
     const config = getRateLimitConfig(pathname);
-    const result = checkRateLimit(`${ip}:${pathname}`, config);
+    const result = await checkRateLimit(`${ip}:${pathname}`, config);
 
     if (!result.allowed) {
       return NextResponse.json(
@@ -82,7 +88,7 @@ async function processRequest(
   hostname: string
 ): Promise<NextResponse> {
   // 2. 서브도메인 감지 → 토너먼트 사이트 라우팅
-  const subdomain = extractSubdomain(hostname);
+  const subdomain = extractSubdomain(hostname, req.nextUrl.searchParams);
   if (subdomain) {
     const url = req.nextUrl.clone();
     url.pathname = `/_site${pathname}`;
@@ -91,42 +97,24 @@ async function processRequest(
     return response;
   }
 
-  // 3. API JWT 인증
+  // 3. API v1 토큰 존재 여부만 체크 (early reject)
+  // M-11: JWT 서명 검증은 withAuth 미들웨어에서 1회만 수행.
+  // proxy에서는 토큰 유무만 확인하여 불필요한 요청을 조기 차단한다.
   if (pathname.startsWith("/api/v1") && !isPublicApiRoute(pathname)) {
     if (req.method === "OPTIONS") {
       return NextResponse.next();
     }
 
     const authHeader = req.headers.get("authorization");
-    const token =
-      authHeader?.startsWith("Bearer ")
-        ? authHeader.slice(7)
-        : authHeader?.startsWith("Token ")
-          ? authHeader.slice(6)
-          : null;
+    const hasToken =
+      authHeader?.startsWith("Bearer ") || authHeader?.startsWith("Token ");
 
-    if (!token) {
+    if (!hasToken) {
       return NextResponse.json(
         { error: "Unauthorized", code: "UNAUTHORIZED" },
         { status: 401 }
       );
     }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json(
-        { error: "Token expired", code: "TOKEN_EXPIRED" },
-        { status: 401 }
-      );
-    }
-
-    const requestHeaders = new Headers(req.headers);
-    requestHeaders.set("x-user-id", payload.sub);
-    requestHeaders.set("x-user-role", payload.role);
-
-    return NextResponse.next({
-      request: { headers: requestHeaders },
-    });
   }
 
   return NextResponse.next();

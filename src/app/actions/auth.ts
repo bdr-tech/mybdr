@@ -11,10 +11,7 @@ import {
   recordLoginAttempt,
   clearLoginAttempts,
 } from "@/lib/security/login-attempts";
-
-// timing attack 방지용 더미 해시 (bcrypt 12라운드)
-const DUMMY_HASH =
-  "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.P2PEey";
+import { DUMMY_HASH } from "@/lib/security/constants";
 
 const COOKIE_OPTIONS = {
   httpOnly: true,

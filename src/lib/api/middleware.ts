@@ -29,7 +29,7 @@ type HandlerWithValidation<T> = (
   ctx: ValidatedContext<T>
 ) => Promise<Response>;
 
-function extractToken(req: NextRequest): string | null {
+export function extractToken(req: NextRequest): string | null {
   const authHeader = req.headers.get("authorization");
   if (authHeader?.startsWith("Bearer ")) return authHeader.slice(7);
   if (authHeader?.startsWith("Token ")) return authHeader.slice(6);

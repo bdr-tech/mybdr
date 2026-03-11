@@ -96,6 +96,10 @@ model User {
   bracket_versions_created                                                  tournament_bracket_versions[] @relation("bracket_version_creator")
   bracket_versions_approved                                                 tournament_bracket_versions[] @relation("bracket_version_approver")
   quickMenuItems                                                            String[]                     @default(["find_game", "my_team", "tournaments", "pickup"]) @map("quick_menu_items")
+  recorderAssignments                                                       tournament_recorders[]        @relation("TournamentRecorder")
+  recorderAssigned                                                          tournament_recorders[]        @relation("TournamentRecorderAssigner")
+  match_events_recorded                                                     match_events[]                @relation("MatchEventRecorder")
+  match_events_undone                                                       match_events[]                @relation("MatchEventUndoner")
 
   @@unique([provider, uid], map: "index_users_on_provider_and_uid")
   @@index([createdAt], map: "index_users_on_created_at")
@@ -157,6 +161,8 @@ model Tournament {
   adminMembers                           TournamentAdminMember[]
   tournamentMatches                      TournamentMatch[]
   tournamentSite                         TournamentSite[]
+  recorders                              tournament_recorders[]
+  siteRegistrations                      site_registrations[]
   tournamentTeams                        TournamentTeam[]
   tournament_bracket_versions            tournament_bracket_versions[]
   teams                                  Team?                   @relation(fields: [champion_team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_18732ad2a6")
@@ -381,6 +387,7 @@ model TournamentMatch {
   venue_name                                                           String?           @db.VarChar
   playerStats                                                          MatchPlayerStat[]
   play_by_plays                                                        play_by_plays[]
+  matchEvents                                                          match_events[]
   tournament_teams_tournament_matches_winner_team_idTotournament_teams TournamentTeam?   @relation("tournament_matches_winner_team_idTotournament_teams", fields: [winner_team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_2fcdbd557c")
   homeTeam                                                             TournamentTeam?   @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_3dae6e19e5")
   users                                                                User?             @relation(fields: [mvp_player_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_5e679cd202")
@@ -1472,4 +1479,70 @@ model site_settings {
   updated_at DateTime @default(now()) @updatedAt @db.Timestamp(6)
 
   @@map("site_settings")
+}
+
+model tournament_recorders {
+  id           BigInt     @id @default(autoincrement())
+  tournamentId String     @map("tournament_id") @db.Uuid
+  recorderId   BigInt     @map("recorder_id")
+  assignedBy   BigInt     @map("assigned_by")
+  isActive     Boolean    @default(true) @map("is_active")
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  recorder     User       @relation("TournamentRecorder", fields: [recorderId], references: [id], onDelete: Cascade)
+  assigner     User       @relation("TournamentRecorderAssigner", fields: [assignedBy], references: [id])
+
+  @@unique([tournamentId, recorderId])
+  @@index([tournamentId])
+  @@index([recorderId])
+  @@map("tournament_recorders")
+}
+
+model match_events {
+  id            BigInt          @id @default(autoincrement())
+  matchId       BigInt          @map("match_id")
+  tournamentId  String          @map("tournament_id") @db.Uuid
+  teamId        BigInt?         @map("team_id")
+  playerId      BigInt?         @map("player_id")
+  eventType     String          @map("event_type") @db.VarChar
+  value         Int?
+  quarter       Int?
+  gameTime      String?         @map("game_time") @db.VarChar(10)
+  clientEventId String?         @map("client_event_id") @db.VarChar(36)
+  undone        Boolean         @default(false)
+  undoneAt      DateTime?       @map("undone_at") @db.Timestamptz(6)
+  undoneBy      BigInt?         @map("undone_by")
+  recordedBy    BigInt          @map("recorded_by")
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  match         TournamentMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  recorder      User            @relation("MatchEventRecorder", fields: [recordedBy], references: [id])
+  undoner       User?           @relation("MatchEventUndoner", fields: [undoneBy], references: [id])
+
+  @@index([matchId, undone])
+  @@index([matchId, createdAt])
+  @@index([tournamentId, teamId])
+  @@map("match_events")
+}
+
+model site_registrations {
+  id            BigInt     @id @default(autoincrement())
+  tournamentId  String     @map("tournament_id") @db.Uuid
+  teamName      String     @map("team_name") @db.VarChar(100)
+  captainName   String     @map("captain_name") @db.VarChar(50)
+  captainPhone  String?    @map("captain_phone") @db.VarChar(20)
+  captainEmail  String     @map("captain_email") @db.VarChar(100)
+  playerCount   Int?       @map("player_count")
+  message       String?
+  status        String     @default("pending") @db.VarChar(20)
+  processedAt   DateTime?  @map("processed_at") @db.Timestamp(6)
+  processedNote String?    @map("processed_note")
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamp(6)
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, captainEmail, teamName], map: "idx_site_registrations_unique")
+  @@index([tournamentId, status])
+  @@map("site_registrations")
 }

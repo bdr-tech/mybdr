@@ -25,6 +25,7 @@
 6. [Admin](#5-admin)
 7. [알림 시스템](#6-알림-시스템)
 8. [구현 순서 권고](#7-구현-순서-권고)
+9. [bdr_stat 스탯 기록 연동](#8-bdr_stat-스탯-기록-연동)
 
 ---
 
@@ -795,6 +796,200 @@ vercel.json                                      ← cron 설정 추가
 - ✅ Vercel Cron → 별도 인프라 없이 스케줄 실행 가능
 - ⚠️ Vercel Cron 무료 티어: 1일 1회 제한 → 충분 (09시 1회 실행)
 - ⚠️ Cron 설정 전까지는 수동 발송 또는 미구현 상태 유지
+
+---
+
+### 3.6 시리즈 체계 (Series) — 컴맹 + 모바일 친화 UX
+
+<!-- [승인] Must 항목 전체 구현. Should/Nice 는 Must 완료 후 별도 판단. -->
+
+> **2026-03-04 Dylan 분석 기반**
+> **벤치마크**: sfinder.co.kr — "누구나 쉽게 스포츠 대회를 개최하고 참가"
+> **핵심 요구**: 1회 → 2회 → 3회 … 시리즈로 묶어서 페이지 생성, 컴맹도 핸드폰만으로 관리 가능
+
+---
+
+#### DB 현황 (이미 구축됨 — 별도 마이그레이션 불필요)
+
+| 모델 | 핵심 필드 | 비고 |
+|------|----------|------|
+| `tournament_series` | id, uuid, name, slug, organizer_id, logo_url, settings, tournaments_count | ✅ 기존 |
+| `Tournament` | series_id (BigInt? FK), edition_number (Int?) | ✅ 기존 |
+
+> 인프라 완비. 프론트엔드 UX만 구현하면 됨.
+
+---
+
+#### 3.6.1 시리즈 구조 개념
+
+```
+시리즈 (tournament_series)
+  └── 1회 (Tournament, edition_number=1, series_id=FK)
+  └── 2회 (Tournament, edition_number=2, series_id=FK)
+  └── 3회 (Tournament, edition_number=3, series_id=FK)
+```
+
+독립 대회 (series_id=NULL)도 그대로 지원 — 기존 wizard 그대로 사용.
+
+---
+
+#### 3.6.2 주최자 UX 흐름 — "컴맹 5분 룰"
+
+목표: 처음 접속한 비개발자도 5분 안에 대회 페이지 공개 가능.
+
+| 단계 | 액션 | 소요시간 | 입력 수 |
+|------|------|---------|--------|
+| 1 | 시리즈 이름 입력 | 10초 | 1개 필드 |
+| 2 | 1회 날짜 + 장소 + 팀 수 | 30초 | 3개 필드 |
+| 3 | "공개" 버튼 탭 | 1초 | 0 |
+| 4 | 신청 팀 승인 (탭) | 5초/팀 | 1탭 |
+| 5 | 경기 결과 입력 (스코어) | 10초/경기 | 2개 숫자 |
+
+---
+
+#### 3.6.3 신규 페이지 구조
+
+**주최자 관리 (tournament-admin)**:
+```
+/tournament-admin/series/                     ← 기존 stub 교체: 시리즈 목록
+/tournament-admin/series/new                  ← 신규: 시리즈 생성 (초간단)
+/tournament-admin/series/[id]                 ← 신규: 시리즈 대시보드 (회차 목록)
+/tournament-admin/series/[id]/add-edition     ← 신규: 회차 추가 (3필드 폼)
+```
+
+**공개 페이지 (사용자 열람)**:
+```
+/series/[slug]                                ← 신규: 시리즈 공개 허브
+/series/[slug]/[editionNumber]                ← 신규: 특정 회차 → /tournaments/[id] 리다이렉트
+```
+
+---
+
+#### 3.6.4 페이지별 상세 명세
+
+**① `/tournament-admin/series` — 시리즈 목록** (기존 stub 교체)
+- 내 시리즈 카드 목록 (이름, 회차 수, 최신 회차 상태)
+- "새 시리즈 만들기" CTA
+- 대시보드에도 "내 시리즈" 섹션 링크 추가
+
+**② `/tournament-admin/series/new` — 시리즈 생성**
+- 필수: 시리즈 이름 (1개 필드)
+- 선택: 한 줄 설명
+- slug 자동 생성 (이름 기반, 수동 수정 가능)
+- 생성 후 → `/tournament-admin/series/[id]` (대시보드) 이동
+
+**③ `/tournament-admin/series/[id]` — 시리즈 대시보드**
+- 헤더: 시리즈 이름, 누적 참가팀 수, 총 회차 수
+- 회차 카드 목록 (1회 ~ N회, 날짜 / 팀 수 / 상태 배지)
+  - 클릭 → `/tournament-admin/tournaments/[tournamentId]`
+- 하단 고정 버튼(모바일): "다음 회차 추가"
+- 공개 링크 복사 버튼: `/series/[slug]`
+
+**④ `/tournament-admin/series/[id]/add-edition` — 회차 추가**
+- 단 3개 필드:
+  - 날짜 (date picker, KST)
+  - 장소 (텍스트, 자유 입력)
+  - 최대 팀 수 (숫자 스피너, 기본 8)
+- 생성 시 자동 처리:
+  - `edition_number` = 기존 회차 수 + 1
+  - `name` = `${시리즈명} ${edition_number}회`
+  - `format` = "single_elimination" (기본값)
+  - `status` = "registration_open"
+  - `series_id` = 해당 시리즈 FK
+  - `tournaments_count` 1 증가
+- 생성 후 → 시리즈 대시보드로 복귀 (성공 토스트)
+
+**⑤ `/series/[slug]` — 공개 시리즈 허브**
+- 상단: 시리즈 이름, 설명, 총 회차 수 / 누적 참가팀 수
+- 회차 타임라인 (최신 → 과거 순):
+  - 진행 예정: 날짜 / 장소 / 모집 현황 / "신청하기" 버튼
+  - 완료: 우승팀 / 일자 / "결과 보기" 링크
+- ISR revalidate 30초
+
+**⑥ `/series/[slug]/[editionNumber]` — 회차 리다이렉트**
+- `tournament_series` slug → `tournament` edition_number 조회
+- `redirect(/tournaments/[tournamentId])`
+- 404 처리: "해당 회차를 찾을 수 없습니다"
+
+---
+
+#### 3.6.5 API 설계
+
+```
+POST   /api/web/series                      ← 시리즈 생성
+GET    /api/web/series/[id]                 ← 시리즈 상세 (회차 목록 포함)
+POST   /api/web/series/[id]/editions        ← 회차 추가 (Tournament 생성 + series_id/edition_number 연결)
+GET    /api/web/series/slug/[slug]          ← 공개 페이지용 (slug로 조회)
+```
+
+**회차 추가 핵심 로직**:
+```typescript
+// edition_number 자동 채번
+const count = await prisma.tournament.count({ where: { series_id: BigInt(seriesId) } });
+const editionNumber = count + 1;
+
+await prisma.$transaction([
+  prisma.tournament.create({
+    data: {
+      series_id: BigInt(seriesId),
+      edition_number: editionNumber,
+      name: `${series.name} ${editionNumber}회`,
+      startDate: new Date(startDate),
+      venue_name: venueName,
+      maxTeams: maxTeams,
+      status: "registration_open",
+      format: "single_elimination",
+      organizerId: BigInt(session.sub),
+      // uuid 자동 (dbgenerated)
+    }
+  }),
+  prisma.tournament_series.update({
+    where: { id: BigInt(seriesId) },
+    data: { tournaments_count: { increment: 1 } }
+  })
+]);
+```
+
+> ⚠️ 시리즈 소유자(organizer_id) 검증 필수 — IDOR 방지
+
+---
+
+#### 3.6.6 모바일 최적화 요구사항
+
+- 모든 인터랙션 엄지손가락 한 손 조작 가능 (FAB 버튼 우하단 고정)
+- 팀 승인/거절: 탭 or 스와이프 제스처 (최소 터치 타겟 44px)
+- 경기 스코어 입력: 숫자 필드 자동 `inputMode="numeric"` (모바일 키패드 자동 활성화)
+- 완료 피드백: 즉각적인 토스트 메시지
+- 네트워크 불안정 고려: 경기 당일 오프라인 가능성 → 낙관적 업데이트 + 재시도
+
+---
+
+#### 3.6.7 구현 우선순위
+
+| 우선순위 | 항목 | 비고 |
+|---------|------|------|
+| 🔴 Must | `series/new` — 시리즈 생성 | 핵심 진입점 |
+| 🔴 Must | `series/[id]` — 대시보드 | 회차 관리 허브 |
+| 🔴 Must | `series/[id]/add-edition` — 회차 추가 | 3필드 폼 |
+| 🔴 Must | `/series/[slug]` — 공개 허브 페이지 | 사용자 노출 |
+| 🟡 Should | `/series/[slug]/[editionNumber]` — 리다이렉트 | 공유 링크 편의 |
+| 🟡 Should | 대시보드 `시리즈` 섹션 추가 | UX 진입점 |
+| 🟡 Should | `series` 목록 페이지 교체 (stub → real) | 기존 stub |
+| 🟢 Nice | OpenGraph 카드 자동 생성 (`/api/og/series`) | SNS 공유 |
+| 🟢 Nice | 자동 slug 영문 변환 (slugify 라이브러리) | UX 편의 |
+
+---
+
+#### 3.6.8 트레이드오프
+
+| 항목 | 비고 |
+|------|------|
+| ✅ DB 이미 완비 | 추가 마이그레이션 불필요 |
+| ✅ 독립 대회 / 시리즈 혼용 가능 | series_id=NULL이면 독립 대회 |
+| ✅ 기존 wizard와 공존 | 시리즈 회차용 간단 폼 + 독립 대회용 기존 wizard |
+| ⚠️ slug 생성 | 한글 → 영문 slug 변환 (slugify) 또는 수동 입력 |
+| ⚠️ `/series/[slug]` 라우트 신규 | `src/app/(web)/series/` 디렉토리 추가 |
+| ⚠️ `tournaments_count` 동기화 | 회차 삭제/취소 시 감소 처리 필요 |
 
 ---
 
@@ -1585,6 +1780,563 @@ export default withSerwist(nextConfig);
 20. 실시간 알림 (30초 폴링)
 21. 대진표 시각화 (보류 해제 후)
 ```
+
+---
+
+## §3.7 노코드 대회 사이트 템플릿
+
+<!-- [승인] Must 항목 전체 구현. 팔레트 색상 8종 + 템플릿 3종(클래식/다크/미니멀) 1단계 완성 후 Should 판단. -->
+
+### 현황 (분석 완료)
+- `site_templates` DB: 5개 레코드 있음 (slug: classic-tournament, minimal-white, the-process 등)
+- `tournament_sites` DB: 생성은 되지만 `site_template_id = null` (템플릿 미연결)
+- `src/app/(site)/` 디렉토리: **존재하지 않음** → 서브도메인 접속 시 404
+- `proxy.ts`: 서브도메인 → `/_site`로 rewrite 구현됨 (라우팅 준비 완료)
+- 로컬 테스트: `localhost:3000?_sub=rookie` 로 서브도메인 시뮬레이션 가능
+
+### 핵심 원칙 (노코드/컴맹 친화)
+
+> **주최자가 입력할 것 = 0개**
+> 대회명·날짜·장소·팀·대진표는 DB에서 자동 반영
+
+```
+관리자 3스텝:
+① 템플릿 고르기 (카드 탭 한 번)
+② 색깔 고르기 (팔레트 8종에서 탭)
+③ 공개하기 (스위치 ON)
+```
+
+### 사이트 페이지 구성 (자동 렌더링)
+
+| 페이지 | slug | 자동 반영 | 주최자 입력 |
+|--------|------|----------|------------|
+| 홈 | `/` | 대회명·날짜·장소·신청 CTA | 없음 |
+| 팀 목록 | `/teams` | DB 자동 | 없음 |
+| 대진표 | `/bracket` | DB 자동 | 없음 |
+| 공지사항 | `/notice` | — | 텍스트 입력 1개 (선택) |
+
+각 페이지 ON/OFF 토글로 표시 여부 조절.
+
+### 템플릿 3종 (Must — 1단계)
+
+| slug | 이름 | 분위기 | 대상 |
+|------|------|--------|------|
+| `classic` | 클래식 | 흰 배경·파랑·깔끔 | 일반 대회 |
+| `dark` | 다크 | 검정 배경·강렬 | 경쟁 대회 |
+| `minimal` | 미니멀 | 텍스트 중심·심플 | 소규모·친선 |
+
+### 색상 팔레트 (8종 — 헥스 코드 입력 불필요)
+
+```
+🔵 토스 블루 #0066FF  🔴 레드 #EF4444
+🟠 오렌지 #F4A261     🟢 그린 #22C55E
+⚫ 다크 #1F2937        🟣 퍼플 #8B5CF6
+⚪ 화이트 #F5F7FA      🟡 골드 #FBBF24
+```
+
+### 아키텍처
+
+```
+src/app/_site/
+  layout.tsx                  ← 서브도메인 공통 헤더/푸터 (proxy.ts rewrite 대상)
+  [[...path]]/page.tsx        ← 라우팅 허브: subdomain → tournament_site → 템플릿 분기
+
+src/components/site-templates/
+  classic/                    ← 클래식 템플릿 컴포넌트
+    home.tsx / teams.tsx / bracket.tsx / notice.tsx
+  dark/                       ← 다크 템플릿
+  minimal/                    ← 미니멀 템플릿
+
+src/app/(web)/tournament-admin/tournaments/[id]/site/
+  page.tsx                    ← 기존 사이트 관리 → 3스텝 위자드로 개편
+```
+
+### 관리자 UI 흐름 (3스텝 위자드)
+
+```
+[Step 1 — 템플릿]
+  큰 카드 3개 (썸네일 + 이름)
+  선택된 카드에 체크 표시
+
+[Step 2 — 꾸미기]
+  색상 팔레트 8개 (원형 버튼)
+  로고 이미지 업로드 (선택)
+  사이트 이름 (기본값: 대회명 자동 입력)
+  → 우측에 실시간 미니 미리보기
+
+[Step 3 — 공개]
+  "사이트 미리보기" 버튼 (새 탭, ?_sub= 파라미터)
+  공개 ON/OFF 스위치
+  URL 표시: rookie.mybdr.kr
+```
+
+### 구현 태스크
+
+**Must (1단계)**
+- [ ] T1: `src/app/_site/layout.tsx` + `[[...path]]/page.tsx` 생성 (서브도메인 매핑)
+- [ ] T2: `classic` 템플릿 4개 페이지 컴포넌트
+- [ ] T3: 관리자 사이트 관리 페이지 → 3스텝 위자드 개편
+- [ ] T4: `tournament_sites.site_template_id` 저장 API 연결
+
+**Should (2단계)**
+- [ ] T5: `dark` / `minimal` 템플릿
+- [ ] T6: 페이지별 ON/OFF 토글 (`site_pages` 활용)
+- [ ] T7: 공지사항 텍스트 편집
+
+**Nice (3단계)**
+- [ ] T8: 로고/배너 이미지 업로드
+- [ ] T9: 방문자 수 통계 표시
+
+### 트레이드오프
+- ✅ 주최자 입력 0 — 대회 정보 자동 렌더링
+- ✅ 코드 기반 템플릿 → 빠른 구현, 안정적 성능
+- ✅ 팔레트 방식 → 잘못된 색상 조합 방지
+- ✅ 모바일 우선 (주최자·관람자 모두 폰 사용)
+- ⚠️ 새 템플릿 추가 시 코드 변경 필요 (섹션 빌더 방식 대비 유연성 낮음)
+- ⚠️ 로컬 테스트는 `?_sub=` 파라미터 필수 (DNS 없음)
+
+---
+
+## §8. bdr_stat 스탯 기록 연동
+
+> **목적**: Flutter bdr_stat 앱으로 대회 경기 스탯을 실시간 기록 → 대회 사이트 라이브 스코어보드 표시
+> **근거**: Dev/research.md §8
+> **상태**: ⛔ 아직 구현하지마 — 판단 주석 작성 후 승인 필요
+
+---
+
+### §8.1 DB 마이그레이션
+
+> **Supabase MCP 사용 필수**
+
+<!--[승인] -->
+
+**신규 테이블 2개**:
+
+```sql
+-- migration: add_tournament_recorders
+CREATE TABLE tournament_recorders (
+  id            BIGSERIAL PRIMARY KEY,
+  tournament_id VARCHAR NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+  recorder_id   BIGINT  NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  assigned_by   BIGINT  NOT NULL REFERENCES users(id),
+  is_active     BOOLEAN NOT NULL DEFAULT true,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (tournament_id, recorder_id)
+);
+CREATE INDEX idx_tournament_recorders_tournament ON tournament_recorders(tournament_id);
+
+-- migration: add_match_events
+CREATE TABLE match_events (
+  id            BIGSERIAL PRIMARY KEY,
+  match_id      BIGINT  NOT NULL REFERENCES tournament_matches(id) ON DELETE CASCADE,
+  tournament_id VARCHAR NOT NULL,                -- 집계 최적화용 역정규화
+  team_id       BIGINT  REFERENCES tournament_teams(id),
+  player_id     BIGINT  REFERENCES tournament_team_players(id),
+
+  -- event_type 허용값:
+  -- score_2, score_3, free_throw
+  -- rebound_off, rebound_def, assist, steal, block, turnover
+  -- foul_personal, foul_technical, timeout
+  -- quarter_start, quarter_end, game_start, game_end
+  event_type    VARCHAR NOT NULL,
+  value         INT,               -- 득점 이벤트: 2/3/1
+  quarter       INT,               -- 1~4, 5=연장
+  game_time     VARCHAR(10),       -- "09:45" 표시용
+
+  undone        BOOLEAN NOT NULL DEFAULT false,
+  undone_at     TIMESTAMPTZ,
+  undone_by     BIGINT REFERENCES users(id),
+  recorded_by   BIGINT  NOT NULL REFERENCES users(id),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_match_events_match_undone   ON match_events(match_id, undone);
+CREATE INDEX idx_match_events_match_time     ON match_events(match_id, created_at);
+CREATE INDEX idx_match_events_tournament_team ON match_events(tournament_id, team_id);
+```
+
+**Prisma 스키마 추가**:
+
+```prisma
+// prisma/schema.prisma
+
+model tournament_recorders {
+  id           BigInt     @id @default(autoincrement())
+  tournamentId String     @map("tournament_id")
+  recorderId   BigInt     @map("recorder_id")
+  assignedBy   BigInt     @map("assigned_by")
+  isActive     Boolean    @default(true) @map("is_active")
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  recorder     users      @relation("TournamentRecorder", fields: [recorderId], references: [id], onDelete: Cascade)
+  assigner     users      @relation("TournamentRecorderAssigner", fields: [assignedBy], references: [id])
+
+  @@unique([tournamentId, recorderId])
+  @@index([tournamentId])
+  @@map("tournament_recorders")
+}
+
+model match_events {
+  id           BigInt          @id @default(autoincrement())
+  matchId      BigInt          @map("match_id")
+  tournamentId String          @map("tournament_id")
+  teamId       BigInt?         @map("team_id")
+  playerId     BigInt?         @map("player_id")
+  eventType    String          @map("event_type")
+  value        Int?
+  quarter      Int?
+  gameTime     String?         @map("game_time")
+  undone       Boolean         @default(false)
+  undoneAt     DateTime?       @map("undone_at")
+  undoneBy     BigInt?         @map("undone_by")
+  recordedBy   BigInt          @map("recorded_by")
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  match        TournamentMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@index([matchId, undone])
+  @@index([matchId, createdAt])
+  @@index([tournamentId, teamId])
+  @@map("match_events")
+}
+```
+
+**TournamentMatch 모델 relation 추가**:
+```prisma
+// TournamentMatch 모델에 추가
+matchEvents  match_events[]
+```
+
+**Tournament 모델 relation 추가**:
+```prisma
+// Tournament 모델에 추가
+recorders    tournament_recorders[]
+```
+
+---
+
+### §8.2 JWT recorder role 확장
+
+<!-- [승인] -->
+
+**파일**: `src/lib/auth/jwt.ts` (기존 수정)
+
+```typescript
+// JWT 페이로드 타입 확장
+export interface JWTPayload {
+  sub: string;          // userId
+  role: string;         // 기존 role
+  recorder_tournament_ids?: string[];  // 신규: 기록원으로 지정된 대회 ID 배열
+  iat: number;
+  exp: number;
+}
+```
+
+**파일**: `src/lib/auth/require-recorder.ts` (신규)
+
+```typescript
+// 기록원 권한 검증 미들웨어
+import { NextRequest, NextResponse } from "next/server";
+import { verifyToken } from "@/lib/auth/jwt";
+import { prisma } from "@/lib/db/prisma";
+import { WEB_SESSION_COOKIE } from "@/lib/auth/web-session";
+import { cookies } from "next/headers";
+
+export async function requireRecorder(tournamentId: string) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(WEB_SESSION_COOKIE)?.value;
+  if (!token) return { error: NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }) };
+
+  const session = await verifyToken(token);
+  if (!session) return { error: NextResponse.json({ error: "세션이 만료되었습니다." }, { status: 401 }) };
+
+  // super_admin은 모든 대회 기록 가능
+  if (session.role === "super_admin") return { session };
+
+  const rec = await prisma.tournament_recorders.findFirst({
+    where: { tournamentId, recorderId: BigInt(session.sub), isActive: true },
+  });
+  if (!rec) return { error: NextResponse.json({ error: "기록원 권한이 없습니다." }, { status: 403 }) };
+
+  return { session };
+}
+```
+
+---
+
+### §8.3 신규 API 엔드포인트 (`/api/v1/`)
+
+<!-- [승인] -->
+
+#### T1. 기록원 담당 경기 목록
+
+**파일**: `src/app/api/v1/recorder/matches/route.ts` (신규)
+
+```
+GET /api/v1/recorder/matches
+Authorization: Bearer {JWT}
+
+Response:
+{
+  "matches": [
+    {
+      "id": "123",
+      "tournament_id": "abc",
+      "tournament_name": "BDR컵 2026",
+      "round_name": "4강",
+      "status": "scheduled",
+      "scheduled_at": "2026-03-10T10:00:00Z",
+      "home_team": { "id": "1", "name": "Team A" },
+      "away_team": { "id": "2", "name": "Team B" },
+      "home_score": 0,
+      "away_score": 0
+    }
+  ]
+}
+```
+
+구현:
+- JWT 검증 → recorder_tournament_ids OR DB에서 tournament_recorders 조회
+- 해당 대회들의 TournamentMatch 목록 반환 (오늘 이후 + in_progress 포함)
+
+---
+
+#### T2. 경기 상태 변경 (시작/종료)
+
+**파일**: `src/app/api/v1/matches/[matchId]/status/route.ts` (신규)
+
+```
+PATCH /api/v1/matches/{matchId}/status
+Authorization: Bearer {JWT}
+Body: { "status": "in_progress" | "completed", "winner_team_id"?: "123" }
+
+Validation:
+- status: "in_progress" 시 → 기존 VALID_TRANSITIONS 준수
+- status: "completed" 시 → winner_team_id 필수
+```
+
+---
+
+#### T3. 스탯 이벤트 입력
+
+**파일**: `src/app/api/v1/matches/[matchId]/events/route.ts` (신규)
+
+```
+POST /api/v1/matches/{matchId}/events
+Authorization: Bearer {JWT}
+Body:
+{
+  "event_type": "score_3",
+  "team_id": "1",
+  "player_id": null,      // 선택
+  "value": 3,
+  "quarter": 2,
+  "game_time": "05:32",
+  "client_event_id": "uuid-v4"  // 오프라인 중복 방지용 idempotency key
+}
+
+Response: { "event": { "id": "456", ... } }
+
+Validation:
+- eventType: 허용 목록 검증
+- value: score 이벤트 시 2/3/1만 허용
+- quarter: 1~5
+- team_id: 해당 match에 속한 팀인지 IDOR 검증
+```
+
+**오프라인 중복 방지**: `client_event_id` 기반 upsert 처리
+
+---
+
+#### T4. 이벤트 Undo
+
+**파일**: `src/app/api/v1/matches/[matchId]/events/[eventId]/undo/route.ts` (신규)
+
+```
+PATCH /api/v1/matches/{matchId}/events/{eventId}/undo
+Authorization: Bearer {JWT}
+
+Response: { "event": { "id": "456", "undone": true, "undone_at": "..." } }
+
+Validation:
+- 이미 undone인 이벤트 재시도 → 400
+- 다른 기록원의 이벤트 undo → 403 (본인 것만)
+```
+
+---
+
+#### T5. 이벤트 목록 조회 (스코어보드용)
+
+**파일**: `src/app/api/v1/matches/[matchId]/events/route.ts` — GET 추가
+
+```
+GET /api/v1/matches/{matchId}/events
+인증 불필요 (완전 공개)
+
+Response:
+{
+  "match": { "id": "123", "status": "in_progress", ... },
+  "home_score": 32,
+  "away_score": 28,
+  "home_score_by_quarter": [8, 12, 7, 5],
+  "away_score_by_quarter": [6, 10, 8, 4],
+  "events": [
+    { "id": "1", "event_type": "score_3", "team_id": "1", "quarter": 2, "game_time": "05:32", "undone": false, "created_at": "..." }
+  ]
+}
+```
+
+---
+
+#### T6. 오프라인 일괄 동기화
+
+**파일**: `src/app/api/v1/matches/[matchId]/events/batch/route.ts` (신규)
+
+```
+POST /api/v1/matches/{matchId}/events/batch
+Authorization: Bearer {JWT}
+Body: { "events": [ ...이벤트 배열... ] }
+
+- client_event_id 기반 중복 제거
+- created_at 순서로 저장
+- 결과: { "created": 5, "skipped": 1 }
+```
+
+---
+
+### §8.4 기록원 관리 API (웹)
+
+<!-- [승인 ] -->
+
+**파일**: `src/app/api/web/tournaments/[id]/recorders/route.ts` (신규)
+
+```
+GET    /api/web/tournaments/{id}/recorders   → 현재 기록원 목록
+POST   /api/web/tournaments/{id}/recorders   → 기록원 추가 { "email_or_id": "..." }
+DELETE /api/web/tournaments/{id}/recorders/[userId] → 기록원 제거
+```
+
+인증: `requireTournamentAdmin(id)` (기존 미들웨어)
+
+---
+
+### §8.5 mybdr 웹 관리 UI — 기록원 관리 탭
+
+<!-- [승인 ] -->
+
+**파일**: `src/app/(web)/tournament-admin/tournaments/[id]/recorders/page.tsx` (신규)
+
+```
+[기록원 관리]
+┌─────────────────────────────────────┐
+│ 기록원 추가                          │
+│ [이메일 또는 회원 ID 입력]  [추가]   │
+├─────────────────────────────────────┤
+│ 현재 기록원 (2명)                    │
+│                                     │
+│  👤 홍길동 (hong@example.com)  [삭제] │
+│  👤 김철수 (kim@example.com)   [삭제] │
+└─────────────────────────────────────┘
+```
+
+**탭 추가**: `/tournament-admin/tournaments/[id]` 레이아웃의 사이드 메뉴에 "기록원 관리" 항목 추가
+
+---
+
+### §8.6 대회 사이트 라이브 스코어보드
+
+<!-- [승인 ] -->
+
+**파일**: `src/components/site-templates/classic/live-scoreboard.tsx` (신규)
+
+```typescript
+// Supabase Realtime 구독 → 라이브 스코어
+"use client";
+import { createClient } from "@supabase/supabase-js";
+import { useEffect, useState } from "react";
+
+export function LiveScoreboard({ matchId, initialScore }: Props) {
+  const [homeScore, setHomeScore] = useState(initialScore.home);
+  const [awayScore, setAwayScore] = useState(initialScore.away);
+
+  useEffect(() => {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const channel = supabase
+      .channel(`match:${matchId}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "match_events",
+        filter: `match_id=eq.${matchId}`,
+      }, (payload) => {
+        if (payload.new.undone) return;
+        if (["score_2", "score_3", "free_throw"].includes(payload.new.event_type)) {
+          if (payload.new.team_id === homeTeamId) {
+            setHomeScore((s) => s + (payload.new.value ?? 0));
+          } else {
+            setAwayScore((s) => s + (payload.new.value ?? 0));
+          }
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [matchId]);
+
+  return (
+    <div className="flex items-center justify-center gap-8 text-4xl font-bold">
+      <span>{homeScore}</span>
+      <span className="text-[#9CA3AF]">:</span>
+      <span>{awayScore}</span>
+    </div>
+  );
+}
+```
+
+---
+
+### §8.7 구현 태스크 체크리스트
+
+#### Phase 1 — 핵심 파이프라인 (Must)
+
+- [ ] T1: DB 마이그레이션 (`match_events`, `tournament_recorders`) + Prisma 스키마
+- [ ] T2: `requireRecorder()` 미들웨어 (`src/lib/auth/require-recorder.ts`)
+- [ ] T3: `POST /api/v1/matches/{id}/events` — 이벤트 입력
+- [ ] T4: `PATCH /api/v1/matches/{id}/events/{eventId}/undo` — Undo
+- [ ] T5: `GET /api/v1/matches/{id}/events` — 스코어보드 데이터
+- [ ] T6: `GET /api/v1/recorder/matches` — 담당 경기 목록
+- [ ] T7: `PATCH /api/v1/matches/{id}/status` — 경기 시작/종료
+
+#### Phase 2 — 관리·실시간 (Should)
+
+- [ ] T8: `GET/POST/DELETE /api/web/tournaments/{id}/recorders` — 기록원 관리 API
+- [ ] T9: 기록원 관리 UI 페이지 (`/tournament-admin/[id]/recorders`)
+- [ ] T10: `LiveScoreboard` 컴포넌트 (Supabase Realtime)
+- [ ] T11: 대회 사이트 경기 목록 페이지에 스코어보드 통합
+
+#### Phase 3 — 오프라인·완성도 (Nice)
+
+- [ ] T12: `POST /api/v1/matches/{id}/events/batch` — 오프라인 일괄 동기화
+- [ ] T13: `client_event_id` 기반 idempotency 처리 (중복 방지)
+- [ ] T14: JWT `recorder_tournament_ids` 자동 갱신 (기록원 지정 시 토큰 갱신 트리거)
+
+---
+
+### §8.8 트레이드오프
+
+- ✅ 이벤트 스트림 방식 → Undo, 타임라인 재현, 감사 로그 모두 가능
+- ✅ Supabase Realtime → 웹소켓 서버 별도 구현 불필요, Vercel 제약 없음
+- ✅ 쓰기 /api/v1 경유 → 인증/검증/IDOR 방어 서버에서 일관 처리
+- ✅ MatchPlayerStat 미사용 → 스키마 단순화, 중복 집계 오류 위험 제거
+- ⚠️ 집계 실시간 계산 → 이벤트 수 많아질수록 쿼리 비용 증가 (향후 집계 캐싱 검토)
+- ⚠️ Supabase Realtime 공개 구독 → RLS 설정 필요 (읽기 전용 public 정책)
+- ⚠️ 오프라인 큐 구현은 Flutter 앱 측 작업 (Next.js 범위 외)
+- ⚠️ `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` 환경변수 추가 필요
 
 ---
 

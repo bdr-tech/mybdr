@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
 import { getWebSession } from "@/lib/auth/web-session";
 import { prisma } from "@/lib/db/prisma";
+import { apiSuccess, apiError } from "@/lib/api/response";
 
 // GET /api/web/notifications — unread count (헤더 벨 뱃지용)
 export async function GET() {
   const session = await getWebSession();
   if (!session) {
-    return NextResponse.json({ unreadCount: 0 });
+    return apiSuccess({ unreadCount: 0 });
   }
 
   const unreadCount = await prisma.notifications
@@ -18,7 +18,7 @@ export async function GET() {
     })
     .catch(() => 0);
 
-  const response = NextResponse.json({ unreadCount });
+  const response = apiSuccess({ unreadCount });
   // 30초 캐시: 빠른 연속 페이지 이동 시 DB 재쿼리 방지
   response.headers.set("Cache-Control", "private, max-age=30");
   return response;
@@ -28,7 +28,7 @@ export async function GET() {
 export async function PATCH() {
   const session = await getWebSession();
   if (!session) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+    return apiError("로그인이 필요합니다.", 401);
   }
 
   await prisma.notifications
@@ -44,5 +44,5 @@ export async function PATCH() {
     })
     .catch(() => null);
 
-  return NextResponse.json({ success: true });
+  return apiSuccess({ success: true });
 }

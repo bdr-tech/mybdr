@@ -1,12 +1,14 @@
+import { Suspense } from "react";
 import { prisma } from "@/lib/db/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const revalidate = 30;
 
-// ── 대회 설명 파서 ──────────────────────────────────────────
+// -- 대회 설명 파서 --
 
 type Section =
   | { type: "keyvalue"; items: [string, string][] }
@@ -98,7 +100,7 @@ function parseDescription(text: string): Section[] {
   return sections;
 }
 
-// ── 섹션 렌더러 ────────────────────────────────────────────
+// -- 섹션 렌더러 --
 
 const PRIZE_EMOJI: Record<string, string> = { 우승: "🥇", 준우승: "🥈", MVP: "⭐" };
 
@@ -192,7 +194,7 @@ function DescriptionSections({ text }: { text: string }) {
           return (
             <Card key={i} className="space-y-2">
               {sec.items.map((item, j) => {
-                // URL 포함 → 링크
+                // URL 포함 -> 링크
                 if (item.url) {
                   const displayValue = item.value.replace(/\(https?:\/\/[^\s)]+\)/g, "").trim();
                   return (
@@ -253,7 +255,7 @@ function DescriptionSections({ text }: { text: string }) {
   );
 }
 
-// ── 메인 페이지 ────────────────────────────────────────────
+// -- 메인 페이지 --
 
 const FORMAT_LABEL: Record<string, string> = {
   single_elimination: "싱글 엘리미",
@@ -274,23 +276,128 @@ const STATUS_LABEL: Record<string, { label: string; variant: "default" | "succes
   cancelled:          { label: "취소",   variant: "error" },
 };
 
+// -- Skeleton for matches + standings --
+function MatchesStandingsSkeleton() {
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <div>
+        <Skeleton className="mb-3 h-5 w-20" />
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-14 rounded-[16px]" />
+          ))}
+        </div>
+      </div>
+      <div>
+        <Skeleton className="mb-3 h-5 w-12" />
+        <Skeleton className="h-48 rounded-[16px]" />
+      </div>
+    </div>
+  );
+}
+
+// -- Async component: matches + standings (heaviest queries) --
+async function MatchesAndStandings({ tournamentId }: { tournamentId: string }) {
+  // 병렬 fetch: 경기 + 팀 순위를 동시에
+  const [matches, teams] = await Promise.all([
+    prisma.tournamentMatch.findMany({
+      where: { tournamentId },
+      orderBy: { scheduledAt: "asc" },
+      take: 10,
+      select: {
+        id: true,
+        homeScore: true,
+        awayScore: true,
+        homeTeam: { select: { team: { select: { name: true } } } },
+        awayTeam: { select: { team: { select: { name: true } } } },
+      },
+    }),
+    prisma.tournamentTeam.findMany({
+      where: { tournamentId },
+      orderBy: [{ wins: "desc" }],
+      select: {
+        id: true,
+        wins: true,
+        losses: true,
+        team: { select: { name: true } },
+      },
+    }),
+  ]);
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <div>
+        <h2 className="mb-3 font-semibold">최근 경기</h2>
+        <div className="space-y-2">
+          {matches.map((m) => (
+            <Card key={m.id.toString()} className="flex items-center justify-between py-3">
+              <span className="text-sm font-medium">{m.homeTeam?.team.name ?? "TBD"}</span>
+              <span className="rounded-full bg-[#EEF2FF] px-3 py-1 text-sm font-bold">
+                {m.homeScore}:{m.awayScore}
+              </span>
+              <span className="text-sm font-medium">{m.awayTeam?.team.name ?? "TBD"}</span>
+            </Card>
+          ))}
+          {matches.length === 0 && (
+            <Card className="text-center text-sm text-[#6B7280]">경기가 없습니다.</Card>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="mb-3 font-semibold">순위</h2>
+        <Card className="overflow-hidden p-0">
+          <table className="w-full text-sm">
+            <thead className="border-b border-[#E8ECF0] text-[#6B7280]">
+              <tr>
+                <th className="px-4 py-2 text-left">#</th>
+                <th className="px-4 py-2 text-left">팀</th>
+                <th className="px-4 py-2 text-center">승</th>
+                <th className="px-4 py-2 text-center">패</th>
+              </tr>
+            </thead>
+            <tbody>
+              {teams.map((t, i) => (
+                <tr key={t.id.toString()} className="border-b border-[#F1F5F9]">
+                  <td className="px-4 py-2 font-bold text-[#F4A261]">{i + 1}</td>
+                  <td className="px-4 py-2">{t.team.name}</td>
+                  <td className="px-4 py-2 text-center">{t.wins ?? 0}</td>
+                  <td className="px-4 py-2 text-center">{t.losses ?? 0}</td>
+                </tr>
+              ))}
+              {teams.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-4 text-center text-[#6B7280]">
+                    팀이 없습니다.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 export default async function TournamentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+
+  // 헤더 정보만 먼저 가져옴 (select로 필요한 필드만)
   const tournament = await prisma.tournament.findUnique({
     where: { id },
-    include: {
-      tournamentTeams: {
-        include: { team: { select: { name: true } } },
-        orderBy: [{ wins: "desc" }],
-      },
-      tournamentMatches: {
-        orderBy: { scheduledAt: "asc" },
-        take: 10,
-        include: {
-          homeTeam: { include: { team: { select: { name: true } } } },
-          awayTeam: { include: { team: { select: { name: true } } } },
-        },
-      },
+    select: {
+      id: true,
+      name: true,
+      format: true,
+      status: true,
+      description: true,
+      startDate: true,
+      endDate: true,
+      city: true,
+      venue_name: true,
+      entry_fee: true,
+      _count: { select: { tournamentTeams: true } },
     },
   });
   if (!tournament) return notFound();
@@ -307,7 +414,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
   return (
     <div>
-      {/* 헤더 */}
+      {/* 헤더 -- 즉시 렌더링 */}
       <Card className="mb-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h1 className="text-2xl font-bold">{tournament.name}</h1>
@@ -316,7 +423,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         <p className="mt-2 text-sm text-[#6B7280]">
           {FORMAT_LABEL[tournament.format ?? ""] ?? tournament.format ?? ""}
           {" · "}
-          {tournament.tournamentTeams.length}팀
+          {tournament._count.tournamentTeams}팀
           {tournament.startDate && ` · ${tournament.startDate.toLocaleDateString("ko-KR")}`}
           {tournament.endDate && ` ~ ${tournament.endDate.toLocaleDateString("ko-KR")}`}
         </p>
@@ -334,79 +441,38 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         </div>
       </Card>
 
-      {/* 서브 탭 */}
+      {/* 서브 탭 -- 즉시 렌더링 */}
       <div className="mb-6 flex gap-1 overflow-x-auto">
-        {tabs.map((t) => (
-          <Link
-            key={t.href}
-            href={t.href}
-            className="whitespace-nowrap rounded-full border border-[#E8ECF0] px-4 py-2 text-sm text-[#6B7280] hover:bg-[#EEF2FF] hover:text-[#111827]"
-          >
-            {t.label}
-          </Link>
-        ))}
+        {tabs.map((t) => {
+          const isActiveTab = t.href === `/tournaments/${id}`;
+          return (
+            <Link
+              key={t.href}
+              href={t.href}
+              prefetch={true}
+              className={`whitespace-nowrap rounded-full px-4 py-2 text-sm transition-colors ${
+                isActiveTab
+                  ? "bg-[#0066FF] text-white font-semibold"
+                  : "border border-[#E8ECF0] text-[#6B7280] hover:bg-[#EEF2FF] hover:text-[#111827]"
+              }`}
+            >
+              {t.label}
+            </Link>
+          );
+        })}
       </div>
 
-      {/* 대회 정보 (구조화된 설명) */}
+      {/* 대회 정보 (구조화된 설명) -- 즉시 렌더링 (이미 가져온 데이터) */}
       {tournament.description && (
         <div className="mb-6">
           <DescriptionSections text={tournament.description} />
         </div>
       )}
 
-      {/* 최근 경기 + 순위 */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div>
-          <h2 className="mb-3 font-semibold">최근 경기</h2>
-          <div className="space-y-2">
-            {tournament.tournamentMatches.map((m) => (
-              <Card key={m.id.toString()} className="flex items-center justify-between py-3">
-                <span className="text-sm font-medium">{m.homeTeam?.team.name ?? "TBD"}</span>
-                <span className="rounded-full bg-[#EEF2FF] px-3 py-1 text-sm font-bold">
-                  {m.homeScore}:{m.awayScore}
-                </span>
-                <span className="text-sm font-medium">{m.awayTeam?.team.name ?? "TBD"}</span>
-              </Card>
-            ))}
-            {tournament.tournamentMatches.length === 0 && (
-              <Card className="text-center text-sm text-[#6B7280]">경기가 없습니다.</Card>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <h2 className="mb-3 font-semibold">순위</h2>
-          <Card className="overflow-hidden p-0">
-            <table className="w-full text-sm">
-              <thead className="border-b border-[#E8ECF0] text-[#6B7280]">
-                <tr>
-                  <th className="px-4 py-2 text-left">#</th>
-                  <th className="px-4 py-2 text-left">팀</th>
-                  <th className="px-4 py-2 text-center">승</th>
-                  <th className="px-4 py-2 text-center">패</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tournament.tournamentTeams.map((t, i) => (
-                  <tr key={t.id.toString()} className="border-b border-[#F1F5F9]">
-                    <td className="px-4 py-2 font-bold text-[#F4A261]">{i + 1}</td>
-                    <td className="px-4 py-2">{t.team.name}</td>
-                    <td className="px-4 py-2 text-center">{t.wins ?? 0}</td>
-                    <td className="px-4 py-2 text-center">{t.losses ?? 0}</td>
-                  </tr>
-                ))}
-                {tournament.tournamentTeams.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-4 text-center text-[#6B7280]">
-                      팀이 없습니다.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </Card>
-        </div>
-      </div>
+      {/* 최근 경기 + 순위: Suspense로 스트리밍 (무거운 관계 쿼리 분리) */}
+      <Suspense fallback={<MatchesStandingsSkeleton />}>
+        <MatchesAndStandings tournamentId={id} />
+      </Suspense>
     </div>
   );
 }

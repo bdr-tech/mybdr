@@ -1,14 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { createNotificationBulk } from "@/lib/notifications/create";
 import { NOTIFICATION_TYPES } from "@/lib/notifications/types";
+import { apiSuccess, apiError } from "@/lib/api/response";
 
 // Vercel Cron: 매일 KST 09:00 (UTC 00:00) 실행
 // vercel.json: { "crons": [{ "path": "/api/cron/tournament-reminders", "schedule": "0 0 * * *" }] }
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiError("Unauthorized", 401);
   }
 
   // KST 기준 오늘 자정 (UTC 기준)
@@ -85,7 +86,7 @@ export async function GET(req: NextRequest) {
     await createNotificationBulk(inputs);
   }
 
-  return NextResponse.json({
+  return apiSuccess({
     success: true,
     notificationsSent: inputs.length,
     tournamentsProcessed: tournaments.length,

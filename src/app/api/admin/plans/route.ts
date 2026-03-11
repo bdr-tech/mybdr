@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
 import { getWebSession } from "@/lib/auth/web-session";
 import { prisma } from "@/lib/db/prisma";
 import { adminLog } from "@/lib/admin/log";
+import { apiSuccess, apiError } from "@/lib/api/response";
 
 async function requireAdmin() {
   const session = await getWebSession();
@@ -11,13 +12,13 @@ async function requireAdmin() {
 
 export async function GET() {
   const session = await requireAdmin();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return apiError("Unauthorized", 401);
 
   const plans = await prisma.plans.findMany({
     orderBy: { created_at: "desc" },
   });
 
-  return NextResponse.json(
+  return apiSuccess(
     plans.map((p) => ({
       id: p.id.toString(),
       name: p.name,
@@ -34,13 +35,13 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const session = await requireAdmin();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return apiError("Unauthorized", 401);
 
   const body = await req.json();
   const { name, description, plan_type, feature_key, price, max_uses } = body;
 
   if (!name?.trim() || !feature_key?.trim() || !price) {
-    return NextResponse.json({ error: "name, feature_key, price는 필수입니다." }, { status: 400 });
+    return apiError("name, feature_key, price는 필수입니다.", 400);
   }
 
   const plan = await prisma.plans.create({
@@ -60,5 +61,5 @@ export async function POST(req: NextRequest) {
     changesMade: { name: plan.name, feature_key: plan.feature_key, price: plan.price, plan_type: plan.plan_type },
   });
 
-  return NextResponse.json({ id: plan.id.toString() }, { status: 201 });
+  return apiSuccess({ id: plan.id.toString() }, 201);
 }

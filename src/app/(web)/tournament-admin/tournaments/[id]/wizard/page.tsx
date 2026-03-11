@@ -31,11 +31,11 @@ type TournamentData = {
   venue_name: string;
   venue_address: string;
   city: string;
-  maxTeams: number;
-  team_size: number;
-  roster_min: number;
-  roster_max: number;
-  entry_fee: number;
+  maxTeams: string;
+  team_size: string;
+  roster_min: string;
+  roster_max: string;
+  entry_fee: string;
   auto_approve_teams: boolean;
   is_public: boolean;
   description: string;
@@ -71,11 +71,11 @@ export default function TournamentWizardPage() {
     venue_name: "",
     venue_address: "",
     city: "",
-    maxTeams: 16,
-    team_size: 5,
-    roster_min: 5,
-    roster_max: 12,
-    entry_fee: 0,
+    maxTeams: "16",
+    team_size: "5",
+    roster_min: "5",
+    roster_max: "12",
+    entry_fee: "0",
     auto_approve_teams: false,
     is_public: true,
     description: "",
@@ -110,11 +110,11 @@ export default function TournamentWizardPage() {
         venue_name: t.venue_name ?? "",
         venue_address: t.venue_address ?? "",
         city: t.city ?? "",
-        maxTeams: t.maxTeams ?? 16,
-        team_size: t.team_size ?? 5,
-        roster_min: t.roster_min ?? 5,
-        roster_max: t.roster_max ?? 12,
-        entry_fee: Number(t.entry_fee ?? 0),
+        maxTeams: String(t.maxTeams ?? 16),
+        team_size: String(t.team_size ?? 5),
+        roster_min: String(t.roster_min ?? 5),
+        roster_max: String(t.roster_max ?? 12),
+        entry_fee: String(Number(t.entry_fee ?? 0)),
         auto_approve_teams: t.auto_approve_teams ?? false,
         is_public: t.is_public ?? true,
         description: t.description ?? "",
@@ -141,6 +141,11 @@ export default function TournamentWizardPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
+          maxTeams: Number(data.maxTeams) || 0,
+          team_size: Number(data.team_size) || 0,
+          roster_min: Number(data.roster_min) || 0,
+          roster_max: Number(data.roster_max) || 0,
+          entry_fee: Number(data.entry_fee) || 0,
           startDate: data.startDate || null,
           endDate: data.endDate || null,
           registration_start_at: data.registration_start_at || null,
@@ -313,24 +318,24 @@ export default function TournamentWizardPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className={labelCls}>최대 팀 수</label>
-                <input type="number" className={inputCls} value={data.maxTeams} min={2} onChange={(e) => set("maxTeams", Number(e.target.value))} />
+                <input type="number" className={inputCls} value={data.maxTeams} min={2} onChange={(e) => set("maxTeams", e.target.value)} />
               </div>
               <div>
                 <label className={labelCls}>팀당 선수 수</label>
-                <input type="number" className={inputCls} value={data.team_size} min={1} onChange={(e) => set("team_size", Number(e.target.value))} />
+                <input type="number" className={inputCls} value={data.team_size} min={1} onChange={(e) => set("team_size", e.target.value)} />
               </div>
               <div>
                 <label className={labelCls}>최소 로스터</label>
-                <input type="number" className={inputCls} value={data.roster_min} min={1} onChange={(e) => set("roster_min", Number(e.target.value))} />
+                <input type="number" className={inputCls} value={data.roster_min} min={1} onChange={(e) => set("roster_min", e.target.value)} />
               </div>
               <div>
                 <label className={labelCls}>최대 로스터</label>
-                <input type="number" className={inputCls} value={data.roster_max} min={1} onChange={(e) => set("roster_max", Number(e.target.value))} />
+                <input type="number" className={inputCls} value={data.roster_max} min={1} onChange={(e) => set("roster_max", e.target.value)} />
               </div>
             </div>
             <div>
               <label className={labelCls}>참가비 (원)</label>
-              <input type="number" className={inputCls} value={data.entry_fee} min={0} step={1000} onChange={(e) => set("entry_fee", Number(e.target.value))} />
+              <input type="number" className={inputCls} value={data.entry_fee} min={0} step={1000} onChange={(e) => set("entry_fee", e.target.value)} />
             </div>
             <div className="flex items-center gap-3">
               <input

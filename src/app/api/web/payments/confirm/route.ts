@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth/jwt";
-import { WEB_SESSION_COOKIE } from "@/lib/auth/web-session";
+import { withWebAuth, type WebAuthContext } from "@/lib/auth/web-session";
 import { prisma } from "@/lib/db/prisma";
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = req.nextUrl;
+export const GET = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
+  const { searchParams } = new URL(req.url);
   const paymentKey = searchParams.get("paymentKey");
   const orderId = searchParams.get("orderId");
   const amount = searchParams.get("amount");
@@ -14,16 +12,6 @@ export async function GET(req: NextRequest) {
   if (!paymentKey || !orderId || !amount || !planId) {
     return NextResponse.redirect(new URL("/pricing/fail?code=MISSING_PARAMS", req.url));
   }
-
-  // 세션 확인
-  const cookieStore = await cookies();
-  const token = cookieStore.get(WEB_SESSION_COOKIE)?.value;
-  if (!token) return NextResponse.redirect(new URL("/login", req.url));
-
-  const session = await verifyToken(token);
-  if (!session) return NextResponse.redirect(new URL("/login", req.url));
-
-  const userId = BigInt(session.sub);
 
   // 플랜 조회
   const plan = await prisma.plans.findUnique({
@@ -68,7 +56,7 @@ export async function GET(req: NextRequest) {
       // payments 기록
       await tx.payments.create({
         data: {
-          user_id: userId,
+          user_id: ctx.userId,
           payable_type: "Plan",
           payable_id: plan.id,
           payment_code: orderId,
@@ -96,7 +84,7 @@ export async function GET(req: NextRequest) {
 
       await tx.user_subscriptions.create({
         data: {
-          user_id: userId,
+          user_id: ctx.userId,
           plan_id: plan.id,
           feature_key: plan.feature_key,
           status: "active",
@@ -112,4 +100,4 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.redirect(new URL(`/pricing/success?orderId=${orderId}`, req.url));
-}
+});

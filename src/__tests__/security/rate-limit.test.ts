@@ -1,48 +1,46 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
 describe("Rate Limit", () => {
-  const testIdentifier = `test-ip-${Date.now()}`;
-
-  it("maxRequests 이하 요청은 허용된다", () => {
+  it("maxRequests 이하 요청은 허용된다", async () => {
     const config = { maxRequests: 3, windowMs: 60000 };
     const id = `allow-test-${Date.now()}`;
 
     for (let i = 0; i < 3; i++) {
-      const result = checkRateLimit(id, config);
+      const result = await checkRateLimit(id, config);
       expect(result.allowed).toBe(true);
     }
   });
 
-  it("maxRequests 초과 요청은 차단된다", () => {
+  it("maxRequests 초과 요청은 차단된다", async () => {
     const config = { maxRequests: 3, windowMs: 60000 };
     const id = `block-test-${Date.now()}`;
 
     for (let i = 0; i < 3; i++) {
-      checkRateLimit(id, config);
+      await checkRateLimit(id, config);
     }
 
-    const blocked = checkRateLimit(id, config);
+    const blocked = await checkRateLimit(id, config);
     expect(blocked.allowed).toBe(false);
     expect(blocked.remaining).toBe(0);
   });
 
-  it("remaining 카운트가 정확히 감소한다", () => {
+  it("remaining 카운트가 정확히 감소한다", async () => {
     const config = { maxRequests: 5, windowMs: 60000 };
     const id = `remaining-test-${Date.now()}`;
 
-    const first = checkRateLimit(id, config);
+    const first = await checkRateLimit(id, config);
     expect(first.remaining).toBe(4);
 
-    const second = checkRateLimit(id, config);
+    const second = await checkRateLimit(id, config);
     expect(second.remaining).toBe(3);
   });
 
-  it("limit 필드가 maxRequests와 일치한다", () => {
+  it("limit 필드가 maxRequests와 일치한다", async () => {
     const config = { maxRequests: 10, windowMs: 60000 };
     const id = `limit-test-${Date.now()}`;
 
-    const result = checkRateLimit(id, config);
+    const result = await checkRateLimit(id, config);
     expect(result.limit).toBe(10);
   });
 

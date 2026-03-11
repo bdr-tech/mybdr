@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { requireTournamentAdmin, toJSON } from "@/lib/auth/tournament-auth";
+import { requireTournamentAdmin } from "@/lib/auth/tournament-auth";
+import { parseBigIntParam } from "@/lib/utils/parse-bigint";
+import { apiSuccess, apiError } from "@/lib/api/response";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -19,7 +21,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     orderBy: [{ status: "asc" }, { createdAt: "asc" }],
   });
 
-  return toJSON(teams);
+  return apiSuccess(teams);
 }
 
 // POST /api/web/tournaments/[id]/teams — 팀 직접 등록 (어드민용)
@@ -32,25 +34,23 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
+    return apiError("잘못된 요청입니다.", 400);
   }
 
   if (!body.teamId)
-    return NextResponse.json({ error: "teamId가 필요합니다." }, { status: 400 });
+    return apiError("teamId가 필요합니다.", 400);
 
   // TC-NEW-004: BigInt 변환 실패 방지
-  let teamId: bigint;
-  try {
-    teamId = BigInt(body.teamId);
-  } catch {
-    return NextResponse.json({ error: "유효하지 않은 팀 ID입니다." }, { status: 400 });
+  const teamId = parseBigIntParam(body.teamId);
+  if (teamId === null) {
+    return apiError("유효하지 않은 팀 ID입니다.", 400);
   }
 
   const existing = await prisma.tournamentTeam.findUnique({
     where: { tournamentId_teamId: { tournamentId: id, teamId } },
   });
   if (existing)
-    return NextResponse.json({ error: "이미 등록된 팀입니다." }, { status: 409 });
+    return apiError("이미 등록된 팀입니다.", 409);
 
   // TC-NEW-008: create + teams_count increment 원자적 처리
   const tt = await prisma.$transaction(async (tx) => {
@@ -70,5 +70,5 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     return created;
   });
 
-  return toJSON(tt);
+  return apiSuccess(tt);
 }

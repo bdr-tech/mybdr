@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { withAuth, withErrorHandler, type AuthContext } from "@/lib/api/middleware";
 import { createStatSchema, bulkStatsSchema } from "@/lib/validation/match";
 import { apiSuccess, notFound, validationError, forbidden } from "@/lib/api/response";
+import { mapStatToPrisma } from "@/lib/utils/stat-mapper";
 
 // FR-026: 매치 스탯 조회
 async function getHandler(
@@ -53,31 +54,14 @@ async function postHandler(
   if (bulkResult.success) {
     // Zod 검증된 데이터를 실제 DB 컬럼명으로 매핑
     const now = new Date();
-    const mapStatToDb = (s: (typeof bulkResult.data.stats)[number]) => ({
-      tournamentMatchId: matchIdBig,
-      tournamentTeamPlayerId: BigInt(s.tournamentTeamPlayerId),
-      points: s.points,
-      total_rebounds: s.rebounds,
-      assists: s.assists,
-      steals: s.steals,
-      blocks: s.blocks,
-      turnovers: s.turnovers,
-      personal_fouls: s.fouls,
-      fieldGoalsMade: s.fieldGoalsMade,
-      fieldGoalsAttempted: s.fieldGoalsAttempted,
-      threePointersMade: s.threePointersMade,
-      threePointersAttempted: s.threePointersAttempted,
-      freeThrowsMade: s.freeThrowsMade,
-      freeThrowsAttempted: s.freeThrowsAttempted,
-      minutesPlayed: s.minutesPlayed,
-      isStarter: s.isStarter,
-      plusMinus: s.plusMinus,
-      createdAt: now,
-      updatedAt: now,
-    });
-
     const created = await prisma.matchPlayerStat.createMany({
-      data: bulkResult.data.stats.map(mapStatToDb),
+      data: bulkResult.data.stats.map((s) => ({
+        tournamentMatchId: matchIdBig,
+        tournamentTeamPlayerId: BigInt(s.tournamentTeamPlayerId),
+        ...mapStatToPrisma(s),
+        createdAt: now,
+        updatedAt: now,
+      })),
     });
     return apiSuccess({ created: created.count }, 201);
   }
@@ -90,22 +74,7 @@ async function postHandler(
     data: {
       tournamentMatchId: matchIdBig,
       tournamentTeamPlayerId: BigInt(s.tournamentTeamPlayerId),
-      points: s.points,
-      total_rebounds: s.rebounds,
-      assists: s.assists,
-      steals: s.steals,
-      blocks: s.blocks,
-      turnovers: s.turnovers,
-      personal_fouls: s.fouls,
-      fieldGoalsMade: s.fieldGoalsMade,
-      fieldGoalsAttempted: s.fieldGoalsAttempted,
-      threePointersMade: s.threePointersMade,
-      threePointersAttempted: s.threePointersAttempted,
-      freeThrowsMade: s.freeThrowsMade,
-      freeThrowsAttempted: s.freeThrowsAttempted,
-      minutesPlayed: s.minutesPlayed,
-      isStarter: s.isStarter,
-      plusMinus: s.plusMinus,
+      ...mapStatToPrisma(s),
     },
   });
 

@@ -13,7 +13,9 @@ const MEMBERSHIP_TO_ROLE: Record<number, string> = {
 const getSecret = () => new TextEncoder().encode(process.env.JWT_SECRET);
 
 const ALGORITHM = "HS256";
-const EXPIRY = "30d";
+// M-02: 30d → 7d 단축. jti를 생성하지만 현재 블랙리스트 미구현.
+// TODO: 토큰 즉시 폐기가 필요하면 Redis 기반 jti 블랙리스트 도입 필요
+const EXPIRY = "7d";
 
 export interface JwtPayload {
   sub: string;

@@ -1,23 +1,12 @@
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth/jwt";
-import { WEB_SESSION_COOKIE } from "@/lib/auth/web-session";
+import { withWebAuth, type WebAuthContext } from "@/lib/auth/web-session";
 import { prisma } from "@/lib/db/prisma";
+import { apiSuccess } from "@/lib/api/response";
 
-export async function GET() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(WEB_SESSION_COOKIE)?.value;
-  if (!token) return NextResponse.json({ venues: [] });
-
-  const session = await verifyToken(token);
-  if (!session) return NextResponse.json({ venues: [] });
-
-  const userId = BigInt(session.sub);
-
+export const GET = withWebAuth(async (ctx: WebAuthContext) => {
   // 최근 게임에서 장소 정보를 가져와 중복 제거 후 최대 3개 반환
   const games = await prisma.games.findMany({
     where: {
-      organizer_id: userId,
+      organizer_id: ctx.userId,
       city: { not: null },
     },
     select: {
@@ -41,5 +30,5 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ venues: unique });
-}
+  return apiSuccess({ venues: unique });
+});

@@ -3,13 +3,7 @@ import { NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth/jwt";
 import { WEB_SESSION_COOKIE } from "@/lib/auth/web-session";
 import { prisma } from "@/lib/db/prisma";
-
-/** BigInt 포함 객체를 JSON 직렬화 */
-export function toJSON(data: unknown) {
-  return NextResponse.json(
-    JSON.parse(JSON.stringify(data, (_, v) => (typeof v === "bigint" ? v.toString() : v)))
-  );
-}
+import { apiError } from "@/lib/api/response";
 
 type AuthOk = { userId: bigint; session: { sub: string; role: string } };
 type AuthErr = { error: NextResponse };
@@ -21,11 +15,11 @@ export async function requireTournamentAdmin(
   const cookieStore = await cookies();
   const token = cookieStore.get(WEB_SESSION_COOKIE)?.value;
   if (!token)
-    return { error: NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }) };
+    return { error: apiError("로그인이 필요합니다.", 401) };
 
   const session = await verifyToken(token);
   if (!session)
-    return { error: NextResponse.json({ error: "세션이 만료되었습니다." }, { status: 401 }) };
+    return { error: apiError("세션이 만료되었습니다.", 401) };
 
   const userId = BigInt(session.sub);
 
@@ -35,14 +29,14 @@ export async function requireTournamentAdmin(
   });
 
   if (!tournament)
-    return { error: NextResponse.json({ error: "대회를 찾을 수 없습니다." }, { status: 404 }) };
+    return { error: apiError("대회를 찾을 수 없습니다.", 404) };
 
   if (tournament.organizerId !== userId) {
     const member = await prisma.tournamentAdminMember.findFirst({
       where: { tournamentId, userId, isActive: true },
     });
     if (!member)
-      return { error: NextResponse.json({ error: "권한이 없습니다." }, { status: 403 }) };
+      return { error: apiError("권한이 없습니다.", 403) };
   }
 
   return { userId, session };

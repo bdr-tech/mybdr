@@ -1,34 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth/jwt";
-import { WEB_SESSION_COOKIE } from "@/lib/auth/web-session";
+import { withWebAuth, type WebAuthContext } from "@/lib/auth/web-session";
 import { prisma } from "@/lib/db/prisma";
 import { createNotification } from "@/lib/notifications/create";
 import { NOTIFICATION_TYPES } from "@/lib/notifications/types";
+import { apiSuccess, apiError } from "@/lib/api/response";
 
-export async function POST(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+type RouteCtx = { params: Promise<{ id: string }> };
 
-  // 1. 로그인 확인
-  const cookieStore = await cookies();
-  const token = cookieStore.get(WEB_SESSION_COOKIE)?.value;
-  if (!token) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-
-  const session = await verifyToken(token);
-  if (!session) return NextResponse.json({ error: "세션이 만료되었습니다." }, { status: 401 });
+export const POST = withWebAuth(async (_req: Request, routeCtx: RouteCtx, ctx: WebAuthContext) => {
+  const { id } = await routeCtx.params;
 
   try {
-    const userId = BigInt(session.sub);
-
     // 8자리 short ID → full UUID 변환 (상세페이지와 동일한 처리)
     // TC-042: short UUID는 hex 8자리만 허용 (% 와일드카드 인젝션 방지)
     let game = null;
     if (id.length === 8) {
       if (!/^[a-f0-9]{8}$/.test(id)) {
-        return NextResponse.json({ error: "경기를 찾을 수 없습니다." }, { status: 404 });
+        return apiError("경기를 찾을 수 없습니다.", 404);
       }
       const rows = await prisma.$queryRaw<{ uuid: string }[]>`
         SELECT uuid::text AS uuid FROM games WHERE uuid::text LIKE ${id + "%"} LIMIT 1
@@ -40,34 +27,34 @@ export async function POST(
     } else {
       game = await prisma.games.findUnique({ where: { uuid: id } });
     }
-    if (!game) return NextResponse.json({ error: "경기를 찾을 수 없습니다." }, { status: 404 });
+    if (!game) return apiError("경기를 찾을 수 없습니다.", 404);
 
     // 2. 주최자 본인 신청 불가
-    if (game.organizer_id === userId) {
-      return NextResponse.json({ error: "내가 주최한 경기에는 신청할 수 없습니다." }, { status: 403 });
+    if (game.organizer_id === ctx.userId) {
+      return apiError("내가 주최한 경기에는 신청할 수 없습니다.", 403);
     }
 
     // 3. 모집중 상태(1)만 신청 가능
     if (game.status !== 1) {
-      return NextResponse.json({ error: "현재 신청을 받지 않는 경기입니다." }, { status: 400 });
+      return apiError("현재 신청을 받지 않는 경기입니다.", 400);
     }
 
     // 4. 이미 시작된 경기 신청 불가
     if (game.scheduled_at < new Date()) {
-      return NextResponse.json({ error: "이미 시작된 경기에는 신청할 수 없습니다." }, { status: 400 });
+      return apiError("이미 시작된 경기에는 신청할 수 없습니다.", 400);
     }
 
     // 5. 중복 신청 사전 확인 (트랜잭션 진입 전 빠른 검사)
     const existing = await prisma.game_applications.findUnique({
-      where: { game_id_user_id: { game_id: game.id, user_id: userId } },
+      where: { game_id_user_id: { game_id: game.id, user_id: ctx.userId } },
     });
     if (existing) {
-      return NextResponse.json({ error: "이미 참가 신청한 경기입니다." }, { status: 409 });
+      return apiError("이미 참가 신청한 경기입니다.", 409);
     }
 
     // 6. 신청자 프로필 조회 (호스트에게 전달할 정보)
     const applicant = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: ctx.userId },
       select: {
         name: true,
         nickname: true,
@@ -103,7 +90,7 @@ export async function POST(
         await tx.game_applications.create({
           data: {
             game_id: game!.id,
-            user_id: userId,
+            user_id: ctx.userId,
             status: 0, // pending
             payment_required: (game!.fee_per_person ?? 0) > 0,
             created_at: new Date(),
@@ -114,11 +101,11 @@ export async function POST(
     } catch (e) {
       const err = e as { code?: string; message?: string };
       if (err.code === "FULL" || err.message === "FULL") {
-        return NextResponse.json({ error: "정원이 마감된 경기입니다." }, { status: 400 });
+        return apiError("정원이 마감된 경기입니다.", 400);
       }
       // P2002: unique constraint violation (동시 중복 신청)
       if ((err as { code?: string }).code === "P2002") {
-        return NextResponse.json({ error: "이미 참가 신청한 경기입니다." }, { status: 409 });
+        return apiError("이미 참가 신청한 경기입니다.", 409);
       }
       throw e;
     }
@@ -134,7 +121,7 @@ export async function POST(
       notifiableId: game.id,
       metadata: {
         applicant: {
-          id: userId.toString(),
+          id: ctx.userId.toString(),
           name: applicant?.name ?? null,
           nickname: applicant?.nickname ?? null,
           phone: applicant?.phone ?? null,
@@ -148,7 +135,7 @@ export async function POST(
 
     // 9. 신청자에게 신청 완료 알림 발송 (fire-and-forget)
     createNotification({
-      userId,
+      userId: ctx.userId,
       notificationType: NOTIFICATION_TYPES.GAME_APPLICATION_SUBMITTED,
       title: "참가 신청 완료",
       content: `"${game.title}" 경기에 참가 신청이 완료되었습니다. 호스트 승인 후 확정됩니다.`,
@@ -157,8 +144,8 @@ export async function POST(
       notifiableId: game.id,
     }).catch(() => {});
 
-    return NextResponse.json({ success: true, message: "참가 신청이 완료되었습니다." });
+    return apiSuccess({ success: true, message: "참가 신청이 완료되었습니다." });
   } catch {
-    return NextResponse.json({ error: "참가 신청 중 오류가 발생했습니다." }, { status: 500 });
+    return apiError("참가 신청 중 오류가 발생했습니다.", 500);
   }
-}
+});

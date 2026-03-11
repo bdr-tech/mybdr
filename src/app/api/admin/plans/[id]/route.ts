@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
 import { getWebSession } from "@/lib/auth/web-session";
 import { prisma } from "@/lib/db/prisma";
 import { adminLog } from "@/lib/admin/log";
+import { apiSuccess, apiError } from "@/lib/api/response";
 
 async function requireAdmin() {
   const session = await getWebSession();
@@ -14,7 +15,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await requireAdmin();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return apiError("Unauthorized", 401);
 
   const { id } = await params;
   const body = await req.json();
@@ -33,7 +34,7 @@ export async function PUT(
     },
   }).catch(() => null);
 
-  if (!plan) return NextResponse.json({ error: "요금제를 찾을 수 없습니다." }, { status: 404 });
+  if (!plan) return apiError("요금제를 찾을 수 없습니다.", 404);
 
   await adminLog("plan.update", "Plan", {
     resourceId: id,
@@ -42,7 +43,7 @@ export async function PUT(
     changesMade: body,
   });
 
-  return NextResponse.json({ ok: true });
+  return apiSuccess({ ok: true });
 }
 
 export async function DELETE(
@@ -50,7 +51,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await requireAdmin();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return apiError("Unauthorized", 401);
 
   const { id } = await params;
   const prev = await prisma.plans.findUnique({ where: { id: BigInt(id) } }).catch(() => null);
@@ -70,7 +71,7 @@ export async function DELETE(
       severity: "warning",
     });
 
-    return NextResponse.json({ ok: true, deactivated: true });
+    return apiSuccess({ ok: true, deactivated: true });
   }
 
   await prisma.plans.delete({ where: { id: BigInt(id) } }).catch(() => null);
@@ -82,5 +83,5 @@ export async function DELETE(
     severity: "warning",
   });
 
-  return NextResponse.json({ ok: true });
+  return apiSuccess({ ok: true });
 }

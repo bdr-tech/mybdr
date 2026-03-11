@@ -3,15 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import { Home, Dribbble, Trophy, MessageSquare, Menu } from "lucide-react";
 import { SlideMenu } from "./slide-menu";
 import { UserDropdown } from "./user-dropdown";
 import { BellIcon } from "./bell-icon";
 
 const navItems = [
-  { href: "/", label: "홈", icon: "🏠" },
-  { href: "/games", label: "경기", icon: "🏀" },
-  { href: "/tournaments", label: "대회", icon: "🏆" },
-  { href: "/community", label: "게시판", icon: "💬" },
+  { href: "/", label: "홈", Icon: Home },
+  { href: "/games", label: "경기", Icon: Dribbble },
+  { href: "/tournaments", label: "대회", Icon: Trophy },
+  { href: "/community", label: "게시판", Icon: MessageSquare },
 ];
 
 const desktopNavItems = [
@@ -73,7 +74,7 @@ export function Header() {
       <header className="sticky top-0 z-50 border-b border-[#E8ECF0] bg-[#FFFFFF]/95 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-1.5">
+          <Link href="/" prefetch={true} className="flex items-center gap-1.5">
             <span className="text-lg font-bold text-[#F4A261]">BDR</span>
           </Link>
 
@@ -83,6 +84,7 @@ export function Header() {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={true}
                 className={`rounded-full px-4 py-2 text-sm transition-colors ${
                   isActive(item.href)
                     ? "bg-[rgba(0,102,255,0.12)] font-medium text-[#0066FF]"
@@ -119,27 +121,31 @@ export function Header() {
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="grid grid-cols-5">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center gap-0.5 py-2.5 text-[10px] transition-colors active:opacity-70 ${
-                isActive(item.href)
-                  ? "text-[#F4A261]"
-                  : "text-[#9CA3AF]"
-              }`}
-            >
-              <span className="text-lg">{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                prefetch={true}
+                className={`flex flex-col items-center gap-0.5 py-2.5 text-[11px] transition-colors active:opacity-70 ${
+                  active
+                    ? "text-[#F4A261] font-semibold"
+                    : "text-[#9CA3AF]"
+                }`}
+              >
+                <item.Icon size={22} strokeWidth={active ? 2.5 : 1.5} />
+                {item.label}
+              </Link>
+            );
+          })}
           <button
             onClick={() => setMenuOpen(true)}
-            className={`flex flex-col items-center gap-0.5 py-2.5 text-[10px] active:opacity-70 ${
-              menuOpen ? "text-[#F4A261]" : "text-[#9CA3AF]"
+            className={`flex flex-col items-center gap-0.5 py-2.5 text-[11px] active:opacity-70 ${
+              menuOpen ? "text-[#F4A261] font-semibold" : "text-[#9CA3AF]"
             }`}
           >
-            <span className="text-lg">☰</span>
+            <Menu size={22} strokeWidth={menuOpen ? 2.5 : 1.5} />
             전체
           </button>
         </div>

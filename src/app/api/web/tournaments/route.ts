@@ -1,8 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth/jwt";
-import { WEB_SESSION_COOKIE } from "@/lib/auth/web-session";
-import { prisma } from "@/lib/db/prisma";
+import { withWebAuth, type WebAuthContext } from "@/lib/auth/web-session";
+import { apiSuccess, apiError } from "@/lib/api/response";
+import { createTournament, hasCreatePermission } from "@/lib/services/tournament";
 
 const FORMAT_MAP: Record<string, string> = {
   "싱글 엘리미네이션": "single_elimination",
@@ -12,36 +10,20 @@ const FORMAT_MAP: Record<string, string> = {
   "스위스": "swiss",
 };
 
-export async function POST(req: NextRequest) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(WEB_SESSION_COOKIE)?.value;
-  if (!token) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-
-  const session = await verifyToken(token);
-  if (!session) return NextResponse.json({ error: "세션이 만료되었습니다." }, { status: 401 });
-
+export const POST = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
   try {
     const body = await req.json();
     const { name, format, startDate, endDate, subdomain, primaryColor, secondaryColor } = body;
 
     if (!name?.trim()) {
-      return NextResponse.json({ error: "대회 이름은 필수입니다." }, { status: 400 });
+      return apiError("대회 이름은 필수입니다.", 400);
     }
 
-    const organizerId = BigInt(session.sub);
-
     // 슈퍼관리자는 구독 체크 우회
-    if (session.role !== "super_admin") {
-      const sub = await prisma.user_subscriptions.findFirst({
-        where: {
-          user_id: organizerId,
-          feature_key: "tournament_create",
-          status: "active",
-          OR: [{ expires_at: null }, { expires_at: { gte: new Date() } }],
-        },
-      });
-      if (!sub) {
-        return NextResponse.json({ error: "UPGRADE_REQUIRED", feature: "tournament_create" }, { status: 402 });
+    if (ctx.session.role !== "super_admin") {
+      const canCreate = await hasCreatePermission(ctx.userId);
+      if (!canCreate) {
+        return apiError("UPGRADE_REQUIRED", 402);
       }
     }
     const normalizedFormat = FORMAT_MAP[format] ?? format ?? "single_elimination";
@@ -50,47 +32,32 @@ export async function POST(req: NextRequest) {
     const parsedStart = startDate ? new Date(startDate) : null;
     const parsedEnd = endDate ? new Date(endDate) : null;
     if (parsedStart && isNaN(parsedStart.getTime())) {
-      return NextResponse.json({ error: "유효하지 않은 시작일입니다." }, { status: 400 });
+      return apiError("유효하지 않은 시작일입니다.", 400);
     }
     if (parsedEnd && isNaN(parsedEnd.getTime())) {
-      return NextResponse.json({ error: "유효하지 않은 종료일입니다." }, { status: 400 });
+      return apiError("유효하지 않은 종료일입니다.", 400);
     }
     if (parsedStart && parsedEnd && parsedStart > parsedEnd) {
-      return NextResponse.json({ error: "시작일이 종료일보다 늦을 수 없습니다." }, { status: 400 });
+      return apiError("시작일이 종료일보다 늦을 수 없습니다.", 400);
     }
 
-    const tournament = await prisma.tournament.create({
-      data: {
-        name: name.trim(),
-        organizerId,
-        format: normalizedFormat,
-        startDate: parsedStart,
-        endDate: parsedEnd,
-        primary_color: primaryColor || "#F4A261",
-        secondary_color: secondaryColor || "#E76F51",
-        status: "draft",
-      },
+    const tournament = await createTournament({
+      name: name.trim(),
+      organizerId: ctx.userId,
+      format: normalizedFormat,
+      startDate: parsedStart,
+      endDate: parsedEnd,
+      primaryColor,
+      secondaryColor,
+      subdomain: subdomain?.trim()?.toLowerCase(),
     });
 
-    // 서브도메인이 있으면 TournamentSite 생성
-    if (subdomain?.trim()) {
-      await prisma.tournamentSite.create({
-        data: {
-          tournamentId: tournament.id,
-          subdomain: subdomain.trim().toLowerCase(),
-          isPublished: false,
-          primaryColor: primaryColor || "#F4A261",
-          secondaryColor: secondaryColor || "#E76F51",
-        },
-      });
-    }
-
-    return NextResponse.json({
+    return apiSuccess({
       success: true,
       tournamentId: tournament.id,
       redirectUrl: `/tournament-admin/tournaments/${tournament.id}`,
     });
   } catch {
-    return NextResponse.json({ error: "대회 생성 중 오류가 발생했습니다." }, { status: 500 });
+    return apiError("대회 생성 중 오류가 발생했습니다.", 500);
   }
-}
+});

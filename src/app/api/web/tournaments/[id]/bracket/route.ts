@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { requireTournamentAdmin, toJSON } from "@/lib/auth/tournament-auth";
+import { requireTournamentAdmin } from "@/lib/auth/tournament-auth";
 import { getBracketVersionStatus, createBracketVersion, activateBracketVersion } from "@/lib/tournaments/bracket-version";
 import { createNotificationBulk } from "@/lib/notifications/create";
 import { NOTIFICATION_TYPES } from "@/lib/notifications/types";
+import { apiSuccess, apiError } from "@/lib/api/response";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -64,7 +65,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     }),
   ]);
 
-  return toJSON({ ...versionStatus, versions, matches, approvedTeams });
+  return apiSuccess({ ...versionStatus, versions, matches, approvedTeams });
 }
 
 // POST: generate bracket (single elimination)
@@ -94,9 +95,9 @@ export async function POST(req: NextRequest, { params }: Ctx) {
         }))
       );
     }
-    return NextResponse.json(
-      { error: `무료 생성 횟수(${versionStatus.currentVersion}회)를 초과하였습니다. 슈퍼관리자의 승인을 요청했습니다.` },
-      { status: 403 }
+    return apiError(
+      `무료 생성 횟수(${versionStatus.currentVersion}회)를 초과하였습니다. 슈퍼관리자의 승인을 요청했습니다.`,
+      403
     );
   }
 
@@ -209,10 +210,10 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   } catch (e) {
     const err = e as { code?: string; message?: string };
     if (err.code === "TEAMS_INSUFFICIENT" || err.message === "TEAMS_INSUFFICIENT") {
-      return NextResponse.json({ error: "2팀 이상 승인되어야 대진표를 생성할 수 있습니다." }, { status: 400 });
+      return apiError("2팀 이상 승인되어야 대진표를 생성할 수 있습니다.", 400);
     }
     if (err.code === "ALREADY_EXISTS" || err.message === "ALREADY_EXISTS") {
-      return NextResponse.json({ error: "이미 경기가 존재합니다. clear=true로 재생성하세요." }, { status: 409 });
+      return apiError("이미 경기가 존재합니다. clear=true로 재생성하세요.", 409);
     }
     throw e;
   }
@@ -220,7 +221,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   // Record new bracket version (트랜잭션 외부)
   await createBracketVersion(id, auth.userId);
 
-  return toJSON({
+  return apiSuccess({
     success: true,
     matchesCreated: result.matchCounter - 1,
     rounds: result.totalRounds,
@@ -241,9 +242,9 @@ export async function PATCH(_req: NextRequest, { params }: Ctx) {
   });
 
   if (!latest) {
-    return NextResponse.json({ error: "생성된 대진표 버전이 없습니다." }, { status: 404 });
+    return apiError("생성된 대진표 버전이 없습니다.", 404);
   }
 
   await activateBracketVersion(id, latest.id);
-  return toJSON({ success: true });
+  return apiSuccess({ success: true });
 }

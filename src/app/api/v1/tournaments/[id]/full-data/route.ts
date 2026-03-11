@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/db/prisma";
 import { withAuth, withErrorHandler, type AuthContext } from "@/lib/api/middleware";
 import { apiSuccess, notFound, forbidden } from "@/lib/api/response";
+import { getTournamentFullData, hasAccessToTournament } from "@/lib/services/tournament";
 
 // FR-024: 토너먼트 전체 데이터 다운로드 (Flutter 오프라인 동기화)
 async function handler(
@@ -9,34 +9,16 @@ async function handler(
   ctx: AuthContext,
   tournamentId: string
 ) {
-  // IDOR 방지
-  const adminMember = await prisma.tournamentAdminMember.findFirst({
-    where: { tournamentId, userId: BigInt(ctx.userId), isActive: true },
-  });
-  if (!adminMember) return forbidden("No access to this tournament");
+  // IDOR 방지 (super_admin은 모든 대회 접근 가능)
+  if (ctx.userRole !== "super_admin") {
+    const hasAccess = await hasAccessToTournament(tournamentId, BigInt(ctx.userId));
+    if (!hasAccess) return forbidden("No access to this tournament");
+  }
 
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
-  });
-  if (!tournament) return notFound("Tournament not found");
+  const fullData = await getTournamentFullData(tournamentId);
+  if (!fullData) return notFound("Tournament not found");
 
-  const [teams, players, matches, playerStats] = await Promise.all([
-    prisma.tournamentTeam.findMany({
-      where: { tournamentId },
-      include: { team: { select: { name: true, primaryColor: true, secondaryColor: true } } },
-    }),
-    prisma.tournamentTeamPlayer.findMany({
-      where: { tournamentTeam: { tournamentId } },
-      include: { users: { select: { nickname: true } } },
-    }),
-    prisma.tournamentMatch.findMany({
-      where: { tournamentId },
-      orderBy: { scheduledAt: "asc" },
-    }),
-    prisma.matchPlayerStat.findMany({
-      where: { tournamentMatch: { tournamentId } },
-    }),
-  ]);
+  const { teams, players, matches, playerStats } = fullData;
 
   return apiSuccess({
     teams: teams.map((t) => ({

@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { requireTournamentAdmin, toJSON } from "@/lib/auth/tournament-auth";
+import { requireTournamentAdmin } from "@/lib/auth/tournament-auth";
+import { apiSuccess, apiError } from "@/lib/api/response";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
 
   const site = await prisma.tournamentSite.findFirst({ where: { tournamentId: id } });
   if (!site)
-    return NextResponse.json({ error: "사이트가 없습니다. 먼저 사이트를 설정하세요." }, { status: 404 });
+    return apiError("사이트가 없습니다. 먼저 사이트를 설정하세요.", 404);
 
   const publish = body.publish ?? !site.isPublished;
 
@@ -30,5 +31,5 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     },
   });
 
-  return toJSON(updated);
+  return apiSuccess(updated);
 }

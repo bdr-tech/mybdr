@@ -1351,5 +1351,307 @@ const handleSave = async (newItems: string[]) => {
 
 ---
 
+---
+
+## 8. bdr_stat ↔ mybdr 대회 연동 (Flutter 스탯 기록 시스템)
+
+> **작성일**: 2026-03-05
+> **범위**: Flutter bdr_stat 앱 → mybdr 대회 시스템 실시간 스탯 연동 설계
+> **상태**: 리서치 완료, plan.md 작성 대기
+
+### 8.1 프로젝트 목표
+
+대회 진행 중 경기별 스탯을 Flutter 앱으로 실시간 기록하고, 대회 공개 사이트(rookie.mybdr.kr)에서 라이브 스코어보드로 표시한다.
+
+```
+[Flutter 기록원 앱] ──쓰기──▶ [Next.js /api/v1] ──▶ [Supabase DB]
+                                                          │
+[대회 사이트 웹] ◀──Realtime 구독──────────────────────────┘
+[Flutter 앱]    ◀──Supabase SDK 직독──────────────────────┘
+```
+
+---
+
+### 8.2 확정된 의사결정 (Q&A 결과)
+
+| 항목 | 결정 | 근거 |
+|------|------|------|
+| 앱 사용자 역할 | 스탯 기록원 1명 | 시간관리자는 별도 기기로 독립 운영, 앱과 무관 |
+| 기록원 자격 | mybdr 가입 회원 필수 | 기존 JWT 인증 재사용, 별도 임시계정 불필요 |
+| 기록원 지정 단위 | 대회 단위 | 경기별 재지정 불필요, 대회 전체 기록 담당 |
+| 지정 방식 | 회원 ID/이메일 검색 | 대회 주최자가 mybdr 관리 화면에서 직접 지정 |
+| 스탯 저장 방식 | 이벤트 스트림 | match_events 테이블에 모든 액션 로그 저장 |
+| MatchPlayerStat | 미사용 | events에서 실시간 집계, 별도 집계값 테이블 불필요 |
+| 쓰기 경로 | Flutter → `/api/v1` | 인증/검증 서버에서 처리 |
+| 읽기/실시간 | Supabase SDK 직접 구독 | 빠른 UI 반응, Realtime 채널 활용 |
+| 공개 범위 | 완전 공개 | 대회 사이트(rookie.mybdr.kr) 누구나 조회 |
+| 오프라인 대응 | 온라인 기본 + 로컬 큐 | 연결 끊김 시 로컬 큐 유지 → 복구 시 자동 flush |
+| Undo | 마지막 이벤트 취소 | undone 플래그 방식, 이벤트 삭제 아님 |
+
+---
+
+### 8.3 시스템 전체 흐름
+
+```
+1. [대회 주최자 - mybdr 웹 관리 페이지]
+   → 기록원 지정: 회원 검색 → tournament_recorders 테이블 저장
+
+2. [기록원 - Flutter bdr_stat 앱]
+   a. 로그인 → POST /api/v1/auth/login (기존 JWT)
+   b. 담당 경기 목록 조회 → GET /api/v1/recorder/matches
+   c. 경기 시작 버튼 → PATCH /api/v1/matches/{id}/status { status: "in_progress" }
+   d. 스탯 이벤트 입력 → POST /api/v1/matches/{id}/events
+   e. Undo → PATCH /api/v1/matches/{id}/events/{eventId}/undo
+   f. 경기 종료 버튼 → PATCH /api/v1/matches/{id}/status { status: "completed" }
+   g. (오프라인 시) 이벤트 로컬 큐 적재 → 연결 복구 시 자동 flush
+
+3. [Supabase Realtime]
+   → match_events INSERT/UPDATE 감지 → 웹/앱 구독자에게 broadcast
+
+4. [대회 사이트 - rookie.mybdr.kr]
+   → Supabase SDK로 match_events 구독 → 라이브 스코어보드 실시간 갱신
+```
+
+---
+
+### 8.4 신규 DB 테이블 설계
+
+#### `tournament_recorders` — 기록원 지정
+
+```prisma
+model tournament_recorders {
+  id            BigInt     @id @default(autoincrement())
+  tournamentId  String     @map("tournament_id")      // Tournament FK
+  recorderId    BigInt     @map("recorder_id")        // User FK (mybdr 회원)
+  assignedBy    BigInt     @map("assigned_by")        // 지정한 주최자 userId
+  isActive      Boolean    @default(true) @map("is_active")
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  tournament    Tournament @relation(fields: [tournamentId], references: [id])
+  recorder      users      @relation("recorder", fields: [recorderId], references: [id])
+
+  @@unique([tournamentId, recorderId])
+  @@index([tournamentId])
+  @@map("tournament_recorders")
+}
+```
+
+#### `match_events` — 이벤트 스트림 (핵심)
+
+```prisma
+model match_events {
+  id           BigInt    @id @default(autoincrement())
+  matchId      BigInt    @map("match_id")          // TournamentMatch FK
+  tournamentId String    @map("tournament_id")     // 집계 쿼리 최적화용 역정규화
+  teamId       BigInt?   @map("team_id")           // 어느 팀의 이벤트인지
+  playerId     BigInt?   @map("player_id")         // 선수 특정 시 (선택)
+
+  // 이벤트 종류
+  // score_2, score_3, free_throw, rebound_off, rebound_def,
+  // assist, steal, block, turnover, foul_personal, foul_technical,
+  // timeout, quarter_start, quarter_end, game_start, game_end
+  eventType    String    @map("event_type")
+
+  value        Int?      // 득점 이벤트 시 점수값 (2, 3, 1)
+  quarter      Int?      // 몇 쿼터 이벤트인지 (1~4, 5=OT)
+  gameTime     String?   @map("game_time")         // "09:45" 형태 (표시용)
+
+  undone       Boolean   @default(false)           // Undo 처리됨
+  undoneAt     DateTime? @map("undone_at")
+  undoneBy     BigInt?   @map("undone_by")         // Undo 실행한 recorder
+
+  recordedBy   BigInt    @map("recorded_by")       // 기록원 userId
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  match        TournamentMatch @relation(fields: [matchId], references: [id])
+
+  @@index([matchId, undone])           // 경기별 유효 이벤트 조회
+  @@index([matchId, createdAt])        // 타임라인 순서 조회
+  @@index([tournamentId, teamId])      // 팀 누적 통계 집계
+  @@map("match_events")
+}
+```
+
+---
+
+### 8.5 실시간 집계 로직 (이벤트 → 스코어)
+
+MatchPlayerStat 집계값 테이블 없이 match_events에서 직접 계산:
+
+```typescript
+// 경기 현재 스코어 계산
+const score = await prisma.match_events.aggregate({
+  where: {
+    matchId: matchBigInt,
+    teamId: teamBigInt,
+    eventType: { in: ["score_2", "score_3", "free_throw"] },
+    undone: false,
+  },
+  _sum: { value: true },
+});
+// score._sum.value → 현재 팀 득점
+
+// 또는 Supabase SDK에서 클라이언트 실시간 집계
+const events = supabase
+  .channel(`match:${matchId}`)
+  .on('postgres_changes', {
+    event: 'INSERT',
+    schema: 'public',
+    table: 'match_events',
+    filter: `match_id=eq.${matchId}`,
+  }, (payload) => {
+    // 이벤트 수신 시 로컬 상태 갱신
+    updateScore(payload.new);
+  })
+  .subscribe();
+```
+
+---
+
+### 8.6 신규 API 엔드포인트 (`/api/v1/`)
+
+| Method | Path | 인증 | 설명 |
+|--------|------|------|------|
+| GET | `/recorder/matches` | JWT + recorder role | 담당 대회의 경기 목록 |
+| PATCH | `/matches/{matchId}/status` | JWT + recorder | 경기 시작/종료 상태 변경 |
+| POST | `/matches/{matchId}/events` | JWT + recorder | 스탯 이벤트 입력 |
+| PATCH | `/matches/{matchId}/events/{eventId}/undo` | JWT + recorder | 마지막 이벤트 취소 |
+| GET | `/matches/{matchId}/events` | public | 이벤트 목록 + 집계 (스코어보드용) |
+
+---
+
+### 8.7 JWT 역할 확장
+
+현재 JWT `role` 값: `player` | `team_admin` | `admin` | `super_admin`
+
+추가 필요:
+```typescript
+// 토너먼트 스코프 recorder 역할
+// 방식: JWT 페이로드에 recorder_tournament_ids 배열 추가
+{
+  sub: "123",
+  role: "player",
+  recorder_tournament_ids: ["abc123", "def456"]  // 기록원으로 지정된 대회 ID 목록
+}
+```
+
+**검증 미들웨어**:
+```typescript
+// src/lib/auth/require-recorder.ts
+export async function requireRecorder(req: NextRequest, tournamentId: string) {
+  const session = await verifyToken(token);
+  if (!session) return { error: 401 };
+
+  // JWT 페이로드 또는 DB에서 기록원 권한 확인
+  const isRecorder = await prisma.tournament_recorders.findFirst({
+    where: { tournamentId, recorderId: BigInt(session.sub), isActive: true },
+  });
+  if (!isRecorder) return { error: 403 };
+  return { session };
+}
+```
+
+---
+
+### 8.8 mybdr 웹 관리 화면 변경
+
+**위치**: `/tournament-admin/tournaments/[id]` → "기록원 관리" 탭 추가
+
+```
+┌─────────────────────────────────┐
+│ 기록원 관리                      │
+├─────────────────────────────────┤
+│ [회원 검색: 이메일 또는 ID]  [추가] │
+├─────────────────────────────────┤
+│ 현재 기록원                      │
+│  홍길동 (hong@example.com)  [삭제] │
+│  김철수 (kim@example.com)   [삭제] │
+└─────────────────────────────────┘
+```
+
+**API**:
+- `POST /api/web/tournaments/[id]/recorders` — 기록원 추가
+- `DELETE /api/web/tournaments/[id]/recorders/[userId]` — 기록원 제거
+
+---
+
+### 8.9 오프라인 대응 (Flutter 앱)
+
+```
+[온라인 상태]
+  이벤트 입력 → POST /api/v1/matches/{id}/events → 즉시 저장
+
+[오프라인 감지]
+  이벤트 입력 → 로컬 SQLite/Hive 큐에 적재
+  상태 표시: "오프라인 저장됨 (3개 대기 중)"
+
+[온라인 복구]
+  큐 flush → POST /api/v1/matches/{id}/events/batch
+  순서 보장: created_at 기준 오름차순 전송
+  중복 방지: 이벤트에 클라이언트 UUID 포함 → 서버에서 idempotency 처리
+```
+
+---
+
+### 8.10 Flutter 앱 화면 설계 (UX 가이드)
+
+```
+┌─────────────────────────────────┐
+│  4강 · BDR컵 2026               │
+│  Team A  vs  Team B             │
+├──────────┬──────────────────────┤
+│    32    │          28          │
+│  Team A  │        Team B        │
+├──────────┼──────────────────────┤
+│ [+2] [+3] [FT] [RB] [파울]     │
+│ [+2] [+3] [FT] [RB] [파울]     │
+├─────────────────────────────────┤
+│  09:45  Team A +3               │
+│  09:20  Team B +2 (Undo)       │
+│                                  │
+│              [UNDO]             │
+└─────────────────────────────────┘
+│  [경기 시작]        [경기 종료]  │
+└─────────────────────────────────┘
+```
+
+**UX 원칙**:
+1. 팀 단위 기록 기본 (선수 특정 불필요 — 빠른 진행)
+2. UNDO = 마지막 이벤트 1개만 취소 (단순)
+3. 오프라인 상태 배너 표시 (상단 노란색)
+4. 경기 시작/종료 버튼은 실수 방지를 위해 확인 다이얼로그 표시
+5. 버튼 최소 48dp (한 손 조작)
+
+---
+
+### 8.11 현재 코드베이스와의 연결점
+
+| 현재 파일 | 연결 방식 |
+|----------|---------|
+| `prisma/schema.prisma` | `match_events`, `tournament_recorders` 테이블 추가 |
+| `src/app/api/v1/` | recorder 전용 엔드포인트 신규 추가 |
+| `src/app/(web)/tournament-admin/` | 기록원 관리 탭 UI 추가 |
+| `src/lib/auth/` | `requireRecorder()` 미들웨어 추가 |
+| `TournamentMatch` | `match_events` relation 추가 |
+| `src/app/_site/` | Supabase Realtime 구독 → 라이브 스코어보드 |
+
+---
+
+### 8.12 구현 우선순위
+
+| 단계 | 작업 | 공수 |
+|------|------|------|
+| Phase 1 | DB 마이그레이션 (match_events, tournament_recorders) | 0.5일 |
+| Phase 1 | JWT recorder role 확장 + requireRecorder 미들웨어 | 0.5일 |
+| Phase 1 | POST /api/v1/matches/{id}/events 이벤트 입력 API | 1일 |
+| Phase 1 | PATCH undo API + GET events API | 0.5일 |
+| Phase 1 | GET /api/v1/recorder/matches | 0.5일 |
+| Phase 2 | 대회 관리 화면 기록원 지정 UI | 1일 |
+| Phase 2 | Supabase Realtime 구독 → 라이브 스코어보드 | 1.5일 |
+| Phase 3 | 오프라인 큐 + batch sync API | 1.5일 |
+| Phase 3 | PATCH status (경기 시작/종료) | 0.5일 |
+
+---
+
 *이 문서는 코드베이스 심층 분석(prisma/schema.prisma, 모든 API 라우트, 페이지 컴포넌트) +
 외부 레퍼런스 직접 조사(sfinder.co.kr, m.cafe.daum.net/dongarry, NBA.com, Challonge) 결과를 종합했습니다.*

@@ -61,6 +61,13 @@ const nextConfig: NextConfig = {
   // dev는 disable:true로 SW 비활성화, 프로덕션 빌드(webpack)만 Serwist 사용
   // turbopack: {} → "이 설정을 인지했다"고 Next.js에 알림 (경고 억제)
   turbopack: {},
+  // 클라이언트 라우터 캐시: 동적 페이지도 30초간 캐시하여 뒤로가기/재방문 즉시 표시
+  experimental: {
+    staleTimes: {
+      dynamic: 30,  // 동적 페이지 30초 캐시 (기본 0)
+      static: 300,  // 정적 페이지 5분 캐시 (기본 180)
+    },
+  },
   async headers() {
     return [
       {

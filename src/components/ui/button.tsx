@@ -25,7 +25,7 @@ export function Button({
 } & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
-      className={`rounded-full px-6 py-3 text-sm transition-colors disabled:opacity-50 ${variants[variant]} ${className}`}
+      className={`rounded-full px-6 py-3 text-sm min-h-[44px] transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066FF] focus-visible:ring-offset-2 ${variants[variant]} ${className}`}
       {...props}
     >
       {children}

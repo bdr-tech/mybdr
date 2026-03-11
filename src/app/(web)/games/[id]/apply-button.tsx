@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ProfileIncompleteModal } from "./_modals/profile-incomplete-modal";
 
@@ -17,7 +18,9 @@ export function GameApplyButton({
   missingFields,
   gameStatus,
 }: GameApplyButtonProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [applied, setApplied] = useState(false);
   const [message, setMessage] = useState<{
     text: string;
     type: "success" | "error";
@@ -53,6 +56,8 @@ export function GameApplyButton({
       const data = await res.json() as { message?: string; error?: string };
       if (res.ok) {
         setMessage({ text: data.message ?? "신청 완료!", type: "success" });
+        setApplied(true);
+        router.refresh();
       } else {
         setMessage({
           text: data.error ?? "오류가 발생했습니다.",
@@ -84,8 +89,8 @@ export function GameApplyButton({
             {message.text}
           </p>
         )}
-        <Button className="w-full" onClick={handleApply} disabled={loading}>
-          {loading ? "신청 중..." : "참가 신청"}
+        <Button className="w-full" onClick={handleApply} disabled={loading || applied}>
+          {loading ? "신청 중..." : applied ? "신청 완료" : "참가 신청"}
         </Button>
       </div>
     </>

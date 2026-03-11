@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
+import { apiSuccess, apiError } from "@/lib/api/response";
 
 export async function GET(
   _req: NextRequest,
@@ -14,10 +15,10 @@ export async function GET(
   }).catch(() => null);
 
   if (!plan) {
-    return NextResponse.json({ error: "요금제를 찾을 수 없습니다." }, { status: 404 });
+    return apiError("요금제를 찾을 수 없습니다.", 404);
   }
 
-  return NextResponse.json({
+  return apiSuccess({
     id: plan.id.toString(),
     name: plan.name,
     price: plan.price,

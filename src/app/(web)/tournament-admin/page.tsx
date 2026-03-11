@@ -12,11 +12,20 @@ export default async function TournamentAdminDashboard() {
 
   const organizerId = BigInt(session.sub);
 
-  const [total, active, completed] = await Promise.all([
+  type SeriesRow = { id: bigint; name: string; tournaments_count: number | null };
+
+  const [total, active, completed, seriesCount, recentSeries]: [number, number, number, number, SeriesRow[]] = await Promise.all([
     prisma.tournament.count({ where: { organizerId } }),
     prisma.tournament.count({ where: { organizerId, status: { in: ["active", "registration"] } } }),
     prisma.tournament.count({ where: { organizerId, status: "completed" } }),
-  ]).catch(() => [0, 0, 0]);
+    prisma.tournament_series.count({ where: { organizer_id: organizerId } }),
+    prisma.tournament_series.findMany({
+      where: { organizer_id: organizerId },
+      orderBy: { updated_at: "desc" },
+      take: 3,
+      select: { id: true, name: true, tournaments_count: true },
+    }),
+  ]).catch(() => [0, 0, 0, 0, []] as [number, number, number, number, SeriesRow[]]);
 
   return (
     <div>
@@ -48,6 +57,49 @@ export default async function TournamentAdminDashboard() {
           </Link>
         </div>
       </Card>
+
+      {/* 시리즈 섹션 */}
+      <div className="mt-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-base font-semibold">내 시리즈</h2>
+          <Link href="/tournament-admin/series" className="text-xs text-[#0066FF] hover:underline">
+            전체 보기
+          </Link>
+        </div>
+
+        {seriesCount > 0 && recentSeries.length > 0 ? (
+          <div className="space-y-2">
+            {recentSeries.map((s) => (
+              <Link key={s.id.toString()} href={`/tournament-admin/series/${s.id}`}>
+                <Card className="flex items-center justify-between hover:bg-[#EEF2FF] transition-colors cursor-pointer">
+                  <div>
+                    <p className="font-medium">{s.name}</p>
+                    <p className="text-xs text-[#9CA3AF]">총 {s.tournaments_count ?? 0}회차</p>
+                  </div>
+                  <span className="text-xs text-[#9CA3AF]">→</span>
+                </Card>
+              </Link>
+            ))}
+            <Link
+              href="/tournament-admin/series/new"
+              className="mt-1 block rounded-[16px] border border-dashed border-[#E8ECF0] p-3 text-center text-sm text-[#9CA3AF] hover:border-[#0066FF] hover:text-[#0066FF] transition-colors"
+            >
+              + 새 시리즈 만들기
+            </Link>
+          </div>
+        ) : (
+          <Card className="py-8 text-center text-[#6B7280]">
+            <div className="mb-2 text-3xl">📋</div>
+            <p className="mb-3 text-sm">정기 대회를 시리즈로 관리해보세요.</p>
+            <Link
+              href="/tournament-admin/series/new"
+              className="inline-block rounded-full bg-[#0066FF] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0052CC] transition-colors"
+            >
+              첫 시리즈 만들기
+            </Link>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

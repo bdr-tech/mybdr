@@ -1,5 +1,6 @@
-import { prisma } from "@/lib/db/prisma";
 import { notFound } from "next/navigation";
+import { getGame, listGameApplications } from "@/lib/services/game";
+import { getUserGameProfile } from "@/lib/services/user";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { GameApplyButton } from "./apply-button";
@@ -36,55 +37,21 @@ export default async function GameDetailPage({
 }) {
   const { id } = await params;
 
-  // Phase 1: UUID 조회 + 세션 확인 병렬 실행
-  const [uuidRows, session] = await Promise.all([
-    id.length === 8
-      ? prisma.$queryRaw<{ uuid: string }[]>`
-          SELECT uuid::text AS uuid FROM games WHERE uuid::text LIKE ${id + "%"} LIMIT 1
-        `.catch(() => [] as { uuid: string }[])
-      : Promise.resolve([{ uuid: id }] as { uuid: string }[]),
+  // Phase 1: 게임 조회 + 세션 확인 병렬 실행
+  const [game, session] = await Promise.all([
+    getGame(id),
     getWebSession(),
-  ]);
-
-  const fullUuid = uuidRows[0]?.uuid;
-  if (!fullUuid) return notFound();
-
-  // Phase 2: 게임 + 유저 프로필 병렬 조회
-  const [game, userRecord] = await Promise.all([
-    prisma.games.findUnique({ where: { uuid: fullUuid } }).catch(() => null),
-    session
-      ? prisma.user
-          .findUnique({
-            where: { id: BigInt(session.sub) },
-            select: {
-              name: true,
-              nickname: true,
-              phone: true,
-              position: true,
-              city: true,
-              district: true,
-              profile_completed: true,
-              profileReminderShownAt: true,
-            },
-          })
-          .catch(() => null)
-      : Promise.resolve(null),
   ]);
 
   if (!game) return notFound();
 
-  // Phase 3: 신청자 목록 조회 (game.id 필요)
-  const applications = await prisma.game_applications
-    .findMany({
-      where: { game_id: game.id },
-      include: {
-        users: {
-          select: { nickname: true, name: true, phone: true, position: true, city: true, district: true },
-        },
-      },
-      orderBy: { created_at: "asc" },
-    })
-    .catch(() => []);
+  // Phase 2: 유저 프로필 + 신청자 목록 병렬 조회
+  const [userRecord, applications] = await Promise.all([
+    session
+      ? getUserGameProfile(BigInt(session.sub))
+      : Promise.resolve(null),
+    listGameApplications(game.id).catch(() => []),
+  ]);
 
   const isHost = session ? game.organizer_id === BigInt(session.sub) : false;
   // 로그인 유저의 신청 여부
