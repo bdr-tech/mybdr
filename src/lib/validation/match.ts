@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SYNC_ALLOWED_STATUSES } from "@/lib/constants/match-status";
 
 export const playerStatSchema = z.object({
   tournamentTeamPlayerId: z.string().uuid(),
@@ -32,7 +33,7 @@ export const batchSyncSchema = z.object({
       matchId: z.string().uuid(),
       homeScore: z.number().int().min(0),
       awayScore: z.number().int().min(0),
-      status: z.enum(["scheduled", "live", "completed"]),
+      status: z.enum(SYNC_ALLOWED_STATUSES),
       quarterScores: z.array(z.number().int()).optional(),
       playerStats: z.array(playerStatSchema).optional(),
     })

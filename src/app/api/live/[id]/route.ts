@@ -1,13 +1,23 @@
 import { type NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { apiSuccess, apiError } from "@/lib/api/response";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { getClientIp } from "@/lib/security/get-client-ip";
 
 // 인증 없는 공개 엔드포인트 — 팀장 QR 스캔용 박스스코어
+// NOTE: 모든 필드는 camelCase로 빌드 — apiSuccess()가 자동으로 snake_case 변환
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  // 공개 엔드포인트 — IP 기반 rate limiting (30req/min)
+  const ip = getClientIp(req);
+  const rl = await checkRateLimit(`live-detail:${ip}`, RATE_LIMITS.subdomain);
+  if (!rl.allowed) {
+    return apiError("Too many requests", 429);
+  }
 
   const matchId = Number(id);
   if (isNaN(matchId)) {

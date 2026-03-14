@@ -5,9 +5,9 @@ import { useParams } from "next/navigation";
 
 interface PlayerRow {
   id: number;
-  jerseyNumber: number | null;
+  jersey_number: number | null;
   name: string;
-  teamId: number;
+  team_id: number;
   pts: number;
   reb: number;
   ast: number;
@@ -26,19 +26,19 @@ interface PlayerRow {
 interface MatchData {
   id: number;
   status: string;
-  homeScore: number;
-  awayScore: number;
-  roundName: string | null;
-  tournamentName: string;
-  quarterScores: {
+  home_score: number;
+  away_score: number;
+  round_name: string | null;
+  tournament_name: string;
+  quarter_scores: {
     home: { q1: number; q2: number; q3: number; q4: number; ot: number[] };
     away: { q1: number; q2: number; q3: number; q4: number; ot: number[] };
   } | null;
-  homeTeam: { id: number; name: string; color: string };
-  awayTeam: { id: number; name: string; color: string };
-  homePlayers: PlayerRow[];
-  awayPlayers: PlayerRow[];
-  updatedAt: string;
+  home_team: { id: number; name: string; color: string };
+  away_team: { id: number; name: string; color: string };
+  home_players: PlayerRow[];
+  away_players: PlayerRow[];
+  updated_at: string;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -47,6 +47,7 @@ const STATUS_LABEL: Record<string, string> = {
   live: "LIVE",
   halftime: "하프타임",
   finished: "종료",
+  completed: "종료",
   in_progress: "진행중",
 };
 
@@ -101,7 +102,7 @@ export default function LiveBoxScorePage() {
     );
   }
 
-  const qs = match.quarterScores;
+  const qs = match.quarter_scores;
   const quarters = [
     { label: "Q1", home: qs?.home.q1 ?? 0, away: qs?.away.q1 ?? 0 },
     { label: "Q2", home: qs?.home.q2 ?? 0, away: qs?.away.q2 ?? 0 },
@@ -118,7 +119,7 @@ export default function LiveBoxScorePage() {
     <div className="min-h-screen bg-[#0A0A0F] text-white">
       {/* 헤더 */}
       <div className="bg-[#111118] border-b border-white/10 px-4 py-3 flex items-center justify-between">
-        <span className="text-sm text-gray-400 truncate">{match.tournamentName}</span>
+        <span className="text-sm text-gray-400 truncate">{match.tournament_name}</span>
         <div className="flex items-center gap-2">
           {isLive && (
             <span className="flex items-center gap-1 text-xs text-red-400 font-semibold">
@@ -139,24 +140,24 @@ export default function LiveBoxScorePage() {
           <div className="flex-1 text-center">
             <div
               className="w-3 h-3 rounded-full mx-auto mb-2"
-              style={{ backgroundColor: match.homeTeam.color }}
+              style={{ backgroundColor: match.home_team.color }}
             />
             <p className="text-sm text-gray-300 font-medium truncate">
-              {match.homeTeam.name}
+              {match.home_team.name}
             </p>
             <p
               className="text-6xl font-black mt-1"
-              style={{ color: match.homeTeam.color }}
+              style={{ color: match.home_team.color }}
             >
-              {match.homeScore}
+              {match.home_score}
             </p>
           </div>
 
           {/* 가운데 */}
           <div className="text-center px-2">
             <p className="text-gray-600 text-xl font-light">:</p>
-            {match.roundName && (
-              <p className="text-xs text-gray-500 mt-1">{match.roundName}</p>
+            {match.round_name && (
+              <p className="text-xs text-gray-500 mt-1">{match.round_name}</p>
             )}
           </div>
 
@@ -164,16 +165,16 @@ export default function LiveBoxScorePage() {
           <div className="flex-1 text-center">
             <div
               className="w-3 h-3 rounded-full mx-auto mb-2"
-              style={{ backgroundColor: match.awayTeam.color }}
+              style={{ backgroundColor: match.away_team.color }}
             />
             <p className="text-sm text-gray-300 font-medium truncate">
-              {match.awayTeam.name}
+              {match.away_team.name}
             </p>
             <p
               className="text-6xl font-black mt-1"
-              style={{ color: match.awayTeam.color }}
+              style={{ color: match.away_team.color }}
             >
-              {match.awayScore}
+              {match.away_score}
             </p>
           </div>
         </div>
@@ -196,28 +197,28 @@ export default function LiveBoxScorePage() {
               <tbody>
                 <tr className="border-b border-white/5">
                   <td className="py-2 px-3 text-gray-300 text-xs truncate max-w-[60px]">
-                    {match.homeTeam.name}
+                    {match.home_team.name}
                   </td>
                   {quarters.map((q) => (
                     <td key={q.label} className="py-2 px-2 text-center text-gray-300">
                       {q.home}
                     </td>
                   ))}
-                  <td className="py-2 px-3 text-center font-bold" style={{ color: match.homeTeam.color }}>
-                    {match.homeScore}
+                  <td className="py-2 px-3 text-center font-bold" style={{ color: match.home_team.color }}>
+                    {match.home_score}
                   </td>
                 </tr>
                 <tr>
                   <td className="py-2 px-3 text-gray-300 text-xs truncate max-w-[60px]">
-                    {match.awayTeam.name}
+                    {match.away_team.name}
                   </td>
                   {quarters.map((q) => (
                     <td key={q.label} className="py-2 px-2 text-center text-gray-300">
                       {q.away}
                     </td>
                   ))}
-                  <td className="py-2 px-3 text-center font-bold" style={{ color: match.awayTeam.color }}>
-                    {match.awayScore}
+                  <td className="py-2 px-3 text-center font-bold" style={{ color: match.away_team.color }}>
+                    {match.away_score}
                   </td>
                 </tr>
               </tbody>
@@ -229,14 +230,14 @@ export default function LiveBoxScorePage() {
       {/* 박스스코어 */}
       <div className="px-4 pb-8 space-y-6">
         <BoxScoreTable
-          teamName={match.homeTeam.name}
-          color={match.homeTeam.color}
-          players={match.homePlayers}
+          teamName={match.home_team.name}
+          color={match.home_team.color}
+          players={match.home_players}
         />
         <BoxScoreTable
-          teamName={match.awayTeam.name}
-          color={match.awayTeam.color}
-          players={match.awayPlayers}
+          teamName={match.away_team.name}
+          color={match.away_team.color}
+          players={match.away_players}
         />
       </div>
 
@@ -264,7 +265,7 @@ function BoxScoreTable({
   color: string;
   players: PlayerRow[];
 }) {
-  if (players.length === 0) return null;
+  if (!players || players.length === 0) return null;
 
   return (
     <div>
@@ -298,7 +299,7 @@ function BoxScoreTable({
                   className={`border-b border-white/5 ${i % 2 === 0 ? "" : "bg-white/[0.02]"}`}
                 >
                   <td className="py-2 px-3 text-gray-500 sticky left-0 bg-inherit">
-                    {p.jerseyNumber ?? "-"}
+                    {p.jersey_number ?? "-"}
                   </td>
                   <td className="py-2 px-1 text-gray-200 sticky left-8 bg-inherit min-w-[80px] truncate max-w-[80px]">
                     {p.name}
