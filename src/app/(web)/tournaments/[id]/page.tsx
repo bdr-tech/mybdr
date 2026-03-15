@@ -383,6 +383,11 @@ async function MatchesAndStandings({ tournamentId }: { tournamentId: string }) {
 export default async function TournamentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
+  // UUID 형식이 아닌 경우 (예: /tournaments/new) 404 처리
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return notFound();
+  }
+
   // 헤더 정보만 먼저 가져옴 (select로 필요한 필드만)
   const tournament = await prisma.tournament.findUnique({
     where: { id },
