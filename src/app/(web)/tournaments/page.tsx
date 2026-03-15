@@ -217,7 +217,7 @@ export default async function TournamentsPage({
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">대회</h1>
         <Link
-          href="/tournaments/new"
+          href="/tournament-admin/tournaments/new/wizard"
           prefetch={true}
           className="rounded-full bg-[#0066FF] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0052CC] transition-colors"
         >
