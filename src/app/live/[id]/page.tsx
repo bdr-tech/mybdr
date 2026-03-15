@@ -8,19 +8,22 @@ interface PlayerRow {
   jersey_number: number | null;
   name: string;
   team_id: number;
+  min: number;
   pts: number;
-  reb: number;
-  ast: number;
-  stl: number;
-  blk: number;
-  to: number;
-  fouls: number;
   fgm: number;
   fga: number;
   tpm: number;
   tpa: number;
   ftm: number;
   fta: number;
+  oreb: number;
+  dreb: number;
+  reb: number;
+  ast: number;
+  stl: number;
+  blk: number;
+  to: number;
+  fouls: number;
 }
 
 interface MatchData {
@@ -119,8 +122,13 @@ export default function LiveBoxScorePage() {
     <div className="min-h-screen bg-[#0A0A0F] text-white">
       {/* 헤더 */}
       <div className="bg-[#111118] border-b border-white/10 px-4 py-3 flex items-center justify-between">
-        <span className="text-sm text-gray-400 truncate">{match.tournament_name}</span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 min-w-0">
+          <button onClick={() => window.history.back()} className="shrink-0 text-gray-400 hover:text-white transition-colors">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <span className="text-sm text-gray-400 truncate">{match.tournament_name}</span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
           {isLive && (
             <span className="flex items-center gap-1 text-xs text-red-400 font-semibold">
               <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
@@ -130,6 +138,9 @@ export default function LiveBoxScorePage() {
           <span className="text-xs text-gray-500">
             {STATUS_LABEL[match.status] ?? match.status}
           </span>
+          <button onClick={fetchMatch} className="text-gray-500 hover:text-white transition-colors ml-1" title="새로고침">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+          </button>
         </div>
       </div>
 
@@ -279,17 +290,20 @@ function BoxScoreTable({
             <thead>
               <tr className="border-b border-white/10 text-gray-500">
                 <th className="py-2 px-3 text-left font-normal sticky left-0 bg-[#111118]">#</th>
-                <th className="py-2 px-1 text-left font-normal sticky left-8 bg-[#111118] min-w-[80px]">이름</th>
-                <th className="py-2 px-2 text-center font-semibold text-gray-300">PTS</th>
-                <th className="py-2 px-2 text-center font-normal">REB</th>
-                <th className="py-2 px-2 text-center font-normal">AST</th>
-                <th className="py-2 px-2 text-center font-normal">STL</th>
-                <th className="py-2 px-2 text-center font-normal">BLK</th>
-                <th className="py-2 px-2 text-center font-normal">TO</th>
-                <th className="py-2 px-2 text-center font-normal">PF</th>
-                <th className="py-2 px-2 text-center font-normal">FG</th>
-                <th className="py-2 px-2 text-center font-normal">3P</th>
-                <th className="py-2 px-2 text-center font-normal">FT</th>
+                <th className="py-2 px-1 text-left font-normal sticky left-8 bg-[#111118] min-w-[70px]">이름</th>
+                <th className="py-2 px-1 text-center font-normal">MIN</th>
+                <th className="py-2 px-1 text-center font-semibold text-gray-300">PTS</th>
+                <th className="py-2 px-1 text-center font-normal">FG</th>
+                <th className="py-2 px-1 text-center font-normal">3P</th>
+                <th className="py-2 px-1 text-center font-normal">FT</th>
+                <th className="py-2 px-1 text-center font-normal">OR</th>
+                <th className="py-2 px-1 text-center font-normal">DR</th>
+                <th className="py-2 px-1 text-center font-normal">REB</th>
+                <th className="py-2 px-1 text-center font-normal">AST</th>
+                <th className="py-2 px-1 text-center font-normal">STL</th>
+                <th className="py-2 px-1 text-center font-normal">BLK</th>
+                <th className="py-2 px-1 text-center font-normal">TO</th>
+                <th className="py-2 px-1 text-center font-normal">PF</th>
               </tr>
             </thead>
             <tbody>
@@ -301,27 +315,30 @@ function BoxScoreTable({
                   <td className="py-2 px-3 text-gray-500 sticky left-0 bg-inherit">
                     {p.jersey_number ?? "-"}
                   </td>
-                  <td className="py-2 px-1 text-gray-200 sticky left-8 bg-inherit min-w-[80px] truncate max-w-[80px]">
+                  <td className="py-2 px-1 text-gray-200 sticky left-8 bg-inherit min-w-[70px] truncate max-w-[70px]">
                     {p.name}
                   </td>
-                  <td className="py-2 px-2 text-center font-bold" style={{ color }}>
+                  <td className="py-2 px-1 text-center text-gray-500">{p.min}</td>
+                  <td className="py-2 px-1 text-center font-bold" style={{ color }}>
                     {p.pts}
                   </td>
-                  <td className="py-2 px-2 text-center text-gray-300">{p.reb}</td>
-                  <td className="py-2 px-2 text-center text-gray-300">{p.ast}</td>
-                  <td className="py-2 px-2 text-center text-gray-300">{p.stl}</td>
-                  <td className="py-2 px-2 text-center text-gray-300">{p.blk}</td>
-                  <td className="py-2 px-2 text-center text-gray-300">{p.to}</td>
-                  <td className="py-2 px-2 text-center text-gray-300">{p.fouls}</td>
-                  <td className="py-2 px-2 text-center text-gray-400">
+                  <td className="py-2 px-1 text-center text-gray-400">
                     {p.fgm}/{p.fga}
                   </td>
-                  <td className="py-2 px-2 text-center text-gray-400">
+                  <td className="py-2 px-1 text-center text-gray-400">
                     {p.tpm}/{p.tpa}
                   </td>
-                  <td className="py-2 px-2 text-center text-gray-400">
+                  <td className="py-2 px-1 text-center text-gray-400">
                     {p.ftm}/{p.fta}
                   </td>
+                  <td className="py-2 px-1 text-center text-gray-300">{p.oreb}</td>
+                  <td className="py-2 px-1 text-center text-gray-300">{p.dreb}</td>
+                  <td className="py-2 px-1 text-center text-gray-300 font-semibold">{p.reb}</td>
+                  <td className="py-2 px-1 text-center text-gray-300">{p.ast}</td>
+                  <td className="py-2 px-1 text-center text-gray-300">{p.stl}</td>
+                  <td className="py-2 px-1 text-center text-gray-300">{p.blk}</td>
+                  <td className="py-2 px-1 text-center text-gray-300">{p.to}</td>
+                  <td className="py-2 px-1 text-center text-gray-300">{p.fouls}</td>
                 </tr>
               ))}
             </tbody>

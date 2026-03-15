@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -15,8 +16,64 @@ const steps = [
 
 const FORMAT_OPTIONS = ["싱글 엘리미네이션", "라운드 로빈", "그룹 스테이지", "더블 엘리미네이션", "스위스"];
 
+type AuthStatus = "loading" | "unauthenticated" | "unauthorized" | "authorized";
+
 export default function NewTournamentWizardPage() {
   const router = useRouter();
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
+
+  useEffect(() => {
+    fetch("/api/web/me")
+      .then((res) => {
+        if (!res.ok) {
+          setAuthStatus("unauthenticated");
+          return null;
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (!data) return;
+        const role = data.role as string;
+        if (role === "super_admin" || role === "organizer" || role === "admin") {
+          setAuthStatus("authorized");
+        } else {
+          setAuthStatus("unauthorized");
+        }
+      })
+      .catch(() => setAuthStatus("unauthenticated"));
+  }, []);
+
+  if (authStatus === "loading") {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="text-[#6B7280]">로딩 중...</div>
+      </div>
+    );
+  }
+
+  if (authStatus === "unauthenticated") {
+    router.push("/login?redirect=/tournament-admin/tournaments/new/wizard");
+    return null;
+  }
+
+  if (authStatus === "unauthorized") {
+    return (
+      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 text-center">
+        <div className="text-5xl">🔒</div>
+        <h1 className="text-xl font-bold text-[#111827]">권한이 필요합니다</h1>
+        <p className="max-w-md text-sm text-[#6B7280]">
+          대회를 만들려면 <strong>대회 관리자</strong> 이상의 권한이 필요합니다.<br />
+          운영자에게 문의해주세요.
+        </p>
+        <Link
+          href="/tournaments"
+          className="mt-2 rounded-full bg-[#0066FF] px-6 py-2 text-sm font-semibold text-white hover:bg-[#0052CC] transition-colors"
+        >
+          대회 목록으로 돌아가기
+        </Link>
+      </div>
+    );
+  }
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
