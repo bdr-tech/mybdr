@@ -63,7 +63,7 @@ export function Header() {
         }
       })
       .catch(() => {});
-  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user, pathname]);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
