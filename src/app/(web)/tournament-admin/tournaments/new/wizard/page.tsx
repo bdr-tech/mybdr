@@ -56,17 +56,18 @@ export default function NewTournamentWizardPage() {
       .catch(() => setAuthStatus("unauthenticated"));
   }, []);
 
-  if (authStatus === "loading") {
+  useEffect(() => {
+    if (authStatus === "unauthenticated") {
+      router.push("/login?redirect=/tournament-admin/tournaments/new/wizard");
+    }
+  }, [authStatus, router]);
+
+  if (authStatus === "loading" || authStatus === "unauthenticated") {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <div className="text-[#6B7280]">로딩 중...</div>
       </div>
     );
-  }
-
-  if (authStatus === "unauthenticated") {
-    router.push("/login?redirect=/tournament-admin/tournaments/new/wizard");
-    return null;
   }
 
   if (authStatus === "unauthorized") {
