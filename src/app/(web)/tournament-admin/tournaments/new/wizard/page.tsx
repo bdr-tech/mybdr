@@ -21,6 +21,19 @@ type AuthStatus = "loading" | "unauthenticated" | "unauthorized" | "authorized";
 export default function NewTournamentWizardPage() {
   const router = useRouter();
   const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
+  const [currentStep, setCurrentStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    template: "기본형",
+    name: "",
+    format: "싱글 엘리미네이션",
+    startDate: "",
+    endDate: "",
+    subdomain: "",
+    primaryColor: "#F4A261",
+    secondaryColor: "#E76F51",
+  });
 
   useEffect(() => {
     fetch("/api/web/me")
@@ -33,8 +46,8 @@ export default function NewTournamentWizardPage() {
       })
       .then((data) => {
         if (!data) return;
-        const role = data.role as string;
-        if (role === "super_admin" || role === "organizer" || role === "admin") {
+        const role = (data.role ?? data.data?.role ?? "") as string;
+        if (["super_admin", "organizer", "admin", "tournament_admin"].includes(role)) {
           setAuthStatus("authorized");
         } else {
           setAuthStatus("unauthorized");
@@ -74,20 +87,6 @@ export default function NewTournamentWizardPage() {
       </div>
     );
   }
-  const [currentStep, setCurrentStep] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [form, setForm] = useState({
-    template: "기본형",
-    name: "",
-    format: "싱글 엘리미네이션",
-    startDate: "",
-    endDate: "",
-    subdomain: "",
-    primaryColor: "#F4A261",
-    secondaryColor: "#E76F51",
-  });
 
   function update(key: string, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
