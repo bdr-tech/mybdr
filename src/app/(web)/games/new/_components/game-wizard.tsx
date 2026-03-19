@@ -130,6 +130,7 @@ interface KakaoAddressData {
   bname: string;
   roadAddress: string;
   jibunAddress: string;
+  buildingName: string; // 카카오 주소 검색 결과에 포함되는 건물명
 }
 
 // --- Main Wizard Component ---

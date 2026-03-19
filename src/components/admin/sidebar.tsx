@@ -23,7 +23,7 @@ export function AdminSidebar() {
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[260px] flex-col border-r border-[#E8ECF0] bg-[#FFFFFF] p-4 lg:flex">
       <Link href="/admin" className="mb-8 flex items-center gap-2 px-3">
         <span className="text-xl font-bold text-[#E31B23]" style={{ fontFamily: "var(--font-heading)" }}>MyBDR</span>
-        <span className="rounded-[6px] bg-[rgba(239,68,68,0.2)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#EF4444]">Admin</span>
+        <span className="rounded-[6px] bg-[rgba(239,68,68,0.2)] px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-[#EF4444]">Admin</span>
       </Link>
 
       <nav className="flex flex-1 flex-col gap-1">

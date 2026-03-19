@@ -249,7 +249,7 @@ export default function BracketAdminPage() {
 
                   {/* 홈팀 */}
                   <div className="flex-1">
-                    <label className="mb-1 block text-[10px] text-[#9CA3AF]">홈팀</label>
+                    <label className="mb-1 block text-xs text-[#9CA3AF]">홈팀</label>
                     <select
                       disabled={match.status === "bye" || savingMatch === match.id}
                       value={match.homeTeamId ?? ""}
@@ -267,7 +267,7 @@ export default function BracketAdminPage() {
 
                   {/* 원정팀 */}
                   <div className="flex-1">
-                    <label className="mb-1 block text-[10px] text-[#9CA3AF]">원정팀</label>
+                    <label className="mb-1 block text-xs text-[#9CA3AF]">원정팀</label>
                     <select
                       disabled={match.status === "bye" || savingMatch === match.id}
                       value={match.awayTeamId ?? ""}
@@ -282,7 +282,7 @@ export default function BracketAdminPage() {
                   </div>
 
                   {match.status === "bye" && (
-                    <span className="mt-4 rounded-full bg-[#EEF2FF] px-2 py-0.5 text-[10px] text-[#9CA3AF]">
+                    <span className="mt-4 rounded-full bg-[#EEF2FF] px-2 py-0.5 text-xs text-[#9CA3AF]">
                       부전승
                     </span>
                   )}
@@ -312,7 +312,7 @@ export default function BracketAdminPage() {
               const rMatches = data?.matches.filter((m) => m.round_number === rn) ?? [];
               return (
                 <div key={rn ?? "x"}>
-                  <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">
+                  <p className="mb-1 text-xs font-medium uppercase tracking-wide text-[#9CA3AF]">
                     {rMatches[0]?.roundName ?? `라운드 ${rn}`}
                   </p>
                   {rMatches.map((m) => (
@@ -325,7 +325,7 @@ export default function BracketAdminPage() {
                       <span className={`flex-1 font-medium ${m.awayTeamId == null ? "text-[#9CA3AF]" : ""}`}>
                         {m.awayTeam?.team.name ?? "미정"}
                       </span>
-                      <span className={`text-[10px] ${STATUS_LABEL[m.status] ? "text-[#6B7280]" : ""}`}>
+                      <span className={`text-xs ${STATUS_LABEL[m.status] ? "text-[#6B7280]" : ""}`}>
                         {STATUS_LABEL[m.status] ?? m.status}
                       </span>
                     </div>

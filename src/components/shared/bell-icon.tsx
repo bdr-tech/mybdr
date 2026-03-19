@@ -29,7 +29,7 @@ export function BellIcon({ unreadCount }: BellIconProps) {
         <path d="M13.73 21a2 2 0 0 1-3.46 0" />
       </svg>
       {unreadCount > 0 && (
-        <span className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FF4444] px-1 text-[10px] font-bold leading-none text-white">
+        <span className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FF4444] px-1 text-xs font-bold leading-none text-white">
           {unreadCount > 99 ? "99+" : unreadCount}
         </span>
       )}

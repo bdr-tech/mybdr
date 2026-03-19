@@ -315,7 +315,7 @@ function TeamMatchSettings({
               className="mx-auto mb-1 h-8 w-8 rounded-full border border-[#E8ECF0]"
               style={{ backgroundColor: data.uniformHomeColor }}
             />
-            <span className="text-[10px] text-[#9CA3AF]">홈</span>
+            <span className="text-xs text-[#9CA3AF]">홈</span>
           </div>
           <span className="text-sm font-bold text-[#9CA3AF]">vs</span>
           <div className="text-center">
@@ -323,7 +323,7 @@ function TeamMatchSettings({
               className="mx-auto mb-1 h-8 w-8 rounded-full border border-[#E8ECF0]"
               style={{ backgroundColor: data.uniformAwayColor }}
             />
-            <span className="text-[10px] text-[#9CA3AF]">어웨이</span>
+            <span className="text-xs text-[#9CA3AF]">어웨이</span>
           </div>
         </div>
       </div>

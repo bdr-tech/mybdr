@@ -4,6 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ScheduleForm, type ScheduleFormData } from "@/components/tournament/schedule-form";
+import {
+  RegistrationSettingsForm,
+  type RegistrationSettingsData,
+} from "@/components/tournament/registration-settings-form";
+import { TeamSettingsForm, type TeamSettingsData } from "@/components/tournament/team-settings-form";
 
 const FORMAT_OPTIONS = [
   { value: "single_elimination", label: "싱글 엘리미네이션" },
@@ -43,12 +49,23 @@ type TournamentData = {
   prize_info: string;
   primary_color: string;
   secondary_color: string;
+  // 접수 설정
+  categories: Record<string, string[]>;
+  div_caps: Record<string, number>;
+  div_fees: Record<string, number>;
+  allow_waiting_list: boolean;
+  waiting_list_cap: string;
+  bank_name: string;
+  bank_account: string;
+  bank_holder: string;
+  fee_notes: string;
 };
 
 const STEPS = [
   { id: "basic", label: "기본 정보", icon: "📝" },
   { id: "schedule", label: "일정 / 장소", icon: "📅" },
   { id: "team", label: "팀 설정", icon: "🏀" },
+  { id: "registration", label: "접수 설정", icon: "📋" },
   { id: "rules", label: "규칙 / 상금", icon: "📜" },
   { id: "design", label: "디자인", icon: "🎨" },
 ];
@@ -83,6 +100,15 @@ export default function TournamentWizardPage() {
     prize_info: "",
     primary_color: "#E31B23",
     secondary_color: "#E76F51",
+    categories: {},
+    div_caps: {},
+    div_fees: {},
+    allow_waiting_list: false,
+    waiting_list_cap: "",
+    bank_name: "",
+    bank_account: "",
+    bank_holder: "",
+    fee_notes: "",
   });
 
   const set = (key: keyof TournamentData, value: string | number | boolean) =>
@@ -122,6 +148,15 @@ export default function TournamentWizardPage() {
         prize_info: t.prize_info ?? "",
         primary_color: t.primary_color ?? "#E31B23",
         secondary_color: t.secondary_color ?? "#E76F51",
+        categories: t.categories ?? {},
+        div_caps: t.div_caps ?? {},
+        div_fees: t.div_fees ?? {},
+        allow_waiting_list: t.allow_waiting_list ?? false,
+        waiting_list_cap: String(t.waiting_list_cap ?? ""),
+        bank_name: t.bank_name ?? "",
+        bank_account: t.bank_account ?? "",
+        bank_holder: t.bank_holder ?? "",
+        fee_notes: t.fee_notes ?? "",
       });
     } catch {
       setError("대회 정보를 불러오지 못했습니다.");
@@ -150,6 +185,7 @@ export default function TournamentWizardPage() {
           endDate: data.endDate || null,
           registration_start_at: data.registration_start_at || null,
           registration_end_at: data.registration_end_at || null,
+          waiting_list_cap: data.waiting_list_cap ? Number(data.waiting_list_cap) : null,
         }),
       });
       if (!res.ok) {
@@ -272,86 +308,97 @@ export default function TournamentWizardPage() {
           </div>
         )}
 
-        {/* STEP 1: 일정 / 장소 */}
+        {/* STEP 1: 일정 / 장소 — 공유 컴포넌트 사용 */}
         {step === 1 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">일정 / 장소</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className={labelCls}>대회 시작일</label>
-                <input type="date" className={inputCls} value={data.startDate} onChange={(e) => set("startDate", e.target.value)} />
-              </div>
-              <div>
-                <label className={labelCls}>대회 종료일</label>
-                <input type="date" className={inputCls} value={data.endDate} onChange={(e) => set("endDate", e.target.value)} />
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className={labelCls}>참가 접수 시작</label>
-                <input type="date" className={inputCls} value={data.registration_start_at} onChange={(e) => set("registration_start_at", e.target.value)} />
-              </div>
-              <div>
-                <label className={labelCls}>참가 접수 마감</label>
-                <input type="date" className={inputCls} value={data.registration_end_at} onChange={(e) => set("registration_end_at", e.target.value)} />
-              </div>
-            </div>
-            <div>
-              <label className={labelCls}>경기장 이름</label>
-              <input className={inputCls} value={data.venue_name} onChange={(e) => set("venue_name", e.target.value)} placeholder="경기장 이름" />
-            </div>
-            <div>
-              <label className={labelCls}>주소</label>
-              <input className={inputCls} value={data.venue_address} onChange={(e) => set("venue_address", e.target.value)} placeholder="상세 주소" />
-            </div>
-            <div>
-              <label className={labelCls}>도시</label>
-              <input className={inputCls} value={data.city} onChange={(e) => set("city", e.target.value)} placeholder="서울, 부산 등" />
-            </div>
-          </div>
+          <ScheduleForm
+            data={{
+              startDate: data.startDate,
+              endDate: data.endDate,
+              registrationStartAt: data.registration_start_at,
+              registrationEndAt: data.registration_end_at,
+              venueName: data.venue_name,
+              venueAddress: data.venue_address,
+              city: data.city,
+            }}
+            onChange={(field, value) => {
+              // camelCase → snake_case 매핑
+              const map: Record<keyof ScheduleFormData, keyof TournamentData> = {
+                startDate: "startDate",
+                endDate: "endDate",
+                registrationStartAt: "registration_start_at",
+                registrationEndAt: "registration_end_at",
+                venueName: "venue_name",
+                venueAddress: "venue_address",
+                city: "city",
+              };
+              set(map[field], value);
+            }}
+          />
         )}
 
-        {/* STEP 2: 팀 설정 */}
+        {/* STEP 2: 팀 설정 — 공유 컴포넌트 사용 */}
         {step === 2 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">팀 설정</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className={labelCls}>최대 팀 수</label>
-                <input type="number" className={inputCls} value={data.maxTeams} min={2} onChange={(e) => set("maxTeams", e.target.value)} />
-              </div>
-              <div>
-                <label className={labelCls}>팀당 선수 수</label>
-                <input type="number" className={inputCls} value={data.team_size} min={1} onChange={(e) => set("team_size", e.target.value)} />
-              </div>
-              <div>
-                <label className={labelCls}>최소 로스터</label>
-                <input type="number" className={inputCls} value={data.roster_min} min={1} onChange={(e) => set("roster_min", e.target.value)} />
-              </div>
-              <div>
-                <label className={labelCls}>최대 로스터</label>
-                <input type="number" className={inputCls} value={data.roster_max} min={1} onChange={(e) => set("roster_max", e.target.value)} />
-              </div>
-            </div>
-            <div>
-              <label className={labelCls}>참가비 (원)</label>
-              <input type="number" className={inputCls} value={data.entry_fee} min={0} step={1000} onChange={(e) => set("entry_fee", e.target.value)} />
-            </div>
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="auto_approve"
-                checked={data.auto_approve_teams}
-                onChange={(e) => set("auto_approve_teams", e.target.checked)}
-                className="accent-[#E31B23]"
-              />
-              <label htmlFor="auto_approve" className="text-sm">팀 자동 승인</label>
-            </div>
-          </div>
+          <TeamSettingsForm
+            data={{
+              maxTeams: data.maxTeams,
+              teamSize: data.team_size,
+              rosterMin: data.roster_min,
+              rosterMax: data.roster_max,
+              autoApproveTeams: data.auto_approve_teams,
+              autoCalcMaxTeams: false,
+            }}
+            totalDivCaps={Object.values(data.div_caps).reduce((s, v) => s + v, 0)}
+            onChange={(field, value) => {
+              // camelCase → snake_case 매핑
+              const map: Record<keyof TeamSettingsData, keyof TournamentData> = {
+                maxTeams: "maxTeams",
+                teamSize: "team_size",
+                rosterMin: "roster_min",
+                rosterMax: "roster_max",
+                autoApproveTeams: "auto_approve_teams",
+                autoCalcMaxTeams: "auto_approve_teams", // autoCalcMaxTeams는 편집에서 미사용
+              };
+              set(map[field], value);
+            }}
+          />
         )}
 
-        {/* STEP 3: 규칙 / 상금 */}
+        {/* STEP 3: 접수 설정 — 공유 컴포넌트 사용 */}
         {step === 3 && (
+          <RegistrationSettingsForm
+            data={{
+              categories: data.categories,
+              divCaps: data.div_caps,
+              divFees: data.div_fees,
+              allowWaitingList: data.allow_waiting_list,
+              waitingListCap: data.waiting_list_cap,
+              entryFee: data.entry_fee,
+              bankName: data.bank_name,
+              bankAccount: data.bank_account,
+              bankHolder: data.bank_holder,
+              feeNotes: data.fee_notes,
+            }}
+            onChange={(updates) => {
+              // camelCase → snake_case 매핑
+              setData((prev) => ({
+                ...prev,
+                ...(updates.categories !== undefined && { categories: updates.categories }),
+                ...(updates.divCaps !== undefined && { div_caps: updates.divCaps }),
+                ...(updates.divFees !== undefined && { div_fees: updates.divFees }),
+                ...(updates.allowWaitingList !== undefined && { allow_waiting_list: updates.allowWaitingList }),
+                ...(updates.waitingListCap !== undefined && { waiting_list_cap: updates.waitingListCap }),
+                ...(updates.entryFee !== undefined && { entry_fee: updates.entryFee }),
+                ...(updates.bankName !== undefined && { bank_name: updates.bankName }),
+                ...(updates.bankAccount !== undefined && { bank_account: updates.bankAccount }),
+                ...(updates.bankHolder !== undefined && { bank_holder: updates.bankHolder }),
+                ...(updates.feeNotes !== undefined && { fee_notes: updates.feeNotes }),
+              }));
+            }}
+          />
+        )}
+
+        {/* STEP 4: 규칙 / 상금 */}
+        {step === 4 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">규칙 / 상금</h2>
             <div>
@@ -365,8 +412,8 @@ export default function TournamentWizardPage() {
           </div>
         )}
 
-        {/* STEP 4: 디자인 */}
-        {step === 4 && (
+        {/* STEP 5: 디자인 */}
+        {step === 5 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">디자인</h2>
             <div className="grid gap-4 sm:grid-cols-2">

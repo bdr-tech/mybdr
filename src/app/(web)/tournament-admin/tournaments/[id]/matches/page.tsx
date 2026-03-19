@@ -404,7 +404,7 @@ export default function TournamentMatchesPage() {
                             {STATUS_LABEL[match.status] ?? match.status}
                           </span>
                           {match.scheduledAt && (
-                            <p className="mt-0.5 text-[10px] text-[#9CA3AF]">
+                            <p className="mt-0.5 text-xs text-[#9CA3AF]">
                               {new Date(match.scheduledAt).toLocaleDateString("ko-KR", {
                                 month: "short",
                                 day: "numeric",

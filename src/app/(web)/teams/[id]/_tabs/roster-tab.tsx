@@ -70,7 +70,7 @@ export async function RosterTab({ teamId, accent }: RosterTabProps) {
           >
             {roleLabel}
           </span>
-          {joinDate && <span className="text-[10px] text-[#9CA3AF]">{joinDate} 가입</span>}
+          {joinDate && <span className="text-xs text-[#9CA3AF]">{joinDate} 가입</span>}
         </div>
       </div>
     );

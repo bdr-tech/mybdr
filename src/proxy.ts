@@ -1,25 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import * as jose from "jose";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { getClientIp } from "@/lib/security/get-client-ip";
-
-// 로그인 필수 경로
-const AUTH_REQUIRED = ["/profile", "/notifications", "/tournament-admin", "/admin", "/upgrade", "/verify"];
-
-// 비로그인 전용 경로 (로그인 상태면 홈으로)
-const GUEST_ONLY = ["/login", "/signup"];
-
-const SESSION_COOKIE = process.env.NODE_ENV === "production" ? "__Host-bdr_session" : "bdr_session";
-
-async function isValidSession(token: string): Promise<boolean> {
-  try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    await jose.jwtVerify(token, secret);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 function extractSubdomain(hostname: string, searchParams?: URLSearchParams): string | null {
   // 개발 환경: ?_sub=rookie 로 서브도메인 시뮬레이션
@@ -90,46 +71,31 @@ export async function proxy(req: NextRequest) {
       );
     }
 
-    // Rate Limit 허용 헤더 추가 (응답에 주입)
-    const response = await processRequest(req, pathname, hostname);
-    response.headers.set("X-RateLimit-Limit", String(result.limit));
-    response.headers.set("X-RateLimit-Remaining", String(result.remaining));
-    response.headers.set("X-RateLimit-Reset", String(Math.ceil(result.resetAt / 1000)));
-    return response;
-  }
-
-  // 페이지 보호: 인증 상태 확인
-  const token = req.cookies.get(SESSION_COOKIE)?.value;
-  const isAuth = token ? await isValidSession(token) : false;
-
-  // 로그인 필수 페이지 → 비로그인이면 /login으로
-  if (AUTH_REQUIRED.some((p) => pathname.startsWith(p))) {
-    if (!isAuth) {
-      const loginUrl = req.nextUrl.clone();
-      loginUrl.pathname = "/login";
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
+    // API v1 토큰 존재 여부 체크 (early reject)
+    if (pathname.startsWith("/api/v1") && !isPublicApiRoute(pathname)) {
+      if (req.method !== "OPTIONS") {
+        const authHeader = req.headers.get("authorization");
+        const hasToken =
+          authHeader?.startsWith("Bearer ") || authHeader?.startsWith("Token ");
+        if (!hasToken) {
+          return NextResponse.json(
+            { error: "Unauthorized", code: "UNAUTHORIZED" },
+            { status: 401 }
+          );
+        }
+      }
     }
+
+    // Rate Limit 헤더를 NextResponse.next()에 직접 설정하여 반환
+    // (await processRequest 패턴은 Next.js 16 proxy에서 블로킹 발생)
+    const headers = new Headers();
+    headers.set("X-RateLimit-Limit", String(result.limit));
+    headers.set("X-RateLimit-Remaining", String(result.remaining));
+    headers.set("X-RateLimit-Reset", String(Math.ceil(result.resetAt / 1000)));
+    return NextResponse.next({ headers });
   }
 
-  // 비로그인 전용 페이지 → 로그인 상태면 홈으로
-  if (GUEST_ONLY.some((p) => pathname.startsWith(p))) {
-    if (isAuth) {
-      const homeUrl = req.nextUrl.clone();
-      homeUrl.pathname = "/";
-      return NextResponse.redirect(homeUrl);
-    }
-  }
-
-  return processRequest(req, pathname, hostname);
-}
-
-async function processRequest(
-  req: NextRequest,
-  pathname: string,
-  hostname: string
-): Promise<NextResponse> {
-  // 2. 서브도메인 감지 → 토너먼트 사이트 라우팅
+  // 페이지 요청: 서브도메인 감지
   const subdomain = extractSubdomain(hostname, req.nextUrl.searchParams);
   if (subdomain) {
     const url = req.nextUrl.clone();
@@ -137,26 +103,6 @@ async function processRequest(
     const response = NextResponse.rewrite(url);
     response.headers.set("x-tournament-subdomain", subdomain);
     return response;
-  }
-
-  // 3. API v1 토큰 존재 여부만 체크 (early reject)
-  // M-11: JWT 서명 검증은 withAuth 미들웨어에서 1회만 수행.
-  // proxy에서는 토큰 유무만 확인하여 불필요한 요청을 조기 차단한다.
-  if (pathname.startsWith("/api/v1") && !isPublicApiRoute(pathname)) {
-    if (req.method === "OPTIONS") {
-      return NextResponse.next();
-    }
-
-    const authHeader = req.headers.get("authorization");
-    const hasToken =
-      authHeader?.startsWith("Bearer ") || authHeader?.startsWith("Token ");
-
-    if (!hasToken) {
-      return NextResponse.json(
-        { error: "Unauthorized", code: "UNAUTHORIZED" },
-        { status: 401 }
-      );
-    }
   }
 
   return NextResponse.next();

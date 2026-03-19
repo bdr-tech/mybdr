@@ -10,7 +10,11 @@ export function HeroSection() {
   const [dashboardData, setDashboardData] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
-    fetch("/api/web/dashboard", { credentials: "include" })
+    // 개발서버에서 Turbopack 컴파일 지연으로 무한 로딩 방지용 타임아웃
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    fetch("/api/web/dashboard", { credentials: "include", signal: controller.signal })
       .then(async (r) => {
         if (r.ok) {
           const data = await r.json();
@@ -20,7 +24,8 @@ export function HeroSection() {
           setState("guest");
         }
       })
-      .catch(() => setState("guest"));
+      .catch(() => setState("guest"))
+      .finally(() => clearTimeout(timeout));
   }, []);
 
   if (state === "loading") {

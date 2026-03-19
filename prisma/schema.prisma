@@ -150,6 +150,12 @@ model Tournament {
   mvp_player_id                          BigInt?
   divisions                              Json                    @default("[]")
   division_tiers                         Json                    @default("[]")
+  categories                             Json?                   @default("{}")
+  div_caps                               Json?                   @default("{}")
+  div_fees                               Json?                   @default("{}")
+  allow_waiting_list                     Boolean?                @default(false)
+  waiting_list_cap                       Int?
+  fee_notes                              String?
   bank_name                              String?                 @db.VarChar
   bank_account                           String?                 @db.VarChar
   bank_holder                            String?                 @db.VarChar
@@ -288,6 +294,13 @@ model TournamentTeam {
   paid_at                                                                DateTime?              @db.Timestamp(6)
   payment_status                                                         String?                @default("unpaid") @db.VarChar
   registration_note                                                      String?
+  category                                                               String?                @db.VarChar
+  uniform_home                                                           String?                @db.VarChar
+  uniform_away                                                           String?                @db.VarChar
+  manager_name                                                           String?                @db.VarChar
+  manager_phone                                                          String?                @db.VarChar
+  waiting_number                                                         Int?
+  applied_at                                                             DateTime?              @db.Timestamp(6)
   wins                                                                   Int?                   @default(0)
   losses                                                                 Int?                   @default(0)
   draws                                                                  Int?                   @default(0)
@@ -330,6 +343,9 @@ model TournamentTeamPlayer {
   position         String?           @db.VarChar
   auto_registered  Boolean?          @default(false)
   is_active        Boolean?          @default(true)
+  birth_date       String?           @db.VarChar
+  is_elite         Boolean?          @default(false)
+  player_name      String?           @db.VarChar
   isStarter        Boolean?          @default(false) @map("is_starter")
   games_played     Int?              @default(0)
   total_points     Int?              @default(0)

@@ -12,7 +12,7 @@ export async function adminLog(
     description?: string;
     changesMade?: Record<string, unknown>;
     previousValues?: Record<string, unknown>;
-    severity?: "info" | "warning" | "error";
+    severity?: "info" | "warning" | "error" | "critical"; // critical: 강제탈퇴, 완전삭제 등 위험한 작업
   }
 ) {
   try {

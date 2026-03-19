@@ -97,6 +97,10 @@ html.dark [class*="bg-[#EDF0F8]"] {
   background-color: var(--color-elevated) !important;
 }
 
+html.dark [class*="bg-[#F9FAFB]"] {
+  background-color: var(--color-elevated) !important;
+}
+
 html.dark [class*="bg-[#E8ECF0]"] {
   background-color: var(--color-surface) !important;
 }
@@ -121,11 +125,11 @@ html.dark [class*="text-[#374151]"] {
 }
 
 html.dark [class*="text-[#6B7280]"] {
-  color: #CBD5E1 !important;
+  color: #D1D5DB !important;
 }
 
 html.dark [class*="text-[#9CA3AF]"] {
-  color: #94A3B8 !important;
+  color: #D1D5DB !important;
 }
 
 /* Gradient overlays */
@@ -164,6 +168,44 @@ html.dark [class*="from-[#1B3C87]/15"][class*="to-[#E31B23]"] {
   border-color: rgba(91,127,214,0.25) !important;
 }
 
+/* ====== Large Text Mode (큰글씨 모드) ====== */
+html.large-text {
+  font-size: 120%;
+}
+
+html.large-text [class*="text-xs"] {
+  font-size: 0.9rem !important;
+}
+
+html.large-text [class*="text-sm"] {
+  font-size: 1.05rem !important;
+}
+
+html.large-text [class*="text-base"] {
+  font-size: 1.2rem !important;
+}
+
+html.large-text [class*="text-lg"] {
+  font-size: 1.35rem !important;
+}
+
+html.large-text [class*="text-xl"] {
+  font-size: 1.5rem !important;
+}
+
+html.large-text [class*="text-2xl"] {
+  font-size: 1.8rem !important;
+}
+
+html.large-text [class*="text-[10px]"],
+html.large-text [class*="text-[9px]"] {
+  font-size: 0.8rem !important;
+}
+
+html.large-text [class*="text-[11px]"] {
+  font-size: 0.85rem !important;
+}
+
 /* ====== Typography ====== */
 h1, h2, h3,
 [class*="text-xl"],
@@ -184,6 +226,15 @@ a,
 
 .overflow-x-auto {
   -webkit-overflow-scrolling: touch;
+}
+
+/* 스크롤바 숨기기 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 @media (max-width: 1023px) {

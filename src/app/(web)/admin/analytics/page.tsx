@@ -106,7 +106,7 @@ export default async function AdminAnalyticsPage() {
                       style={{ height: `${Math.max(heightPct, 4)}%` }}
                     />
                   </div>
-                  <span className="text-[10px] text-[#9CA3AF]">
+                  <span className="text-xs text-[#9CA3AF]">
                     {m.month.slice(5)}월
                   </span>
                 </div>

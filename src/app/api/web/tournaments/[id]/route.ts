@@ -66,6 +66,16 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (data.auto_approve_teams !== undefined) updateData.auto_approve_teams = data.auto_approve_teams;
   if (data.primary_color !== undefined) updateData.primary_color = data.primary_color;
   if (data.secondary_color !== undefined) updateData.secondary_color = data.secondary_color;
+  // 접수 설정
+  if (data.categories !== undefined) updateData.categories = data.categories;
+  if (data.div_caps !== undefined) updateData.div_caps = data.div_caps;
+  if (data.div_fees !== undefined) updateData.div_fees = data.div_fees;
+  if (data.allow_waiting_list !== undefined) updateData.allow_waiting_list = data.allow_waiting_list;
+  if (data.waiting_list_cap !== undefined) updateData.waiting_list_cap = data.waiting_list_cap;
+  if (data.bank_name !== undefined) updateData.bank_name = data.bank_name;
+  if (data.bank_account !== undefined) updateData.bank_account = data.bank_account;
+  if (data.bank_holder !== undefined) updateData.bank_holder = data.bank_holder;
+  if (data.fee_notes !== undefined) updateData.fee_notes = data.fee_notes;
 
   const updated = await updateTournament(id, updateData);
 

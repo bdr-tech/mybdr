@@ -130,6 +130,85 @@ export async function getUserGameProfile(userId: bigint) {
 }
 
 /**
+ * 프로필 스탯 집계 — 커리어 평균 + 시즌 최고
+ */
+export async function getPlayerStats(userId: bigint) {
+  // 유저의 tournamentTeamPlayer IDs 조회
+  const players = await prisma.tournamentTeamPlayer.findMany({
+    where: { userId },
+    select: { id: true },
+  });
+
+  const playerIds = players.map((p) => p.id);
+  if (playerIds.length === 0) {
+    return { careerAverages: null, seasonHighs: null };
+  }
+
+  const [aggregate, maxStats] = await Promise.all([
+    prisma.matchPlayerStat.aggregate({
+      where: { tournamentTeamPlayerId: { in: playerIds } },
+      _avg: {
+        points: true,
+        total_rebounds: true,
+        assists: true,
+        steals: true,
+        blocks: true,
+        minutesPlayed: true,
+      },
+      _count: { id: true },
+    }),
+    prisma.matchPlayerStat.aggregate({
+      where: { tournamentTeamPlayerId: { in: playerIds } },
+      _max: {
+        points: true,
+        total_rebounds: true,
+        assists: true,
+        steals: true,
+        blocks: true,
+      },
+    }),
+  ]);
+
+  return {
+    careerAverages: aggregate._count.id > 0
+      ? {
+          gamesPlayed: aggregate._count.id,
+          avgPoints: Number((aggregate._avg.points ?? 0).toFixed(1)),
+          avgRebounds: Number((aggregate._avg.total_rebounds ?? 0).toFixed(1)),
+          avgAssists: Number((aggregate._avg.assists ?? 0).toFixed(1)),
+          avgSteals: Number((aggregate._avg.steals ?? 0).toFixed(1)),
+          avgBlocks: Number((aggregate._avg.blocks ?? 0).toFixed(1)),
+        }
+      : null,
+    seasonHighs: {
+      maxPoints: maxStats._max.points ?? 0,
+      maxRebounds: maxStats._max.total_rebounds ?? 0,
+      maxAssists: maxStats._max.assists ?? 0,
+    },
+  };
+}
+
+/**
+ * 이번 달 경기 참가 수 — 활동 링 월간 챌린지용
+ */
+export async function getMonthlyGames(userId: bigint) {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const count = await prisma.game_applications.count({
+    where: {
+      user_id: userId,
+      status: 1, // approved
+      games: {
+        scheduled_at: { gte: monthStart },
+      },
+    },
+  }).catch(() => 0);
+
+  return count;
+}
+
+/**
  * 유저 권한 확인 (게임 생성 시)
  */
 export async function getUserPermissions(userId: bigint) {

@@ -28,7 +28,7 @@ function isLoser(match: BracketMatch, team: TeamSlot): boolean {
 function StatusBadge({ status }: { status: string }) {
   if (status === "in_progress") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(244,162,97,0.15)] px-2 py-0.5 text-[10px] font-bold text-[#E31B23]">
+      <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(244,162,97,0.15)] px-2 py-0.5 text-xs font-bold text-[#E31B23]">
         <span className="relative flex h-1.5 w-1.5">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E31B23] opacity-75" />
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#E31B23]" />
@@ -50,7 +50,7 @@ function StatusBadge({ status }: { status: string }) {
 
   return (
     <span
-      className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+      className="rounded-full px-2 py-0.5 text-xs font-medium"
       style={{ backgroundColor: c.bg, color: c.color }}
     >
       {c.label}

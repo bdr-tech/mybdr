@@ -57,7 +57,7 @@ export function GameCardCompact({ game }: { game: GameCardData }) {
           {/* Row 1: 유형 뱃지 + 상태 */}
           <div className="mb-2 flex items-center justify-between">
             <span
-              className="rounded-[6px] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+              className="rounded-[6px] px-2 py-0.5 text-xs font-bold uppercase tracking-wider"
               style={{ backgroundColor: badge.bg, color: badge.color }}
             >
               {badge.label}
@@ -112,7 +112,7 @@ export function GameCardCompact({ game }: { game: GameCardData }) {
             </span>
             {skill && (
               <span
-                className="rounded-[6px] px-2 py-0.5 text-[10px] font-bold"
+                className="rounded-[6px] px-2 py-0.5 text-xs font-bold"
                 style={{ backgroundColor: skill.bg, color: skill.color }}
               >
                 {skill.label}

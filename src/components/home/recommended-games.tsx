@@ -82,14 +82,14 @@ export function RecommendedGames() {
                 <div className="mb-2 flex items-center gap-1.5">
                   {badge && (
                     <span
-                      className="rounded-[6px] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                      className="rounded-[6px] px-2 py-0.5 text-xs font-bold uppercase tracking-wider"
                       style={{ backgroundColor: badge.bg, color: badge.text }}
                     >
                       {badge.label}
                     </span>
                   )}
                   {g.spots_left !== null && g.spots_left > 0 && (
-                    <span className="rounded-[6px] bg-[#E31B23] px-1.5 py-0.5 text-[10px] font-bold text-white">
+                    <span className="rounded-[6px] bg-[#E31B23] px-1.5 py-0.5 text-xs font-bold text-white">
                       {g.spots_left}자리
                     </span>
                   )}

@@ -85,10 +85,10 @@ function SlideNextGame({ data }: { data: DashboardData["next_game"] }) {
     <Link href={`/games/${data.uuid?.slice(0, 8) ?? ""}`} className="flex h-full flex-col justify-between">
       <div>
         <div className="mb-2 flex items-center gap-2">
-          <span className="rounded-[6px] bg-[#E31B23] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+          <span className="rounded-[6px] bg-[#E31B23] px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-white">
             {dDay(data.scheduled_at)}
           </span>
-          <span className="text-[10px] font-medium text-[#9CA3AF]">내 다음 경기</span>
+          <span className="text-xs font-medium text-[#9CA3AF]">내 다음 경기</span>
         </div>
         <h3 className="text-base font-bold text-white line-clamp-2" style={{ fontFamily: "var(--font-heading)" }}>{data.title}</h3>
       </div>
@@ -127,7 +127,7 @@ function SlideRecentStats({ data }: { data: DashboardData["recent_stats"] }) {
       <div>
         <div className="mb-2 flex items-center gap-2">
           <Flame size={14} className="text-[#E31B23]" />
-          <span className="text-[10px] font-medium text-[#9CA3AF]">내 최근 스탯</span>
+          <span className="text-xs font-medium text-[#9CA3AF]">내 최근 스탯</span>
         </div>
         {data.tournament_name && (
           <p className="mb-1 text-xs text-[#9CA3AF]">
@@ -139,7 +139,7 @@ function SlideRecentStats({ data }: { data: DashboardData["recent_stats"] }) {
         {stats.map((s) => (
           <div key={s.label} className="text-center">
             <p className="text-xl font-black text-white">{s.value}</p>
-            <p className="text-[10px] text-[#9CA3AF]">{s.label}</p>
+            <p className="text-xs text-[#9CA3AF]">{s.label}</p>
           </div>
         ))}
       </div>
@@ -164,7 +164,7 @@ function SlideMyTeams({ teams }: { teams: DashboardData["my_teams"] }) {
     <div className="flex h-full flex-col justify-between">
       <div className="mb-2 flex items-center gap-2">
         <Users size={14} className="text-[#1B3C87]" />
-        <span className="text-[10px] font-medium text-[#9CA3AF]">내 팀 전적</span>
+        <span className="text-xs font-medium text-[#9CA3AF]">내 팀 전적</span>
       </div>
       <div className="space-y-2">
         {teams.map((t) => {
@@ -178,7 +178,7 @@ function SlideMyTeams({ teams }: { teams: DashboardData["my_teams"] }) {
               />
               <div className="flex-1 min-w-0">
                 <p className="truncate text-sm font-bold text-white">{t.name}</p>
-                <p className="text-[10px] text-[#9CA3AF]">{t.wins}승 {t.losses}패</p>
+                <p className="text-xs text-[#9CA3AF]">{t.wins}승 {t.losses}패</p>
               </div>
               <span className="text-sm font-black text-[#E31B23]">{winRate}%</span>
             </Link>
@@ -212,12 +212,12 @@ function SlideActiveTournament({ data }: { data: DashboardData["active_tournamen
       <div>
         <div className="mb-2 flex items-center gap-2">
           <Trophy size={14} className="text-[#E31B23]" />
-          <span className="text-[10px] font-medium text-[#9CA3AF]">참가 중인 대회</span>
+          <span className="text-xs font-medium text-[#9CA3AF]">참가 중인 대회</span>
         </div>
         <h3 className="text-base font-bold text-white line-clamp-2" style={{ fontFamily: "var(--font-heading)" }}>{data.name}</h3>
       </div>
       <div className="mt-2 flex items-center gap-2">
-        <span className="rounded-[6px] bg-[#1B3C87] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+        <span className="rounded-[6px] bg-[#1B3C87] px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-white">
           {STATUS_KR[data.status ?? ""] ?? data.status}
         </span>
         {data.team_name && (
@@ -245,7 +245,7 @@ function SlideRecommended({ games }: { games: DashboardData["recommended_games"]
     <div className="flex h-full flex-col justify-between">
       <div className="mb-2 flex items-center gap-2">
         <MapPin size={14} className="text-[#1B3C87]" />
-        <span className="text-[10px] font-medium text-[#9CA3AF]">내 지역 추천 경기</span>
+        <span className="text-xs font-medium text-[#9CA3AF]">내 지역 추천 경기</span>
       </div>
       <div className="space-y-2">
         {games.slice(0, 2).map((g, i) => (
@@ -256,12 +256,12 @@ function SlideRecommended({ games }: { games: DashboardData["recommended_games"]
           >
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-white">{g.title}</p>
-              <p className="text-[10px] text-[#9CA3AF]">
+              <p className="text-xs text-[#9CA3AF]">
                 {formatDate(g.scheduled_at)} {formatTime(g.scheduled_at)} · {g.venue_name ?? g.city}
               </p>
             </div>
             {g.spots_left !== null && (
-              <span className="ml-2 whitespace-nowrap rounded-[6px] bg-[#E31B23]/20 px-2 py-0.5 text-[10px] font-bold text-[#E31B23]">
+              <span className="ml-2 whitespace-nowrap rounded-[6px] bg-[#E31B23]/20 px-2 py-0.5 text-xs font-bold text-[#E31B23]">
                 {g.spots_left}자리
               </span>
             )}
@@ -327,7 +327,7 @@ export function PersonalHero({ preloadedData }: { preloadedData?: Record<string,
 
   if (loading) {
     return (
-      <div className="h-[120px] animate-pulse rounded-[20px] bg-[#111827] border border-[#1F2937]" />
+      <div className="h-[144px] animate-pulse rounded-[20px] bg-[#111827] border border-[#1F2937]" />
     );
   }
 
@@ -344,7 +344,7 @@ export function PersonalHero({ preloadedData }: { preloadedData?: Record<string,
       onTouchEnd={onTouchEnd}
     >
       {/* Slide area */}
-      <div className="relative h-[92px] px-4 py-2.5">
+      <div className="relative h-[110px] px-4 py-2.5">
         {slides.map((slide, i) => (
           <div
             key={slide.key}

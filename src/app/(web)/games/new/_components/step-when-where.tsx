@@ -78,7 +78,7 @@ function TimePicker({ value, onChange, label }: { value: string; onChange: (v: s
         onClick={() => setOpen(!open)}
         className="flex w-full items-center justify-between rounded-[12px] border border-[#E8ECF0] bg-white px-3 py-2.5 text-sm text-[#111827]"
       >
-        <span className="text-[10px] text-[#9CA3AF]">{label}</span>
+        <span className="text-xs text-[#9CA3AF]">{label}</span>
         <span>{value ? `${ampm} ${String(display12).padStart(2, "0")}:${displayMin}` : "--:--"}</span>
       </button>
       {open && (
@@ -146,7 +146,7 @@ function AdvancedSettings({ data, updateData }: {
           <div className="flex items-center justify-between rounded-[10px] bg-[#F5F7FA] px-3 py-2.5">
             <div>
               <p className="text-sm font-medium text-[#111827]">반복 경기</p>
-              <p className="text-[10px] text-[#9CA3AF]">정기적으로 반복</p>
+              <p className="text-xs text-[#9CA3AF]">정기적으로 반복</p>
             </div>
             <button type="button" role="switch" aria-checked={data.isRecurring}
               onClick={() => updateData("isRecurring", !data.isRecurring)}
@@ -157,14 +157,14 @@ function AdvancedSettings({ data, updateData }: {
           {data.isRecurring && (
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="mb-1 block text-[10px] text-[#9CA3AF]">반복 주기</label>
+                <label className="mb-1 block text-xs text-[#9CA3AF]">반복 주기</label>
                 <select value={data.recurrenceRule} onChange={(e) => updateData("recurrenceRule", e.target.value)}
                   className="w-full rounded-[10px] border border-[#E8ECF0] bg-white px-2 py-1.5 text-xs text-[#111827]">
                   {RECURRENCE_RULES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-[10px] text-[#9CA3AF]">총 횟수</label>
+                <label className="mb-1 block text-xs text-[#9CA3AF]">총 횟수</label>
                 <input type="number" value={data.recurringCount} onChange={(e) => updateData("recurringCount", parseInt(e.target.value) || 2)}
                   min={2} max={52}
                   className="w-full rounded-[10px] border border-[#E8ECF0] bg-white px-2 py-1.5 text-xs text-[#111827]" />
@@ -441,7 +441,7 @@ export function StepWhenWhere({
                   <div key={i} className="flex items-center gap-2 rounded-[12px] border border-[#E8ECF0] p-3">
                     <button type="button" onClick={() => handleLoad(p)} className="flex-1 text-left">
                       <p className="text-sm font-medium text-[#111827]">{p.name}</p>
-                      <p className="text-[10px] text-[#9CA3AF]">
+                      <p className="text-xs text-[#9CA3AF]">
                         {p.data.venueName && `${p.data.venueName} · `}
                         {p.data.maxParticipants}명 · {p.data.feePerPerson ? `${(p.data.feePerPerson / 1000).toFixed(0)}천원` : "무료"}
                       </p>

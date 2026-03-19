@@ -44,9 +44,9 @@ const securityHeaders = [
       "default-src 'self'",
       // TODO: middleware에서 nonce 생성 구현 후 'unsafe-inline' 제거
       "script-src 'self' 'unsafe-inline' https://accounts.google.com https://t1.daumcdn.net",
-      "style-src 'self' 'unsafe-inline'", // Tailwind inline은 불가피
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // Tailwind inline + Google Fonts
       "img-src 'self' data: https:",
-      "font-src 'self' data:",
+      "font-src 'self' data: https://fonts.gstatic.com",
       "connect-src 'self' https:",
       "frame-src https://postcode.map.daum.net http://postcode.map.daum.net https://postcode.map.kakao.com http://postcode.map.kakao.com https://t1.daumcdn.net https://accounts.google.com https://nid.naver.com https://kauth.kakao.com", // 카카오 우편번호 + OAuth
       "frame-ancestors 'none'",

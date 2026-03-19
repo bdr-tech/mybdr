@@ -1,20 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import useSWR from "swr";
 import Link from "next/link";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { TOURNAMENT_STATUS_LABEL } from "@/lib/constants/tournament-status";
-
-const tabs = [
-  { id: "info", label: "정보" },
-  { id: "games", label: "경기" },
-  { id: "stats", label: "기록" },
-  { id: "teams", label: "팀" },
-  { id: "tournaments", label: "대회" },
-];
+import { ProfileHeader } from "./_components/profile-header";
+import { ActivityRing } from "./_components/activity-ring";
+import { StatBars } from "./_components/stat-bars";
+import { RecentGamesSection } from "./_components/recent-games-section";
+import { TeamsSection } from "./_components/teams-section";
+import { TournamentsSection } from "./_components/tournaments-section";
+import { PlayerInfoSection } from "./_components/player-info-section";
 
 interface ProfileData {
   user: {
@@ -32,20 +26,64 @@ interface ProfileData {
   tournaments?: { id: string; name: string; status: string | null }[];
 }
 
+interface StatsData {
+  career_averages: {
+    games_played: number;
+    avg_points: number;
+    avg_rebounds: number;
+    avg_assists: number;
+    avg_steals: number;
+    avg_blocks: number;
+  } | null;
+  season_highs: {
+    max_points: number;
+    max_rebounds: number;
+    max_assists: number;
+  } | null;
+  monthly_games: number;
+}
+
 export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState("info");
   const { data: profile, isLoading } = useSWR<ProfileData>("/api/web/profile", {
     revalidateOnFocus: false,
-    dedupingInterval: 60000, // 60초 내 중복 요청 방지
+    dedupingInterval: 60000,
+  });
+  const { data: statsRaw } = useSWR<StatsData>("/api/web/profile/stats", {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000,
   });
 
-  const initial = profile?.user.nickname?.trim()?.[0]?.toUpperCase() || "U";
+  // snake_case API 응답 → camelCase 변환
+  const stats = statsRaw
+    ? {
+        careerAverages: statsRaw.career_averages
+          ? {
+              gamesPlayed: statsRaw.career_averages.games_played,
+              avgPoints: statsRaw.career_averages.avg_points,
+              avgRebounds: statsRaw.career_averages.avg_rebounds,
+              avgAssists: statsRaw.career_averages.avg_assists,
+              avgSteals: statsRaw.career_averages.avg_steals,
+              avgBlocks: statsRaw.career_averages.avg_blocks,
+            }
+          : null,
+        // snake_case → camelCase 변환 (StatBars 컴포넌트가 camelCase를 기대)
+        seasonHighs: statsRaw.season_highs
+          ? {
+              maxPoints: statsRaw.season_highs.max_points,
+              maxRebounds: statsRaw.season_highs.max_rebounds,
+              maxAssists: statsRaw.season_highs.max_assists,
+            }
+          : null,
+      }
+    : undefined;
 
   if (isLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center text-[#6B7280]">
         <div className="text-center">
-          <div className="mb-2"><svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-8 w-8 animate-spin text-[#1B3C87]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></div>
+          <div className="mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-8 w-8 animate-spin text-[#1B3C87]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+          </div>
           <p>로딩 중...</p>
         </div>
       </div>
@@ -68,134 +106,34 @@ export default function ProfilePage() {
   const { user, teams = [], recent_games: recentGames = [], tournaments = [] } = profile;
 
   return (
-    <div>
-      <Card className="mb-6">
-        <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-[#1B3C87] text-xl font-bold sm:text-2xl text-white">
-            {initial}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="truncate text-2xl font-extrabold uppercase tracking-wide sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>{user.nickname ?? "사용자"}</h1>
-            <p className="truncate text-sm text-[#6B7280]">{user.email}</p>
-            {user.position && (
-              <span className="mt-1 inline-block rounded-full bg-[rgba(27,60,135,0.12)] px-2 py-0.5 text-xs text-[#E31B23]">
-                {user.position}
-              </span>
-            )}
-          </div>
-          {/* 기존 onClick 모달 → /profile/edit 전용 페이지로 변경 */}
-          <Link href="/profile/edit" className="flex-shrink-0">
-            <Button variant="secondary" className="text-xs">프로필 수정</Button>
-          </Link>
-        </div>
-      </Card>
+    <div className="space-y-4">
+      <ProfileHeader
+        nickname={user.nickname}
+        email={user.email}
+        profileImageUrl={user.profile_image_url}
+      />
 
-      <div className="mb-4 flex gap-1 overflow-x-auto">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`whitespace-nowrap rounded-[10px] px-4 py-2 text-sm transition-colors ${
-              activeTab === tab.id
-                ? "bg-[#1B3C87] font-semibold text-white"
-                : "border border-[#E8ECF0] text-[#6B7280] hover:bg-[#EEF2FF] hover:text-[#111827]"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <ActivityRing
+        monthlyGames={statsRaw?.monthly_games ?? 0}
+        totalGames={user.total_games_participated ?? 0}
+        totalTournaments={tournaments.length}
+      />
 
-      <Card>
-        {activeTab === "info" && (
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-[#6B7280]">닉네임</span>
-              <span>{user.nickname ?? "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#6B7280]">포지션</span>
-              <span>{user.position ?? "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#6B7280]">키</span>
-              <span>{user.height ? `${user.height}cm` : "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#6B7280]">지역</span>
-              <span>{user.city ?? "-"}</span>
-            </div>
-            {user.bio && (
-              <div className="mt-2 rounded-[12px] bg-[#EEF2FF] px-4 py-3 text-sm text-[#6B7280]">
-                {user.bio}
-              </div>
-            )}
-          </div>
-        )}
-        {activeTab === "games" &&
-          (recentGames.length > 0 ? (
-            <div className="space-y-2">
-              {recentGames.map((g) => (
-                <Link
-                  key={g.id}
-                  href={`/games/${g.id.slice(0, 8)}`}
-                  className="flex items-center justify-between rounded-[16px] border border-[#E8ECF0] bg-[#EEF2FF] px-4 py-2 transition-all hover:-translate-y-1 hover:shadow-lg"
-                >
-                  <span className="text-sm">{g.title ?? "경기"}</span>
-                  <span className="text-xs text-[#6B7280]">
-                    {g.scheduled_at
-                      ? new Date(g.scheduled_at).toLocaleDateString("ko-KR")
-                      : "-"}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[#6B7280]">참여한 경기 이력이 없습니다.</p>
-          ))}
-        {activeTab === "stats" && (
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-[#6B7280]">총 참가 경기</span>
-              <span>{user.total_games_participated ?? 0}회</span>
-            </div>
-          </div>
-        )}
-        {activeTab === "teams" &&
-          (teams.length > 0 ? (
-            <div className="space-y-2">
-              {teams.map((t) => (
-                <Link
-                  key={t.id}
-                  href={`/teams/${t.id}`}
-                  className="flex items-center justify-between rounded-[16px] border border-[#E8ECF0] bg-[#EEF2FF] px-4 py-2 transition-all hover:-translate-y-1 hover:shadow-lg"
-                >
-                  <span className="text-sm font-medium">{t.name}</span>
-                  <Badge>{t.role === "captain" ? "주장" : "멤버"}</Badge>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[#6B7280]">소속 팀이 없습니다.</p>
-          ))}
-        {activeTab === "tournaments" &&
-          (tournaments.length > 0 ? (
-            <div className="space-y-2">
-              {tournaments.map((t) => (
-                <Link
-                  key={t.id}
-                  href={`/tournaments/${t.id}`}
-                  className="flex items-center justify-between rounded-[16px] border border-[#E8ECF0] bg-[#EEF2FF] px-4 py-2 transition-all hover:-translate-y-1 hover:shadow-lg"
-                >
-                  <span className="text-sm">{t.name}</span>
-                  <span className="text-xs text-[#6B7280]">{TOURNAMENT_STATUS_LABEL[t.status ?? ""] ?? t.status ?? "-"}</span>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[#6B7280]">참가한 대회가 없습니다.</p>
-          ))}
-      </Card>
+      <StatBars
+        careerAverages={stats?.careerAverages ?? null}
+        seasonHighs={stats?.seasonHighs ?? null}
+      />
+
+      <RecentGamesSection games={recentGames} />
+      <TeamsSection teams={teams} />
+      <TournamentsSection tournaments={tournaments} />
+
+      <PlayerInfoSection
+        position={user.position}
+        height={user.height}
+        city={user.city}
+        bio={user.bio}
+      />
     </div>
   );
 }

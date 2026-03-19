@@ -127,7 +127,7 @@ export default async function GamesPage({
           <Link
             href="/games/my-games"
             prefetch={true}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FF9F43] text-[10px] font-black text-[#111827] hover:bg-[#F7931E] transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FF9F43] text-xs font-black text-[#111827] hover:bg-[#F7931E] transition-colors"
             title="내 경기"
           >
             MY

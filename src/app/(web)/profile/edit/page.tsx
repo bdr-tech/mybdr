@@ -3,14 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Sparkles } from "lucide-react";
 import { BANKS } from "@/lib/constants/banks";
+import { RegionPicker, type Region } from "@/components/shared/region-picker";
 
 const POSITIONS = ["PG", "SG", "SF", "PF", "C"] as const;
-
-const CITIES = [
-  "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종",
-  "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주",
-];
 
 interface ProfileEditData {
   name: string | null;
@@ -42,13 +39,12 @@ export default function ProfileEditPage() {
     nickname: "",
     birth_date: "",
     phone: "",
-    city: "",
-    district: "",
     position: "",
     height: "",
     weight: "",
     bio: "",
   });
+  const [regions, setRegions] = useState<Region[]>([{ city: "", district: "" }]);
 
   const [bankForm, setBankForm] = useState({
     bank_name: "",
@@ -59,6 +55,7 @@ export default function ProfileEditPage() {
   });
   const [maskedAccount, setMaskedAccount] = useState<string | null>(null);
   const [hasExistingAccount, setHasExistingAccount] = useState(false);
+  const [generatingBio, setGeneratingBio] = useState(false);
 
   useEffect(() => {
     fetch("/api/web/profile")
@@ -74,13 +71,17 @@ export default function ProfileEditPage() {
           nickname: u.nickname ?? "",
           birth_date: u.birth_date ?? "",
           phone: u.phone ?? "",
-          city: u.city ?? "",
-          district: u.district ?? "",
           position: u.position ?? "",
           height: u.height?.toString() ?? "",
           weight: u.weight?.toString() ?? "",
           bio: u.bio ?? "",
         });
+        // city/district 콤마 구분 → Region[]으로 변환
+        const cities = (u.city ?? "").split(",").filter(Boolean);
+        const districts = (u.district ?? "").split(",").filter(Boolean);
+        if (cities.length > 0) {
+          setRegions(cities.map((c, i) => ({ city: c, district: districts[i] ?? "" })));
+        }
         setBankForm((prev) => ({
           ...prev,
           bank_name: u.bank_name ?? "",
@@ -94,18 +95,52 @@ export default function ProfileEditPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
+  const togglePosition = (pos: string) => {
+    setForm((p) => {
+      const selected = p.position ? p.position.split(",") : [];
+      const idx = selected.indexOf(pos);
+      if (idx >= 0) {
+        selected.splice(idx, 1);
+      } else {
+        selected.push(pos);
+      }
+      return { ...p, position: selected.join(",") };
+    });
+  };
+
+  const selectedPositions = form.position ? form.position.split(",") : [];
+
+  const handleGenerateBio = async () => {
+    setGeneratingBio(true);
+    try {
+      const res = await fetch("/api/web/profile/generate-bio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "생성 실패");
+      const bio = data.bio ?? data.data?.bio;
+      if (bio) setForm((p) => ({ ...p, bio }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "AI 자기소개 생성에 실패했습니다.");
+    } finally {
+      setGeneratingBio(false);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setError("");
     setSuccessMsg("");
     try {
+      const filledRegions = regions.filter((r) => r.city);
       const payload: Record<string, unknown> = {
         name: form.name || null,
         nickname: form.nickname || null,
         birth_date: form.birth_date || null,
         phone: form.phone || null,
-        city: form.city || null,
-        district: form.district || null,
+        city: filledRegions.map((r) => r.city).join(",") || null,
+        district: filledRegions.map((r) => r.district).join(",") || null,
         position: form.position || null,
         height: form.height ? Number(form.height) : null,
         weight: form.weight ? Number(form.weight) : null,
@@ -216,30 +251,7 @@ export default function ProfileEditPage() {
               placeholder="01012345678"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={lbl}>활동 지역</label>
-              <select
-                className={inp}
-                value={form.city}
-                onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
-              >
-                <option value="">시/도 선택</option>
-                {CITIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={lbl}>세부 지역</label>
-              <input
-                className={inp}
-                value={form.district}
-                onChange={(e) => setForm((p) => ({ ...p, district: e.target.value }))}
-                placeholder="구/군 (선택)"
-              />
-            </div>
-          </div>
+          <RegionPicker value={regions} onChange={setRegions} max={3} />
         </div>
       </div>
 
@@ -248,15 +260,15 @@ export default function ProfileEditPage() {
         <h2 className="mb-4 font-semibold uppercase tracking-wide text-[#111827]" style={{ fontFamily: "var(--font-heading)" }}>경기 정보</h2>
         <div className="space-y-4">
           <div>
-            <label className={lbl}>포지션</label>
+            <label className={lbl}>포지션 <span className="text-xs text-[#9CA3AF]">(복수 선택 가능)</span></label>
             <div className="flex gap-2">
               {POSITIONS.map((pos) => (
                 <button
                   key={pos}
                   type="button"
-                  onClick={() => setForm((p) => ({ ...p, position: p.position === pos ? "" : pos }))}
+                  onClick={() => togglePosition(pos)}
                   className={`flex-1 rounded-full border py-2 text-sm font-medium transition-colors ${
-                    form.position === pos
+                    selectedPositions.includes(pos)
                       ? "border-[#1B3C87] bg-[rgba(27,60,135,0.12)] text-[#1B3C87]"
                       : "border-[#E8ECF0] text-[#6B7280] hover:border-[#1B3C87]"
                   }`}
@@ -294,7 +306,18 @@ export default function ProfileEditPage() {
             </div>
           </div>
           <div>
-            <label className={lbl}>자기소개</label>
+            <div className="mb-1 flex items-center justify-between">
+              <label className="text-sm text-[#6B7280]">자기소개</label>
+              <button
+                type="button"
+                onClick={handleGenerateBio}
+                disabled={generatingBio}
+                className="flex items-center gap-1 rounded-[10px] border border-[#7C3AED]/30 px-2.5 py-1.5 text-xs font-medium text-[#7C3AED] transition-colors hover:bg-[#7C3AED]/10 disabled:opacity-50"
+              >
+                <Sparkles size={12} className={generatingBio ? "animate-spin" : ""} />
+                {generatingBio ? "생성 중..." : "AI 자동 작성"}
+              </button>
+            </div>
             <textarea
               className={inp}
               rows={3}
@@ -303,6 +326,9 @@ export default function ProfileEditPage() {
               placeholder="간단한 자기소개 (최대 255자)"
               maxLength={255}
             />
+            <p className="mt-1 text-xs text-[#9CA3AF]">
+              {form.bio.length}/255자 · AI가 내 활동 데이터를 기반으로 작성해줍니다
+            </p>
           </div>
         </div>
       </div>

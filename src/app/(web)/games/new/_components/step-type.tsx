@@ -114,11 +114,11 @@ export function StepType({
               }`}
             >
               {isLocked && (
-                <span className="absolute right-1.5 top-1.5 text-[10px]">🔒</span>
+                <span className="absolute right-1.5 top-1.5 text-xs">🔒</span>
               )}
               <span className="text-2xl">{type.emoji}</span>
               <span className="text-sm font-semibold text-[#111827]">{type.label}</span>
-              <span className="text-[10px] text-[#9CA3AF] leading-tight">{type.desc}</span>
+              <span className="text-xs text-[#9CA3AF] leading-tight">{type.desc}</span>
             </button>
           );
         })}

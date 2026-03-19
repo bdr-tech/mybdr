@@ -148,7 +148,7 @@ export function AdminUsersTable({ users, updateUserRoleAction, updateUserStatusA
                 <div className="mt-3 flex items-center gap-2">
                   <Badge variant={role.variant}>{role.label}</Badge>
                   {statusBadge(u.status)}
-                  {u.provider && <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] text-white/80">{u.provider}</span>}
+                  {u.provider && <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs text-white/80">{u.provider}</span>}
                 </div>
               </div>
 

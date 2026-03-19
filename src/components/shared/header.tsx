@@ -8,6 +8,7 @@ import { SlideMenu } from "./slide-menu";
 import { UserDropdown } from "./user-dropdown";
 import { BellIcon } from "./bell-icon";
 import { ThemeToggle } from "./theme-toggle";
+import { TextSizeToggle } from "./text-size-toggle";
 
 const navItems = [
   { href: "/", label: "홈", Icon: Home },
@@ -108,6 +109,7 @@ export function Header() {
 
           {/* Right: Theme + Bell + Login/Profile */}
           <div className="flex items-center gap-1.5">
+            <TextSizeToggle />
             <ThemeToggle />
             <BellIcon unreadCount={unreadCount} />
             {user ? (

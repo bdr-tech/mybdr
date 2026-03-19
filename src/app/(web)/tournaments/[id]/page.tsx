@@ -176,7 +176,7 @@ function DescriptionSections({ text }: { text: string }) {
                     {sec.items.map((prize, j) => (
                       <tr key={j} className="border-t border-[#E8ECF0]">
                         <td className="px-4 py-2.5 font-medium">
-                          {PRIZE_ICON[prize.rank] ? <span className="mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#1B3C87]/10 text-[10px] font-bold text-[#E31B23]">{PRIZE_ICON[prize.rank]}</span> : null} {prize.rank}
+                          {PRIZE_ICON[prize.rank] ? <span className="mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#1B3C87]/10 text-xs font-bold text-[#E31B23]">{PRIZE_ICON[prize.rank]}</span> : null} {prize.rank}
                         </td>
                         <td className="px-4 py-2.5 text-[#6B7280]">
                           {prize.items.join(" + ")}
@@ -402,10 +402,45 @@ export default async function TournamentDetailPage({ params }: { params: Promise
       city: true,
       venue_name: true,
       entry_fee: true,
+      registration_start_at: true,
+      registration_end_at: true,
+      categories: true,
+      div_caps: true,
+      div_fees: true,
+      allow_waiting_list: true,
+      bank_name: true,
+      bank_account: true,
+      bank_holder: true,
+      maxTeams: true,
       _count: { select: { tournamentTeams: true } },
     },
   });
   if (!tournament) return notFound();
+
+  // 접수 상태 판단
+  const now = new Date();
+  const regStatuses = ["registration", "registration_open", "active", "published"];
+  const isRegStatus = regStatuses.includes(tournament.status ?? "");
+  const regOpen = tournament.registration_start_at;
+  const regClose = tournament.registration_end_at;
+  const isRegistrationOpen = isRegStatus && (!regOpen || regOpen <= now) && (!regClose || regClose >= now);
+  const isRegistrationSoon = isRegStatus && regOpen && regOpen > now;
+
+  // 디비전별 등록 현황
+  const categories = (tournament.categories ?? {}) as Record<string, string[]>;
+  const divCaps = (tournament.div_caps ?? {}) as Record<string, number>;
+  const divFees = (tournament.div_fees ?? {}) as Record<string, number>;
+  const hasCategories = Object.keys(categories).length > 0;
+
+  let divisionCounts: { division: string | null; _count: { id: number } }[] = [];
+  if (hasCategories) {
+    const grouped = await prisma.tournamentTeam.groupBy({
+      by: ["division"] as const,
+      where: { tournamentId: id, status: { in: ["pending", "approved"] } },
+      _count: { id: true },
+    });
+    divisionCounts = grouped;
+  }
 
   const statusInfo = STATUS_LABEL[tournament.status ?? "draft"] ?? { label: tournament.status ?? "draft", variant: "default" as const };
 
@@ -446,6 +481,86 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           )}
         </div>
       </Card>
+
+      {/* 접수 정보 + 참가신청 버튼 */}
+      {isRegStatus && (
+        <Card className="mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold">참가접수</h2>
+                <Badge variant={isRegistrationOpen ? "success" : isRegistrationSoon ? "info" : "warning"}>
+                  {isRegistrationOpen ? "접수중" : isRegistrationSoon ? "접수 예정" : "접수마감"}
+                </Badge>
+              </div>
+              {regOpen && regClose && (
+                <p className="mt-1 text-xs text-[#6B7280]">
+                  {regOpen.toLocaleDateString("ko-KR")} ~ {regClose.toLocaleDateString("ko-KR")}
+                </p>
+              )}
+              {tournament.entry_fee && Number(tournament.entry_fee) > 0 && (
+                <p className="mt-1 text-sm font-medium">
+                  참가비 {Number(tournament.entry_fee).toLocaleString()}원
+                </p>
+              )}
+            </div>
+            {isRegistrationOpen && (
+              <Link
+                href={`/tournaments/${id}/join`}
+                className="inline-flex items-center gap-2 rounded-[10px] bg-[#E31B23] px-6 py-3 text-sm font-bold text-white transition-all hover:bg-[#C8101E] active:scale-[0.97]"
+              >
+                참가신청
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </Link>
+            )}
+          </div>
+
+          {/* 디비전별 정원 현황 */}
+          {hasCategories && (
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {Object.entries(categories).flatMap(([cat, divs]) =>
+                divs.map((div) => {
+                  const cap = divCaps[div];
+                  const count = divisionCounts.find((d) => d.division === div)?._count.id ?? 0;
+                  const remaining = cap ? cap - count : null;
+                  const fee = divFees[div] ?? tournament.entry_fee;
+
+                  return (
+                    <div
+                      key={`${cat}-${div}`}
+                      className="rounded-[10px] border border-[#E8ECF0] p-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-[#6B7280]">{cat}</span>
+                        {remaining !== null && remaining <= 0 && (
+                          <Badge variant={tournament.allow_waiting_list ? "warning" : "error"}>
+                            {tournament.allow_waiting_list ? "대기" : "마감"}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm font-bold">{div}</p>
+                      {cap && (
+                        <div className="mt-1">
+                          <div className="flex justify-between text-xs text-[#6B7280]">
+                            <span>{count}/{cap}팀</span>
+                            {fee && <span>{Number(fee).toLocaleString()}원</span>}
+                          </div>
+                          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#E8ECF0]">
+                            <div
+                              className="h-full rounded-full bg-[#1B3C87] transition-all"
+                              style={{ width: `${Math.min((count / cap) * 100, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* 서브 탭 -- 즉시 렌더링 */}
       <div className="mb-6 flex gap-1 overflow-x-auto">

@@ -24,7 +24,7 @@ function StatBox({ value, label }: { value: number | string; label: string }) {
   return (
     <div className="flex flex-col items-center rounded-[16px] border border-[#E8ECF0] bg-[#EEF2FF] px-4 py-3 min-w-[64px]">
       <span className="text-lg font-bold text-[#111827]">{value}</span>
-      <span className="mt-0.5 text-[10px] text-[#6B7280]">{label}</span>
+      <span className="mt-0.5 text-xs text-[#6B7280]">{label}</span>
     </div>
   );
 }

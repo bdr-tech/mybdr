@@ -13,7 +13,16 @@ const FORMAT_MAP: Record<string, string> = {
 export const POST = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
   try {
     const body = await req.json();
-    const { name, format, startDate, endDate, subdomain, primaryColor, secondaryColor } = body;
+    const {
+      name, format, startDate, endDate, subdomain, primaryColor, secondaryColor,
+      description,
+      registrationStartAt, registrationEndAt,
+      venueName, venueAddress, city,
+      categories, divCaps, divFees,
+      allowWaitingList, waitingListCap,
+      entryFee, bankName, bankAccount, bankHolder, feeNotes,
+      maxTeams, teamSize, rosterMin, rosterMax, autoApproveTeams,
+    } = body;
 
     if (!name?.trim()) {
       return apiError("대회 이름은 필수입니다.", 400);
@@ -41,6 +50,10 @@ export const POST = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
       return apiError("시작일이 종료일보다 늦을 수 없습니다.", 400);
     }
 
+    // 접수 날짜 파싱
+    const parsedRegStart = registrationStartAt ? new Date(registrationStartAt) : null;
+    const parsedRegEnd = registrationEndAt ? new Date(registrationEndAt) : null;
+
     const tournament = await createTournament({
       name: name.trim(),
       organizerId: ctx.userId,
@@ -50,6 +63,28 @@ export const POST = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
       primaryColor,
       secondaryColor,
       subdomain: subdomain?.trim()?.toLowerCase(),
+      // 접수 설정
+      description: description || undefined,
+      registrationStartAt: parsedRegStart,
+      registrationEndAt: parsedRegEnd,
+      venueName: venueName || undefined,
+      venueAddress: venueAddress || undefined,
+      city: city || undefined,
+      categories: categories || undefined,
+      divCaps: divCaps || undefined,
+      divFees: divFees || undefined,
+      allowWaitingList: allowWaitingList ?? undefined,
+      waitingListCap: waitingListCap ? Number(waitingListCap) : undefined,
+      entryFee: entryFee ? Number(entryFee) : undefined,
+      bankName: bankName || undefined,
+      bankAccount: bankAccount || undefined,
+      bankHolder: bankHolder || undefined,
+      feeNotes: feeNotes || undefined,
+      maxTeams: maxTeams ? Number(maxTeams) : undefined,
+      teamSize: teamSize ? Number(teamSize) : undefined,
+      rosterMin: rosterMin ? Number(rosterMin) : undefined,
+      rosterMax: rosterMax ? Number(rosterMax) : undefined,
+      autoApproveTeams: autoApproveTeams ?? undefined,
     });
 
     return apiSuccess({

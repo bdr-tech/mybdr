@@ -993,6 +993,144 @@ await prisma.$transaction([
 
 ---
 
+## 3-B. 대회 접수 시스템 (Registration)
+
+> 작성일: 2026-03-20
+> 근거: Dev/tournament-integration-report.md (BDR-join-v1 통합 분석)
+> 상태: **⛔ 아직 구현하지마** — 판단 주석 작성 후 명시적 승인 필요
+
+### 배경
+
+BDR-join-v1의 핵심 가치 2가지를 MyBDR에 통합:
+1. **대회 참가신청 위자드** (팀 선택 → 부문/디비전 → 유니폼/선수 → 확인)
+2. **부문/디비전 체계** (카테고리별 정원 관리 + 대기접수)
+
+참가신청 API(`/api/web/tournaments/[id]/join`)와 위자드 UI(`/tournaments/[id]/join`)는 이미 구현 완료.
+대회 상세 페이지에 접수 정보 섹션 + 참가버튼도 추가됨.
+편집 위자드에 "접수 설정" 단계(Step 3)도 추가됨.
+
+### 현재 문제점
+
+1. **끊어진 플로우** — 대회 생성(5스텝) → 허브 → "대회 설정" → 편집 위자드(6스텝)으로 2번 이동해야 접수 설정 가능
+2. **데이터 소비처 없음** — `categories/div_caps/div_fees` 입력만 하고 팀 관리 페이지에서 활용 안 됨
+3. **팀 관리 부족** — 디비전 필터, 입금 토글, 대기전환, 선수 열람 없음
+4. **허브 정보 부족** — 접수/입금 현황 미표시
+
+### 3-B-1. 대회 생성 위자드 통합 — `승인: `
+
+> 파일: `tournament-admin/tournaments/new/wizard/page.tsx`
+
+**현재:** 5스텝 (템플릿 → 기본정보 → URL → 디자인 → 미리보기)
+**변경:** 7스텝 (템플릿 → 기본정보 → 일정/장소 → 접수설정 → 팀설정 → 디자인 → 미리보기)
+
+| 순서 | 단계 | 내용 | 변경 유형 |
+|------|------|------|-----------|
+| 0 | 템플릿 | 기존 유지 | - |
+| 1 | 기본 정보 | 이름, 포맷, 소개 | 소개 추가 |
+| 2 | 일정/장소 | 대회 날짜 + 접수 기간 + 장소 | **신규** |
+| 3 | 접수 설정 | 부문/디비전 + 정원 + 참가비 + 대기접수 + 입금정보 | **신규** |
+| 4 | 팀 설정 | maxTeams, 로스터, 자동승인 | **신규** |
+| 5 | 디자인 | 컬러 + URL(서브도메인) | URL 합침 |
+| 6 | 미리보기 | 모든 입력 요약 + 접수정보 포함 | 확장 |
+
+**핵심:**
+- 접수 설정 UI를 편집 위자드의 Step 3과 **공유 컴포넌트**로 추출
+- 생성 API에 접수 필드 추가 지원
+- `maxTeams`는 div_caps 합산 자동 계산 옵션 제공
+
+**공유 컴포넌트:**
+```
+src/components/tournament/
+  ├── registration-settings-form.tsx  ← 부문/디비전/정원/참가비/대기/입금
+  ├── schedule-form.tsx               ← 날짜/장소
+  └── team-settings-form.tsx          ← 로스터/자동승인
+```
+
+### 3-B-2. 팀 관리 페이지 확장 — `승인: `
+
+> 파일: `tournament-admin/tournaments/[id]/teams/page.tsx`
+
+**현재:** 전체/대기/승인/거절 필터 + 시드 배정만
+**변경:** 디비전별 필터 + 입금상태 + 대기전환 + 선수열람
+
+#### A. 디비전 필터 + 현황 요약 카드
+- 상단에 디비전별 정원 프로그레스 바
+- 디비전 필터 + 상태 필터 조합 가능
+- 전체 N팀 · 입금 완료 N팀 · 대기 N팀 요약
+
+#### B. 입금 상태 토글
+각 팀 카드에 `[미입금] → [입금완료] → [환불]` 토글
+- `PATCH /api/web/tournaments/[id]/teams/[teamId]`에 `payment_status` 추가
+
+#### C. 대기 → 정규 전환
+- 대기접수 팀에 "정규 전환" 버튼
+- `status: "pending"` + `waiting_number: null` + 대기순번 재정렬
+
+#### D. 선수 명단 열람
+- 팀 카드 아코디언 확장 → 이름, 등번호, 포지션, 생년월일, 선출
+
+### 3-B-3. 허브 페이지 접수 현황 — `승인: `
+
+> 파일: `tournament-admin/tournaments/[id]/page.tsx`
+
+**현재:** 4개 스탯 카드 (참가팀/최대팀/경기수/참가비)
+**추가:** 접수 현황 섹션
+
+- 접수기간 + 상태 배지
+- 전체/입금/대기/잔여 스탯 카드
+- 디비전별 프로그레스 바
+- 입금계좌 정보 표시 (미설정 시 "설정 필요" 링크)
+
+### 3-B-4. API 확장 — `승인: `
+
+#### A. 생성 API 확장 (`POST /api/web/tournaments`)
+접수 관련 필드 추가 지원:
+- `categories, div_caps, div_fees, allow_waiting_list, waiting_list_cap`
+- `bank_name, bank_account, bank_holder, fee_notes`
+- `registration_start_at, registration_end_at`
+- `venue_name, venue_address, city, maxTeams, team_size, roster_min, roster_max, entry_fee`
+- `auto_approve_teams, description`
+
+#### B. 팀 PATCH API 확장 (`PATCH .../teams/[teamId]`)
+- `payment_status: "unpaid" | "paid" | "refunded"`
+- `division, category, waiting_number`
+
+#### C. 팀 GET API 확장 (`GET .../teams`)
+- players include에 `player_name, birth_date, is_elite` 추가
+- tournament 접수 설정 정보 동시 반환
+
+### 구현 순서
+
+```
+3-B-4-A (생성 API 확장)
+    ↓
+3-B-1 (생성 위자드 통합) ← 공유 컴포넌트 추출 + 편집 위자드 리팩터
+    ↓
+3-B-4-B,C (팀 API 확장)
+    ↓
+3-B-2 (팀 관리 페이지 확장)
+    ↓
+3-B-3 (허브 페이지 접수 현황)
+```
+
+### 수정 대상 파일
+
+| 파일 | 변경 |
+|------|------|
+| `src/components/tournament/registration-settings-form.tsx` | **신규** |
+| `src/components/tournament/schedule-form.tsx` | **신규** |
+| `src/components/tournament/team-settings-form.tsx` | **신규** |
+| `tournament-admin/tournaments/new/wizard/page.tsx` | 7스텝 확장 |
+| `tournament-admin/tournaments/[id]/wizard/page.tsx` | 공유 컴포넌트로 리팩터 |
+| `tournament-admin/tournaments/[id]/page.tsx` | 접수 현황 섹션 |
+| `tournament-admin/tournaments/[id]/teams/page.tsx` | 디비전+입금+대기+선수 |
+| `api/web/tournaments/route.ts` | 생성 API 접수 필드 |
+| `api/web/tournaments/[id]/teams/route.ts` | GET 응답 확장 |
+| `api/web/tournaments/[id]/teams/[teamId]/route.ts` | PATCH 확장 |
+| `lib/validation/tournament.ts` | 생성 스키마 추가 |
+
+---
+
 ## 4. 커뮤니티 (Community) ✅ 완료
 
 ### 4.1 현황

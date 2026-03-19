@@ -147,7 +147,7 @@ async function TournamentGrid({ status }: { status: string | undefined }) {
                 <div className="p-4 sm:p-5">
                   {/* 형식 + 상태 */}
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="rounded-[6px] bg-[#111827] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                    <span className="rounded-[6px] bg-[#111827] px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-white">
                       {formatLabel}
                     </span>
                     <Badge variant={style.variant}>{label}</Badge>

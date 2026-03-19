@@ -119,7 +119,7 @@ export default async function TeamDetailPage({
                   className="flex min-w-[52px] flex-col items-center rounded-[10px] bg-[#FFFFFF0A] px-3 py-1.5"
                 >
                   <span className="text-lg font-bold text-[#111827]">{value}</span>
-                  <span className="text-[10px] text-[#6B7280]">{label}</span>
+                  <span className="text-xs text-[#6B7280]">{label}</span>
                 </div>
               ))}
             </div>
