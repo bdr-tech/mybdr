@@ -31,6 +31,7 @@ async function handler(
       venue_name: tournament.venue_name,
       venue_address: tournament.venue_address,
       team_count: teams.length,
+      game_rules: tournament.game_rules ?? {},
     },
     teams: teams.map((t) => ({
       id: Number(t.id),
@@ -48,11 +49,13 @@ async function handler(
       id: Number(p.id),
       tournament_team_id: Number(p.tournamentTeamId),
       user_id: p.userId?.toString(),
-      user_name: p.users?.nickname ?? `Player #${p.jerseyNumber ?? p.id}`,
+      user_name: p.users?.name ?? p.users?.nickname ?? `Player #${p.jerseyNumber ?? p.id}`,
+      user_nickname: p.users?.nickname ?? null,
       jersey_number: p.jerseyNumber,
       position: p.position,
       role: p.role,
       is_starter: p.isStarter ?? false,
+      is_active: true,
     })),
     matches: matches.map((m) => ({
       id: Number(m.id),

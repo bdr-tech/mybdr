@@ -342,7 +342,7 @@ export async function getTournamentFullData(tournamentId: string) {
     }),
     prisma.tournamentTeamPlayer.findMany({
       where: { tournamentTeam: { tournamentId } },
-      include: { users: { select: { nickname: true } } },
+      include: { users: { select: { name: true, nickname: true } } },
     }),
     prisma.tournamentMatch.findMany({
       where: { tournamentId },
