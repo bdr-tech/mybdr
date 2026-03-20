@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
-import { withWebAuth, type WebAuthContext } from "@/lib/auth/web-session";
+import { withWebAuth, type WebAuthContext, getWebSession } from "@/lib/auth/web-session";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { createTournament, hasCreatePermission, listTournaments } from "@/lib/services/tournament";
+import { prisma } from "@/lib/db/prisma";
 
 /**
  * GET /api/web/tournaments
@@ -17,9 +18,29 @@ export async function GET(request: NextRequest) {
 
     // 쿼리 파라미터 추출
     const status = searchParams.get("status") || undefined;
+    const prefer = searchParams.get("prefer") === "true";
 
-    // 서비스 함수로 DB 조회
-    const rows = await listTournaments({ status, take: 60 }).catch(() => []);
+    // prefer=true일 때 로그인 유저의 city(쉼표 구분)를 분할하여 선호 지역으로 사용
+    let preferredCities: string[] | undefined;
+    if (prefer) {
+      const session = await getWebSession();
+      if (session) {
+        const user = await prisma.user.findUnique({
+          where: { id: BigInt(session.sub) },
+          select: { city: true },
+        });
+        // user.city는 "서울,경기" 같이 쉼표로 구분된 문자열
+        if (user?.city) {
+          const cities = user.city.split(",").map((c) => c.trim()).filter(Boolean);
+          if (cities.length > 0) {
+            preferredCities = cities;
+          }
+        }
+      }
+    }
+
+    // 서비스 함수로 DB 조회 (prefer=true이면 cities 파라미터 전달)
+    const rows = await listTournaments({ status, cities: preferredCities, take: 60 }).catch(() => []);
 
     // Date, Decimal 필드를 JSON 직렬화 가능하도록 변환
     const tournaments = rows.map((t) => ({

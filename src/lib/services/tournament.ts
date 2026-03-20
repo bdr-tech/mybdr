@@ -78,6 +78,8 @@ export const TOURNAMENT_DETAIL_INCLUDE = {
 
 export interface TournamentListFilters {
   status?: string;
+  /** 선호 지역 필터 -- 여러 도시를 OR 조건으로 검색 (prefer=true 시 사용) */
+  cities?: string[];
   take?: number;
 }
 
@@ -190,12 +192,20 @@ function toMyTournamentItem(
  * 대회 목록 (공개) — tournaments/page.tsx, 홈페이지에서 사용
  */
 export async function listTournaments(filters: TournamentListFilters = {}) {
-  const { status, take = 60 } = filters;
+  const { status, cities, take = 60 } = filters;
+
+  // where 조건을 동적으로 구성
+  const where: Record<string, unknown> = {
+    status: status && status !== "all" ? status : { not: "draft" },
+  };
+
+  // 선호 지역(cities)이 있으면 OR 조건으로 도시 필터 적용
+  if (cities && cities.length > 0) {
+    where.city = { in: cities, mode: "insensitive" };
+  }
 
   return prisma.tournament.findMany({
-    where: {
-      status: status && status !== "all" ? status : { not: "draft" },
-    },
+    where,
     orderBy: { startDate: "desc" },
     take,
     select: TOURNAMENT_LIST_SELECT,

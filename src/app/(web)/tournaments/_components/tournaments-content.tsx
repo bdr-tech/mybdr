@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -178,9 +178,25 @@ export function TournamentsContent({
   TournamentsFilterComponent: React.ComponentType;
 }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const [tournaments, setTournaments] = useState<TournamentFromApi[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // "내 선호 지역만 보기" 토글 상태 -- URL의 prefer 파라미터와 동기화
+  const preferOn = searchParams.get("prefer") === "true";
+
+  // 토글 클릭 시 URL에 prefer 파라미터를 추가/제거
+  const handlePreferToggle = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (preferOn) {
+      params.delete("prefer"); // OFF로 전환 -- prefer 파라미터 제거
+    } else {
+      params.set("prefer", "true"); // ON으로 전환
+    }
+    router.push(`${pathname}?${params.toString()}`);
+  }, [preferOn, searchParams, router, pathname]);
 
   // searchParams가 바뀔 때마다 API 호출
   useEffect(() => {
@@ -208,21 +224,39 @@ export function TournamentsContent({
 
   // 필터가 활성화되어 있는지 확인
   const status = searchParams.get("status");
-  const hasFilters = status && status !== "all";
+  const hasFilters = (status && status !== "all") || preferOn;
 
   return (
     <>
       {/* 헤더 영역 */}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-extrabold uppercase tracking-wide sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>TOURNAMENTS</h1>
-        <Link
-          href="/tournament-admin/tournaments/new/wizard"
-          prefetch={true}
-          className="rounded-[10px] bg-[#E31B23] px-5 py-2 text-sm font-bold text-white hover:bg-[#C8101E] transition-colors"
-          style={{ fontFamily: "var(--font-heading)" }}
-        >
-          대회 만들기
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* 내 선호 지역만 보기 토글 버튼 */}
+          <button
+            onClick={handlePreferToggle}
+            className={`flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-bold transition-colors ${
+              preferOn
+                ? "bg-[#1B3C87] text-white"
+                : "bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]"
+            }`}
+            title="내 선호 지역만 보기"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            {preferOn ? "선호 ON" : "선호"}
+          </button>
+          <Link
+            href="/tournament-admin/tournaments/new/wizard"
+            prefetch={true}
+            className="rounded-[10px] bg-[#E31B23] px-5 py-2 text-sm font-bold text-white hover:bg-[#C8101E] transition-colors"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
+            대회 만들기
+          </Link>
+        </div>
       </div>
 
       {/* 상태 탭 필터 */}
