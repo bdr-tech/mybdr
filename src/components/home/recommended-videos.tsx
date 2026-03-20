@@ -1,15 +1,35 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Play, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, ChevronLeft, ChevronRight, Flame } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// API 응답에 맞춘 인터페이스
 interface VideoItem {
   video_id: string;
   title: string;
   thumbnail: string;
   published_at: string;
-  reason: string;
+  badges: string[];   // ["LIVE", "스타터스", "HOT", "맞춤"] 등
+  is_live: boolean;
+}
+
+// 뱃지별 스타일 정의
+function getBadgeStyle(badge: string): { bg: string; text: string; icon?: "flame" | "pulse" } {
+  switch (badge) {
+    case "LIVE":
+      // 빨간 배경 + 흰 텍스트 + 깜빡이는 점 애니메이션
+      return { bg: "bg-red-600", text: "text-white", icon: "pulse" };
+    case "HOT":
+      // 빨간/주황 그라데이션
+      return { bg: "bg-gradient-to-r from-red-500 to-orange-400", text: "text-white", icon: "flame" };
+    case "맞춤":
+      // 파란/보라 계열
+      return { bg: "bg-indigo-500/15", text: "text-indigo-600" };
+    default:
+      // 디비전명 (스타터스, 챌린저 등) → 오렌지 계열
+      return { bg: "bg-[#F4A261]/15", text: "text-[#E76F00]" };
+  }
 }
 
 export function RecommendedVideos() {
@@ -129,6 +149,19 @@ export function RecommendedVideos() {
                         <Play size={20} className="ml-0.5 text-white" fill="white" />
                       </div>
                     </div>
+
+                    {/* LIVE 인디케이터: 썸네일 좌상단에 빨간 LIVE 표시 */}
+                    {v.is_live && (
+                      <div className="absolute left-2 top-2 flex items-center gap-1 rounded bg-red-600 px-2 py-0.5 shadow-md">
+                        {/* 깜빡이는 빨간 점 */}
+                        <span className="relative flex h-2 w-2">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                          <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
+                        </span>
+                        <span className="text-[11px] font-bold text-white">LIVE</span>
+                      </div>
+                    )}
+
                   </button>
                 )}
               </div>
@@ -138,10 +171,30 @@ export function RecommendedVideos() {
                 <h3 className="text-sm font-bold text-[#111827] line-clamp-2 leading-tight">
                   {v.title}
                 </h3>
-                <div className="mt-1 flex items-center gap-2">
-                  <span className="rounded-[6px] bg-[#E31B23]/10 px-2 py-0.5 text-[11px] font-semibold text-[#E31B23]">
-                    {v.reason}
-                  </span>
+                {/* 뱃지 목록 + 날짜 */}
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  {v.badges.map((badge) => {
+                    const style = getBadgeStyle(badge);
+                    return (
+                      <span
+                        key={badge}
+                        className={`inline-flex items-center gap-1 rounded-[6px] px-2 py-0.5 text-[11px] font-semibold ${style.bg} ${style.text}`}
+                      >
+                        {/* LIVE 뱃지: 깜빡이는 점 */}
+                        {style.icon === "pulse" && (
+                          <span className="relative flex h-1.5 w-1.5">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+                          </span>
+                        )}
+                        {/* HOT 뱃지: 불꽃 아이콘 */}
+                        {style.icon === "flame" && (
+                          <Flame size={10} className="text-white" />
+                        )}
+                        {badge}
+                      </span>
+                    );
+                  })}
                   <span className="text-xs text-[#9CA3AF]">
                     {formatDate(v.published_at)}
                   </span>

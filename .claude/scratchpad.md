@@ -1,9 +1,9 @@
 # 📋 작업 스크래치패드
 
 ## 현재 작업
-- **요청**: (대기) 프로필 수정 페이지 확장 + 경기 타입별 카드 컴포넌트
-- **상태**: 보류 - 프로필 이미지 업로드는 다른 프로그래머가 진행 중. 이미지 저장소 결정 후 재개.
-- **현재 담당**: pm (대기)
+- **요청**: 유튜브 추천 영상 알고리즘 전면 업데이트 + iframe 차단 수정
+- **상태**: 진행 중 - 알고리즘 업데이트
+- **현재 담당**: developer
 
 ## 작업 계획 (planner)
 
@@ -268,6 +268,140 @@
 ---
 
 ## 설계 노트 (architect)
+
+### 2026-03-21: 다음카페 "동아리농구방" 자동 크롤링 기술 조사 결과
+
+#### 배경
+- 카페 URL: `cafe.daum.net/dongarry`, 게시판: `MptT` (연습경기)
+- 사용자가 카페 운영자 본인 -> 법적 문제 없음
+- 목표: 3개월간 연습경기 게시글 자동 크롤링 -> cafe_posts 테이블 저장
+
+#### 1. cafe_posts 테이블 스키마 (이미 존재)
+```
+cafe_posts {
+  id, cafe_code("dongarry"), board_id("MptT"), board_name, dataid(게시글번호),
+  title, content, author, original_date, views_count, comments_count,
+  original_url, home_team, game_datetime, location, game_format,
+  guest_count, cost, contact, required_info, notes, metadata(JSON),
+  crawled_at, created_at, updated_at
+}
+unique: [cafe_code + board_id + dataid] -> 중복 크롤링 방지 내장
+```
+-> 스키마가 연습경기 파싱에 완벽히 맞춰져 있음 (home_team, game_datetime, location, cost 등)
+
+#### 2. 크롤링 방법 비교표
+
+| 방법 | 실현 가능성 | 비용 | 안정성 | 추천도 |
+|------|-----------|------|--------|--------|
+| A. 모바일 페이지 HTML 파싱 | 높음 | 무료 | 중 (HTML 변경 시 깨짐) | 2순위 |
+| B. 카카오 검색 API | 중 | 무료 (3만건/일) | 높음 (공식 API) | 3순위 |
+| C. GitHub Actions + Playwright | 높음 | 무료 | 높음 | 1순위 (추천) |
+| D. RSS 피드 | 불가 | - | - | X |
+| E. 다음카페 내부 API | 불가 | - | - | X |
+| F. 외부 서비스 (ScrapingBee 등) | 높음 | $49+/월 | 높음 | 비용 대비 비추 |
+
+#### 3. 각 방법 상세
+
+**[A] 모바일 페이지 HTML 파싱 (m.cafe.daum.net)**
+- 실제 테스트 결과: `m.cafe.daum.net/dongarry/MptT` 접근 성공
+- 목록 페이지에서 획득 가능한 데이터:
+  - 제목, 작성자, 날짜, 조회수, 댓글수, dataid(350900 등), 지역
+  - grpId: "IGaj", grpCode: "dongarry", fldId: "MptT"
+  - pageSize: 20 (한 번에 20개)
+- 개별 게시글 접근: `m.cafe.daum.net/dongarry/MptT/{dataid}` -> 403 반환 (로그인 필요)
+- 한계: 개별 게시글 본문은 로그인 상태에서만 접근 가능 -> Headless 브라우저 필요
+
+**[B] 카카오 검색 API**
+- 엔드포인트: `GET https://dapi.kakao.com/v2/search/cafe`
+- 인증: `Authorization: KakaoAK {REST_API_KEY}`
+- 일일 쿼터: 30,000건/일 (충분)
+- 한계점:
+  - query 파라미터만 지원, site: 필터 불가 -> "dongarry MptT"로 검색해도 정확한 결과 보장 안 됨
+  - contents 필드에 본문 "일부"만 포함 (전체 본문 불가)
+  - 특정 게시판만 필터링하는 기능 없음
+- 결론: 보조 수단으로만 활용 가능. 메인 크롤링 방법으로 부적합
+
+**[C] GitHub Actions + Playwright (추천)**
+- 구조: GitHub Actions cron -> Playwright로 다음카페 로그인 -> 게시글 목록/본문 크롤링 -> mybdr API 호출로 DB 저장
+- 장점:
+  - 무료 (public repo 무제한, private repo 2000분/월)
+  - 로그인 처리 가능 (카페 운영자 계정)
+  - JavaScript 렌더링 완벽 지원
+  - cron으로 주기적 실행 (예: 매 6시간)
+  - Vercel 서버에 부하 없음
+- 설정: `cron: '0 */6 * * *'` (6시간마다)
+- 작업 제한: 각 job 최대 6시간, 충분함
+
+**[D] RSS 피드 -> 불가**
+- `cafe.daum.net/dongarry/rss` 접근 결과: RSS 없음, 일반 카페 페이지로 리다이렉트
+- 다음카페는 RSS 피드를 더 이상 제공하지 않음
+
+**[E] 다음카페 내부 API -> 불가**
+- `/api/cafes/dongarry/boards/MptT/articles` -> 404
+- `/_c21_/article_list?grpid=IGaj&fldid=MptT` -> 404
+- `/api/boards/dongarry/MptT/articles` -> 404
+- 공개된 REST API 엔드포인트 없음. 모든 데이터는 서버사이드 렌더링 또는 인증된 세션 내에서만 제공
+
+**[F] 외부 서비스**
+- Browserless.io: 무료 1k 유닛, 유료 $50+/월
+- ScrapingBee: $49+/월
+- 3개월만 쓸 거라 비용 대비 효과 낮음. GitHub Actions가 무료로 동일 기능 제공
+
+#### 4. 추천 아키텍처: GitHub Actions + Playwright
+
+```
+[GitHub Actions (cron 6시간)]
+    -> Playwright (다음카페 로그인 + 크롤링)
+    -> 게시글 목록 파싱 (m.cafe.daum.net/dongarry/MptT)
+    -> 각 게시글 본문 파싱 (m.cafe.daum.net/dongarry/MptT/{dataid})
+    -> mybdr API 호출 (POST /api/v1/cafe-posts) 또는 직접 DB 저장
+    -> cafe_posts 테이블에 upsert (dataid 기준 중복 방지)
+```
+
+#### 5. 게시글 파싱 전략
+
+**제목 파싱 (정규식):**
+- 예시: "[구로] 3월22일 일요일 12-3시 초청합니다"
+- 지역: `\[(.+?)\]` -> "구로"
+- 날짜: `(\d{1,2})월\s*(\d{1,2})일` -> 3월 22일
+- 시간: `(\d{1,2})-(\d{1,2})시` 또는 `(\d{1,2}:\d{2})~(\d{1,2}:\d{2})`
+
+**본문 파싱 (AI 추천):**
+- 정규식만으로는 본문의 자유형식 텍스트 파싱이 어려움
+- Claude API 또는 GPT API로 구조화 추출 추천
+- 비용: Claude Haiku 기준 게시글 1개당 약 $0.001 이하
+- 추출 대상: cost, guest_count, contact, game_format, location(상세), notes
+- 정규식 fallback: AI 실패 시 기본 패턴 매칭
+
+**추천: 하이브리드 방식**
+- 1차: 제목에서 정규식으로 지역/날짜/시간 추출
+- 2차: 본문 전체를 AI에 보내서 나머지 필드 구조화 추출
+- 비용: 하루 20개 게시글 기준 약 $0.02/일 (3개월 약 $2)
+
+#### 6. developer 구현 가이드
+
+**필요한 파일:**
+| 파일 경로 | 역할 | 신규/수정 |
+|----------|------|----------|
+| `.github/workflows/cafe-crawler.yml` | GitHub Actions 워크플로우 (cron 설정) | 신규 |
+| `scripts/cafe-crawler/index.ts` | 크롤링 메인 스크립트 (Playwright) | 신규 |
+| `scripts/cafe-crawler/parser.ts` | 게시글 파싱 로직 (정규식 + AI) | 신규 |
+| `scripts/cafe-crawler/db.ts` | DB upsert 로직 (Prisma 직접 사용) | 신규 |
+| `src/app/api/web/cafe-posts/route.ts` | 웹에서 cafe_posts 조회 API (선택) | 신규 |
+
+**GitHub Secrets 필요:**
+- `DAUM_ID`: 다음카페 운영자 계정 ID
+- `DAUM_PW`: 다음카페 운영자 계정 비밀번호
+- `DATABASE_URL`: PostgreSQL 연결 문자열
+- `OPENAI_API_KEY` 또는 `ANTHROPIC_API_KEY`: AI 파싱용 (선택)
+
+**주의사항:**
+- 다음 로그인 시 2단계 인증이 있으면 별도 처리 필요 (앱 비밀번호 등)
+- 크롤링 속도 조절: 게시글 간 2~3초 딜레이 (서버 부하 방지)
+- 에러 핸들링: 네트워크 실패 시 재시도 로직 (최대 3회)
+- 3개월 후 워크플로우 비활성화 잊지 말 것
+
+---
 
 ### 2026-03-20: 프로젝트 현황 분석 및 다음 작업 후보 도출
 
@@ -1561,6 +1695,7 @@ push 여부: 완료 (origin/master)
 | 2026-03-20 | reviewer | 4개 페이지 전환 코드 리뷰 (12개 파일) | 통과 - 필수 수정 0건, 권장 수정 3건(AbortController 등). 커밋 가능 |
 | 2026-03-20 | git-manager | 4개 페이지 전환 커밋 (13개 파일) | 완료 - 7eb6b8a, push 미완료 |
 | 2026-03-20 | architect | 프로젝트 현황 분석 + 다음 작업 후보 10개 도출 | 완료 - plan.md/review-fix-plan.md/코드 전수 분석 |
+| 2026-03-21 | architect | 다음카페 크롤링 기술 방안 상세 조사 (6가지 방법 실제 테스트) | 완료 - GitHub Actions + Playwright 추천, 설계 노트 작성 |
 | 2026-03-20 | developer | C-6 match-sync post-process Promise.allSettled 전환 | 완료 - 1개 파일 수정, TypeScript 검증 통과 |
 | 2026-03-20 | developer | W-1 full-data API 이중 변환 검토 | 완료 - 수정 불필요. snake_case->snake_case 변환은 무해, 코드 변경 0건 |
 | 2026-03-20 | developer | S-3 /api/live Rate Limiting 확인 | 완료 - 이미 구현됨. IP기반 60초 30회 제한 + 429 응답. 코드 변경 0건 |
@@ -1571,3 +1706,120 @@ push 여부: 완료 (origin/master)
 | 2026-03-20 | tester | 알림 생성 로직 3건 통합 테스트 (5개 파일) | 통과 - 67항목 중 65통과/2주의(actionUrl 일관성), 실패 0건 |
 | 2026-03-20 | git-manager | 알림 트리거 커밋 + push (6개 파일) | 완료 - 682716f, push 완료 |
 | 2026-03-20 | planner | [4번] 프로필 수정 확장 + [5번] 타입별 카드 계획 수립 | 완료 - A:6단계 65분 + B:6단계 60분, 총 125분 예상 |
+| 2026-03-20 | debugger | YouTube iframe embed 차단 문제 해결 (CSP frame-src) | 완료 - next.config.ts 1줄 수정, youtube.com + youtube-nocookie.com 추가 |
+
+## 디버깅 기록 (debugger)
+
+### 2026-03-20: YouTube iframe "이 콘텐츠는 차단되어 있습니다" 에러 수정
+
+#### 증상
+- 홈 화면 "BDR 추천 영상" 섹션에서 썸네일 클릭 시 "이 콘텐츠는 차단되어 있습니다" 표시
+- YouTube iframe embed가 브라우저에 의해 차단됨
+
+#### 원인
+- `next.config.ts`의 CSP(Content-Security-Policy) 헤더에서 `frame-src` 지시어에 YouTube 도메인이 누락되어 있었음
+- 기존: 카카오 우편번호 + OAuth 도메인만 허용
+- YouTube iframe은 `https://www.youtube.com/embed/...` URL을 사용하므로 `frame-src`에 `https://www.youtube.com`이 반드시 필요
+
+#### 수정 내용
+| 회차 | 수정 내용 | 수정 파일 | 비고 |
+|------|----------|----------|------|
+| 1차 | CSP frame-src에 `https://www.youtube.com` + `https://www.youtube-nocookie.com` 추가 | next.config.ts (51행) | 원래 요청 |
+
+#### 확인 항목
+- [x] iframe 컴포넌트(`recommended-videos.tsx`): allow 속성, allowFullScreen 정상
+- [x] YouTube URL 형식: `https://www.youtube.com/embed/{VIDEO_ID}?autoplay=1&rel=0` 정상
+- [x] CSP frame-src: YouTube 도메인 추가 완료
+- [x] Permissions-Policy: YouTube 재생에 영향 없음 (camera/microphone/geolocation/payment만 제한)
+- [x] TypeScript 검증: 통과 (기존 프로젝트 전역 타입 이슈만 존재, 수정과 무관)
+
+---
+
+### 2026-03-21: 유튜브 추천 영상 알고리즘 전면 업데이트 + 뱃지 시스템
+
+구현한 기능: YouTube API 확장(Videos API 추가 호출), 점수 시스템 4단계 개편, badges 배열 응답, 프론트엔드 뱃지 렌더링
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| `src/app/api/web/youtube/recommend/route.ts` | Videos API 추가 호출(라이브/통계), 점수 시스템 4단계 개편, upcoming 필터링, 동적 캐시(5분/30분), badges 배열+is_live 응답 | 수정 |
+| `src/components/home/recommended-videos.tsx` | VideoItem 인터페이스 변경(reason->badges+is_live), 뱃지별 스타일링(LIVE/HOT/디비전/맞춤), LIVE 썸네일 인디케이터(깜빡이는 점), Flame 아이콘 | 수정 |
+
+**API 변경 상세:**
+- playlistItems API 호출 후, videoId 목록으로 Videos API(`videos?part=snippet,liveStreamingDetails,statistics`)를 추가 호출
+- `liveBroadcastContent === "upcoming"` 영상은 목록에서 제외
+- 점수: LIVE(+100) > 디비전매칭(+20) > HOT(+10) > 지역+포지션(+5)
+- HOT 판단: 24시간내 1000뷰, 3일내 5000뷰, 7일내 10000뷰
+- 디비전 키워드: 스타터스/비기너/챌린저/마스터스/프로/엘리트/오픈 (한글+영어)
+- 캐시: 라이브 있으면 5분, 없으면 30분
+- 응답: `reason` 필드 삭제 -> `badges: string[]` + `is_live: boolean` 추가
+
+**프론트엔드 변경 상세:**
+- LIVE 뱃지: 빨간 배경 + 흰 텍스트 + animate-ping 깜빡이는 점
+- HOT 뱃지: 빨간-주황 그라데이션 + Flame 아이콘
+- 디비전 뱃지: 오렌지 계열 (#F4A261)
+- 맞춤 뱃지: 인디고/보라 계열
+- LIVE 영상: 썸네일 좌상단에 빨간 LIVE 인디케이터 (깜빡이는 점 포함)
+
+**tester 참고:**
+- 테스트 방법: 홈 화면의 "BDR 추천 영상" 섹션 확인
+- 정상 동작: 영상 카드 아래에 뱃지가 배열로 표시됨 (LIVE, 디비전명, HOT, 맞춤 등)
+- LIVE 테스트: BDR 채널에서 라이브 스트리밍 중일 때 LIVE 뱃지 + 썸네일 인디케이터 표시, 최우선 정렬
+- HOT 테스트: 최근 올린 영상 중 조회수가 높은 것에 HOT 뱃지 표시
+- 디비전 테스트: 영상 제목에 "스타터스", "챌린저" 등 디비전명이 포함되면 해당 뱃지 표시
+- 맞춤 테스트: 로그인 후 사용자 지역/포지션과 매칭되는 영상에 "맞춤" 뱃지 표시
+- API 직접 테스트: GET /api/web/youtube/recommend → badges 배열, is_live 불리언 확인
+- 주의: YouTube API 쿼터 — Videos API 추가 호출로 쿼터 사용량 소폭 증가 (캐시로 완화)
+
+**reviewer 참고:**
+- Videos API를 추가 호출하므로 YouTube API 쿼터가 기존 대비 약 2배 사용됨. 캐시(5분/30분)로 실제 영향은 미미
+- 디비전 매칭은 현재 키워드 기반만 구현. DB의 preferred_divisions 필드 연동은 향후 확장 가능
+- `reason` 필드가 `badges` 배열로 변경되었으므로, 이 API를 사용하는 다른 곳이 있으면 함께 수정 필요 (현재는 recommended-videos.tsx만 사용)
+
+---
+
+### 구현 기록 (2026-03-21): upcoming 영상 포함 + 예정 뱃지 추가
+
+구현한 기능: upcoming(예정 스트리밍) 영상을 필터에서 제외하지 않고 목록에 포함시키되, 점수를 낮게(+1) 부여하여 일반 영상보다 뒤에 표시. 실제 라이브 중인 영상(+100)은 여전히 최우선 정렬.
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/app/api/web/youtube/recommend/route.ts | upcoming continue 삭제, scheduledStartTime 필드 추가, 점수+1, API 응답에 scheduled_start 포함 | 수정 |
+| src/components/home/recommended-videos.tsx | VideoItem에 scheduled_start 추가, "예정" 뱃지 회색 스타일, 썸네일 예정 인디케이터, formatScheduledTime 함수 | 수정 |
+
+tester 참고:
+- 테스트 방법: 홈 화면 "BDR 추천 영상" 섹션 확인, API 직접 호출 GET /api/web/youtube/recommend
+- 정상 동작: upcoming 영상이 목록에 표시되며 "3/22 12:10 예정" 형식 뱃지 + 썸네일 좌상단 회색 인디케이터
+- LIVE 영상이 있으면 여전히 최우선 표시 (score +100 vs upcoming +1)
+- scheduled_start 없는 upcoming 영상은 단순 "예정" 뱃지만 표시
+- npx tsc --noEmit 통과 확인됨
+
+reviewer 참고:
+- EnrichedVideo 인터페이스에 scheduledStartTime?: string 필드 추가 (optional이라 기존 호환성 유지)
+- API 응답의 scheduled_start는 spread 연산자로 조건부 포함 (upcoming일 때만)
+- formatScheduledTime은 로컬 타임존 기준 표시 (사용자 브라우저 시간대)
+
+#### 수정 이력
+| 회차 | 날짜 | 수정 내용 | 수정 파일 | 사유 |
+|------|------|----------|----------|------|
+| 1차 | 2026-03-21 | upcoming 포함을 되돌림: maxResults 15->50, upcoming continue 복원, scheduledStartTime/scheduled_start/예정 뱃지 관련 코드 전부 제거 | route.ts, recommended-videos.tsx | PM 요청: 최근 15개가 전부 upcoming이라 빈 배열 발생. maxResults를 50으로 늘려 충분한 일반 영상 확보 + upcoming 완전 제외로 원복 |
+
+---
+
+### 구현 기록 (2026-03-21): upcoming 되돌림 + maxResults 50 확대
+
+구현한 기능: 이전 수정(upcoming 포함)을 완전히 되돌리고, playlistItems API의 maxResults만 15에서 50으로 올림. upcoming 영상이 많아 필터링 후 빈 배열이 되는 문제 해결.
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/app/api/web/youtube/recommend/route.ts | maxResults 50, upcoming continue 복원, EnrichedVideo.scheduledStartTime 제거, scoreVideos 예정 점수 제거, API 응답 scheduled_start 제거 | 수정 |
+| src/components/home/recommended-videos.tsx | VideoItem.scheduled_start 제거, getBadgeStyle "예정" case 제거, 썸네일 예정 인디케이터 제거, formatScheduledTime 함수 제거, 뱃지 라벨 단순화 | 수정 |
+
+tester 참고:
+- 테스트 방법: 홈 화면 "BDR 추천 영상" 섹션에 영상이 표시되는지 확인 + GET /api/web/youtube/recommend 호출
+- 정상 동작: upcoming 영상은 목록에 나타나지 않음. 일반/LIVE 영상만 최대 5개 표시
+- 빈 배열이 나오지 않는지 확인 (maxResults=50이므로 upcoming을 제외해도 충분한 영상 확보)
+- npx tsc --noEmit 통과 확인됨
+
+reviewer 참고:
+- maxResults 50은 YouTube API 쿼터 소모가 약간 증가하지만, 캐시(30분)가 있어 실질적 영향 미미
+- videos API 호출도 최대 50개 ID를 한번에 요청하므로 추가 API 호출은 없음
