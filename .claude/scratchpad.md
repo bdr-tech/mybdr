@@ -1276,6 +1276,37 @@ city/district를 쉼표 구분 문자열에서 Json 배열로 변경. `[{"city":
 
 ---
 
+### 2026-03-21: /tournaments 선호 지역 기반 필터링 (Phase 1 - 4단계)
+
+구현한 기능: 로그인 유저가 설정한 선호 지역(user.city)으로 대회 목록을 필터링하는 "내 선호 지역만 보기" 토글 기능
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| `src/lib/services/tournament.ts` | TournamentListFilters에 `cities?: string[]` 옵션 추가. listTournaments에서 cities가 있으면 IN 조건으로 여러 도시 OR 검색 | 수정 |
+| `src/app/api/web/tournaments/route.ts` | `prefer=true` 쿼리 파라미터 추가. getWebSession으로 세션 조회 후 user.city(쉼표 구분)를 분할하여 listTournaments에 cities로 전달 | 수정 |
+| `src/app/(web)/tournaments/_components/tournaments-content.tsx` | "선호" 토글 버튼 추가. useRouter+usePathname으로 URL의 prefer 파라미터와 동기화. ON 시 파란색, OFF 시 회색 | 수정 |
+
+**설계 결정:**
+- 3단계(/games) 구현 패턴과 완전히 동일한 방식으로 구현하여 코드 일관성 유지
+- prefer=true일 때만 세션 조회 + DB 쿼리를 수행하여, 비로그인/토글 OFF 시 기존 성능에 영향 없음
+- 토글 상태를 URL searchParams로 관리하여 뒤로가기/공유 시에도 상태 유지
+- 토글 버튼을 "대회 만들기" 버튼 왼쪽에 배치하여 헤더 영역 활용
+
+**tester 참고:**
+- 테스트 방법 1 (로그인 + 선호 지역 있음): 프로필에서 지역 설정 -> /tournaments에서 "선호" 버튼 클릭 -> 설정한 지역의 대회만 표시
+- 테스트 방법 2 (로그인 + 선호 지역 없음): "선호" 버튼 클릭 -> 전체 대회 그대로 표시 (city가 없으면 preferredCities가 undefined)
+- 테스트 방법 3 (비로그인): "선호" 버튼 클릭 -> 전체 대회 그대로 표시 (세션 없으므로 prefer 무시)
+- 정상 동작: 토글 ON 시 버튼이 파란색으로 변하고 "선호 ON" 텍스트 표시, 검색 결과 카운트 표시
+- API 직접 테스트: GET /api/web/tournaments?prefer=true (쿠키 필요)
+- TypeScript 검증: `npx tsc --noEmit` 에러 0건 통과
+
+**reviewer 참고:**
+- /games route.ts와 동일한 패턴. getWebSession() + prisma.user.findUnique()로 city 조회
+- prefer=true이지만 세션 없거나 city 없으면 preferredCities가 undefined로 남아 기존 로직과 동일하게 동작
+- Prisma의 `in` 연산자에 `mode: "insensitive"` 조합 사용 (3단계와 동일)
+
+---
+
 ## 디버깅 기록 (debugger)
 
 ### 2026-03-20: 무한 렌더링 현상 원인 분석
@@ -2188,6 +2219,37 @@ city/district를 쉼표 구분 문자열에서 Json 배열로 변경. `[{"city":
 
 ## Git 기록 (git-manager)
 
+### 2026-03-21: 대회 목록 선호 지역 필터링 커밋
+
+커밋: `feat: add preference-based location filtering to tournaments list` (597eddc)
+브랜치: master
+포함 파일 (3개):
+- 수정: `src/app/(web)/tournaments/_components/tournaments-content.tsx` (선호 지역 토글 UI + URL 동기화)
+- 수정: `src/app/api/web/tournaments/route.ts` (prefer 파라미터 + getWebSession + user.city split)
+- 수정: `src/lib/services/tournament.ts` (cities 필터 인터페이스 + Prisma in 조건)
+push 여부: 미완료
+tester 결과: 18항목 전체 통과
+
+---
+
+### 2026-03-21: preferred_cities 제거 + user.city 기반 리팩토링 커밋
+
+커밋: `refactor: remove preferred_cities, use profile city/district for location filtering` (56032b2)
+브랜치: master
+포함 파일 (10개):
+- 수정: `prisma/schema.prisma` (preferred_cities 필드 + GIN 인덱스 제거)
+- 수정: `src/app/api/web/games/route.ts` (user.city split 방식, 명시적 city 우선)
+- 수정: `src/app/api/web/preferences/route.ts` (preferred_cities 로직 제거)
+- 수정: `src/components/shared/preference-form.tsx` (선호 활동 지역 섹션 제거)
+- 수정: `src/lib/profile/completion.ts` (district 필수 조건 제거)
+- 수정: `src/app/(web)/profile/complete/page.tsx` (district 빈값 null 처리)
+- 수정: `src/app/(web)/games/[id]/page.tsx` (getMissingFields district 제거)
+- 수정: `src/app/(web)/games/_components/games-content.tsx` (선호 지역 토글 추가)
+- 수정: `src/lib/services/game.ts` (cities 배열 필터 옵션 추가)
+- 기타: `.claude/scratchpad.md`
+push 여부: 미완료
+제외 파일: `.claude/settings.local.json` (로컬 설정)
+
 ### 2026-03-21: 개인화 선호 시스템 Phase 1 커밋
 
 커밋: `feat: add preference system phase 1 - DB schema, API, UI for user preferences` (7cc362f)
@@ -2417,6 +2479,10 @@ push 여부: 완료 (origin/master)
 | 2026-03-21 | tester | 개인화 선호 시스템 3단계 코드 검증 (3개 파일) | 28항목 중 27통과/1실패(city vs cities 우선순위)/1주의 |
 | 2026-03-21 | architect | preferred_cities 제거 + city/district 대체 타당성 검토 | 완료 - 제안 타당. 방안1(단순 교체) 추천, 6개 파일 수정 필요 |
 | 2026-03-21 | developer | preferred_cities 제거 + user.city 기반 리팩토링 (7개 파일) | 완료 - prisma validate + tsc --noEmit 통과 |
+| 2026-03-21 | tester | preferred_cities 제거 리팩토링 검증 (11항목) | 전체 통과 - prisma validate + tsc --noEmit 정상, 코드 내 잔존 참조 없음 |
+| 2026-03-21 | git-manager | preferred_cities 제거 리팩토링 커밋 (10개 파일) | 완료 - 56032b2, push 미완료 |
+| 2026-03-21 | developer | /tournaments 선호 지역 기반 필터링 (Phase 1 - 4단계) | 완료 - 3개 파일 수정, TypeScript 검증 통과 |
+| 2026-03-21 | git-manager | 대회 목록 선호 지역 필터링 커밋 (3개 파일) | 완료 - 597eddc, push 미완료 |
 
 ## 디버깅 기록 (debugger)
 
@@ -2665,6 +2731,117 @@ reviewer 참고:
 
 ---
 
+### 테스트 결과 (tester): 개인화 선호 시스템 4단계 - 대회 목록 선호 필터링 검증 (2026-03-21)
+
+| # | 테스트 항목 | 결과 | 비고 |
+|---|-----------|------|------|
+| 1 | tournament.ts: cities 파라미터가 TournamentListFilters 인터페이스에 정의됨 | 통과 | 82행 `cities?: string[]` -- GameListFilters(game.ts 18행)와 동일한 선언 방식 |
+| 2 | tournament.ts: listTournaments에서 cities가 where 조건에 정상 적용 | 통과 | 203-205행: `if (cities && cities.length > 0) { where.city = { in: cities, mode: "insensitive" } }` -- game.ts 41-43행과 동일 패턴 |
+| 3 | tournament.ts: cities가 undefined일 때 where에 city 조건 추가 안 함 | 통과 | if 분기를 건너뛰므로 전체 대회 반환 (draft 제외). 기존 동작 변화 없음 |
+| 4 | route.ts: prefer=true 쿼리 파라미터 정상 파싱 | 통과 | 21행: `searchParams.get("prefer") === "true"` -- games/route.ts 25행과 동일 |
+| 5 | route.ts: getWebSession으로 세션 조회 후 user.city split 동작 | 통과 | 26-39행: session -> prisma.user.findUnique({select:{city:true}}) -> split(",").map(trim).filter(Boolean) -- games/route.ts 30-44행과 동일 |
+| 6 | route.ts: 비로그인 시 전체 대회 표시 | 통과 | 27행 `if (session)` 체크에서 세션 없으면 preferredCities가 undefined로 남음 -> 전체 표시 |
+| 7 | route.ts: 로그인했으나 city 없을 때 전체 표시 | 통과 | 33행 `if (user?.city)` 체크 + 35행 `if (cities.length > 0)` 체크 -- city null/빈문자열이면 preferredCities가 undefined |
+| 8 | route.ts: 기존 status 필터 정상 동작 유지 | 통과 | 20행 status 파싱, 43행 listTournaments에 status 전달 -- cities 조건은 별도 where.city에 추가되어 status 조건과 독립적 |
+| 9 | route.ts: POST(대회 생성) 핸들러 영향 없음 | 통과 | POST는 75-160행에 별도 withWebAuth 래핑, createTournament만 호출. GET의 listTournaments/prefer 로직과 완전 분리 |
+| 10 | tournaments-content.tsx: preferOn 상태가 URL searchParams와 동기화 | 통과 | 188행 `searchParams.get("prefer") === "true"` -- games-content.tsx 193행과 동일 패턴 |
+| 11 | tournaments-content.tsx: handlePreferToggle로 URL prefer 파라미터 추가/삭제 | 통과 | 191-199행: URLSearchParams로 prefer 토글 후 router.push -- games-content.tsx 196-204행과 동일 |
+| 12 | tournaments-content.tsx: 토글 ON 시 파란색 + "선호 ON" 텍스트 | 통과 | 239행 `bg-[#1B3C87] text-white`, 249행 `preferOn ? "선호 ON" : "선호"` |
+| 13 | tournaments-content.tsx: 토글 상태가 hasFilters에 포함 | 통과 | 227행 `const hasFilters = (status && status !== "all") \|\| preferOn` -- 필터 활성 시 결과 카운트 표시 |
+| 14 | tournaments-content.tsx: useEffect에서 searchParams 변경 시 API 재호출 | 통과 | 202-223행: searchParams 의존, URL 쿼리 그대로 API에 전달 -- prefer 파라미터 포함 |
+| 15 | tournaments-content.tsx: 빈 결과 시 "조건에 맞는 대회가 없습니다" 표시 | 통과 | 288행: hasFilters가 true이면 "조건에 맞는 대회가 없습니다" -- preferOn도 hasFilters에 포함 |
+| 16 | 3단계(games) 패턴과의 일관성 | 통과 | getWebSession, user.city split, cities 전달, Prisma in+insensitive, 토글 UI/URL 동기화 모두 동일 패턴. 차이점: games는 `prefer && !city` 조건(명시적 city 우선)이 있으나 tournaments는 city 파라미터 자체가 없으므로 불필요하여 정당한 차이 |
+| 17 | route.ts: import 정리 | 통과 | 1행 getWebSession import, 5행 prisma import -- 사용되는 모든 심볼이 정상 참조됨 |
+| 18 | npx tsc --noEmit | 통과 | 에러 0건 (출력 없이 정상 종료) |
+
+종합: 18개 중 18개 통과 / 0개 실패
+
+참고사항:
+- Prisma `in` 연산자 + `mode: "insensitive"` 조합은 3단계 games에서도 동일하게 사용됨. PostgreSQL 환경에서 정상 동작하는 것으로 판단
+- tournaments route.ts에는 games route.ts의 `!city` 가드가 없으나, tournaments 목록에 city 필터 파라미터가 원래 없으므로 불필요한 조건이며 이는 의도적 차이임
+- POST 핸들러는 GET과 완전히 분리되어 있어 영향 없음 확인
+
+---
+
 | 날짜 | 역할 | 작업 | 결과 |
 |------|------|------|------|
 | 2026-03-21 | tester | preferred_cities 제거 리팩토링 검증 (11항목) | 전체 통과 - prisma validate + tsc --noEmit 정상, 코드 내 잔존 참조 없음 |
+| 2026-03-21 | tester | 개인화 선호 시스템 4단계 코드 검증 (대회 목록 선호 필터링, 18항목) | 전체 통과 - 3개 파일 모두 정상, 3단계 패턴과 일관성 확인, tsc 에러 0건 |
+| 2026-03-21 | git-manager | 대회 목록 선호 지역 필터링 커밋 (3개 파일) | 완료 - 597eddc, push 미완료 |
+| 2026-03-21 | developer | 개인화 선호 시스템 5단계 - 게시판 선호 카테고리 필터링 (2개 파일) | 완료 - tsc --noEmit 에러 0건 |
+
+---
+
+### 구현 기록 (2026-03-21): 게시판 선호 카테고리 필터링 (개인화 선호 시스템 5단계)
+
+구현한 기능: 게시판 목록에서 유저의 `preferred_board_categories`를 기반으로 관심 카테고리만 필터링 + 카테고리 버튼에 하이라이트 표시
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| `src/app/api/web/community/route.ts` | prefer=true 파라미터 지원, getWebSession으로 유저 선호 카테고리 조회, 응답에 preferred_categories 포함 | 수정 |
+| `src/app/(web)/community/_components/community-content.tsx` | URL searchParams 기반 상태 관리로 전환, 선호 토글 UI, 카테고리 하이라이트, handleCategoryChange/handlePreferToggle 추가 | 수정 |
+
+구현 상세:
+
+**API (route.ts)**:
+- `prefer=true` 쿼리 파라미터 추가
+- 로그인 유저의 `preferred_board_categories` (Json 배열)를 DB에서 조회
+- 명시적 `category` 파라미터가 있으면 그것을 우선 (3단계 games의 `!city` 가드와 동일 패턴)
+- 응답에 `preferred_categories` 배열 포함 (프론트엔드 하이라이트용)
+- Prisma `in` 조건으로 다중 카테고리 필터링
+
+**프론트엔드 (community-content.tsx)**:
+- 기존 클라이언트 state(category, appliedQuery) -> URL searchParams 기반으로 전환
+- `useSearchParams`, `useRouter`, `usePathname` 훅 사용
+- 선호 토글: 별 아이콘 + "관심 ON/관심" 텍스트 (games의 지역 아이콘과 차별화)
+- 카테고리 하이라이트: 선호 카테고리에 파란 테두리(border-2) + 별표(*) 표시
+- 선호 ON 시 개별 카테고리 선택 해제, 카테고리 직접 선택 시 선호 OFF (상호 배타적)
+- hasFilters에 preferOn 포함하여 결과 카운트 표시
+
+tester 참고:
+- 테스트 방법: (1) 비로그인 상태에서 관심 토글 클릭 -> 변화 없어야 함 (2) 로그인 후 /profile/preferences에서 게시판 카테고리 설정 -> 게시판에서 관심 ON -> 해당 카테고리만 표시 (3) 카테고리 직접 클릭 시 선호 OFF
+- 정상 동작: 관심 ON -> URL에 prefer=true 추가, API에서 preferred_board_categories 기반 필터링, 선호 카테고리 버튼에 파란 테두리+별표
+- 주의할 입력: preferred_board_categories가 빈 배열인 유저가 관심 ON -> 전체 게시글 표시 (where에 category 조건 추가 안 됨)
+
+reviewer 참고:
+- 3단계(games), 4단계(tournaments)와 동일한 패턴 적용: getWebSession + 명시적 파라미터 우선 + URL searchParams 동기화
+- community는 지역이 아닌 카테고리 기반이므로 user.city 대신 user.preferred_board_categories 사용 (Json 타입)
+- Json 타입 필드를 `as string[]`로 캐스팅하는 부분: Array.isArray 체크 후이므로 안전
+
+---
+
+### 테스트 결과 (tester): 개인화 선호 시스템 5단계 - 게시판 선호 카테고리 필터링 검증 (2026-03-21)
+
+| # | 테스트 항목 | 결과 | 비고 |
+|---|-----------|------|------|
+| 1 | route.ts: prefer=true일 때 preferred_board_categories 조회 정상 | 통과 | 30-43행: `prefer && !category` 조건 -> getWebSession -> prisma.user.findUnique({select:{preferred_board_categories:true}}) -> Array.isArray 체크 후 사용 |
+| 2 | route.ts: 명시적 category 파라미터가 우선 | 통과 | 30행 `prefer && !category` 가드: category가 있으면 preferredCategories 조회 자체를 건너뜀. 46행에서 category 직접 적용. games route.ts의 `!city` 가드와 동일 패턴 |
+| 3 | route.ts: 비로그인 시 전체 표시 | 통과 | 31행 `const session = await getWebSession()`: 세션 없으면 32행 if(session) 분기 진입 안 함 -> preferredCategories가 undefined -> 48행 else if 건너뜀 -> where에 category 조건 없음 -> 전체 표시 |
+| 4 | route.ts: 로그인했으나 선호 카테고리 없을 때 전체 표시 | 통과 | 39행 `Array.isArray(cats) && cats.length > 0` 체크: 빈 배열이면 preferredCategories가 undefined로 남음 -> 전체 표시 |
+| 5 | route.ts: 기존 q 파라미터 정상 동작 | 통과 | 54-58행: q 검색 로직 변경 없음. where.OR에 title/body contains 조건 추가 (기존 코드 유지) |
+| 6 | route.ts: 기존 category 파라미터 정상 동작 | 통과 | 46행 `if (category) { where.category = category }`: prefer 로직 이전과 동일하게 단일 카테고리 필터 적용 |
+| 7 | route.ts: 선호 카테고리 다중 필터 (Prisma in 조건) | 통과 | 50행 `where.category = { in: preferredCategories }`: 여러 카테고리를 in 조건으로 필터링. community_posts.category에 인덱스 존재(740행) |
+| 8 | route.ts: 응답에 preferred_categories 포함 | 통과 | 84행 `preferred_categories: preferredCategories ?? []`: undefined일 때 빈 배열 반환. apiSuccess의 convertKeysToSnakeCase에 의해 이미 snake_case이므로 키 이름 유지 |
+| 9 | community-content.tsx: CommunityApiResponse에 preferred_categories 타입 정의 | 통과 | 24행 `preferred_categories: string[]`: API 응답의 snake_case 키와 일치 |
+| 10 | community-content.tsx: preferOn 상태가 URL searchParams와 동기화 | 통과 | 90행 `searchParams.get("prefer") === "true"` -- games-content.tsx 193행과 동일 패턴 |
+| 11 | community-content.tsx: handlePreferToggle로 URL prefer 파라미터 추가/삭제 | 통과 | 93-102행: URLSearchParams로 prefer 토글 후 router.push. ON 시 category 삭제(99행), 상호 배타적 동작 |
+| 12 | community-content.tsx: handleCategoryChange에서 prefer 파라미터 삭제 | 통과 | 109행 `params.delete("prefer")`: 카테고리 직접 선택 시 선호 필터 OFF. games-content.tsx에는 없는 community 고유 동작 (상호 배타적 설계) |
+| 13 | community-content.tsx: 선호 카테고리 하이라이트 표시 | 통과 | 243행 `preferredCategories.includes(key)` 체크 -> 253행 파란 테두리(border-2 border-[#1B3C87]/30) + 259행 별표(*) 표시 |
+| 14 | community-content.tsx: useEffect에서 searchParams 변경 시 API 재호출 | 통과 | 117-139행: searchParams 의존, URL 쿼리 그대로 API에 전달 (prefer 파라미터 포함) |
+| 15 | community-content.tsx: hasFilters에 preferOn 포함 | 통과 | 162행 `const hasFilters = category \|\| appliedQuery \|\| preferOn`: 선호 필터 ON 시 결과 카운트 표시 |
+| 16 | community-content.tsx: 빈 결과 시 안내 메시지 | 통과 | 321행: hasFilters가 true이면 "조건에 맞는 게시글이 없습니다" -- preferOn도 hasFilters에 포함 |
+| 17 | 3~4단계 패턴과의 일관성 | 통과 | getWebSession 호출, 명시적 파라미터 우선 가드(`!category`), URL searchParams 동기화, 토글 UI 스타일(bg-[#1B3C87]), useCallback 래핑 모두 동일 패턴. 차이점: (1) games/tournaments는 user.city split, community는 preferred_board_categories(Json 배열) 직접 사용 - 데이터 소스 차이로 정당 (2) community는 카테고리 직접 선택 시 prefer OFF 처리 추가 - 상호 배타적 UI 설계로 정당 (3) 토글 아이콘: games=위치핀, community=별 - 컨텍스트에 맞는 차별화 |
+| 18 | npx tsc --noEmit | 통과 | 에러 0건 (출력 없이 정상 종료) |
+
+종합: 18개 중 18개 통과 / 0개 실패
+
+참고사항:
+- route.ts 57행에서 `body` 필드로 검색하지만, community_posts 스키마에는 `body`가 아닌 `content` 필드가 존재함. 이것은 5단계 이전부터 있던 기존 코드이므로 5단계 검증 범위 밖이나, 실제 검색 실행 시 Prisma 런타임 에러 가능성 있음. where 타입이 `Record<string, unknown>`이라 tsc에서 잡지 못함. 별도 수정 필요.
+- Prisma `in` 조건에 `mode: "insensitive"`를 사용하지 않음 (games/tournaments의 city 필터와 차이). community_posts.category는 코드 내부 상수(general, info, review, marketplace)이므로 대소문자 불일치 가능성이 낮아 불필요한 것으로 판단.
+- apiSuccess의 convertKeysToSnakeCase가 이미 snake_case인 `preferred_categories` 키를 변환해도 동일하게 유지되므로 문제 없음.
+
+---
+
+| 날짜 | 역할 | 작업 | 결과 |
+|------|------|------|------|
+| 2026-03-21 | tester | 개인화 선호 시스템 5단계 코드 검증 (게시판 선호 카테고리 필터링, 18항목) | 전체 통과 - 2개 파일 정상, 3~4단계 패턴 일관성 확인, tsc 에러 0건 |
