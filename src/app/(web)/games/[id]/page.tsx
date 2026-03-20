@@ -71,7 +71,6 @@ export default async function GameDetailPage({
       phone: userRecord.phone,
       position: userRecord.position,
       city: userRecord.city,
-      district: userRecord.district,
     });
     profileCompleted = missingFields.length === 0;
 

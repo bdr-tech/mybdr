@@ -14,6 +14,8 @@ export interface GameListFilters {
   q?: string;
   type?: string;
   city?: string;
+  /** 선호 지역 필터 — 여러 도시를 OR 조건으로 검색 (prefer=true 시 사용) */
+  cities?: string[];
   scheduledAt?: { gte?: Date; lt?: Date };
   take?: number;
 }
@@ -26,7 +28,7 @@ export interface GameListFilters {
  * 경기 목록 조회 (필터 + 페이지네이션)
  */
 export async function listGames(filters: GameListFilters = {}) {
-  const { q, type, city, scheduledAt, take = 60 } = filters;
+  const { q, type, city, cities, scheduledAt, take = 60 } = filters;
 
   const where: Prisma.gamesWhereInput = {
     // 취소(4) 제외
@@ -34,8 +36,15 @@ export async function listGames(filters: GameListFilters = {}) {
   };
   if (q) where.title = { contains: q, mode: "insensitive" };
   if (type && type !== "all") where.game_type = parseInt(type);
-  if (city && city !== "all")
+
+  // 선호 지역(cities) 우선, 단일 도시(city) 차선 — 둘 다 있으면 cities 사용
+  if (cities && cities.length > 0) {
+    // 여러 도시를 OR 조건으로 묶어 검색
+    where.city = { in: cities, mode: "insensitive" };
+  } else if (city && city !== "all") {
     where.city = { contains: city, mode: "insensitive" };
+  }
+
   if (scheduledAt) where.scheduled_at = scheduledAt;
 
   const games = await prisma.games.findMany({

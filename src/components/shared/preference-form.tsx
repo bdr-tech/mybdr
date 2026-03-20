@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { CATEGORIES, getDivisionsForCategory, DIVISIONS } from "@/lib/constants/divisions";
-import { PROVINCES } from "@/lib/constants/regions";
 import type { CategoryCode, GenderCode } from "@/lib/constants/divisions";
 
 // 경기 유형 목록 (game_type 숫자값과 매핑)
@@ -31,8 +30,6 @@ export interface PreferenceFormProps {
 export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps) {
   // 선호 디비전 선택 상태
   const [selectedDivisions, setSelectedDivisions] = useState<string[]>([]);
-  // 선호 지역 선택 상태
-  const [selectedCities, setSelectedCities] = useState<string[]>([]);
   // 선호 게시판 카테고리 선택 상태
   const [selectedBoardCategories, setSelectedBoardCategories] = useState<string[]>([]);
   // 선호 경기 유형 선택 상태 (숫자 배열: 0=PICKUP, 1=GUEST, 2=PRACTICE)
@@ -56,7 +53,6 @@ export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps
       const data = await res.json();
       // API 응답은 snake_case이므로 그대로 사용
       setSelectedDivisions(data.preferred_divisions ?? []);
-      setSelectedCities(data.preferred_cities ?? []);
       setSelectedBoardCategories(data.preferred_board_categories ?? []);
       setSelectedGameTypes(data.preferred_game_types ?? []);
     } catch {
@@ -75,13 +71,6 @@ export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps
   const toggleDivision = (code: string) => {
     setSelectedDivisions((prev) =>
       prev.includes(code) ? prev.filter((d) => d !== code) : [...prev, code]
-    );
-  };
-
-  // 지역 토글
-  const toggleCity = (city: string) => {
-    setSelectedCities((prev) =>
-      prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city]
     );
   };
 
@@ -110,7 +99,6 @@ export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           preferred_divisions: selectedDivisions,
-          preferred_cities: selectedCities,
           preferred_board_categories: selectedBoardCategories,
           preferred_game_types: selectedGameTypes,
         }),
@@ -224,35 +212,7 @@ export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps
         )}
       </section>
 
-      {/* 섹션 2: 선호 활동 지역 */}
-      <section className="mb-10">
-        <h2 className="text-lg font-semibold mb-4">선호 활동 지역</h2>
-        <div className="flex flex-wrap gap-2">
-          {PROVINCES.map((province) => {
-            const isSelected = selectedCities.includes(province);
-            return (
-              <button
-                key={province}
-                onClick={() => toggleCity(province)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all border ${
-                  isSelected
-                    ? "bg-[#F4A261]/20 border-[#F4A261] text-[#F4A261]"
-                    : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500"
-                }`}
-              >
-                {province}
-              </button>
-            );
-          })}
-        </div>
-        {selectedCities.length > 0 && (
-          <div className="mt-3 text-sm text-zinc-500">
-            선택됨: {selectedCities.join(", ")}
-          </div>
-        )}
-      </section>
-
-      {/* 섹션 3: 선호 경기 유형 */}
+      {/* 섹션 2: 선호 경기 유형 */}
       <section className="mb-10">
         <h2 className="text-lg font-semibold mb-4">선호 경기 유형</h2>
         <div className="flex flex-wrap gap-2">
@@ -281,7 +241,7 @@ export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps
         )}
       </section>
 
-      {/* 섹션 4: 선호 게시판 카테고리 */}
+      {/* 섹션 3: 선호 게시판 카테고리 */}
       <section className="mb-10">
         <h2 className="text-lg font-semibold mb-4">선호 게시판</h2>
         <div className="flex flex-wrap gap-2">

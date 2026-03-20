@@ -1,5 +1,6 @@
 // 프로필 완성 판정 로직 — 필수 필드 기준
 // 변경 시 이 파일과 DB profile_completed 컬럼을 함께 동기화
+// district는 필수에서 제외 — city만 있으면 충분 (지역 선택 시 구/군 미선택 허용)
 
 export interface ProfileCompletionFields {
   name: string | null;
@@ -7,7 +8,6 @@ export interface ProfileCompletionFields {
   phone: string | null;
   position: string | null;
   city: string | null;
-  district: string | null;
 }
 
 export function checkProfileCompletion(
@@ -18,8 +18,7 @@ export function checkProfileCompletion(
     !!fields.nickname?.trim() &&
     !!fields.phone?.trim() &&
     !!fields.position?.trim() &&
-    !!fields.city?.trim() &&
-    !!fields.district?.trim()
+    !!fields.city?.trim()
   );
 }
 
@@ -30,6 +29,5 @@ export function getMissingFields(fields: ProfileCompletionFields): string[] {
   if (!fields.phone?.trim()) missing.push("전화번호");
   if (!fields.position?.trim()) missing.push("포지션");
   if (!fields.city?.trim()) missing.push("시/도");
-  if (!fields.district?.trim()) missing.push("구/동");
   return missing;
 }

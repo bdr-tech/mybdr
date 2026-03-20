@@ -3,10 +3,9 @@ import { apiSuccess, apiError } from "@/lib/api/response";
 import { prisma } from "@/lib/db/prisma";
 import { z } from "zod";
 
-// 선호 설정 검증 스키마 - 각 필드는 문자열 또는 숫자 배열
+// 선호 설정 검증 스키마 - preferred_cities 제거 (user.city를 직접 활용)
 const preferencesSchema = z.object({
   preferred_divisions: z.array(z.string()).optional(),
-  preferred_cities: z.array(z.string()).optional(),
   preferred_board_categories: z.array(z.string()).optional(),
   // 경기 유형: 0=PICKUP, 1=GUEST, 2=PRACTICE (숫자 배열)
   preferred_game_types: z.array(z.number().int().min(0).max(2)).optional(),
@@ -19,7 +18,6 @@ export const GET = withWebAuth(async (ctx: WebAuthContext) => {
       where: { id: ctx.userId },
       select: {
         preferred_divisions: true,
-        preferred_cities: true,
         preferred_board_categories: true,
         preferred_game_types: true,
       },
@@ -29,7 +27,6 @@ export const GET = withWebAuth(async (ctx: WebAuthContext) => {
 
     return apiSuccess({
       preferred_divisions: user.preferred_divisions ?? [],
-      preferred_cities: user.preferred_cities ?? [],
       preferred_board_categories: user.preferred_board_categories ?? [],
       preferred_game_types: user.preferred_game_types ?? [],
     });
@@ -49,12 +46,11 @@ export const PATCH = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
       return apiError("유효하지 않은 입력입니다.", 422);
     }
 
-    const { preferred_divisions, preferred_cities, preferred_board_categories, preferred_game_types } = parsed.data;
+    const { preferred_divisions, preferred_board_categories, preferred_game_types } = parsed.data;
 
     // 변경할 필드만 모아서 업데이트 (undefined인 필드는 건너뜀)
     const updateData: Record<string, unknown> = {};
     if (preferred_divisions !== undefined) updateData.preferred_divisions = preferred_divisions;
-    if (preferred_cities !== undefined) updateData.preferred_cities = preferred_cities;
     if (preferred_board_categories !== undefined) updateData.preferred_board_categories = preferred_board_categories;
     if (preferred_game_types !== undefined) updateData.preferred_game_types = preferred_game_types;
 
@@ -64,7 +60,6 @@ export const PATCH = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
         where: { id: ctx.userId },
         select: {
           preferred_divisions: true,
-          preferred_cities: true,
           preferred_board_categories: true,
           preferred_game_types: true,
         },
@@ -77,9 +72,8 @@ export const PATCH = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
       data: updateData,
       select: {
         preferred_divisions: true,
-        preferred_cities: true,
         preferred_board_categories: true,
-        preferred_game_types: true, // GET 응답과 동일하게 경기 유형도 포함
+        preferred_game_types: true,
       },
     });
 

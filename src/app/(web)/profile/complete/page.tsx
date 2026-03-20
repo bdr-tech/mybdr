@@ -146,11 +146,13 @@ export default function ProfileCompletePage() {
       }
 
       const filledRegions = regions.filter((r) => r.city);
+      // district가 빈 문자열이면 null로 저장 (필수값이 아니므로)
+      const districtValue = filledRegions.map((r) => r.district).filter(Boolean).join(",") || null;
       const payload: Record<string, unknown> = {
         name: form.name || null,
         phone: formattedPhone,
         city: filledRegions.map((r) => r.city).join(",") || null,
-        district: filledRegions.map((r) => r.district).join(",") || null,
+        district: districtValue,
         position: form.position || null,
         height: form.height ? Number(form.height) : null,
         weight: form.weight ? Number(form.weight) : null,
