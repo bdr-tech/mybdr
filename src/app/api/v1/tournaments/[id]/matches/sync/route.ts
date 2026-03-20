@@ -241,21 +241,29 @@ async function handler(req: NextRequest, ctx: AuthContext, tournamentId: string)
       await Promise.all(pbpPromises);
     }
 
-    // 경기 완료 시 승자 진출 + 전적 업데이트 (실패 시 warnings로 클라이언트에 알림)
+    // 경기 완료 시 승자 진출 + 전적 업데이트를 병렬 실행
+    // Promise.allSettled를 사용하면 하나가 실패해도 나머지가 중단되지 않고, 각각의 성공/실패를 개별 확인 가능
     const warnings: string[] = [];
+    let postProcessStatus: "ok" | "partial_failure" | "skipped" = "skipped";
+
     if (match.status === "completed") {
-      try {
-        await advanceWinner(matchId);
-      } catch (e) {
-        console.error("[match-sync] advanceWinner failed:", e);
+      const [advanceResult, standingsResult] = await Promise.allSettled([
+        advanceWinner(matchId),
+        updateTeamStandings(matchId),
+      ]);
+
+      // 각 후처리 결과를 개별 확인하여 실패 항목만 warnings에 추가
+      if (advanceResult.status === "rejected") {
+        console.error(`[match-sync:post-process] advanceWinner failed matchId=${match.server_id}:`, advanceResult.reason);
         warnings.push("승자 진출 처리 실패 — 관리자에게 문의하세요");
       }
-      try {
-        await updateTeamStandings(matchId);
-      } catch (e) {
-        console.error("[match-sync] updateTeamStandings failed:", e);
+      if (standingsResult.status === "rejected") {
+        console.error(`[match-sync:post-process] updateTeamStandings failed matchId=${match.server_id}:`, standingsResult.reason);
         warnings.push("전적 갱신 실패 — 관리자에게 문의하세요");
       }
+
+      // 둘 다 성공이면 "ok", 하나라도 실패면 "partial_failure"
+      postProcessStatus = warnings.length === 0 ? "ok" : "partial_failure";
     }
 
     return apiSuccess({
@@ -263,6 +271,7 @@ async function handler(req: NextRequest, ctx: AuthContext, tournamentId: string)
       player_count: player_stats?.length ?? 0,
       play_by_play_count: play_by_plays?.length ?? 0,
       synced_at: now.toISOString(),
+      post_process_status: postProcessStatus,
       ...(warnings.length > 0 && { warnings }),
     });
   } catch (err) {

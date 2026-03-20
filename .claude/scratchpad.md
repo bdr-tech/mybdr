@@ -1,9 +1,9 @@
 # 📋 작업 스크래치패드
 
 ## 현재 작업
-- **요청**: 메인 화면에서 다른 페이지 이동 시 무한 렌더링 현상 원인 파악 및 보고서 작성
-- **상태**: 진행 중
-- **현재 담당**: debugger
+- **요청**: Critical 버그 수정 (review-fix-plan.md 기반 - C-3, C-4, C-6, W-1-b, W-1, S-1, S-3)
+- **상태**: 6단계 완료 (S-3 /api/live Rate Limiting - 이미 구현됨, 코드 변경 0건)
+- **현재 담당**: developer
 
 ## 작업 계획 (planner)
 
@@ -204,7 +204,84 @@
 - `/community`의 `<form method="GET">` 패턴은 클라이언트 state 기반으로 변경해야 한다.
 
 ## 설계 노트 (architect)
-(아직 없음)
+
+### 2026-03-20: 프로젝트 현황 분석 및 다음 작업 후보 도출
+
+#### 1. 완료된 작업 요약
+
+| 영역 | 상태 | 비고 |
+|------|------|------|
+| 4개 페이지 클라이언트 컴포넌트 전환 | 완료 (커밋 7eb6b8a) | /games, /tournaments, /teams, /community. push 미완료 |
+| 무한 로딩 원인 분석 | 완료 | 원인: Supabase 인도 리전 DB 지연 + 서버 컴포넌트 블로킹 패턴 |
+| Tournament Wizard 7단계 통합 | 완료 (커밋 9fde3a8) | |
+| UI 리디자인 + OAuth 통합 | 완료 (커밋 b99a29a) | |
+
+#### 2. 미해결 debugger 제안 (scratchpad "디버깅 기록" 참조)
+
+| 제안 | 상태 | 긴급도 |
+|------|------|--------|
+| A. DB 리전 최적화 (인도 -> 한국/일본) 또는 로컬 PostgreSQL | 미완료 | 중 - 현재 API 첫 호출 0.7~3.4초 지연. 프로덕션 전 필수 |
+| B. 렌더링 패턴 변경 | 완료 | - 클라이언트 컴포넌트 전환으로 해결 |
+| C. Turbopack 불안정 / Next.js 16 다운그레이드 검토 | 미완료 | 하 - 현재 동작은 하지만 장기적 안정성 위험 |
+
+#### 3. plan.md 기획 문서 기반 - 미구현 기능 목록
+
+plan.md의 "구현 순서 권고(7장)" 기준으로 현재까지 구현된 것과 안 된 것을 대조했다.
+
+**plan.md 섹션별 상태:**
+
+| 섹션 | plan.md 상태 | 실제 구현 | 판단 주석 |
+|------|-------------|----------|----------|
+| 0. 구독/역할 체계 | 완료 표시 | roles.ts 미확인 (DB 마이그레이션 여부 불명) | - |
+| 1. 경기 (Games) | 완료 표시 | 목록/필터 완료. 타입별 카드(pickup/guest/team_match) 미구현 | [승인] |
+| 2. 팀 (Teams) | 완료 표시 | 목록 완료. 가입신청 처리 UI/API 미구현 | [승인] |
+| 3. 대회 관리 | 완료 표시 | Wizard 완료. 대진표 시각화 [보류], 접수 시스템(3-B) 승인 대기 | [보류] 일부 |
+| 4. 커뮤니티 | 완료 표시 | 목록 완료. 검색+이미지 첨부 미구현 | [보류: 카테고리 세분화] |
+| 5. Admin | 완료 표시 | 기본 구조 존재 | - |
+| 6. 알림 시스템 | 완료 표시 | 알림 페이지/API 존재. 알림 생성 로직 전무 (research.md 확인) | [승인] |
+| 8. 요금제 (Pricing) | - | /pricing 라우트 존재하나 내용 미확인 | [승인] |
+| 9. 프로필 수정 | - | /profile 라우트 존재 | [승인] |
+| 10. 홈 즐겨찾기 퀵 메뉴 | - | quick-menu 존재 | [승인] |
+| 11. PWA | - | Serwist 설정 있음 | [승인] |
+| 3.7 노코드 대회 사이트 | - | (site) 디렉토리 미존재. proxy.ts만 준비 | [승인] |
+
+#### 4. 코드베이스 미완성 부분
+
+**TODO/FIXME 발견 (2건):**
+- `src/lib/auth/jwt.ts:17` - "토큰 즉시 폐기가 필요하면 Redis 기반 jti 블랙리스트 도입 필요" (장기)
+- `src/app/api/web/verify/send-code/route.ts:29` - "프로덕션에서 SMS 발송" (프로덕션 전 필수)
+
+**review-fix-plan.md 미수정 항목 (Critical):**
+- C-3: match.ts "live" 상태 누락
+- C-4: super_admin 쿼리 take 제한 없음
+- C-6: advanceWinner/updateTeamStandings silent fail
+- W-1-b: /live 페이지 응답 키 불일치 (현재 버그)
+
+#### 5. 다음 작업 후보 목록
+
+| 우선순위 | 작업 | 이유 | 예상 난이도 |
+|---------|------|------|-----------|
+| 1 | **커밋 push (master -> remote)** | 현재 4개 페이지 전환 작업이 로컬에만 있음. push하지 않으면 작업 유실 위험. | 쉬움 (1분) |
+| 2 | **review-fix-plan.md Critical 버그 수정** (C-3, C-4, C-6, W-1-b) | /live 페이지가 현재 버그 상태(응답 키 불일치). super_admin 쿼리 제한 없음은 보안 위험. advanceWinner silent fail은 대회 진행 시 데이터 유실 가능. | 중간 (각 30분) |
+| 3 | **알림 생성 로직 구현** (plan.md 6장) | 알림 페이지/DB는 있지만 알림을 만드는 코드가 전무. 경기 참가신청, 팀 가입 등 핵심 이벤트에 알림이 안 감. 사용자 경험에 직접 영향. | 중간 (2~3시간) |
+| 4 | **요금제 페이지 완성** (plan.md 8장) | /pricing 라우트가 있지만 내용이 불완전할 수 있음. 정적 데이터 기반이라 구현이 단순. 유료 전환 전 필수. | 쉬움 (1시간) |
+| 5 | **프로필 수정 페이지 확장** (plan.md 9장) | 현재 5개 필드만 수정 가능. 전화번호/생년월일/은행 계좌 등 추가 필요. 픽업/게스트 경기 신청에 필요한 정보. | 중간 (2시간) |
+| 6 | **경기 타입별 카드 컴포넌트** (plan.md 1.1장) | 픽업/게스트/팀대결별로 다른 카드 레이아웃. 현재는 통일 카드만 존재. | 중간 (2시간) |
+| 7 | **팀 가입신청 처리 UI + API** (plan.md 2장) | 팀장이 가입신청을 승인/거부하는 기능. 팀 운영에 필수. | 중간 (2시간) |
+| 8 | **DB 리전 최적화** | 개발 환경에서 API 첫 호출 0.7~3.4초 지연. 프로덕션에서도 동일 문제 발생 예상. 로컬 PostgreSQL 또는 도쿄 리전으로 전환 검토. | 중간 (인프라 작업) |
+| 9 | **SMS 발송 구현** (verify/send-code) | 현재 TODO 상태. 프로덕션 전 반드시 구현 필요. | 중간 (외부 서비스 연동) |
+| 10 | **노코드 대회 사이트** (plan.md 3.7장) | (site) 디렉토리 미존재. proxy.ts만 준비. 대규모 작업이라 나중에. | 높음 (1주+) |
+
+#### 6. 권장 진행 순서 (비유: 건물 비유)
+
+지금 상태는 "건물의 주요 방(페이지들)은 만들어졌지만, 배관(알림), 보안 시스템(버그 수정), 안내판(요금제) 등이 아직 설치 안 된 상태"와 같다.
+
+1. **먼저 push** - 만든 것을 안전하게 보관 (백업)
+2. **Critical 버그 수정** - 배관에 구멍이 있으면 물이 새니까 먼저 막기
+3. **알림 시스템** - 사용자에게 "무슨 일이 일어났는지" 알려주는 건물 내 방송 시스템
+4. **요금제/프로필** - 입주 전 필수 설비
+
+나머지(타입별 카드, 팀 가입신청, 노코드 사이트 등)는 기본 인프라가 안정화된 후 진행하는 것이 좋다.
 
 ## 구현 기록 (developer)
 
@@ -329,6 +406,120 @@
 - 카테고리 필터가 Link -> button으로 변경됨 (서버 네비게이션 -> 클라이언트 state)
 - 검색 폼이 form method="GET" -> form onSubmit 핸들러로 변경됨
 - 날짜 포맷은 API에서 ISO string으로 내려주고 클라이언트의 formatDate()에서 처리
+
+---
+
+### 2026-03-20: C-6 match-sync post-process Promise.allSettled 전환
+
+구현한 기능: 경기 완료 시 후처리(advanceWinner, updateTeamStandings)를 순차 try-catch에서 Promise.allSettled 병렬 실행으로 변경
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| `src/app/api/v1/tournaments/[id]/matches/sync/route.ts` | 244-276행: 순차 try-catch 2개를 Promise.allSettled 병렬 실행으로 전환, postProcessStatus 변수 추가, 로그 태그 변경 | 수정 |
+
+**변경 상세:**
+- 순차 try-catch 2개 -> `Promise.allSettled([advanceWinner, updateTeamStandings])` 병렬 실행
+- 로그 태그: `[match-sync]` -> `[match-sync:post-process]`, matchId 포함
+- `postProcessStatus` 변수 추가: "ok"(둘 다 성공) / "partial_failure"(일부 실패) / "skipped"(completed 아닌 경우)
+- apiSuccess 응답에 `post_process_status` 필드 추가
+- 기존 `warnings`, `server_match_id` 등 모든 응답 필드 유지
+
+**tester 참고:**
+- 테스트 방법: Flutter bdr_stat 앱에서 경기 완료(status="completed") 동기화 요청
+- 정상 동작: 응답에 `post_process_status: "ok"`, warnings 없음
+- 실패 시: `post_process_status: "partial_failure"` + warnings 배열에 실패 항목 표시
+- 진행 중(status="in_progress") 동기화 시: `post_process_status: "skipped"` (후처리 미실행)
+- TypeScript 검증: `npx tsc --noEmit` 에러 0건 통과
+
+**reviewer 참고:**
+- Promise.allSettled는 ES2020 기능으로 Node.js 12.9+ / TypeScript target es2020+ 에서 사용 가능
+- 기존 순차 실행 대비 네트워크 지연이 겹치는 경우 응답 시간이 절반으로 줄어들 수 있음
+- Flutter 앱 클라이언트가 post_process_status 필드를 아직 사용하지 않더라도, 기존 필드가 모두 유지되므로 하위 호환성 문제 없음
+
+---
+
+### 2026-03-20: W-1 full-data API 이중 변환 검토 (Critical 버그 수정 5단계)
+
+구현한 기능: full-data API의 이중 snake_case 변환 위험 여부 분석
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| `src/app/api/v1/tournaments/[id]/full-data/route.ts` | 변경 없음 (분석만 수행) | - |
+| `src/lib/api/response.ts` | 변경 없음 (동작 확인) | - |
+| `src/lib/utils/case.ts` | 변경 없음 (동작 확인) | - |
+
+**분석 결과: 수정 불필요 - 이중 변환이 발생하지만 실해(harm)가 없음**
+
+**이유 상세:**
+
+1. `toSnakeCase()` 함수(case.ts 1~3행)는 대문자(`[A-Z]`)를 찾아 `_소문자`로 변환하는 로직이다. 이미 snake_case인 키(예: `team_name`, `start_date`)에는 대문자가 없으므로 변환이 일어나지 않는다.
+   - `toSnakeCase("team_name")` -> `"team_name"` (그대로)
+   - `toSnakeCase("start_date")` -> `"start_date"` (그대로)
+   - `toSnakeCase("player_stats")` -> `"player_stats"` (그대로)
+
+2. `convertKeysToSnakeCase()` 함수(case.ts 5~18행)는 재귀적으로 중첩 객체의 키도 변환한다. full-data 응답의 모든 키가 이미 수동으로 snake_case로 빌드되어 있으므로 재귀 탐색은 발생하지만 실제 키 변경은 0건이다.
+
+3. 값(value) 레벨에서도 문제 없음:
+   - 모든 값이 primitive(string, number, boolean, null)이거나 이미 toISOString()으로 변환된 문자열
+   - Date 객체가 값으로 들어오면 case.ts 7행에서 `toISOString()`으로 변환하지만, full-data에서는 이미 수동으로 `?.toISOString() ?? null` 처리를 하고 있어 Date 객체가 도달하지 않음
+   - BigInt도 마찬가지로 case.ts 8행에서 `toString()` 처리하지만, full-data에서 이미 `Number()` 또는 `?.toString()`으로 변환했으므로 도달하지 않음
+
+4. Prisma 필드 접근 시 camelCase와 snake_case가 혼재되어 있음 (예: `s.isStarter` vs `s.two_pointers_made`) - 이는 Prisma의 `@map` 매핑 때문이며, **접근하는 소스 필드명**이지 **출력 키**가 아니므로 무관하다. 출력 키는 모두 명시적으로 snake_case로 지정되어 있다.
+
+**성능 영향:**
+- `convertKeysToSnakeCase()`가 전체 응답 객체를 재귀 탐색하므로 불필요한 오버헤드가 존재
+- 하지만 full-data 응답 크기(teams + players + matches + playerStats)가 일반적으로 수백 건 수준이므로 실측 가능한 성능 차이는 없음
+
+**수정하지 않는 이유:**
+- `apiSuccess()`에 "변환 생략" 옵션을 추가하면 프로젝트 전체의 API 응답 패턴에 분기가 생겨 유지보수 복잡도가 증가
+- 현재 동작이 완전히 정상이며 Flutter 앱(bdr_stat)의 응답 구조에 영향 없음
+- "이미 snake_case -> snake_case 변환 = 무해" 이므로 코드 수정의 이득 대비 위험(기존 동작 깨뜨릴 가능성)이 크다
+
+**tester 참고:**
+- 테스트 불필요 (코드 변경 없음)
+- 기존 Flutter bdr_stat 앱의 full-data API 호출이 정상이라면 문제 없음
+
+**reviewer 참고:**
+- 만약 향후 apiSuccess()에 `skipConversion` 옵션을 추가한다면, full-data뿐 아니라 이미 snake_case를 수동 빌드하는 다른 API도 함께 검토해야 함
+- 현재로서는 "수동 빌드 + 자동 변환 이중 적용" 패턴이 무해하므로 수정 보류가 적절
+
+---
+
+### 2026-03-20: S-3 /api/live Rate Limiting 확인 (Critical 버그 수정 6단계)
+
+구현한 기능: 확인 결과 **이미 구현 완료** -- 코드 수정 0건
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| `src/app/api/live/route.ts` | 변경 없음 (이미 Rate Limiting 적용됨) | - |
+| `src/lib/security/rate-limit.ts` | 변경 없음 (확인만 수행) | - |
+| `src/lib/security/get-client-ip.ts` | 변경 없음 (확인만 수행) | - |
+
+**현재 구현 상태 확인:**
+
+1. `route.ts` 13행: `const ip = getClientIp(req)` -- IP 추출
+2. `route.ts` 14행: `checkRateLimit("live:{ip}", RATE_LIMITS.subdomain)` -- 60초 30회 제한
+3. `route.ts` 15-17행: 초과 시 `apiError("Too many requests", 429)` 반환
+
+**Rate Limiter 구조 (rate-limit.ts):**
+- Upstash Redis 설정 시: sliding window 알고리즘 사용
+- Upstash 미설정 시: in-memory fallback (Map 기반, 5분마다 만료 엔트리 정리)
+- `RATE_LIMITS.subdomain` = `{ maxRequests: 30, windowMs: 60000 }` -- 기획서 요구(60초 30회)와 정확히 일치
+
+**기획서 요구사항 대조:**
+| 요구사항 | 현재 구현 | 판정 |
+|---------|----------|------|
+| IP 기반 Rate Limiting | getClientIp()로 IP 추출 (x-real-ip/x-forwarded-for) | 충족 |
+| 60초 30회 제한 | RATE_LIMITS.subdomain = { maxRequests: 30, windowMs: 60000 } | 충족 |
+| 초과 시 429 응답 | apiError("Too many requests", 429) | 충족 |
+| in-memory 방식 허용 | Upstash fallback으로 in-memory 구현됨 | 충족 |
+
+**결론**: S-3 태스크는 이전 작업(아마 초기 커밋 또는 architect 설계 시점)에서 이미 구현되었다. 코드 수정 불필요.
+
+**tester 참고:**
+- 테스트 방법: `GET /api/live`를 1분 내 31번 연속 호출
+- 정상 동작: 30번까지 200 OK, 31번째부터 429 Too Many Requests
+- 검증 기준: 기획서 명시 "1분 내 31번 연속 호출 시 429 응답" 충족
 
 ---
 
@@ -769,12 +960,123 @@
 
 **최종 의견**: 12개 파일 모두 코드 품질이 양호하며 실질적인 문제가 없다. 4개 페이지가 동일한 패턴을 일관성 있게 따르고 있어 유지보수성이 좋다. 필수 수정 사항 없이 커밋 가능하다.
 
+---
+
+### 2026-03-20: C-3 + S-1 매치 상태 상수 통일 (Critical 버그 수정 1단계)
+
+확인 결과: **이미 구현 완료 상태**
+
+| 항목 | 상태 | 비고 |
+|------|------|------|
+| `src/lib/constants/match-status.ts` 상수 파일 | 이미 존재 | MATCH_STATUS, SYNC_ALLOWED_STATUSES, ACTIVE_MATCH_STATUSES, ACTIVE_TOURNAMENT_STATUSES 정의됨 |
+| `src/lib/validation/match.ts` batchSyncSchema | 이미 상수 참조 | SYNC_ALLOWED_STATUSES 사용, "live" 포함됨 |
+| `src/app/api/v1/recorder/matches/route.ts` status 필터 | 이미 상수 참조 | ACTIVE_TOURNAMENT_STATUSES 사용 |
+
+**추가 발견 - 하드코딩 잔존 파일 (위험도 낮음, 수정 보류):**
+| 파일 | 현재 하드코딩 | 비고 |
+|------|-------------|------|
+| `src/app/api/v1/matches/[id]/status/route.ts` | `z.enum(["in_progress", "completed", "cancelled"])` | 상태 변경 전용이라 별도 상수가 적절 |
+| `src/app/api/live/route.ts` | `["live", "in_progress"]` | `ACTIVE_MATCH_STATUSES`로 대체 가능하나 동작에 문제없음 |
+| `src/lib/tournaments/bracket-builder.ts` | 자체 MatchStatus 타입 정의 | 상수 파일 타입으로 교체 가능하나 위험도 낮음 |
+
+**결론**: 핵심 작업(C-3 + S-1)은 이전 커밋에서 이미 완료됨. 추가 하드코딩 정리는 위험도가 낮아 보류.
+
+---
+
+### 2026-03-20: C-4 super_admin 쿼리 take 제한 (Critical 버그 수정 2단계)
+
+확인 결과: **이미 구현 완료 상태**
+
+| 항목 | 상태 | 비고 |
+|------|------|------|
+| `src/app/api/v1/recorder/matches/route.ts` take 제한 | ✅ 이미 적용 | 30행 `take: 100` |
+| orderBy 정렬 | ✅ 이미 적용 | 29행 `orderBy: [{ scheduledAt: "asc" }, { id: "asc" }]` |
+
+**결론**: C-4는 이전 커밋(9fde3a8)에서 이미 완료됨. 추가 작업 불필요.
+
+---
+
+### 2026-03-20: W-1-b live API 응답 키 불일치 확인 (Critical 버그 수정 3단계)
+
+확인 결과: **버그 없음 - 키 일치 확인 완료**
+
+| 항목 | 상태 | 비고 |
+|------|------|------|
+| API `route.ts` 응답 | ✅ 정상 | `apiSuccess({ live: ..., recentCompleted: ... })` - camelCase |
+| `apiSuccess()` 자동 변환 | ✅ 정상 | `convertKeysToSnakeCase()`가 `recentCompleted` → `recent_completed` 변환 |
+| `page.tsx` 소비 | ✅ 정상 | `json.recent_completed` - snake_case로 읽음, API 응답과 일치 |
+
+**분석**: 기획서 작성 시점의 버그가 이후 커밋에서 이미 수정되었거나, `apiSuccess()`의 자동 변환을 고려하면 원래부터 키가 일치했던 것으로 판단됨. "최근 종료 경기 빈 배열" 현상이 있다면 DB 데이터 부재 또는 catch 블록의 빈 배열 반환이 원인일 수 있음.
+
+**결론**: W-1-b 코드 수정 불필요.
+
+### 2026-03-20: C-6 match-sync post-process Promise.allSettled 전환 검증
+
+대상 파일: `src/app/api/v1/tournaments/[id]/matches/sync/route.ts` (244-276행)
+
+#### 1. 코드 레벨 검증
+
+| 테스트 항목 | 결과 | 비고 |
+|-----------|------|------|
+| Promise.allSettled 사용이 올바른지 | ✅ 통과 | 250행: `Promise.allSettled([advanceWinner(matchId), updateTeamStandings(matchId)])` - 두 함수 모두 `Promise<void>` 반환, allSettled의 인자로 적합 |
+| advanceResult status 체크 | ✅ 통과 | 256행: `advanceResult.status === "rejected"` - allSettled 결과의 표준 status 값("fulfilled"/"rejected") 사용 |
+| standingsResult status 체크 | ✅ 통과 | 260행: `standingsResult.status === "rejected"` - 동일하게 올바른 체크 |
+| postProcessStatus 값 분기 - completed일 때 | ✅ 통과 | 266행: `warnings.length === 0 ? "ok" : "partial_failure"` - 둘 다 성공이면 warnings 비어있어 "ok", 하나라도 실패하면 warnings에 추가되어 "partial_failure" |
+| postProcessStatus 값 분기 - completed 아닐 때 | ✅ 통과 | 247행에서 초기값 "skipped", 249행 `if (match.status === "completed")` 블록에 진입하지 않으면 "skipped" 유지 |
+| warnings 배열 기존 동작 유지 | ✅ 통과 | 246행: `const warnings: string[] = []` 선언, 258/262행에서 실패 시 push, 275행에서 조건부 응답 포함 `...(warnings.length > 0 && { warnings })` |
+| apiSuccess 응답에 postProcessStatus 포함 | ✅ 통과 | 274행: `post_process_status: postProcessStatus` - snake_case 키로 응답에 포함 |
+| 기존 응답 필드 유지 (server_match_id) | ✅ 통과 | 270행: `server_match_id: Number(match.server_id)` - 기존과 동일 |
+| 기존 응답 필드 유지 (player_count) | ✅ 통과 | 271행: `player_count: player_stats?.length ?? 0` |
+| 기존 응답 필드 유지 (play_by_play_count) | ✅ 통과 | 272행: `play_by_play_count: play_by_plays?.length ?? 0` |
+| 기존 응답 필드 유지 (synced_at) | ✅ 통과 | 273행: `synced_at: now.toISOString()` |
+| 로그 태그 변경 확인 | ✅ 통과 | 257행/261행: `[match-sync:post-process]` 태그 사용, matchId 포함 (`matchId=${match.server_id}`) |
+| rejected 시 reason 로깅 | ✅ 통과 | 257행: `advanceResult.reason`, 261행: `standingsResult.reason` - allSettled rejected 결과의 reason 프로퍼티 정확히 참조 |
+
+#### 2. TypeScript 검증
+
+| 테스트 항목 | 결과 | 비고 |
+|-----------|------|------|
+| `npx tsc --noEmit` 전체 타입 체크 | ✅ 통과 | 에러 0건, 출력 없음 |
+
+#### 3. 기존 기능 유지 확인
+
+| 테스트 항목 | 결과 | 비고 |
+|-----------|------|------|
+| match.status !== "completed"일 때 후처리 미실행 | ✅ 통과 | 249행 `if (match.status === "completed")` 조건문으로 보호, 조건 불충족 시 postProcessStatus="skipped" |
+| 파일 내 다른 코드 손상 여부 | ✅ 통과 | 1-243행(스키마, 권한체크, 매치업데이트, 선수스탯, PBP)과 277-329행(에러핸들링, POST export) 모두 정상. batch sync 코드는 이 파일에 없음(단일 매치 전용 파일). |
+| 외부 catch 블록(277행) 유지 | ✅ 통과 | Promise.allSettled 내부 에러는 allSettled가 처리하고, 그 외 예외(DB 연결 등)는 277행 catch에서 잡힘 |
+
+#### 4. import 경로 검증
+
+| 테스트 항목 | 결과 | 비고 |
+|-----------|------|------|
+| advanceWinner import | ✅ 통과 | 6행: `import { advanceWinner, updateTeamStandings } from "@/lib/tournaments/update-standings"` - 기존 import 그대로, 새로운 import 추가 없음 |
+| update-standings.ts 함수 시그니처 호환 | ✅ 통과 | `advanceWinner(matchId: bigint): Promise<void>`, `updateTeamStandings(matchId: bigint): Promise<void>` - matchId(BigInt) 인자 전달이 정확 |
+
+📊 종합: 18개 항목 중 18개 통과 / 0개 실패
+
+**결론**: C-6 수정이 올바르게 구현됨. Promise.allSettled 사용법이 정확하고, postProcessStatus 분기 로직에 논리적 오류 없음. 기존 응답 필드가 모두 유지되어 Flutter 앱 하위 호환성 문제 없음.
+
+---
+
 ## 수정 요청
 | 요청자 | 대상 파일 | 문제 설명 | 상태 |
 |--------|----------|----------|------|
 
 ## Git 기록 (git-manager)
-(아직 없음)
+
+### 2026-03-20: 4개 페이지 클라이언트 컴포넌트 + API route 전환 커밋
+
+커밋: `feat: convert 4 pages to client component + API route pattern` (7eb6b8a)
+브랜치: master
+포함 파일 (13개):
+- 신규 API routes: `src/app/api/web/games/route.ts`, `src/app/api/web/teams/route.ts`, `src/app/api/web/community/route.ts`
+- 수정 API route: `src/app/api/web/tournaments/route.ts` (GET 추가)
+- 신규 클라이언트 컴포넌트: `src/app/(web)/games/_components/games-content.tsx`, `src/app/(web)/tournaments/_components/tournaments-content.tsx`, `src/app/(web)/teams/_components/teams-content.tsx`, `src/app/(web)/community/_components/community-content.tsx`
+- 수정 page.tsx: `src/app/(web)/games/page.tsx`, `src/app/(web)/tournaments/page.tsx`, `src/app/(web)/teams/page.tsx`, `src/app/(web)/community/page.tsx`
+- 기타: `.claude/scratchpad.md`
+push 여부: 미완료 (사용자 요청 시 push 예정)
+제외 파일: `.claude/settings.local.json` (로컬 설정)
 
 ## 문서 기록 (doc-writer)
 (아직 없음)
@@ -782,7 +1084,6 @@
 ## 작업 로그 (최근 10건만 유지)
 | 날짜 | 에이전트 | 작업 내용 | 결과 |
 |------|---------|----------|------|
-| 2026-03-20 | debugger | 무한 렌더링 현상 원인 분석 | 완료 - 원격 DB 지연 + 서버 컴포넌트 블로킹 쿼리 |
 | 2026-03-20 | planner | 4개 페이지 클라이언트 컴포넌트 전환 계획 수립 | 완료 - 6단계, 총 80분 예상 |
 | 2026-03-20 | developer | /games 페이지 클라이언트 컴포넌트 + API route 전환 (1단계) | 완료 - 3개 파일 (신규2, 수정1), TypeScript 검증 통과 |
 | 2026-03-20 | tester | /games 페이지 전환 검증 (1단계) | 조건부 통과 - 코드 24항목 중 23통과/1주의(DB 타임아웃은 인프라 이슈) |
@@ -792,3 +1093,9 @@
 | 2026-03-20 | tester | 4개 페이지 전체 통합 검증 (2~4단계 + 1단계 회귀) | 통과 - 72항목 전체 통과, 실패/주의 0건 |
 | 2026-03-20 | debugger | 캐시 정리 + 개발서버 재시작 + 로딩 테스트 | 완료 - 캐시 문제 아님. 5개 페이지/4개 API 모두 200 OK 정상 |
 | 2026-03-20 | reviewer | 4개 페이지 전환 코드 리뷰 (12개 파일) | 통과 - 필수 수정 0건, 권장 수정 3건(AbortController 등). 커밋 가능 |
+| 2026-03-20 | git-manager | 4개 페이지 전환 커밋 (13개 파일) | 완료 - 7eb6b8a, push 미완료 |
+| 2026-03-20 | architect | 프로젝트 현황 분석 + 다음 작업 후보 10개 도출 | 완료 - plan.md/review-fix-plan.md/코드 전수 분석 |
+| 2026-03-20 | developer | C-6 match-sync post-process Promise.allSettled 전환 | 완료 - 1개 파일 수정, TypeScript 검증 통과 |
+| 2026-03-20 | developer | W-1 full-data API 이중 변환 검토 | 완료 - 수정 불필요. snake_case->snake_case 변환은 무해, 코드 변경 0건 |
+| 2026-03-20 | developer | S-3 /api/live Rate Limiting 확인 | 완료 - 이미 구현됨. IP기반 60초 30회 제한 + 429 응답. 코드 변경 0건 |
+| 2026-03-20 | tester | C-6 match-sync post-process Promise.allSettled 검증 | 통과 - 18항목 전체 통과, 실패 0건 |
