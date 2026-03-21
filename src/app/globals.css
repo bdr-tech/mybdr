@@ -15,13 +15,13 @@
   --color-background: #131313;       /* 페이지 기본 배경 (surface) */
   --color-card: #1C1B1B;             /* 카드 배경 (surface_container_low) */
   --color-elevated: #353534;         /* 떠있는 요소 (surface_container_highest) */
-  --color-surface: #131313;          /* surface 기본 (background와 동일) */
+  --color-surface: #1C1B1B;          /* surface 기본 (card와 동일 계층으로 조정) */
 
   /* --- 신규: Surface 세분화 변수 --- */
   --color-surface-lowest: #0E0E0E;   /* 입력 필드 등 깊이감 배경 */
   --color-surface-low: #1C1B1B;      /* card와 동일 계층 */
   --color-surface-high: #353534;     /* elevated와 동일 계층 */
-  --color-surface-bright: #474746;   /* 카드 호버 시 배경 */
+  --color-surface-bright: #3B3A39;   /* 카드 호버 시 배경 (약간 어둡게 조정) */
 
   /* --- 브랜드 색상 (Primary = Electric Red) --- */
   --color-primary: #E31B23;          /* 기본 브랜드: Electric Red */
@@ -31,15 +31,15 @@
 
   /* --- 보조 색상 (Accent = Deep Navy, Secondary) --- */
   --color-accent: #1B3C87;           /* 보조 강조: Deep Navy */
-  --color-accent-hover: #162F6B;     /* 어두운 네이비 */
+  --color-accent-hover: #2A4F9E;     /* 밝은 네이비 (호버 시 가시성 개선) */
   --color-accent-light: rgba(27, 60, 135, 0.15); /* 네이비 반투명 배경 */
   --color-secondary: #1B3C87;        /* secondary = accent 동일 */
   --color-tertiary: #94CCFF;         /* 텍스트 링크/삼차 강조 */
 
   /* --- 텍스트 (따뜻한 톤, 순백 금지) --- */
-  --color-text-primary: #E7E2DE;     /* 메인 텍스트: 따뜻한 오프화이트 */
-  --color-text-secondary: #C4B8B4;   /* 보조 텍스트 */
-  --color-text-muted: #938F8C;       /* 약한 텍스트 */
+  --color-text-primary: #E7BDB8;     /* 메인 텍스트: 따뜻한 베이지톤 (on_surface_variant) */
+  --color-text-secondary: #A09C9B;   /* 보조 텍스트: 따뜻한 회색 */
+  --color-text-muted: #5C5958;       /* 약한 텍스트: 따뜻한 어두운 회색 */
   --color-text-on-primary: #FFFFFF;  /* 버튼 위 텍스트 (유일한 순백 허용) */
 
   /* --- 상태 색상 --- */
@@ -49,13 +49,13 @@
   --color-info: #3B82F6;
 
   /* --- 테두리 (Ghost Border) --- */
-  --color-border: rgba(147, 143, 140, 0.15);     /* 기본 고스트 보더 */
-  --color-border-subtle: rgba(147, 143, 140, 0.08); /* 미세한 구분선 */
+  --color-border: rgba(159, 140, 133, 0.15);     /* 기본 고스트 보더 (따뜻한 톤) */
+  --color-border-subtle: rgba(159, 140, 133, 0.08); /* 미세한 구분선 (따뜻한 톤) */
 
   /* --- 라운딩 (최소화) --- */
-  --radius-card: 8px;                /* 카드: 최소 라운딩 */
-  --radius-card-lg: 12px;            /* 큰 카드 */
-  --radius-pill: 4px;                /* 버튼: 거의 직각 */
+  --radius-card: 0.5rem;             /* 카드: 최소 라운딩 (rem 단위로 통일) */
+  --radius-card-lg: 0.75rem;         /* 큰 카드 (rem 단위로 통일) */
+  --radius-pill: 0.25rem;            /* 버튼: 거의 직각 (rem 단위로 통일) */
   --radius-button: 4px;              /* 버튼 전용 별칭 */
 
   /* --- 그림자 (Ambient Shadow) --- */
@@ -75,7 +75,7 @@
   /* --- 그라디언트/글래스모피즘 --- */
   --color-gradient-start: #FFB4AC;   /* CTA 그라디언트 시작 */
   --color-gradient-end: #E31B23;     /* CTA 그라디언트 끝 */
-  --color-glass-bg: rgba(19, 19, 19, 0.7); /* 글래스 배경 */
+  --color-glass-bg: rgba(28, 27, 27, 0.7); /* 글래스 배경 (surface 톤에 맞춤) */
   --color-glass-blur: 20px;          /* 글래스 블러 값 */
 }
 
