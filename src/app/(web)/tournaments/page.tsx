@@ -21,7 +21,7 @@ function PageSkeleton() {
       {/* 카드 그리드 스켈레톤 */}
       <div className="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 9 }).map((_, i) => (
-          <div key={i} className="rounded-[16px] border-l-[3px] border-[#E8ECF0] bg-white p-5 space-y-3">
+          <div key={i} className="rounded-[16px] border-l-[3px] border-[var(--color-border)] bg-[var(--color-card)] p-5 space-y-3">
             <div className="flex justify-between">
               <Skeleton className="h-4 w-16" />
               <Skeleton className="h-5 w-14 rounded-full" />

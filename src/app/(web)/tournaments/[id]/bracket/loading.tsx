@@ -7,7 +7,7 @@ export default function BracketLoading() {
 
       {/* 데스크톱 스켈레톤 */}
       <div className="hidden lg:block">
-        <div className="rounded-[16px] border border-[#E8ECF0] bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+        <div className="rounded-[16px] border p-6" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)', boxShadow: 'var(--shadow-card)' }}>
           {/* 라운드 헤더 */}
           <div className="mb-6 flex gap-20">
             <Skeleton className="h-4 w-12" />

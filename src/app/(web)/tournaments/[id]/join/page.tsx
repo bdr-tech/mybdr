@@ -231,7 +231,7 @@ export default function TournamentJoinPage() {
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#1B3C87] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-accent)] border-t-transparent" />
       </div>
     );
   }
@@ -271,7 +271,7 @@ export default function TournamentJoinPage() {
         >
           참가신청
         </h1>
-        <p className="mt-1 text-sm text-[#6B7280]">{tournament.name}</p>
+        <p className="mt-1 text-sm text-[var(--color-text-muted)]">{tournament.name}</p>
       </div>
 
       {/* 접수 불가 */}
@@ -290,19 +290,19 @@ export default function TournamentJoinPage() {
             const isDone = displayStep > stepNum;
             return (
               <div key={label} className="flex items-center gap-2">
-                {i > 0 && <div className={`h-0.5 w-6 ${isDone ? "bg-[#1B3C87]" : "bg-[#E8ECF0]"}`} />}
+                {i > 0 && <div className={`h-0.5 w-6 ${isDone ? "bg-[var(--color-accent)]" : "bg-[var(--color-border)]"}`} />}
                 <div
                   className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
                     isActive
-                      ? "bg-[#1B3C87] text-white"
+                      ? "bg-[var(--color-accent)] text-white"
                       : isDone
-                        ? "bg-[#1B3C87]/20 text-[#1B3C87]"
-                        : "bg-[#E8ECF0] text-[#6B7280]"
+                        ? "bg-[color-mix(in_srgb,var(--color-accent)_20%,transparent)] text-[var(--color-accent)]"
+                        : "bg-[var(--color-border)] text-[var(--color-text-muted)]"
                   }`}
                 >
                   {isDone ? "✓" : stepNum}
                 </div>
-                <span className={`hidden text-xs sm:inline ${isActive ? "font-bold text-[#111827]" : "text-[#6B7280]"}`}>
+                <span className={`hidden text-xs sm:inline ${isActive ? "font-bold text-[var(--color-text-primary)]" : "text-[var(--color-text-muted)]"}`}>
                   {label}
                 </span>
               </div>
@@ -324,7 +324,7 @@ export default function TournamentJoinPage() {
           <Card>
             <h2 className="mb-4 text-lg font-bold">참가 팀 선택</h2>
             {data.my_teams.length === 0 ? (
-              <div className="text-center text-sm text-[#6B7280]">
+              <div className="text-center text-sm text-[var(--color-text-muted)]">
                 <p>주장으로 등록된 팀이 없습니다.</p>
                 <Button variant="ghost" className="mt-2" onClick={() => router.push("/teams")}>
                   팀 만들기
@@ -341,10 +341,10 @@ export default function TournamentJoinPage() {
                       onClick={() => handleTeamSelect(team.id)}
                       className={`w-full rounded-[12px] border-2 p-4 text-left transition-all ${
                         selectedTeamId === team.id
-                          ? "border-[#1B3C87] bg-[#EEF2FF]"
+                          ? "border-[var(--color-accent)] bg-[var(--color-surface-bright)]"
                           : alreadyApplied
-                            ? "border-[#E8ECF0] bg-[#F9FAFB] opacity-50"
-                            : "border-[#E8ECF0] hover:border-[#1B3C87]/50"
+                            ? "border-[var(--color-border)] bg-[var(--color-surface)] opacity-50"
+                            : "border-[var(--color-border)] hover:border-[color-mix(in_srgb,var(--color-accent)_50%,transparent)]"
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -357,7 +357,7 @@ export default function TournamentJoinPage() {
                         />
                         <div>
                           <p className="font-bold">{team.name}</p>
-                          <p className="text-xs text-[#6B7280]">
+                          <p className="text-xs text-[var(--color-text-muted)]">
                             {team.team_members.length}명
                             {alreadyApplied && " · 이미 신청됨"}
                           </p>
@@ -373,24 +373,24 @@ export default function TournamentJoinPage() {
           {/* 대표자 정보 */}
           {selectedTeamId && (
             <Card>
-              <h3 className="mb-3 text-sm font-bold text-[#6B7280]">대표자 정보</h3>
+              <h3 className="mb-3 text-sm font-bold text-[var(--color-text-muted)]">대표자 정보</h3>
               <div className="space-y-3">
                 <div>
-                  <label className="mb-1 block text-xs text-[#6B7280]">이름</label>
+                  <label className="mb-1 block text-xs text-[var(--color-text-muted)]">이름</label>
                   <input
                     type="text"
                     value={managerName}
                     onChange={(e) => setManagerName(e.target.value)}
-                    className="w-full rounded-[10px] border border-[#E8ECF0] px-3 py-2.5 text-sm focus:border-[#1B3C87] focus:outline-none focus:ring-1 focus:ring-[#1B3C87]"
+                    className="w-full rounded-[10px] border border-[var(--color-border)] px-3 py-2.5 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-[#6B7280]">연락처</label>
+                  <label className="mb-1 block text-xs text-[var(--color-text-muted)]">연락처</label>
                   <input
                     type="tel"
                     value={managerPhone}
                     onChange={(e) => setManagerPhone(e.target.value)}
-                    className="w-full rounded-[10px] border border-[#E8ECF0] px-3 py-2.5 text-sm focus:border-[#1B3C87] focus:outline-none focus:ring-1 focus:ring-[#1B3C87]"
+                    className="w-full rounded-[10px] border border-[var(--color-border)] px-3 py-2.5 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
                   />
                 </div>
               </div>
@@ -430,8 +430,8 @@ export default function TournamentJoinPage() {
                     }}
                     className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                       selectedCategory === cat
-                        ? "bg-[#1B3C87] text-white"
-                        : "border border-[#E8ECF0] text-[#6B7280] hover:bg-[#EEF2FF]"
+                        ? "bg-[var(--color-accent)] text-white"
+                        : "border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-bright)]"
                     }`}
                   >
                     {cat}
@@ -458,16 +458,16 @@ export default function TournamentJoinPage() {
                         disabled={isFull && !tournament.allow_waiting_list}
                         className={`w-full rounded-[12px] border-2 p-4 text-left transition-all ${
                           selectedDivision === div
-                            ? "border-[#1B3C87] bg-[#EEF2FF]"
+                            ? "border-[var(--color-accent)] bg-[var(--color-surface-bright)]"
                             : isFull
-                              ? "border-[#E8ECF0] bg-[#F9FAFB]"
-                              : "border-[#E8ECF0] hover:border-[#1B3C87]/50"
+                              ? "border-[var(--color-border)] bg-[var(--color-surface)]"
+                              : "border-[var(--color-border)] hover:border-[color-mix(in_srgb,var(--color-accent)_50%,transparent)]"
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-bold">{div}</span>
                           <div className="flex items-center gap-2">
-                            {fee && <span className="text-sm text-[#6B7280]">{Number(fee).toLocaleString()}원</span>}
+                            {fee && <span className="text-sm text-[var(--color-text-muted)]">{Number(fee).toLocaleString()}원</span>}
                             {info && (
                               <Badge variant={isFull ? "warning" : "info"}>
                                 {isFull
@@ -506,21 +506,21 @@ export default function TournamentJoinPage() {
             <h2 className="mb-4 text-lg font-bold">유니폼 색상</h2>
             <div className="flex gap-6">
               <div className="flex items-center gap-3">
-                <label className="text-sm text-[#6B7280]">홈</label>
+                <label className="text-sm text-[var(--color-text-muted)]">홈</label>
                 <input
                   type="color"
                   value={uniformHome}
                   onChange={(e) => setUniformHome(e.target.value)}
-                  className="h-10 w-14 cursor-pointer rounded-[8px] border border-[#E8ECF0]"
+                  className="h-10 w-14 cursor-pointer rounded-[8px] border border-[var(--color-border)]"
                 />
               </div>
               <div className="flex items-center gap-3">
-                <label className="text-sm text-[#6B7280]">어웨이</label>
+                <label className="text-sm text-[var(--color-text-muted)]">어웨이</label>
                 <input
                   type="color"
                   value={uniformAway}
                   onChange={(e) => setUniformAway(e.target.value)}
-                  className="h-10 w-14 cursor-pointer rounded-[8px] border border-[#E8ECF0]"
+                  className="h-10 w-14 cursor-pointer rounded-[8px] border border-[var(--color-border)]"
                 />
               </div>
             </div>
@@ -530,21 +530,21 @@ export default function TournamentJoinPage() {
           <Card>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold">선수 명단</h2>
-              <span className="text-sm text-[#6B7280]">
+              <span className="text-sm text-[var(--color-text-muted)]">
                 {players.filter((p) => p.selected).length}명 선택
                 {tournament.roster_min && ` (최소 ${tournament.roster_min}명)`}
               </span>
             </div>
 
             {players.length === 0 ? (
-              <p className="text-center text-sm text-[#6B7280]">팀 멤버가 없습니다.</p>
+              <p className="text-center text-sm text-[var(--color-text-muted)]">팀 멤버가 없습니다.</p>
             ) : (
               <div className="space-y-2">
                 {players.map((player, idx) => (
                   <div
                     key={player.userId}
                     className={`flex items-center gap-3 rounded-[12px] border p-3 transition-all ${
-                      player.selected ? "border-[#1B3C87]/30 bg-[#EEF2FF]/50" : "border-[#E8ECF0]"
+                      player.selected ? "border-[color-mix(in_srgb,var(--color-accent)_30%,transparent)] bg-[color-mix(in_srgb,var(--color-surface-bright)_50%,transparent)]" : "border-[var(--color-border)]"
                     }`}
                   >
                     {/* 체크박스 */}
@@ -558,7 +558,7 @@ export default function TournamentJoinPage() {
                           )
                         );
                       }}
-                      className="h-5 w-5 rounded border-[#E8ECF0] accent-[#1B3C87]"
+                      className="h-5 w-5 rounded border-[var(--color-border)] accent-[var(--color-accent)]"
                     />
 
                     {/* 이름 */}
@@ -579,7 +579,7 @@ export default function TournamentJoinPage() {
                           )
                         );
                       }}
-                      className="w-14 rounded-[8px] border border-[#E8ECF0] px-2 py-1.5 text-center text-sm"
+                      className="w-14 rounded-[8px] border border-[var(--color-border)] px-2 py-1.5 text-center text-sm"
                     />
 
                     {/* 포지션 */}
@@ -592,7 +592,7 @@ export default function TournamentJoinPage() {
                           )
                         );
                       }}
-                      className="rounded-[8px] border border-[#E8ECF0] px-2 py-1.5 text-sm"
+                      className="rounded-[8px] border border-[var(--color-border)] px-2 py-1.5 text-sm"
                     >
                       <option value="">포지션</option>
                       <option value="PG">PG</option>
@@ -603,7 +603,7 @@ export default function TournamentJoinPage() {
                     </select>
 
                     {/* 선출 */}
-                    <label className="flex items-center gap-1 text-xs text-[#6B7280]">
+                    <label className="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
                       <input
                         type="checkbox"
                         checked={player.isElite}
@@ -614,7 +614,7 @@ export default function TournamentJoinPage() {
                             )
                           );
                         }}
-                        className="h-4 w-4 accent-[#E31B23]"
+                        className="h-4 w-4 accent-[var(--color-primary)]"
                       />
                       선출
                     </label>
@@ -649,23 +649,23 @@ export default function TournamentJoinPage() {
 
             <div className="space-y-3 text-sm">
               {/* 팀 */}
-              <div className="flex justify-between border-b border-[#E8ECF0] pb-2">
-                <span className="text-[#6B7280]">참가팀</span>
+              <div className="flex justify-between border-b border-[var(--color-border)] pb-2">
+                <span className="text-[var(--color-text-muted)]">참가팀</span>
                 <span className="font-medium">
                   {data.my_teams.find((t) => t.id === selectedTeamId)?.name}
                 </span>
               </div>
 
               {/* 대표자 */}
-              <div className="flex justify-between border-b border-[#E8ECF0] pb-2">
-                <span className="text-[#6B7280]">대표자</span>
+              <div className="flex justify-between border-b border-[var(--color-border)] pb-2">
+                <span className="text-[var(--color-text-muted)]">대표자</span>
                 <span className="font-medium">{managerName} ({managerPhone})</span>
               </div>
 
               {/* 부문/디비전 */}
               {selectedCategory && (
-                <div className="flex justify-between border-b border-[#E8ECF0] pb-2">
-                  <span className="text-[#6B7280]">부문 / 디비전</span>
+                <div className="flex justify-between border-b border-[var(--color-border)] pb-2">
+                  <span className="text-[var(--color-text-muted)]">부문 / 디비전</span>
                   <span className="font-medium">
                     {selectedCategory} · {selectedDivision}
                   </span>
@@ -673,24 +673,24 @@ export default function TournamentJoinPage() {
               )}
 
               {/* 유니폼 */}
-              <div className="flex items-center justify-between border-b border-[#E8ECF0] pb-2">
-                <span className="text-[#6B7280]">유니폼</span>
+              <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-2">
+                <span className="text-[var(--color-text-muted)]">유니폼</span>
                 <div className="flex gap-2">
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-[#6B7280]">홈</span>
+                    <span className="text-xs text-[var(--color-text-muted)]">홈</span>
                     <div className="h-6 w-6 rounded-full border" style={{ backgroundColor: uniformHome }} />
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-[#6B7280]">어웨이</span>
+                    <span className="text-xs text-[var(--color-text-muted)]">어웨이</span>
                     <div className="h-6 w-6 rounded-full border" style={{ backgroundColor: uniformAway }} />
                   </div>
                 </div>
               </div>
 
               {/* 선수 */}
-              <div className="border-b border-[#E8ECF0] pb-2">
+              <div className="border-b border-[var(--color-border)] pb-2">
                 <div className="mb-2 flex justify-between">
-                  <span className="text-[#6B7280]">선수 명단</span>
+                  <span className="text-[var(--color-text-muted)]">선수 명단</span>
                   <span className="font-medium">{players.filter((p) => p.selected).length}명</span>
                 </div>
                 <div className="space-y-1">
@@ -702,10 +702,10 @@ export default function TournamentJoinPage() {
                           {p.jerseyNumber !== null ? `#${p.jerseyNumber} ` : ""}
                           {p.name}
                           {p.isElite && (
-                            <span className="ml-1 rounded bg-[#E31B23]/10 px-1 text-[#E31B23]">선출</span>
+                            <span className="ml-1 rounded bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)] px-1 text-[var(--color-primary)]">선출</span>
                           )}
                         </span>
-                        <span className="text-[#6B7280]">{p.position ?? "-"}</span>
+                        <span className="text-[var(--color-text-muted)]">{p.position ?? "-"}</span>
                       </div>
                     ))}
                 </div>
@@ -715,8 +715,8 @@ export default function TournamentJoinPage() {
               {(tournament.entry_fee || selectedDivision) && (
                 <div className="pt-1">
                   <div className="flex justify-between">
-                    <span className="text-[#6B7280]">참가비</span>
-                    <span className="text-lg font-bold text-[#E31B23]">
+                    <span className="text-[var(--color-text-muted)]">참가비</span>
+                    <span className="text-lg font-bold text-[var(--color-primary)]">
                       {(() => {
                         const divFees = (tournament.div_fees ?? {}) as Record<string, number>;
                         const fee = selectedDivision ? (divFees[selectedDivision] ?? tournament.entry_fee) : tournament.entry_fee;
@@ -725,26 +725,26 @@ export default function TournamentJoinPage() {
                     </span>
                   </div>
                   {tournament.bank_name && (
-                    <div className="mt-2 rounded-[10px] bg-[#F5F7FA] p-3">
-                      <p className="text-xs text-[#6B7280]">입금 계좌</p>
+                    <div className="mt-2 rounded-[10px] bg-[var(--color-surface)] p-3">
+                      <p className="text-xs text-[var(--color-text-muted)]">입금 계좌</p>
                       <p className="mt-1 font-medium">
                         {tournament.bank_name} {tournament.bank_account}
                       </p>
-                      <p className="text-xs text-[#6B7280]">{tournament.bank_holder}</p>
+                      <p className="text-xs text-[var(--color-text-muted)]">{tournament.bank_holder}</p>
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(
                             `${tournament.bank_name} ${tournament.bank_account}`
                           );
                         }}
-                        className="mt-1 text-xs text-[#1B3C87] underline"
+                        className="mt-1 text-xs text-[var(--color-accent)] underline"
                       >
                         계좌번호 복사
                       </button>
                     </div>
                   )}
                   {tournament.fee_notes && (
-                    <p className="mt-2 text-xs text-[#6B7280]">{tournament.fee_notes}</p>
+                    <p className="mt-2 text-xs text-[var(--color-text-muted)]">{tournament.fee_notes}</p>
                   )}
                 </div>
               )}
@@ -779,7 +779,7 @@ export default function TournamentJoinPage() {
           </div>
 
           <h2 className="text-xl font-bold">{result.message}</h2>
-          <p className="mt-2 text-sm text-[#6B7280]">
+          <p className="mt-2 text-sm text-[var(--color-text-muted)]">
             {result.status === "waiting"
               ? `대기 순번: ${result.waiting_number}번`
               : result.status === "approved"
@@ -789,13 +789,13 @@ export default function TournamentJoinPage() {
 
           {/* 입금 안내 */}
           {tournament.bank_name && (
-            <div className="mx-auto mt-4 max-w-xs rounded-[10px] bg-[#F5F7FA] p-4 text-left">
-              <p className="text-xs font-bold text-[#6B7280]">참가비 입금 안내</p>
+            <div className="mx-auto mt-4 max-w-xs rounded-[10px] bg-[var(--color-surface)] p-4 text-left">
+              <p className="text-xs font-bold text-[var(--color-text-muted)]">참가비 입금 안내</p>
               <p className="mt-1 text-sm font-medium">
                 {tournament.bank_name} {tournament.bank_account}
               </p>
-              <p className="text-xs text-[#6B7280]">{tournament.bank_holder}</p>
-            </div>
+              <p className="text-xs text-[var(--color-text-muted)]">{tournament.bank_holder}</p>
+  </div>
           )}
 
           <div className="mt-6 flex justify-center gap-3">

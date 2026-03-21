@@ -4,7 +4,7 @@ export default function TournamentDetailLoading() {
   return (
     <div>
       {/* 헤더 카드 */}
-      <div className="mb-6 rounded-[16px] bg-white p-5 space-y-3">
+      <div className="mb-6 rounded-[16px] bg-[var(--color-card)] p-5 space-y-3">
         <div className="flex items-start justify-between">
           <Skeleton className="h-7 w-2/3" />
           <Skeleton className="h-6 w-14 rounded-full" />
@@ -22,7 +22,7 @@ export default function TournamentDetailLoading() {
 
       {/* 대회 정보 카드 */}
       <div className="mb-6 space-y-4">
-        <div className="rounded-[16px] bg-white p-5 space-y-3">
+        <div className="rounded-[16px] bg-[var(--color-card)] p-5 space-y-3">
           <Skeleton className="h-4 w-24" />
           <div className="space-y-2">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -41,7 +41,7 @@ export default function TournamentDetailLoading() {
           <Skeleton className="mb-3 h-5 w-20" />
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-[16px] bg-white p-4 flex items-center justify-between">
+              <div key={i} className="rounded-[16px] bg-[var(--color-card)] p-4 flex items-center justify-between">
                 <Skeleton className="h-4 w-20" />
                 <Skeleton className="h-6 w-12 rounded-full" />
                 <Skeleton className="h-4 w-20" />
@@ -51,15 +51,15 @@ export default function TournamentDetailLoading() {
         </div>
         <div>
           <Skeleton className="mb-3 h-5 w-12" />
-          <div className="rounded-[16px] bg-white overflow-hidden">
-            <div className="border-b border-[#E8ECF0] px-4 py-2 flex gap-4">
+          <div className="rounded-[16px] bg-[var(--color-card)] overflow-hidden">
+            <div className="border-b border-[var(--color-border)] px-4 py-2 flex gap-4">
               <Skeleton className="h-4 w-6" />
               <Skeleton className="h-4 w-16" />
               <Skeleton className="h-4 w-8" />
               <Skeleton className="h-4 w-8" />
             </div>
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="border-b border-[#F1F5F9] px-4 py-2.5 flex gap-4">
+              <div key={i} className="border-b border-[var(--color-border)] px-4 py-2.5 flex gap-4">
                 <Skeleton className="h-4 w-6" />
                 <Skeleton className="h-4 w-20" />
                 <Skeleton className="h-4 w-6" />
