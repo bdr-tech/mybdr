@@ -161,18 +161,20 @@ export function HeroSection() {
   if (state === "loading") {
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="aspect-[16/9] animate-pulse rounded-2xl bg-surface-low md:col-span-2 md:aspect-auto md:h-[320px]" />
-        <div className="h-[200px] animate-pulse rounded-2xl bg-surface-low md:h-[320px]" />
+        {/* 좌측 스켈레톤: 부모 높이에 맞춤 (aspect-ratio 제거) */}
+        <div className="h-[280px] animate-pulse rounded-2xl bg-surface-low sm:h-[320px] md:col-span-2 md:h-[400px] lg:h-[440px]" />
+        {/* 우측 스켈레톤: 모바일 200px, 데스크탑은 부모 높이 */}
+        <div className="h-[200px] animate-pulse rounded-2xl bg-surface-low md:h-[400px] lg:h-[440px]" />
       </div>
     );
   }
 
   return (
-    /* 전체 히어로: 2분할 그리드 레이아웃 */
-    <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+    /* 전체 히어로: 고정 높이 + 2분할 그리드 (aspect-ratio 제거) */
+    <section className="grid h-[280px] grid-cols-1 gap-4 sm:h-[320px] md:h-[400px] md:grid-cols-3 lg:h-[440px]">
       {/* === 좌측: 메인 슬라이드 (md:col-span-2) === */}
       <div
-        className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-surface-low md:col-span-2 md:aspect-auto md:h-[320px]"
+        className="relative h-full overflow-hidden rounded-2xl bg-surface-low md:col-span-2"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onTouchStart={onTouchStart}
@@ -224,7 +226,8 @@ export function HeroSection() {
       </div>
 
       {/* === 우측: 개인 맞춤 카드 (md:col-span-1) === */}
-      <div className="md:h-[320px]">
+      {/* 우측 개인 카드: 모바일 200px 고정, 데스크탑 부모 높이 채움 */}
+      <div className="h-[200px] md:h-full">
         {state === "logged-in" && dashboardData ? (
           /* 로그인 상태: 기존 PersonalHero 재사용 (h-full로 높이 맞춤) */
           <PersonalHero preloadedData={dashboardData} />
