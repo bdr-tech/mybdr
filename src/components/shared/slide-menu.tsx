@@ -52,17 +52,19 @@ export function SlideMenu({
         role="dialog"
         aria-modal="true"
         aria-label="전체 메뉴"
-        className={`fixed right-0 top-0 z-[70] h-full w-[300px] transform bg-[#FFFFFF] transition-transform duration-300 ${
+        className={`fixed right-0 top-0 z-[70] h-full w-[300px] transform transition-transform duration-300 ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
+        style={{ backgroundColor: 'var(--color-bg-primary)' }}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#E8ECF0] p-4">
-          <span className="font-bold text-[#E31B23]" style={{ fontFamily: "var(--font-heading)" }}>메뉴</span>
+        {/* Header -- 테두리/포인트컬러 CSS 변수 */}
+        <div className="flex items-center justify-between p-4" style={{ borderBottom: '1px solid var(--color-border)' }}>
+          <span className="font-bold" style={{ fontFamily: "var(--font-heading)", color: 'var(--color-accent)' }}>메뉴</span>
           <button
             onClick={onClose}
             aria-label="메뉴 닫기"
-            className="rounded-full p-2 text-[#6B7280] hover:bg-[#EEF2FF]"
+            className="rounded-full p-2"
+            style={{ color: 'var(--color-text-secondary)' }}
           >
             ✕
           </button>
@@ -72,39 +74,42 @@ export function SlideMenu({
           {isLoggedIn ? (
             <>
               {/* User Info — /profile 링크 */}
+              {/* 유저 카드: 배경/텍스트 CSS 변수 */}
               <Link
                 href="/profile"
                 onClick={onClose}
-                className="mb-6 flex items-center gap-3 rounded-[16px] bg-[#EEF2FF] p-4 transition-colors hover:bg-[#E8ECF0] active:opacity-80"
+                className="mb-6 flex items-center gap-3 rounded-[16px] p-4 transition-colors active:opacity-80"
+                style={{ backgroundColor: 'var(--color-elevated)' }}
               >
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#1B3C87] text-sm font-bold text-white">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white" style={{ backgroundColor: 'var(--color-primary)' }}>
                   {name?.trim() ? name.trim()[0].toUpperCase() : "U"}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold">{name || "사용자"}</p>
-                  {email && <p className="truncate text-xs text-[#6B7280]">{email}</p>}
+                  <p className="truncate font-semibold" style={{ color: 'var(--color-text-primary)' }}>{name || "사용자"}</p>
+                  {email && <p className="truncate text-xs" style={{ color: 'var(--color-text-secondary)' }}>{email}</p>}
                 </div>
-                <span className="flex-shrink-0 text-xs text-[#9CA3AF]">›</span>
+                <span className="flex-shrink-0 text-xs" style={{ color: 'var(--color-text-muted)' }}>›</span>
               </Link>
 
-              {/* 게시판 */}
+              {/* 게시판 -- 섹션제목/링크 CSS 변수 */}
               <div className="mb-6">
-                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#9CA3AF]" style={{ fontFamily: "var(--font-heading)" }}>게시판</p>
+                <p className="mb-2 text-xs font-bold uppercase tracking-wider" style={{ fontFamily: "var(--font-heading)", color: 'var(--color-text-muted)' }}>게시판</p>
                 {menuSections.boards.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
                     onClick={onClose}
-                    className="flex items-center rounded-[12px] px-3 py-2.5 text-sm text-[#374151] transition-colors hover:bg-[#EEF2FF] hover:text-[#111827]"
+                    className="flex items-center rounded-[12px] px-3 py-2.5 text-sm transition-colors"
+                    style={{ color: 'var(--color-text-primary)' }}
                   >
                     {item.label}
                   </Link>
                 ))}
               </div>
 
-              {/* 기타 */}
+              {/* 기타 -- 섹션제목/링크 CSS 변수 */}
               <div className="mb-6">
-                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#9CA3AF]" style={{ fontFamily: "var(--font-heading)" }}>기타</p>
+                <p className="mb-2 text-xs font-bold uppercase tracking-wider" style={{ fontFamily: "var(--font-heading)", color: 'var(--color-text-muted)' }}>기타</p>
                 {menuSections.etc
                   .filter((item) => {
                     if (item.superAdminOnly) return role === "super_admin";
@@ -116,7 +121,8 @@ export function SlideMenu({
                       key={item.href}
                       href={item.href}
                       onClick={onClose}
-                      className="flex items-center gap-2 rounded-[12px] px-3 py-2.5 text-sm text-[#374151] transition-colors hover:bg-[#EEF2FF] hover:text-[#111827]"
+                      className="flex items-center gap-2 rounded-[12px] px-3 py-2.5 text-sm transition-colors"
+                      style={{ color: 'var(--color-text-primary)' }}
                     >
                       {item.icon && <span>{item.icon}</span>}
                       {item.label}
@@ -134,13 +140,13 @@ export function SlideMenu({
             </>
           ) : (
             <div className="flex flex-col">
-              {/* 브랜드 */}
-              <div className="mb-6 rounded-[16px] bg-[#EEF2FF] px-5 py-6 text-center">
-                <p className="text-xl font-bold sm:text-2xl text-[#E31B23]" style={{ fontFamily: "var(--font-heading)" }}>BDR</p>
-                <p className="mt-1 text-xs text-[#6B7280]">농구인을 위한 농구 플랫폼</p>
+              {/* 브랜드 -- 웜 오렌지 포인트 */}
+              <div className="mb-6 rounded-[16px] px-5 py-6 text-center" style={{ backgroundColor: 'var(--color-elevated)' }}>
+                <p className="text-xl font-bold sm:text-2xl" style={{ fontFamily: "var(--font-heading)", color: 'var(--color-accent)' }}>BDR</p>
+                <p className="mt-1 text-xs" style={{ color: 'var(--color-text-secondary)' }}>농구인을 위한 농구 플랫폼</p>
               </div>
 
-              {/* 기능 소개 */}
+              {/* 기능 소개 -- 텍스트 CSS 변수 */}
               <div className="mb-6 space-y-3">
                 {[
                   { icon: "🏀", title: "픽업게임", desc: "내 주변 경기 참가" },
@@ -150,25 +156,30 @@ export function SlideMenu({
                   <div key={f.title} className="flex items-center gap-3 rounded-[12px] px-3 py-2">
                     <span className="text-xl">{f.icon}</span>
                     <div>
-                      <p className="text-sm font-medium text-[#111827]">{f.title}</p>
-                      <p className="text-xs text-[#9CA3AF]">{f.desc}</p>
+                      <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>{f.title}</p>
+                      <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{f.desc}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* CTA 버튼 */}
+              {/* CTA 버튼 -- 로그인 웜 오렌지, 회원가입 테두리 */}
               <Link
                 href="/login"
                 onClick={onClose}
-                className="mb-2 w-full rounded-[10px] bg-[#111827] py-3 text-center text-sm font-bold text-white hover:bg-[#1F2937]"
+                className="mb-2 w-full rounded-[10px] py-3 text-center text-sm font-bold text-white"
+                style={{ backgroundColor: 'var(--color-accent)' }}
               >
                 로그인
               </Link>
               <Link
                 href="/signup"
                 onClick={onClose}
-                className="w-full rounded-[10px] border-2 border-[#111827] py-3 text-center text-sm font-bold text-[#111827] hover:bg-[#F5F7FA]"
+                className="w-full rounded-[10px] py-3 text-center text-sm font-bold"
+                style={{
+                  border: '2px solid var(--color-border)',
+                  color: 'var(--color-text-primary)',
+                }}
               >
                 회원가입
               </Link>

@@ -79,8 +79,11 @@ export function Header() {
 
   return (
     <>
-      {/* Top Navbar */}
-      <header className="sticky top-0 z-50 border-b border-[#E8ECF0] bg-[#FFFFFF]/95 backdrop-blur-md">
+      {/* Top Navbar -- 테두리 CSS 변수, 배경은 bg-white/95 유지 (다크모드는 globals.css backdrop-blur 오버라이드가 처리) */}
+      <header
+        className="sticky top-0 z-50 bg-[#FFFFFF]/95 backdrop-blur-md"
+        style={{ borderBottom: '1px solid var(--color-border)' }}
+      >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
           {/* Logo */}
           <Link href="/" prefetch={true} className="flex items-center">
@@ -104,10 +107,12 @@ export function Header() {
                     ? "text-[#111827]"
                     : "text-[#9CA3AF] hover:text-[#374151]"
                 }`}
+                style={isActive(item.href) ? { color: 'var(--color-text-primary)' } : { color: 'var(--color-text-muted)' }}
               >
                 {item.label}
+                {/* 활성 탭 하단 바: 빨강(#E31B23) -> 웜 오렌지(--color-accent) */}
                 {isActive(item.href) && (
-                  <span className="absolute bottom-1 left-1/2 h-[2.5px] w-6 -translate-x-1/2 rounded-full bg-[#E31B23]" />
+                  <span className="absolute bottom-1 left-1/2 h-[2.5px] w-6 -translate-x-1/2 rounded-full" style={{ backgroundColor: 'var(--color-accent)' }} />
                 )}
               </Link>
             ))}
@@ -116,12 +121,16 @@ export function Header() {
           {/* Right: PreferFilter + TextSize + Theme + Bell + Login/Profile */}
           <div className="flex items-center gap-1.5">
             {/* 선호 필터 토글 -- 로그인 유저에게만 표시 */}
+            {/* Sparkles 토글: 활성 시 웜 오렌지, 비활성 시 muted 색상 */}
             {user && (
               <button
                 onClick={togglePreferFilter}
-                className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-[rgba(27,60,135,0.08)]"
+                className="flex h-9 w-9 items-center justify-center rounded-full transition-colors"
                 title={preferFilter ? "전체 보기" : "내 선호만 보기"}
-                style={{ color: preferFilter ? "#E31B23" : "#9CA3AF" }}
+                style={{
+                  color: preferFilter ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                  backgroundColor: preferFilter ? 'var(--color-accent-light)' : 'transparent',
+                }}
               >
                 <Sparkles size={20} />
               </button>
@@ -134,8 +143,11 @@ export function Header() {
             ) : (
               <Link
                 href="/login"
-                className="rounded-[10px] bg-[#111827] px-5 py-2 text-sm font-bold text-white hover:bg-[#1F2937] transition-colors"
-                style={{ fontFamily: "var(--font-heading)" }}
+                className="rounded-[10px] px-5 py-2 text-sm font-bold text-white transition-colors"
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  backgroundColor: 'var(--color-accent)',
+                }}
               >
                 로그인
               </Link>
@@ -144,10 +156,14 @@ export function Header() {
         </div>
       </header>
 
-      {/* Mobile Bottom Nav */}
+      {/* Mobile Bottom Nav -- 배경/테두리 CSS 변수, 활성 색상 웜 오렌지 */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#E8ECF0] bg-[#FFFFFF] lg:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
+        style={{
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          borderTop: '1px solid var(--color-border)',
+          backgroundColor: 'var(--color-bg-primary)',
+        }}
       >
         <div className="grid grid-cols-5">
           {navItems.map((item) => {
@@ -157,14 +173,11 @@ export function Header() {
                 key={item.href}
                 href={item.href}
                 prefetch={true}
-                className={`relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 text-[11px] transition-colors active:opacity-70 ${
-                  active
-                    ? "text-[#E31B23] font-semibold"
-                    : "text-[#B0B8C1]"
-                }`}
+                className="relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 text-[11px] transition-colors active:opacity-70"
+                style={{ color: active ? 'var(--color-accent)' : 'var(--color-text-muted)', fontWeight: active ? 600 : 400 }}
               >
                 {active && (
-                  <span className="absolute top-0 left-1/2 h-[2px] w-6 -translate-x-1/2 rounded-full bg-[#E31B23]" />
+                  <span className="absolute top-0 left-1/2 h-[2px] w-6 -translate-x-1/2 rounded-full" style={{ backgroundColor: 'var(--color-accent)' }} />
                 )}
                 <item.Icon size={24} strokeWidth={active ? 2.5 : 1.5} />
                 {item.label}
@@ -173,12 +186,11 @@ export function Header() {
           })}
           <button
             onClick={() => setMenuOpen(true)}
-            className={`relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 text-[11px] active:opacity-70 ${
-              menuOpen ? "text-[#E31B23] font-semibold" : "text-[#B0B8C1]"
-            }`}
+            className="relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 text-[11px] active:opacity-70"
+            style={{ color: menuOpen ? 'var(--color-accent)' : 'var(--color-text-muted)', fontWeight: menuOpen ? 600 : 400 }}
           >
             {menuOpen && (
-              <span className="absolute top-0 left-1/2 h-[2px] w-6 -translate-x-1/2 rounded-full bg-[#E31B23]" />
+              <span className="absolute top-0 left-1/2 h-[2px] w-6 -translate-x-1/2 rounded-full" style={{ backgroundColor: 'var(--color-accent)' }} />
             )}
             <Menu size={24} strokeWidth={menuOpen ? 2.5 : 1.5} />
             전체

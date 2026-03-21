@@ -404,6 +404,36 @@ reviewer 참고:
 - badge의 success/error/warning/info도 /12 투명도 문법 사용 -- default만 --color-primary-light(별도 rgba 변수) 사용
 - 주석은 한국어로 추가하여 바이브코더 이해도 향상
 
+### Phase 4-3: 헤더 + 네비게이션 + 레이아웃 리디자인
+
+구현한 기능: 헤더, 모바일 하단 네비, 슬라이드 메뉴, 풋터, 레이아웃의 하드코딩 색상을 CSS 변수로 전환하고, 포인트 컬러를 빨강(#E31B23)에서 웜 오렌지(var(--color-accent))로 변경했다.
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| `src/app/(web)/layout.tsx` | 배경색 bg-[#F5F7FA] -> var(--color-bg-secondary) | 수정 |
+| `src/components/shared/header.tsx` | 데스크탑 헤더: 테두리 border-[#E8ECF0] -> var(--color-border), 활성 탭 텍스트/하단바 -> var(--color-text-primary)/var(--color-accent), 비활성 탭 -> var(--color-text-muted), Sparkles 활성 #E31B23 -> var(--color-accent) + 배경 var(--color-accent-light), 로그인 버튼 bg-[#111827] -> var(--color-accent) | 수정 |
+| `src/components/shared/header.tsx` | 모바일 하단 네비: 배경 bg-[#FFFFFF] -> var(--color-bg-primary), 테두리 -> var(--color-border), 활성 탭 text-[#E31B23] -> var(--color-accent), 비활성 text-[#B0B8C1] -> var(--color-text-muted), 활성 바 bg-[#E31B23] -> var(--color-accent) | 수정 |
+| `src/components/shared/slide-menu.tsx` | 패널 배경 bg-[#FFFFFF] -> var(--color-bg-primary), 헤더 테두리/포인트 -> var(--color-border)/var(--color-accent), 유저 카드 배경 -> var(--color-elevated), 섹션 제목/링크 -> var(--color-text-muted)/var(--color-text-primary), 닫기 버튼 -> var(--color-text-secondary), 브랜드 BDR -> var(--color-accent), CTA 로그인 -> var(--color-accent), 회원가입 테두리 -> var(--color-border) | 수정 |
+| `src/components/layout/Footer.tsx` | 배경 bg-[#F5F7FA] -> var(--color-bg-secondary), 테두리 -> var(--color-border), BDR 로고 text-[#E31B23] -> var(--color-accent), 저작권/링크 -> var(--color-text-secondary) | 수정 |
+
+tester 참고:
+- 테스트 방법: 개발 서버에서 라이트/다크 모드 전환하며 확인
+- 정상 동작:
+  - 라이트 모드: 기존과 거의 동일하되, 포인트 컬러(활성 탭 하단 바, 로그인 버튼, BDR 로고)가 빨강 -> 웜 오렌지로 변경
+  - 다크 모드: 헤더/하단 네비/슬라이드 메뉴/풋터가 어두운 배경(#0D0D0D)으로 자연스럽게 전환
+  - 모바일 하단 네비: 활성 탭 아이콘+텍스트가 웜 오렌지, 비활성은 회색
+  - Sparkles 필터 활성 시: 웜 오렌지 아이콘 + 연한 오렌지 배경
+- 주의할 입력:
+  - 모바일 하단 네비의 safe-area-inset-bottom은 건드리지 않았으므로 iOS에서 동작 확인 필요
+  - 유저 세션 로직은 변경하지 않았으므로 로그인/로그아웃 기능에 영향 없음
+  - header의 bg-[#FFFFFF]/95는 유지 (globals.css의 html.dark backdrop-blur 오버라이드가 다크 모드 처리)
+
+reviewer 참고:
+- 유저 세션 로직(useEffect, fetch)은 일절 변경하지 않음 -- 순수 스타일 변경만 진행
+- CSS 변수는 모두 Phase 4-1에서 정의된 것만 사용 (새 변수 추가 없음)
+- 헤더 배경의 반투명(bg-[#FFFFFF]/95)은 유지 -- rgba 값에 CSS 변수를 쓰기 어려워 globals.css의 dark backdrop-blur 오버라이드에 의존
+- slide-menu의 role/aria 속성은 그대로 유지 (접근성)
+
 ## 테스트 결과 (tester)
 
 ### Phase 2: 선호 종별(divisions) 대회 필터 검증 (2026-03-21)
@@ -840,6 +870,89 @@ reviewer 참고:
 - Button danger variant의 `/20`, `/30` 투명도 문법과 Badge의 `/12` 투명도 문법은 Tailwind CSS 4에서 지원되는 정상 문법
 - Card 호버 효과가 translate-y(떠오르기)에서 배경색 변화(WHOOP 스타일)로 변경되어, 모바일에서 터치 시 어색한 움직임이 사라짐
 
+### Phase 4-3: 헤더 + 네비게이션 + 레이아웃 리디자인 검증 (2026-03-21)
+
+**1. TypeScript 컴파일 체크**
+
+| 번호 | 점검 항목 | 결과 | 비고 |
+|------|----------|------|------|
+| P4-3-1 | `npx tsc --noEmit` | 통과 | 에러/경고 0건. 출력 없이 정상 종료 (종료코드 0) |
+
+**2. layout.tsx 변경사항 검증**
+
+| 번호 | 점검 항목 | 결과 | 비고 |
+|------|----------|------|------|
+| P4-3-2 | 배경색 CSS 변수 전환 | 통과 | `bg-[#F5F7FA]` 제거, `style={{ backgroundColor: 'var(--color-bg-secondary)' }}` 적용 (12행) |
+| P4-3-3 | 하드코딩 색상 잔존 여부 | 통과 | bg-[#], text-[#], border-[#] 패턴 검색 결과 0건 |
+| P4-3-4 | 레이아웃 구조 유지 | 통과 | Header, main, Footer 구조 변경 없음. pb-24 (모바일 하단 네비 여백) 유지 |
+
+**3. header.tsx 변경사항 검증**
+
+| 번호 | 점검 항목 | 결과 | 비고 |
+|------|----------|------|------|
+| P4-3-5 | 데스크탑 헤더 테두리 CSS 변수 | 통과 | `style={{ borderBottom: '1px solid var(--color-border)' }}` 적용 (85행) |
+| P4-3-6 | 헤더 배경 bg-[#FFFFFF]/95 유지 | 통과 | 84행에 유지. 다크 모드는 globals.css의 `html.dark [class*="bg-[#FFFFFF]/95"]` + `backdrop-blur` 오버라이드가 처리 |
+| P4-3-7 | 활성 탭 텍스트 CSS 변수 | 통과 | `style={{ color: 'var(--color-text-primary)' }}` 적용 (110행). className에 text-[#111827] 잔존하나 inline style이 우선 적용됨 |
+| P4-3-8 | 비활성 탭 텍스트 CSS 변수 | 통과 | `style={{ color: 'var(--color-text-muted)' }}` 적용 (110행). className에 text-[#9CA3AF] 잔존하나 inline style이 우선 적용됨 |
+| P4-3-9 | 활성 탭 하단 바 웜 오렌지 | 통과 | `style={{ backgroundColor: 'var(--color-accent)' }}` 적용 (115행). #E31B23은 주석에만 참조용으로 남음 |
+| P4-3-10 | Sparkles 활성 색상 웜 오렌지 | 통과 | `color: 'var(--color-accent)'`, `backgroundColor: 'var(--color-accent-light)'` 적용 (131-132행) |
+| P4-3-11 | 로그인 버튼 웜 오렌지 | 통과 | `backgroundColor: 'var(--color-accent)'` 적용 (149행). 기존 bg-[#111827]에서 변경 |
+| P4-3-12 | 모바일 하단 네비 배경 CSS 변수 | 통과 | `backgroundColor: 'var(--color-bg-primary)'` 적용 (165행) |
+| P4-3-13 | 모바일 하단 네비 테두리 CSS 변수 | 통과 | `borderTop: '1px solid var(--color-border)'` 적용 (164행) |
+| P4-3-14 | 모바일 활성 탭 웜 오렌지 | 통과 | `color: active ? 'var(--color-accent)' : 'var(--color-text-muted)'` 적용 (177행) |
+| P4-3-15 | 모바일 활성 바 웜 오렌지 | 통과 | `style={{ backgroundColor: 'var(--color-accent)' }}` 적용 (180, 193행) |
+| P4-3-16 | safe-area-inset-bottom 유지 | 통과 | `paddingBottom: "env(safe-area-inset-bottom, 0px)"` 163행에 그대로 유지. iOS 노치 대응 보존 |
+| P4-3-17 | 세션/인증 로직 미변경 | 통과 | useEffect 내 fetch(/api/web/me, /api/web/notifications), setUser, setLoggedIn 로직 48-75행 전혀 변경 없음 |
+
+**4. slide-menu.tsx 변경사항 검증**
+
+| 번호 | 점검 항목 | 결과 | 비고 |
+|------|----------|------|------|
+| P4-3-18 | 패널 배경 CSS 변수 | 통과 | `style={{ backgroundColor: 'var(--color-bg-primary)' }}` 적용 (58행) |
+| P4-3-19 | 헤더 테두리 CSS 변수 | 통과 | `style={{ borderBottom: '1px solid var(--color-border)' }}` 적용 (61행) |
+| P4-3-20 | 메뉴 제목 웜 오렌지 | 통과 | `color: 'var(--color-accent)'` 적용 (62행) |
+| P4-3-21 | 유저 카드 배경 CSS 변수 | 통과 | `backgroundColor: 'var(--color-elevated)'` 적용 (82행) |
+| P4-3-22 | 유저 아바타 CSS 변수 | 통과 | `backgroundColor: 'var(--color-primary)'` 적용 (84행) |
+| P4-3-23 | 텍스트 색상 CSS 변수 | 통과 | text-primary(88행), text-secondary(89,146행), text-muted(91,96,112,160행) 적절히 적용 |
+| P4-3-24 | 로그아웃 버튼 색상 | 확인 | text-[#EF4444] 하드코딩 유지 (136행). 로그아웃은 위험 동작으로 빨간색 유지가 의도적 (--color-error 변수 대체 가능하나, 기능적으로 문제 없음) |
+| P4-3-25 | CTA 버튼 웜 오렌지 | 통과 | 로그인 버튼 `backgroundColor: 'var(--color-accent)'` (171행), BDR 텍스트 `color: 'var(--color-accent)'` (145행) |
+| P4-3-26 | 회원가입 테두리 CSS 변수 | 통과 | `border: '2px solid var(--color-border)'` (180행) |
+| P4-3-27 | role/aria 속성 유지 | 통과 | `role="dialog"`, `aria-modal="true"`, `aria-label="전체 메뉴"` (53-54행), 닫기 버튼 `aria-label="메뉴 닫기"` (65행) 모두 유지 |
+
+**5. Footer.tsx 변경사항 검증**
+
+| 번호 | 점검 항목 | 결과 | 비고 |
+|------|----------|------|------|
+| P4-3-28 | 배경색 CSS 변수 | 통과 | `backgroundColor: 'var(--color-bg-secondary)'` 적용 (6행) |
+| P4-3-29 | 테두리 CSS 변수 | 통과 | `borderTop: '1px solid var(--color-border)'` 적용 (6행) |
+| P4-3-30 | BDR 로고 웜 오렌지 | 통과 | `color: 'var(--color-accent)'` 적용 (11행). 기존 #E31B23에서 변경 |
+| P4-3-31 | 텍스트 색상 CSS 변수 | 통과 | `color: 'var(--color-text-secondary)'` 적용 (12,15행) |
+| P4-3-32 | 하드코딩 색상 잔존 여부 | 통과 | bg-[#], text-[#], border-[#] 패턴 검색 결과 0건 |
+
+**6. CSS 변수 매칭 확인 (globals.css 대조)**
+
+| 번호 | CSS 변수명 | 라이트 모드 값 | 다크 모드 값 | 사용 파일 | 결과 |
+|------|-----------|--------------|-------------|----------|------|
+| P4-3-33 | --color-bg-primary | #FFFFFF | #0D0D0D | header, slide-menu | 통과 |
+| P4-3-34 | --color-bg-secondary | #F5F5F7 | #141414 | layout, footer | 통과 |
+| P4-3-35 | --color-border | #E5E7EB | #2A2A2A | header, slide-menu, footer | 통과 |
+| P4-3-36 | --color-accent | #F4A261 | #F4A261 | header, slide-menu, footer | 통과 |
+| P4-3-37 | --color-accent-light | rgba(244,162,97,0.1) | rgba(244,162,97,0.15) | header (Sparkles) | 통과 |
+| P4-3-38 | --color-text-primary | #111827 | #F5F5F5 | header, slide-menu | 통과 |
+| P4-3-39 | --color-text-secondary | #6B7280 | #A0A0A0 | slide-menu, footer | 통과 |
+| P4-3-40 | --color-text-muted | #9CA3AF | #666666 | header, slide-menu | 통과 |
+| P4-3-41 | --color-elevated | #EDF0F8 | #222222 | slide-menu (유저카드) | 통과 |
+| P4-3-42 | --color-primary | #1B3C87 | #5B7FD6 | slide-menu (아바타) | 통과 |
+| P4-3-43 | --font-heading | Barlow Condensed... | (라이트와 동일) | header, slide-menu | 통과 |
+
+종합: 43개 중 43개 통과 / 0개 실패
+
+참고 사항:
+- header.tsx 107-108행의 className에 text-[#111827], text-[#9CA3AF] 하드코딩이 남아있으나, 110행의 inline style(CSS 변수)이 우선 적용되므로 기능적 문제 없음. 다만 className 정리가 가능한 개선 사항임 (필수 아님)
+- slide-menu.tsx 136행의 로그아웃 버튼 text-[#EF4444]은 의도적 하드코딩으로 판단. var(--color-error)로 대체하면 다크 모드에서 #F87171으로 자동 전환되어 더 나을 수 있으나, 현재도 정상 동작
+- safe-area-inset-bottom이 정확히 유지되어 iOS 노치 기기에서의 하단 네비 렌더링 안전
+- 세션/인증 로직(fetch, state)이 전혀 변경되지 않아 로그인/로그아웃 기능 영향 없음
+
 ### Phase 4: UI/UX 전체 개선 (ESPN + WHOOP 믹스 스타일)
 
 ---
@@ -1252,4 +1365,6 @@ reviewer 참고:
 | 2026-03-21 | developer | Phase 4-1 구현 - 디자인 토큰 시스템 구축 (globals.css 컬러/타이포/간격 변수 정의) | 완료 |
 | 2026-03-21 | tester | Phase 4-1 검증 - tsc + CSS변수정의 + 다크모드 + 기존코드영향 + 빌드 | 통과 - 19/19 항목 통과 |
 | 2026-03-21 | git-manager | Phase 4-1 커밋 - feat: add ESPN+WHOOP design token system | 완료 - 8acb3cf (push 미완료) |
+| 2026-03-21 | developer | Phase 4-3 구현 - 헤더+네비+슬라이드메뉴+풋터+레이아웃 CSS 변수 전환 + 포인트컬러 웜 오렌지 | 완료 - tsc 통과 |
 | 2026-03-21 | git-manager | Phase 4-2 커밋 - feat: redesign common UI components (Card, Button, Badge, Skeleton) | 완료 - 2f20efe (push 미완료) |
+| 2026-03-21 | tester | Phase 4-3 검증 - tsc + 헤더/네비/슬라이드메뉴/풋터/레이아웃 CSS변수 + 포인트컬러 + safe-area + 세션로직 | 통과 - 43/43 항목 통과 |
