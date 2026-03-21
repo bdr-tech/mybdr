@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TOURNAMENT_STATUS_LABEL } from "@/lib/constants/tournament-status";
 import { usePreferFilter } from "@/contexts/prefer-filter-context";
@@ -21,24 +20,25 @@ interface TournamentFromApi {
   venue_name: string | null;
   max_teams: number | null;
   team_count: number;
+  divisions: string[];         // 종별 목록 (Phase 2에서 API에 추가됨)
 }
 
 interface TournamentsApiResponse {
   tournaments: TournamentFromApi[];
 }
 
-// -- 상태별 스타일 매핑 --
-const STATUS_STYLE: Record<string, { variant: "success" | "default" | "error" | "warning" | "info"; accent: string }> = {
-  draft:               { variant: "default",  accent: "#6B7280" },
-  active:              { variant: "success",  accent: "#4ADE80" },
-  published:           { variant: "success",  accent: "#4ADE80" },
-  registration:        { variant: "success",  accent: "#4ADE80" },
-  registration_open:   { variant: "success",  accent: "#4ADE80" },
-  registration_closed: { variant: "warning",  accent: "#FBBF24" },
-  in_progress:         { variant: "info",     accent: "#60A5FA" },
-  ongoing:             { variant: "info",     accent: "#60A5FA" },
-  completed:           { variant: "default",  accent: "#6B7280" },
-  cancelled:           { variant: "error",    accent: "#EF4444" },
+// -- 상태별 스타일 매핑 (GameCard의 TYPE_BADGE 패턴과 동일한 color+bg 구조) --
+const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
+  draft:               { color: "#FFFFFF", bg: "#6B7280" },
+  active:              { color: "#FFFFFF", bg: "#16A34A" },
+  published:           { color: "#FFFFFF", bg: "#16A34A" },
+  registration:        { color: "#FFFFFF", bg: "#16A34A" },
+  registration_open:   { color: "#FFFFFF", bg: "#16A34A" },
+  registration_closed: { color: "#FFFFFF", bg: "#D97706" },
+  in_progress:         { color: "#FFFFFF", bg: "#2563EB" },
+  ongoing:             { color: "#FFFFFF", bg: "#2563EB" },
+  completed:           { color: "#FFFFFF", bg: "#6B7280" },
+  cancelled:           { color: "#FFFFFF", bg: "#EF4444" },
 };
 
 // -- 대회 형식 한글 라벨 매핑 --
@@ -49,25 +49,6 @@ const FORMAT_LABEL: Record<string, string> = {
   hybrid: "혼합",
 };
 
-// -- 참가팀 현황 프로그레스 바 --
-function TeamCountBar({ current, max }: { current: number; max: number }) {
-  const pct = max > 0 ? Math.min((current / max) * 100, 100) : 0;
-  const color = pct >= 100 ? "#E31B23" : pct >= 75 ? "#D97706" : "#1B3C87";
-  return (
-    <div className="flex items-center gap-2">
-      <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-[#E8ECF0]">
-        <div
-          className="absolute left-0 top-0 h-full rounded-full transition-all"
-          style={{ width: `${pct}%`, backgroundColor: color }}
-        />
-      </div>
-      <span className="flex-shrink-0 text-xs text-[#6B7280]">
-        {current}/{max}팀
-      </span>
-    </div>
-  );
-}
-
 // -- 날짜 범위 포맷 (ISO string -> 한국어 날짜) --
 function formatDateRange(start: string | null, end: string | null): string {
   if (!start) return "";
@@ -77,83 +58,127 @@ function formatDateRange(start: string | null, end: string | null): string {
   return `${startStr} ~ ${endStr}`;
 }
 
-// -- 스켈레톤 UI (로딩 중 표시) --
+// -- 스켈레톤 UI (GameCard 스켈레톤 패턴과 동일) --
 function TournamentGridSkeleton() {
   return (
-    <div className="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 9 }).map((_, i) => (
-        <div key={i} className="rounded-[16px] border-l-[3px] border-[#E8ECF0] bg-white p-5 space-y-3">
-          <div className="flex justify-between">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-5 w-14 rounded-full" />
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="rounded-[16px] bg-white border border-[#E8ECF0] overflow-hidden">
+          {/* 상단 컬러바 자리 */}
+          <div className="h-1 bg-[#E8ECF0]" />
+          <div className="p-3.5 space-y-2.5">
+            <Skeleton className="h-4 w-14 rounded-[6px]" />
+            <Skeleton className="h-4 w-3/4 rounded" />
+            <Skeleton className="h-3 w-1/2 rounded" />
+            <Skeleton className="h-1.5 w-full rounded-full" />
           </div>
-          <Skeleton className="h-5 w-3/4" />
-          <Skeleton className="h-4 w-1/2" />
-          <Skeleton className="h-1.5 w-full rounded-full" />
         </div>
       ))}
     </div>
   );
 }
 
-// -- 대회 카드 (API 응답 타입에 맞춤) --
+// -- 대회 카드 (GameCard와 동일한 레이아웃으로 리디자인) --
 function TournamentCard({ tournament: t }: { tournament: TournamentFromApi }) {
   const st = t.status ?? "draft";
   const label = TOURNAMENT_STATUS_LABEL[st] ?? st;
-  const style = STATUS_STYLE[st] ?? { variant: "default" as const, accent: "#6B7280" };
+  const style = STATUS_STYLE[st] ?? { color: "#FFFFFF", bg: "#6B7280" };
   const formatLabel = FORMAT_LABEL[t.format ?? ""] ?? t.format ?? "";
   const dateRange = formatDateRange(t.start_date, t.end_date);
   const maxTeams = t.max_teams ?? 16;
   const location = [t.city, t.venue_name].filter(Boolean).join(" ");
   const hasFee = t.entry_fee && Number(t.entry_fee) > 0;
 
+  // 참가팀 프로그레스바 계산 (GameCard 인라인 패턴)
+  const pct = maxTeams > 0 ? Math.min((t.team_count / maxTeams) * 100, 100) : 0;
+  const barColor = pct >= 100 ? "#EF4444" : pct >= 80 ? "#D97706" : "#1B3C87";
+
+  // 종별(divisions) 표시: 최대 2개 + 나머지는 "+N"으로 축약
+  const divisions = t.divisions ?? [];
+  const visibleDivs = divisions.slice(0, 2);
+  const extraCount = divisions.length - 2;
+
   return (
     <Link href={`/tournaments/${t.id}`} prefetch={true}>
-      <div className="group overflow-hidden rounded-[16px] border border-[#E8ECF0] bg-[#FFFFFF] transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#1B3C87]/30">
+      <div className="group flex h-full flex-col rounded-[16px] border border-[#E8ECF0] bg-[#FFFFFF] overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#1B3C87]/30">
         {/* 상단 컬러 바 - 상태에 따라 색상 변경 */}
-        <div className="h-1" style={{ backgroundColor: style.accent }} />
+        <div className="h-1" style={{ backgroundColor: style.bg }} />
 
-        <div className="p-4 sm:p-5">
-          {/* 형식 + 상태 */}
+        <div className="flex flex-1 flex-col p-3.5">
+          {/* Row 1: 형식 뱃지 + 상태 텍스트 (GameCard 패턴) */}
           <div className="mb-2 flex items-center justify-between">
-            <span className="rounded-[6px] bg-[#111827] px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-white">
+            <span
+              className="rounded-[6px] px-2 py-0.5 text-xs font-bold uppercase tracking-wider"
+              style={{ backgroundColor: style.bg, color: style.color }}
+            >
               {formatLabel}
             </span>
-            <Badge variant={style.variant}>{label}</Badge>
+            <span className="text-[11px] font-bold" style={{ color: style.bg }}>
+              {label}
+            </span>
           </div>
 
-          {/* 대회명 */}
-          <h3 className="mb-3 text-[15px] font-bold leading-snug text-[#111827] line-clamp-2 group-hover:text-[#1B3C87] transition-colors">
+          {/* Row 2: 대회명 (text-sm, line-clamp-1로 GameCard와 통일) */}
+          <h3 className="mb-1 text-sm font-bold text-[#111827] line-clamp-1 leading-tight group-hover:text-[#1B3C87] transition-colors">
             {t.name}
           </h3>
 
-          {/* 장소 + 날짜 */}
-          <div className="mb-3 space-y-1">
-            {location && (
-              <p className="flex items-center gap-1.5 text-xs text-[#6B7280]">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 opacity-50"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                <span className="truncate">{location}</span>
-              </p>
-            )}
+          {/* Row 3: 날짜 -> 장소 순서 (GameCard와 동일한 순서) */}
+          <div className="mb-2 space-y-0.5">
             {dateRange && (
-              <p className="flex items-center gap-1.5 text-xs text-[#6B7280]">
+              <p className="flex items-center gap-1 text-xs text-[#6B7280]">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 opacity-50"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
                 <span>{dateRange}</span>
               </p>
             )}
+            {location && (
+              <p className="flex items-center gap-1 text-xs text-[#6B7280]">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 opacity-50"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span className="line-clamp-1">{location}</span>
+              </p>
+            )}
           </div>
 
-          {/* 구분선 */}
-          <div className="mb-3 h-px bg-[#E8ECF0]" />
+          {/* Row 4: 참가팀 프로그레스바 (인라인, GameCard 스타일) */}
+          {maxTeams > 0 && (
+            <div className="mb-2 flex items-center gap-2">
+              <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-[#E8ECF0]">
+                <div
+                  className="absolute left-0 top-0 h-full rounded-full transition-all"
+                  style={{ width: `${pct}%`, backgroundColor: barColor }}
+                />
+              </div>
+              <span className="text-[11px] font-bold tabular-nums" style={{ color: barColor }}>
+                {t.team_count}/{maxTeams}
+              </span>
+            </div>
+          )}
 
-          {/* 참가팀 현황 바 */}
-          <TeamCountBar current={t.team_count} max={maxTeams} />
-
-          {/* 참가비 */}
-          <div className="mt-2 text-xs font-semibold text-[#111827]">
-            {hasFee
-              ? `\u20A9${Number(t.entry_fee).toLocaleString()}`
-              : <span className="text-[#9CA3AF]">무료</span>}
+          {/* Row 5: 참가비 + 종별(divisions) 칩 */}
+          <div className="mt-auto flex items-center justify-between pt-1">
+            <span className="text-xs font-semibold text-[#111827]">
+              {hasFee
+                ? `\u20A9${Number(t.entry_fee).toLocaleString()}`
+                : <span className="text-[#9CA3AF]">무료</span>}
+            </span>
+            {/* 종별 칩: 최대 2개 표시 + 나머지 "+N" */}
+            {visibleDivs.length > 0 && (
+              <div className="flex items-center gap-1">
+                {visibleDivs.map((div) => (
+                  <span
+                    key={div}
+                    className="rounded-[6px] bg-[#F3F4F6] px-1.5 py-0.5 text-[11px] font-medium text-[#6B7280]"
+                  >
+                    {div}
+                  </span>
+                ))}
+                {extraCount > 0 && (
+                  <span className="text-[11px] font-medium text-[#9CA3AF]">
+                    +{extraCount}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -259,8 +284,8 @@ export function TournamentsContent({
             </p>
           )}
 
-          {/* 대회 카드 그리드 */}
-          <div className="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          {/* 대회 카드 그리드 (GameCard와 동일: 2열 기본, 대형 3열) */}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             {tournaments.map((t) => (
               <TournamentCard key={t.id} tournament={t} />
             ))}
