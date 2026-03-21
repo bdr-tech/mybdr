@@ -23,7 +23,8 @@ const BOARD_CATEGORIES = [
 // --- 미선택 버튼의 공통 스타일 (CSS 변수로 라이트/다크 자동 대응) ---
 const unselectedBtn = "bg-(--color-elevated) border-(--color-border) text-(--color-text-secondary) hover:border-(--color-text-secondary)";
 // --- 선택된 버튼 스타일 (오렌지 계열 - 테마 무관하게 고정) ---
-const selectedChip = "bg-[#F4A261]/20 border-[#F4A261] text-[#F4A261]";
+// 선택된 칩 스타일 - 액센트 색상(오렌지) CSS 변수 사용
+const selectedChip = "bg-(--color-accent)/20 border-(--color-accent) text-(--color-accent)";
 
 // --- Props 타입 정의 ---
 // mode: "onboarding"은 온보딩 흐름 (스킵 가능), "settings"는 프로필 설정 페이지용
@@ -141,7 +142,7 @@ export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#F4A261]" />
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-(--color-accent)" />
       </div>
     );
   }
@@ -184,7 +185,7 @@ export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps
             type="button"
             onClick={togglePreferFilter}
             className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ${
-              preferFilter ? "bg-[#F4A261]" : "bg-(--color-surface)"
+              preferFilter ? "bg-(--color-accent)" : "bg-(--color-surface)"
             }`}
             role="switch"
             aria-checked={preferFilter}
@@ -214,7 +215,7 @@ export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps
               onClick={() => setActiveGender(gender)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 activeGender === gender
-                  ? "bg-[#F4A261] text-black"
+                  ? "bg-(--color-accent) text-black"
                   : unselectedBtn
               }`}
             >
@@ -339,7 +340,7 @@ export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full py-3 rounded-xl bg-[#F4A261] text-black font-semibold text-base hover:bg-[#e8954f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full py-3 rounded-xl bg-(--color-accent) text-black font-semibold text-base hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {saving ? "저장 중..." : "설정 저장"}
         </button>

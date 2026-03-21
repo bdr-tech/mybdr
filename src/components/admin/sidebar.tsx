@@ -20,9 +20,9 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[260px] flex-col border-r border-[#E8ECF0] bg-[#FFFFFF] p-4 lg:flex">
+    <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[260px] flex-col border-r border-(--color-border) bg-(--color-card) p-4 lg:flex">
       <Link href="/admin" className="mb-8 flex items-center gap-2 px-3">
-        <span className="text-xl font-bold text-[#E31B23]" style={{ fontFamily: "var(--font-heading)" }}>MyBDR</span>
+        <span className="text-xl font-bold text-(--color-primary)" style={{ fontFamily: "var(--font-heading)" }}>MyBDR</span>
         <span className="rounded-[6px] bg-[rgba(239,68,68,0.2)] px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-[#EF4444]">Admin</span>
       </Link>
 
@@ -34,7 +34,7 @@ export function AdminSidebar() {
               key={item.href}
               href={item.href}
               className={`flex items-center gap-3 rounded-[12px] px-4 py-3 text-sm transition-all duration-200 ${
-                isActive ? "bg-[#111827] text-white font-bold shadow-sm" : "text-[#374151] hover:bg-[#F5F7FA] hover:text-[#111827] hover:pl-5"
+                isActive ? "bg-(--color-text-primary) text-white font-bold shadow-sm" : "text-(--color-text-secondary) hover:bg-(--color-surface) hover:text-(--color-text-primary) hover:pl-5"
               }`}
             >
               <span>{item.icon}</span>{item.label}
@@ -43,8 +43,8 @@ export function AdminSidebar() {
         })}
       </nav>
 
-      <div className="border-t border-[#E8ECF0] pt-4">
-        <Link href="/" className="flex items-center gap-3 rounded-[12px] px-4 py-3 text-sm text-[#374151] transition-all duration-200 hover:bg-[#F5F7FA] hover:text-[#111827] hover:pl-5">
+      <div className="border-t border-(--color-border) pt-4">
+        <Link href="/" className="flex items-center gap-3 rounded-[12px] px-4 py-3 text-sm text-(--color-text-secondary) transition-all duration-200 hover:bg-(--color-surface) hover:text-(--color-text-primary) hover:pl-5">
           ← 사이트로 돌아가기
         </Link>
       </div>
