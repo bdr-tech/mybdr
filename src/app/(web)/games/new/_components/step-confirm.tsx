@@ -43,8 +43,8 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
 
   return (
     <div aria-live="polite">
-      <h2 className="mb-2 text-xl font-bold sm:text-2xl text-[#111827]">이렇게 만들까요?</h2>
-      <p className="mb-6 text-sm text-[#9CA3AF]">내용을 확인하고 경기를 만들어보세요.</p>
+      <h2 className="mb-2 text-xl font-bold sm:text-2xl text-[var(--color-text-primary)]">이렇게 만들까요?</h2>
+      <p className="mb-6 text-sm text-[var(--color-text-secondary)]">내용을 확인하고 경기를 만들어보세요.</p>
 
       {/* Error toast */}
       {submitError && (
@@ -55,40 +55,40 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
 
       {/* Preview Card */}
       <div
-        className="mb-6 overflow-hidden rounded-[16px] border border-[#E8ECF0] bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
-        style={{ borderLeft: "3px solid #E31B23" }}
+        className="mb-6 overflow-hidden rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
+        style={{ borderLeft: "3px solid var(--color-primary)" }}
       >
         <div className="mb-3 flex items-center gap-1.5">
           <span className="text-base">{typeEmoji}</span>
-          <span className="text-xs font-medium text-[#E31B23]">{typeLabel}</span>
+          <span className="text-xs font-medium text-[var(--color-primary)]">{typeLabel}</span>
         </div>
 
-        <h3 className="mb-3 text-lg font-semibold leading-snug text-[#111827]">{title}</h3>
+        <h3 className="mb-3 text-lg font-semibold leading-snug text-[var(--color-text-primary)]">{title}</h3>
 
         <div className="mb-3 space-y-1.5">
           {dateDisplay && (
-            <div className="flex items-center gap-1.5 text-sm text-[#6B7280]">
+            <div className="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]">
               <span>📅</span>
               <span>{dateDisplay}</span>
             </div>
           )}
           {location && (
-            <div className="flex items-center gap-1.5 text-sm text-[#6B7280]">
+            <div className="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]">
               <span>📍</span>
               <span>{location}</span>
             </div>
           )}
           {data.venueAddress && !location.includes(data.venueAddress) && (
-            <div className="flex items-center gap-1.5 text-xs text-[#9CA3AF]">
+            <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)]">
               <span className="w-4" />
               <span>{data.venueAddress}</span>
             </div>
           )}
         </div>
 
-        <div className="mb-3 h-px bg-[#E8ECF0]" />
+        <div className="mb-3 h-px bg-[var(--color-border)]" />
 
-        <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-[#6B7280]">
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-[var(--color-text-muted)]">
           <span>최대 {data.maxParticipants}명</span>
           <span>·</span>
           <span>{feeDisplay}</span>
@@ -98,7 +98,7 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
 
         {data.allowGuests && data.gameType !== "1" && (
           <div className="mt-2">
-            <span className="rounded-full bg-[#EEF2FF] px-2 py-0.5 text-xs text-[#6B7280]">
+            <span className="rounded-full bg-[var(--color-surface-bright)] px-2 py-0.5 text-xs text-[var(--color-text-muted)]">
               게스트 허용
             </span>
           </div>
@@ -114,11 +114,11 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
       </div>
 
       {/* Advanced Settings Accordion */}
-      <div className="rounded-[16px] border border-[#E8ECF0] bg-white overflow-hidden">
+      <div className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] overflow-hidden">
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="flex w-full items-center justify-between px-5 py-4 text-sm font-medium text-[#6B7280] hover:bg-[#F5F7FA] transition-colors"
+          className="flex w-full items-center justify-between px-5 py-4 text-sm font-medium text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] transition-colors"
           aria-expanded={showAdvanced}
         >
           <span>추가 설정 (선택)</span>
@@ -128,51 +128,51 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
         </button>
 
         {showAdvanced && (
-          <div className="space-y-4 border-t border-[#E8ECF0] px-5 py-4">
+          <div className="space-y-4 border-t border-[var(--color-border)] px-5 py-4">
             {/* Description */}
             <div>
-              <label className="mb-1 block text-sm text-[#6B7280]">설명</label>
+              <label className="mb-1 block text-sm text-[var(--color-text-muted)]">설명</label>
               <textarea
                 value={data.description}
                 onChange={(e) => updateData("description", e.target.value)}
                 rows={3}
                 placeholder="경기 상세 설명"
-                className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
+                className="w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
               />
             </div>
 
             {/* Requirements */}
             <div>
-              <label className="mb-1 block text-sm text-[#6B7280]">참가 조건</label>
+              <label className="mb-1 block text-sm text-[var(--color-text-muted)]">참가 조건</label>
               <textarea
                 value={data.requirements}
                 onChange={(e) => updateData("requirements", e.target.value)}
                 rows={2}
                 placeholder="예: 남성만, 3점슈터 우대"
-                className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
+                className="w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
               />
             </div>
 
             {/* Pickup: entry fee note */}
             {data.gameType === "0" && (
               <div>
-                <label className="mb-1 block text-sm text-[#6B7280]">참가비 안내</label>
+                <label className="mb-1 block text-sm text-[var(--color-text-muted)]">참가비 안내</label>
                 <input
                   type="text"
                   value={data.entryFeeNote}
                   onChange={(e) => updateData("entryFeeNote", e.target.value)}
                   placeholder="예: 음료 지참, 5,000원 현장 납부 등"
-                  className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
+                  className="w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
                 />
               </div>
             )}
 
             {/* Recurring */}
             <div>
-              <div className="flex items-center justify-between rounded-[12px] bg-[#F5F7FA] px-4 py-3">
+              <div className="flex items-center justify-between rounded-[12px] bg-[var(--color-surface)] px-4 py-3">
                 <div>
-                  <p className="text-sm font-medium text-[#111827]">반복 경기</p>
-                  <p className="text-xs text-[#9CA3AF]">정기적으로 반복되는 경기</p>
+                  <p className="text-sm font-medium text-[var(--color-text-primary)]">반복 경기</p>
+                  <p className="text-xs text-[var(--color-text-secondary)]">정기적으로 반복되는 경기</p>
                 </div>
                 <button
                   type="button"
@@ -180,11 +180,11 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
                   aria-checked={data.isRecurring}
                   onClick={() => updateData("isRecurring", !data.isRecurring)}
                   className={`relative h-6 w-12 flex-shrink-0 rounded-full transition-colors ${
-                    data.isRecurring ? "bg-[#1B3C87]" : "bg-[#CBD5E1]"
+                    data.isRecurring ? "bg-[var(--color-accent)]" : "bg-[#CBD5E1]"
                   }`}
                 >
                   <span
-                    className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-all ${
+                    className={`absolute top-1 h-4 w-4 rounded-full bg-[var(--color-card)] transition-all ${
                       data.isRecurring ? "left-7" : "left-1"
                     }`}
                   />
@@ -194,11 +194,11 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
               {data.isRecurring && (
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <div>
-                    <label className="mb-1 block text-xs text-[#9CA3AF]">반복 주기</label>
+                    <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">반복 주기</label>
                     <select
                       value={data.recurrenceRule}
                       onChange={(e) => updateData("recurrenceRule", e.target.value)}
-                      className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-3 py-2 text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
+                      className="w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
                     >
                       {RECURRENCE_RULES.map((r) => (
                         <option key={r.value} value={r.value}>{r.label}</option>
@@ -206,14 +206,14 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
                     </select>
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs text-[#9CA3AF]">총 횟수</label>
+                    <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">총 횟수</label>
                     <input
                       type="number"
                       value={data.recurringCount}
                       onChange={(e) => updateData("recurringCount", parseInt(e.target.value) || 2)}
                       min={2}
                       max={52}
-                      className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-3 py-2 text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
+                      className="w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
                     />
                   </div>
                 </div>
@@ -222,13 +222,13 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
 
             {/* Notes */}
             <div>
-              <label className="mb-1 block text-sm text-[#6B7280]">비고</label>
+              <label className="mb-1 block text-sm text-[var(--color-text-muted)]">비고</label>
               <textarea
                 value={data.notes}
                 onChange={(e) => updateData("notes", e.target.value)}
                 rows={2}
                 placeholder="기타 안내사항"
-                className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
+                className="w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
               />
             </div>
           </div>
