@@ -36,10 +36,10 @@
   --color-secondary: #1B3C87;        /* secondary = accent 동일 */
   --color-tertiary: #94CCFF;         /* 텍스트 링크/삼차 강조 */
 
-  /* --- 텍스트 (따뜻한 톤, 순백 금지) --- */
-  --color-text-primary: #E7BDB8;     /* 메인 텍스트: 따뜻한 베이지톤 (on_surface_variant) */
-  --color-text-secondary: #A09C9B;   /* 보조 텍스트: 따뜻한 회색 */
-  --color-text-muted: #5C5958;       /* 약한 텍스트: 따뜻한 어두운 회색 */
+  /* --- 텍스트 (화이트 계열, 시인성 향상) --- */
+  --color-text-primary: #F5F5F5;     /* 메인 텍스트: 부드러운 화이트 (시인성 향상) */
+  --color-text-secondary: #D1D1D1;   /* 보조 텍스트: 밝은 회색 (시인성 향상) */
+  --color-text-muted: #9E9E9E;       /* 약한 텍스트: 중간 회색 (시인성 향상) */
   --color-text-on-primary: #FFFFFF;  /* 버튼 위 텍스트 (유일한 순백 허용) */
 
   /* --- 상태 색상 --- */

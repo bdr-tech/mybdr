@@ -91,7 +91,7 @@ export function Header() {
             <img
               src="/images/logo.png"
               alt="BDR"
-              className="h-[42px] w-auto"
+              className="h-[55px] w-auto" /* 로고 크기 130% 확대 (42px → 55px) */
             />
           </Link>
 
