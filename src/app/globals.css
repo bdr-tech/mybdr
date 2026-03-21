@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* .claude 폴더를 Tailwind 스캔 대상에서 제외 (scratchpad.md에 있는
+   text-[var(--...)] 같은 문자열이 CSS 클래스로 인식되어 파싱 에러 발생 방지) */
+@source not "../../.claude";
+
 @theme {
   /* ========================================
    * Phase 4-1: ESPN + WHOOP 믹스 디자인 토큰
