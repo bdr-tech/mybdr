@@ -133,7 +133,9 @@ export function SlideMenu({
               {/* 로그아웃 */}
               <a
                 href="/api/auth/logout"
-                className="block w-full rounded-[12px] px-3 py-2.5 text-left text-sm text-[#EF4444] hover:bg-[rgba(239,68,68,0.1)]"
+                /* 로그아웃 버튼: 위험 동작이므로 빨간 계열 유지, CSS 변수로 다크 모드 대응 */
+                className="block w-full rounded-[12px] px-3 py-2.5 text-left text-sm hover:bg-[rgba(239,68,68,0.1)]"
+                style={{ color: 'var(--color-error)' }}
               >
                 로그아웃
               </a>

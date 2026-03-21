@@ -15,7 +15,8 @@ interface VideoItem {
 }
 
 // 뱃지별 스타일 정의
-function getBadgeStyle(badge: string): { bg: string; text: string; icon?: "flame" | "pulse" } {
+/* 뱃지 유형별 스타일 반환. cssColor가 있으면 style prop으로 텍스트 색상 적용 */
+function getBadgeStyle(badge: string): { bg: string; text: string; icon?: "flame" | "pulse"; cssColor?: string } {
   switch (badge) {
     case "LIVE":
       // 빨간 배경 + 흰 텍스트 + 깜빡이는 점 애니메이션
@@ -27,8 +28,8 @@ function getBadgeStyle(badge: string): { bg: string; text: string; icon?: "flame
       // 파란/보라 계열
       return { bg: "bg-indigo-500/15", text: "text-indigo-600" };
     default:
-      // 디비전명 (스타터스, 챌린저 등) -> 오렌지 계열
-      return { bg: "bg-[#F4A261]/15", text: "text-[#E76F00]" };
+      // 디비전명 (스타터스, 챌린저 등) -> 오렌지 계열 (CSS 변수로 다크모드 대응)
+      return { bg: "bg-[#F4A261]/15", text: "", cssColor: "var(--color-accent-hover)" };
   }
 }
 
@@ -188,6 +189,8 @@ export function RecommendedVideos() {
                       <span
                         key={badge}
                         className={`inline-flex items-center gap-1 rounded-[6px] px-2 py-0.5 text-[11px] font-semibold ${style.bg} ${style.text}`}
+                        /* cssColor가 있으면 인라인으로 텍스트 색상 적용 (CSS 변수 다크 모드 대응) */
+                        style={style.cssColor ? { color: style.cssColor } : undefined}
                       >
                         {/* LIVE 뱃지: 깜빡이는 점 */}
                         {style.icon === "pulse" && (

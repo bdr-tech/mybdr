@@ -102,11 +102,8 @@ export function Header() {
                 key={item.href}
                 href={item.href}
                 prefetch={true}
-                className={`relative px-5 py-4 text-[17px] font-semibold uppercase tracking-wide transition-colors ${
-                  isActive(item.href)
-                    ? "text-[#111827]"
-                    : "text-[#9CA3AF] hover:text-[#374151]"
-                }`}
+                className="relative px-5 py-4 text-[17px] font-semibold uppercase tracking-wide transition-colors"
+                /* inline style의 CSS 변수가 우선 적용되므로, className에서 하드코딩 색상 제거 */
                 style={isActive(item.href) ? { color: 'var(--color-text-primary)' } : { color: 'var(--color-text-muted)' }}
               >
                 {item.label}
