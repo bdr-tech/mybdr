@@ -29,10 +29,12 @@ export function ProfileHeader({ nickname, email, profileImageUrl }: ProfileHeade
             alt={displayName}
             width={72}
             height={72}
-            className="h-[72px] w-[72px] flex-shrink-0 rounded-full object-cover ring-2 ring-[#F4A261]/40"
+            className="h-[72px] w-[72px] flex-shrink-0 rounded-full object-cover"
+            style={{ boxShadow: '0 0 0 2px rgba(244,162,97,0.4)' }}
           />
         ) : (
-          <div className="flex h-[72px] w-[72px] flex-shrink-0 items-center justify-center rounded-full bg-[#1B3C87] text-2xl font-bold text-white ring-2 ring-[#1B3C87]/30">
+          <div className="flex h-[72px] w-[72px] flex-shrink-0 items-center justify-center rounded-full text-2xl font-bold text-white"
+            style={{ backgroundColor: 'var(--color-accent)', boxShadow: '0 0 0 2px rgba(27,60,135,0.3)' }}>
             {initial}
           </div>
         )}

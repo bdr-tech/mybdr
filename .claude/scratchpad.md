@@ -8,89 +8,129 @@
 5. **커밋 간소화**: tester 통과 시 PM이 직접 커밋. 복잡한 git만 git-manager 호출
 
 ## 현재 작업
-- **요청**: 코트 찾기 페이지(/courts) Kinetic Pulse 디자인 전환
-- **상태**: developer 구현 완료 -> tester 검증 대기
-- **현재 담당**: developer 완료
+- **요청**: 마이페이지(/profile) Kinetic Pulse 디자인 전환
+- **상태**: planner 계획 수립 완료 -> developer 대기
+- **현재 담당**: planner 완료
 
-## 작업 계획 (planner) - 코트 찾기 페이지 Kinetic Pulse 전환
+## 작업 계획 (planner) - 마이페이지 Kinetic Pulse 전환
 
 ### 목표
-코트 찾기 페이지(/courts)의 하드코딩 색상을 CSS 변수로 교체하고, bdr_v2_4 디자인 시안에 맞춰 Kinetic Pulse 스타일로 전환
+마이페이지(/profile) 하위 파일들의 하드코딩 색상을 CSS 변수로 교체하여 다크모드 자동 대응
 
-### 대상 파일 (3개)
+### 전수조사 결과
+
+**이미 CSS 변수 전환 완료 (수정 불필요 - 11개 파일)**
+- `page.tsx` (메인) - style 속성으로 CSS 변수 적용 완료
+- `_components/activity-ring.tsx` - CSS 변수 적용 완료 (티어 색상 #FFD700/#C0C0C0/#CD7F32는 의미론적 색상이므로 유지)
+- `_components/player-info-section.tsx` - CSS 변수 적용 완료
+- `_components/recent-games-section.tsx` - CSS 변수 적용 완료
+- `_components/section-wrapper.tsx` - CSS 변수 적용 완료
+- `_components/stat-bars.tsx` - CSS 변수 적용 완료 (스탯 색상 #E31B23/#F4A261/#1B3C87/#16A34A/#7C3AED는 의미론적이므로 유지)
+- `_components/teams-section.tsx` - CSS 변수 적용 완료
+- `_components/tournaments-section.tsx` - CSS 변수 적용 완료
+- `complete/preferences/page.tsx` - CSS 변수 적용 완료
+- `preferences/page.tsx` - CSS 변수 적용 완료
+
+**하드코딩 잔존 (수정 필요 - 4개 파일)**
+
+### 대상 파일 (4개)
 
 | 파일 경로 | 역할 | 하드코딩 색상 수 |
 |----------|------|----------------|
-| `src/app/(web)/courts/page.tsx` | 코트 목록 페이지 | 9건 |
-| `src/app/(web)/courts/loading.tsx` | 스켈레톤 로딩 UI | 2건 |
-| `src/app/(web)/courts/[id]/page.tsx` | 코트 상세 페이지 | 17건 |
+| `profile/loading.tsx` | 스켈레톤 로딩 UI | 8건 |
+| `profile/edit/page.tsx` | 프로필 수정 폼 | 약 40건 |
+| `profile/complete/page.tsx` | 온보딩 프로필 완성 폼 | 약 35건 |
+| `_components/profile-header.tsx` | 프로필 헤더 (아바타) | 3건 |
 
-### 하드코딩 색상 -> CSS 변수 매핑
+### 하드코딩 색상 -> CSS 변수 매핑 (파일별 상세)
 
-#### courts/page.tsx (코트 목록)
+#### profile/loading.tsx (스켈레톤) - 8건
 
-| 위치 | 현재 하드코딩 | 용도 | 변환 대상 CSS 변수 |
-|------|-------------|------|-------------------|
-| 19행 | `bg-[#EEF2FF]` (hover) | 카드 호버 배경 | `hover:bg-[var(--color-surface-bright)]` |
-| 22행 | `text-[#6B7280]` | 주소 텍스트 | `text-[var(--color-text-muted)]` |
-| 23행 | `text-[#9CA3AF]` | 메타 정보 텍스트 | `text-[var(--color-text-secondary)]` |
-| 24행 | `bg-[#EEF2FF]` | 실내 태그 배경 | `bg-[var(--color-surface-high)]` |
-| 25행 | `bg-[rgba(74,222,128,0.2)]` | 무료 태그 배경 | `bg-[rgba(16,185,129,0.15)]` (success 계열) |
-| 25행 | `text-[#4ADE80]` | 무료 태그 텍스트 | `text-[var(--color-success)]` |
-| 28행 | `text-[#E31B23]` | 평점 색상 | `text-[var(--color-primary)]` |
-| 35행 | `text-[#6B7280]` | 빈 목록 텍스트 | `text-[var(--color-text-muted)]` |
+| 현재 하드코딩 | 용도 | 변환 대상 |
+|-------------|------|----------|
+| `border-[#E8ECF0]` x4 | 카드 보더 | `border-[var(--color-border)]` |
+| `bg-[#FFFFFF]` x4 | 카드 배경 | `bg-[var(--color-card)]` |
 
-#### courts/loading.tsx (스켈레톤)
+#### _components/profile-header.tsx - 3건
 
-| 위치 | 현재 하드코딩 | 용도 | 변환 대상 CSS 변수 |
-|------|-------------|------|-------------------|
-| 12행 | `border-[#E8ECF0]` | 카드 보더 | `border-[var(--color-border)]` |
-| 12행 | `bg-white` | 카드 배경 | `bg-[var(--color-card)]` |
+| 현재 하드코딩 | 용도 | 변환 대상 |
+|-------------|------|----------|
+| `ring-[#F4A261]/40` | 프로필 이미지 링 | `ring-[var(--color-accent)]/40` -> style 속성으로 변환 |
+| `bg-[#1B3C87]` | 기본 아바타 배경 | style `backgroundColor: 'var(--color-accent)'` |
+| `ring-[#1B3C87]/30` | 기본 아바타 링 | style 속성으로 변환 |
 
-#### courts/[id]/page.tsx (코트 상세)
+#### profile/edit/page.tsx (프로필 수정) - 약 40건
 
-| 위치 | 현재 하드코딩 | 용도 | 변환 대상 CSS 변수 |
-|------|-------------|------|-------------------|
-| 37행 | `text-[#6B7280]` | "코트 목록" 링크 | `text-[var(--color-text-muted)]` |
-| 37행 | `hover:text-[#111827]` | 링크 호버 | `hover:text-[var(--color-text-primary)]` |
-| 41행 | `text-[#6B7280]` | 주소 텍스트 | `text-[var(--color-text-muted)]` |
-| 49-71행 | `text-[#6B7280]` x6 | 정보 라벨 (유형/바닥재/골대수/이용료/지역/평점/리뷰/체크인) | `text-[var(--color-text-muted)]` |
-| 100행 | `text-[#6B7280]` | 편의시설 라벨 | `text-[var(--color-text-muted)]` |
-| 104행 | `bg-[#EEF2FF]` | 편의시설 태그 배경 | `bg-[var(--color-surface-high)]` |
-| 104행 | `text-[#6B7280]` | 편의시설 태그 텍스트 | `text-[var(--color-text-muted)]` |
-| 120행 | `text-[#6B7280]` | 소개 텍스트 | `text-[var(--color-text-muted)]` |
-| 128행 | `text-[#6B7280]` | 위치 주소 | `text-[var(--color-text-muted)]` |
-| 133행 | `bg-[#1B3C87]` | 카카오맵 버튼 배경 | `bg-[var(--color-accent)]` |
-| 148행 | `text-[#9CA3AF]` | 체크인 날짜 | `text-[var(--color-text-secondary)]` |
-| 163행 | `border-[#EEF2FF]` | 리뷰 구분선 | `border-[var(--color-border)]` |
-| 169행 | `text-[#E31B23]` | 별점 색상 | `text-[var(--color-primary)]` |
-| 172행 | `text-[#9CA3AF]` | 리뷰 날짜 | `text-[var(--color-text-secondary)]` |
-| 177행 | `text-[#6B7280]` | 리뷰 내용 | `text-[var(--color-text-muted)]` |
-| 182행 | `text-[#6B7280]` | 빈 리뷰 텍스트 | `text-[var(--color-text-muted)]` |
+**핵심: inp/lbl/section 변수 3개에 대부분 집중됨**
+
+| 현재 하드코딩 | 용도 | 변환 대상 |
+|-------------|------|----------|
+| `border-[#E8ECF0]` | 입력필드/섹션 보더 | `var(--color-border)` |
+| `bg-[#FFFFFF]` | 입력필드/섹션 배경 | `var(--color-card)` |
+| `text-[#111827]` | 입력필드 텍스트/섹션 제목 | `var(--color-text-primary)` |
+| `placeholder:text-[#9CA3AF]` | 플레이스홀더 | `var(--color-text-secondary)` |
+| `focus:border-[#1B3C87]` | 포커스 보더 | `var(--color-accent)` |
+| `focus:ring-[#1B3C87]/20` | 포커스 링 | `var(--color-accent)` |
+| `text-[#6B7280]` | 라벨 텍스트 | `var(--color-text-muted)` |
+| `text-[#9CA3AF]` | 보조 텍스트 | `var(--color-text-secondary)` |
+| `hover:bg-[#EEF2FF]` | 뒤로가기 호버 | `var(--color-surface-bright)` |
+| `bg-[rgba(239,68,68,0.1)]` | 에러 배경 | 유지 또는 error 변수 |
+| `text-[#EF4444]` | 에러 텍스트 | `var(--color-error)` 또는 유지 |
+| `bg-[rgba(0,102,255,0.1)]` | 성공 배경 | 유지 또는 accent 변수 |
+| `text-[#1B3C87]` | 성공/accent 텍스트 | `var(--color-accent)` |
+| `border-[#1B3C87]` | 선택된 포지션 보더 | `var(--color-accent)` |
+| `bg-[rgba(27,60,135,0.12)]` | 선택된 포지션 배경 | accent 투명 |
+| `text-[#7C3AED]` | AI 버튼 텍스트 | 의미론적 색상 유지 |
+| `border-[#7C3AED]/30` | AI 버튼 보더 | 의미론적 색상 유지 |
+| `hover:bg-[#7C3AED]/10` | AI 버튼 호버 | 의미론적 색상 유지 |
+| `bg-[#EEF2FF]` | 등록 계좌 안내 배경 | `var(--color-surface-bright)` |
+| `text-[#374151]` | 동의 텍스트 | `var(--color-text-primary)` |
+| `text-[#EF4444]` (필수) | 필수 표시 | 유지 |
+| `accent-[#1B3C87]` | 체크박스 색상 | `var(--color-accent)` |
+| `border-[#E5E7EB]` | 맞춤설정 카드 보더 | `var(--color-border)` |
+| `bg-[#F9FAFB]` | 맞춤설정 카드 배경 | `var(--color-surface)` |
+| `bg-[#1B3C87]` | 저장/맞춤설정 버튼 | `var(--color-accent)` |
+| `hover:bg-[#142D6B]` | 버튼 호버 | `var(--color-accent-hover)` |
+
+#### profile/complete/page.tsx (온보딩) - 약 35건
+
+edit/page.tsx와 거의 동일 패턴 (inp/lbl 변수 공유). 추가 항목:
+
+| 현재 하드코딩 | 용도 | 변환 대상 |
+|-------------|------|----------|
+| `text-[#E31B23]` | 환영 아이콘 | `var(--color-primary)` |
+| `shadow-[0_4px_24px_rgba(0,0,0,0.07)]` | 카드 그림자 | `var(--shadow-card)` |
+| `border-emerald-400` | 인증완료 보더 | `var(--color-success)` |
+| `text-emerald-500` | 인증완료 텍스트 | `var(--color-success)` |
+| `bg-[#E31B23]` | 인증 확인 버튼 | `var(--color-primary)` |
+| `hover:bg-[#C8101E]` | 인증 확인 호버 | primary hover |
+| `text-red-500` / `bg-red-500/10` | 에러 표시 | 유지 또는 error 변수 |
+| `hover:bg-[#F5F7FA]` | "나중에" 버튼 호버 | `var(--color-surface)` |
 
 ### 실행 계획
 
 | 순서 | 작업 | 담당 | 예상 시간 | 선행 조건 |
 |------|------|------|----------|----------|
-| 1 | courts/page.tsx 하드코딩 색상 8건 -> CSS 변수 교체 | developer | 5분 | 없음 |
-| 2 | courts/loading.tsx 하드코딩 2건 -> CSS 변수 교체 | developer | 3분 | 없음 |
-| 3 | courts/[id]/page.tsx 하드코딩 17건 -> CSS 변수 교체 | developer | 10분 | 없음 |
-| 4 | tsc + 빌드 검증 + 하드코딩 잔존 확인 | tester | 5분 | 1-3단계 |
+| 1 | loading.tsx 하드코딩 8건 -> CSS 변수 교체 | developer | 3분 | 없음 |
+| 2 | profile-header.tsx 하드코딩 3건 -> CSS 변수 교체 | developer | 3분 | 없음 |
+| 3 | edit/page.tsx 하드코딩 ~40건 -> CSS 변수 교체 (inp/lbl/section 변수 중심) | developer | 10분 | 없음 |
+| 4 | complete/page.tsx 하드코딩 ~35건 -> CSS 변수 교체 | developer | 10분 | 없음 |
+| 5 | tsc + 하드코딩 잔존 확인 + 변수 사용 확인 | tester | 5분 | 1-4단계 |
 
-총 예상 시간: 23분
+총 예상 시간: 31분
 
 ### 주의사항
 
-1. **bdr_v2_4 시안과의 차이**: 시안은 "픽업 게임 목록" 화면이지만, 현재 courts 페이지는 "코트 정보 목록". 레이아웃 구조는 유지하고 색상만 교체하는 것이 안전함
-2. **Card 컴포넌트**: `@/components/ui/card`를 사용 중. Card 자체의 스타일은 globals.css의 Dark Mode Override에서 이미 CSS 변수로 적용되어 있으므로 Card 내부는 건드리지 않아도 됨
-3. **text-[#6B7280] 반복**: 상세 페이지에서 `text-[#6B7280]`이 12회 반복됨. 모두 `text-[var(--color-text-muted)]`로 통일
-4. **bg-[#EEF2FF]**: 라이트 테마용 색상(indigo-50). 다크 테마에서는 `var(--color-surface-high)` (#353534)로 대체해야 어두운 배경에서 보임
-5. **1-3단계는 독립적**이므로 병렬 실행 가능
+1. **inp/lbl/section 변수 전략**: edit/page.tsx와 complete/page.tsx 모두 상단에 `inp`, `lbl`, `section` CSS 클래스 문자열 변수가 정의되어 있음. 이 변수를 CSS 변수로 교체하면 파일 전체에 일괄 적용됨 (효율적)
+2. **의미론적 색상 유지**: AI 버튼의 보라색(#7C3AED), 스탯 바의 고유 색상, 티어 색상 등은 테마와 무관한 브랜드/의미 색상이므로 교체하지 않음
+3. **Tailwind -> style 속성 전환**: CSS 변수를 Tailwind 클래스에서 쓸 때는 `bg-[var(--color-xxx)]` 형태를 사용하되, 복잡한 경우(ring, 투명도 조합 등)는 style 속성으로 전환
+4. **에러/성공 색상**: red-500, EF4444 등 에러 색상은 의미론적이므로 유지해도 무방. 단, 다크모드에서 가독성이 필요하면 `var(--color-error)` 같은 변수 추가 검토
+5. **1-4단계는 독립적**이므로 병렬 실행 가능. 특히 1-2단계는 소규모라 빠르게 처리 가능
 
 ### 영향 범위
 
-- 변경 파일: 3개 (courts/ 하위만)
-- 다른 페이지 영향: 없음 (courts 전용 파일만 수정)
+- 변경 파일: 4개 (profile/ 하위만)
+- 다른 페이지 영향: 없음 (profile 전용 파일만 수정)
 - CSS 변수 신규 추가: 없음 (기존 변수만 활용)
 - 기능 변경: 없음 (색상만 교체)
 
@@ -99,46 +139,52 @@
 ## 작업 로그 (최근 10건만 유지)
 | 일시 | 담당 | 작업 | 결과 |
 |------|------|------|------|
-| 2026-03-21 | architect | Phase 5-1 CSS 변수 전면 교체 설계 (전수조사+매핑+리스크전략+실행순서) | 완료 |
-| 2026-03-21 | developer | Phase 5-1 CSS변수 Kinetic Pulse 전환 + Space Grotesk 폰트 | 완료 |
-| 2026-03-21 | developer | Phase 5-2 공통 컴포넌트(헤더/슬라이드메뉴/드롭다운) Kinetic Pulse 전환 | 완료 |
-| 2026-03-21 | developer | Phase 5-3 홈페이지 5개 컴포넌트 Kinetic Pulse 전면 개편 | 완료 |
-| 2026-03-22 | developer | Phase 5-3b 홈페이지 bdr_6 레이아웃 완전 복제 (사이드바+하단네비+섹션 재배치) | 완료 |
+| 2026-03-22 | developer | Phase 5-3b 홈페이지 bdr_6 레이아웃 완전 복제 | 완료 |
 | 2026-03-22 | developer | 히어로 2분할 레이아웃 + 유튜브 라이브/인기영상 + 광고 슬라이드 | 완료 |
 | 2026-03-22 | developer | 헤더 기능 복구(선호/큰글씨/다크모드/벨/로고) + 강남구 제거 | 완료 |
 | 2026-03-22 | developer | 용어 변경(선호->맞춤/관심) + 온보딩 맞춤보기 토글 + prefer_filter_enabled 전달 | 완료 |
 | 2026-03-22 | developer | CSS 변수 값 미세 조정 10건 (surface/text/border/radius 등) | 완료 |
 | 2026-03-22 | planner | 코트 찾기 페이지(/courts) Kinetic Pulse 전환 계획 수립 | 완료 |
-| 2026-03-22 | developer | 코트 찾기 3파일 하드코딩 색상 27건 -> CSS 변수 교체 (page/loading/[id]) | 완료 |
-| 2026-03-22 | tester | 코트 찾기 3파일 CSS 변수 교체 검증 (tsc + 하드코딩 잔존 + 변수 사용) | 5/5 통과 |
+| 2026-03-22 | developer+tester | 코트 찾기 3파일 하드코딩 27건 CSS 변수 교체 + 검증 5/5 통과 | 완료 |
+| 2026-03-22 | planner | 마이페이지(/profile) Kinetic Pulse 전환 계획 수립 (4파일 ~86건) | 완료 |
+| 2026-03-22 | developer | 마이페이지 4파일 하드코딩 ~86건 CSS 변수 교체 (loading/header/edit/complete) | 완료 |
+| 2026-03-22 | tester | 마이페이지 CSS 변수 전환 검증 (tsc+잔존검사+변수사용) 10/10 통과 | 통과 |
 
-### 구현 기록 (developer)
+---
 
-구현한 기능: 코트 찾기 페이지 3개 파일의 하드코딩 색상을 CSS 변수로 전면 교체
+### 구현 기록 (developer) - 마이페이지 CSS 변수 전환
+
+구현한 기능: 마이페이지 4개 파일의 하드코딩 색상을 CSS 변수로 교체 (다크모드 자동 대응)
 
 | 파일 경로 | 변경 내용 | 신규/수정 |
 |----------|----------|----------|
-| src/app/(web)/courts/page.tsx | 하드코딩 색상 8건 -> CSS 변수 교체 | 수정 |
-| src/app/(web)/courts/loading.tsx | 하드코딩 색상 2건 -> CSS 변수 교체 | 수정 |
-| src/app/(web)/courts/[id]/page.tsx | 하드코딩 색상 17건 -> CSS 변수 교체 | 수정 |
+| profile/loading.tsx | border/bg 8건 -> CSS 변수 | 수정 |
+| _components/profile-header.tsx | ring/bg 3건 -> style 속성 CSS 변수 | 수정 |
+| profile/edit/page.tsx | inp/lbl/section 변수 + 개별 ~40건 -> CSS 변수 | 수정 |
+| profile/complete/page.tsx | inp/lbl 변수 + 개별 ~35건 -> CSS 변수 | 수정 |
 
 tester 참고:
-- 테스트 방법: /courts 페이지 및 /courts/[id] 상세 페이지를 라이트/다크 모드 전환하며 확인
-- 정상 동작: 모든 텍스트/배경/보더 색상이 테마에 맞게 변경됨
-- 주의할 입력: 다크 모드에서 편의시설 태그, 실내/무료 태그, 카카오맵 버튼 색상 확인
+- 테스트 방법: /profile, /profile/edit, /profile/complete 페이지를 라이트/다크 모드에서 확인
+- 정상 동작: 라이트 모드에서 기존과 동일한 색상, 다크 모드에서 CSS 변수에 따른 색상 적용
+- 의미론적 색상 유지 확인: AI 버튼 보라색(#7C3AED), 에러 빨강(#EF4444), red-500 유지됨
+- 주의: profile-header.tsx의 아바타 ring은 boxShadow style로 전환됨 (Tailwind ring과 CSS 변수 호환 문제)
 
 reviewer 참고:
-- text-[#6B7280] 12회 반복은 replace_all로 일괄 교체함
-- bg-[#EEF2FF]는 planner 계획에서 surface-high로 매핑했으나, PM 매핑 규칙에 따라 surface-bright로 통일 적용
+- focus:ring-[var(--color-accent)]/20 형태 Tailwind에서 CSS 변수 + 투명도 조합 동작 확인 필요
 
-### 테스트 결과 (tester)
+### 테스트 결과 (tester) - 마이페이지 CSS 변수 전환
 
 | 테스트 항목 | 결과 | 비고 |
 |-----------|------|------|
-| TypeScript 컴파일 (`tsc --noEmit`) | 통과 | 에러 0건 |
-| 하드코딩 색상 잔존 검사 (#6B7280, #9CA3AF, #111827, #EEF2FF, #E8ECF0, #E31B23, #1B3C87, #4ADE80, bg-white) | 통과 | 검출 0건 - 모두 CSS 변수로 교체됨 |
-| CSS 변수 사용 확인 (page.tsx) | 통과 | var(--color-*) 8곳 적용 확인 |
-| CSS 변수 사용 확인 (loading.tsx) | 통과 | var(--color-border), var(--color-card) 2곳 적용 확인 |
-| CSS 변수 사용 확인 ([id]/page.tsx) | 통과 | var(--color-*) 21곳 적용 확인 (text-muted, text-secondary, primary, accent, border, surface-bright, success) |
+| TypeScript 컴파일 (tsc --noEmit) | 통과 | 에러 0건 |
+| 하드코딩 헥스 잔존 (#E8ECF0/#FFFFFF/#6B7280/#9CA3AF/#111827/#374151) | 통과 | 대상 4파일에서 0건 발견 |
+| Tailwind 하드코딩 잔존 (bg-white/bg-gray-*/text-gray-*/border-gray-*) | 통과 | profile 폴더 전체 0건 |
+| loading.tsx CSS 변수 적용 | 통과 | --color-border, --color-card 총 8건 적용 확인 |
+| profile-header.tsx CSS 변수 적용 | 통과 | style 속성으로 6종 CSS 변수 적용 확인 |
+| edit/page.tsx CSS 변수 적용 | 통과 | inp/lbl/section 변수 + 개별 요소 40건 이상 적용 |
+| complete/page.tsx CSS 변수 적용 | 통과 | inp/lbl 변수 + primary/success/shadow-card 등 적용 |
+| 의도적 유지 색상 확인 (#7C3AED AI 보라) | 통과 | edit, complete 모두 유지 확인 |
+| 의도적 유지 색상 확인 (#EF4444/text-red-*/bg-red-* 에러) | 통과 | edit: #EF4444+rgba, complete: red-500 유지 확인 |
+| 의도적 유지 색상 확인 (text-white 버튼 텍스트) | 통과 | edit 2건, complete 3건 text-white 유지 확인 |
 
-종합: 5개 중 5개 통과 / 0개 실패
+종합: 10개 중 10개 통과 / 0개 실패

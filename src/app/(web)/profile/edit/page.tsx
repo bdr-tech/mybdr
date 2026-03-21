@@ -173,14 +173,15 @@ export default function ProfileEditPage() {
     }
   };
 
+  /* 입력필드/라벨/섹션 공통 스타일 - CSS 변수로 다크모드 자동 대응 */
   const inp =
-    "w-full rounded-[16px] border border-[#E8ECF0] bg-[#FFFFFF] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#1B3C87] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/20 text-sm";
-  const lbl = "mb-1 block text-sm text-[#6B7280]";
-  const section = "mb-6 rounded-[20px] border border-[#E8ECF0] bg-[#FFFFFF] p-5";
+    "w-full rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm";
+  const lbl = "mb-1 block text-sm text-[var(--color-text-muted)]";
+  const section = "mb-6 rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] p-5";
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center text-[#6B7280]">
+      <div className="flex min-h-[60vh] items-center justify-center text-[var(--color-text-muted)]">
         <p>로딩 중...</p>
       </div>
     );
@@ -190,22 +191,22 @@ export default function ProfileEditPage() {
     <div className="mx-auto max-w-lg">
       {/* 헤더 */}
       <div className="mb-6 flex items-center gap-3">
-        <Link href="/profile" className="rounded-[10px] p-2 text-[#6B7280] hover:bg-[#EEF2FF]">
+        <Link href="/profile" className="rounded-[10px] p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-bright)]">
           ←
         </Link>
         <h1 className="text-2xl font-extrabold uppercase tracking-wide sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>프로필 수정</h1>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-[12px] bg-[rgba(239,68,68,0.1)] px-4 py-3 text-sm text-[#EF4444]">{error}</div>
+        <div className="mb-4 rounded-[12px] bg-[rgba(239,68,68,0.1)] px-4 py-3 text-sm text-[var(--color-error,#EF4444)]">{error}</div>
       )}
       {successMsg && (
-        <div className="mb-4 rounded-[12px] bg-[rgba(0,102,255,0.1)] px-4 py-3 text-sm text-[#1B3C87]">{successMsg}</div>
+        <div className="mb-4 rounded-[12px] bg-[rgba(0,102,255,0.1)] px-4 py-3 text-sm text-[var(--color-accent)]">{successMsg}</div>
       )}
 
       {/* 기본 정보 */}
       <div className={section}>
-        <h2 className="mb-4 font-semibold uppercase tracking-wide text-[#111827]" style={{ fontFamily: "var(--font-heading)" }}>기본 정보</h2>
+        <h2 className="mb-4 font-semibold uppercase tracking-wide text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>기본 정보</h2>
         <div className="space-y-4">
           <div>
             <label className={lbl}>이름 (실명)</label>
@@ -257,10 +258,10 @@ export default function ProfileEditPage() {
 
       {/* 경기 정보 */}
       <div className={section}>
-        <h2 className="mb-4 font-semibold uppercase tracking-wide text-[#111827]" style={{ fontFamily: "var(--font-heading)" }}>경기 정보</h2>
+        <h2 className="mb-4 font-semibold uppercase tracking-wide text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>경기 정보</h2>
         <div className="space-y-4">
           <div>
-            <label className={lbl}>포지션 <span className="text-xs text-[#9CA3AF]">(복수 선택 가능)</span></label>
+            <label className={lbl}>포지션 <span className="text-xs text-[var(--color-text-secondary)]">(복수 선택 가능)</span></label>
             <div className="flex gap-2">
               {POSITIONS.map((pos) => (
                 <button
@@ -269,8 +270,8 @@ export default function ProfileEditPage() {
                   onClick={() => togglePosition(pos)}
                   className={`flex-1 rounded-full border py-2 text-sm font-medium transition-colors ${
                     selectedPositions.includes(pos)
-                      ? "border-[#1B3C87] bg-[rgba(27,60,135,0.12)] text-[#1B3C87]"
-                      : "border-[#E8ECF0] text-[#6B7280] hover:border-[#1B3C87]"
+                      ? "border-[var(--color-accent)] bg-[rgba(27,60,135,0.12)] text-[var(--color-accent)]"
+                      : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-accent)]"
                   }`}
                   style={{ borderRadius: "10px" }}
                 >
@@ -307,7 +308,7 @@ export default function ProfileEditPage() {
           </div>
           <div>
             <div className="mb-1 flex items-center justify-between">
-              <label className="text-sm text-[#6B7280]">자기소개</label>
+              <label className="text-sm text-[var(--color-text-muted)]">자기소개</label>
               <button
                 type="button"
                 onClick={handleGenerateBio}
@@ -326,7 +327,7 @@ export default function ProfileEditPage() {
               placeholder="간단한 자기소개 (최대 255자)"
               maxLength={255}
             />
-            <p className="mt-1 text-xs text-[#9CA3AF]">
+            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
               {form.bio.length}/255자 · AI가 내 활동 데이터를 기반으로 작성해줍니다
             </p>
           </div>
@@ -335,16 +336,16 @@ export default function ProfileEditPage() {
 
       {/* 환불 계좌 정보 */}
       <div className={section}>
-        <h2 className="mb-1 font-semibold uppercase tracking-wide text-[#111827]" style={{ fontFamily: "var(--font-heading)" }}>환불 계좌 정보</h2>
-        <p className="mb-4 text-xs text-[#9CA3AF]">참가비·게스트비·픽업비 환불 시 사용됩니다</p>
+        <h2 className="mb-1 font-semibold uppercase tracking-wide text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>환불 계좌 정보</h2>
+        <p className="mb-4 text-xs text-[var(--color-text-secondary)]">참가비·게스트비·픽업비 환불 시 사용됩니다</p>
 
         {hasExistingAccount && !bankForm.account_consent && (
-          <div className="mb-4 rounded-[12px] bg-[#EEF2FF] px-4 py-3 text-sm text-[#6B7280]">
-            현재 등록된 계좌: <span className="font-medium text-[#111827]">{maskedAccount}</span>
+          <div className="mb-4 rounded-[12px] bg-[var(--color-surface-bright)] px-4 py-3 text-sm text-[var(--color-text-muted)]">
+            현재 등록된 계좌: <span className="font-medium text-[var(--color-text-primary)]">{maskedAccount}</span>
             <button
               type="button"
               onClick={() => setBankForm((p) => ({ ...p, account_consent: true }))}
-              className="ml-2 text-xs text-[#1B3C87] underline"
+              className="ml-2 text-xs text-[var(--color-accent)] underline"
             >
               변경하기
             </button>
@@ -356,9 +357,9 @@ export default function ProfileEditPage() {
             type="checkbox"
             checked={bankForm.account_consent}
             onChange={(e) => setBankForm((p) => ({ ...p, account_consent: e.target.checked }))}
-            className="mt-0.5 h-4 w-4 rounded border-[#E8ECF0] accent-[#1B3C87]"
+            className="mt-0.5 h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-accent)]"
           />
-          <span className="text-sm text-[#374151]">
+          <span className="text-sm text-[var(--color-text-primary)]">
             개인정보(계좌번호) 수집·이용에 동의합니다 <span className="text-[#EF4444]">(필수)</span>
           </span>
         </label>
@@ -394,7 +395,7 @@ export default function ProfileEditPage() {
                 placeholder={maskedAccount ?? "계좌번호 입력 (숫자만)"}
                 inputMode="numeric"
               />
-              <p className="mt-1 text-xs text-[#9CA3AF]">계좌번호는 암호화되어 저장됩니다</p>
+              <p className="mt-1 text-xs text-[var(--color-text-secondary)]">계좌번호는 암호화되어 저장됩니다</p>
             </div>
             <div>
               <label className={lbl}>예금주명</label>
@@ -411,19 +412,19 @@ export default function ProfileEditPage() {
       </div>
 
       {/* 선호 설정 안내 카드 - 별도 페이지로 이동하는 링크 */}
-      <div className="rounded-[10px] border border-[#E5E7EB] bg-[#F9FAFB] p-5">
+      <div className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
         <h2
-          className="mb-1 font-semibold uppercase tracking-wide text-[#111827]"
+          className="mb-1 font-semibold uppercase tracking-wide text-[var(--color-text-primary)]"
           style={{ fontFamily: "var(--font-heading)" }}
         >
           맞춤 설정
         </h2>
-        <p className="mb-4 text-xs text-[#9CA3AF]">
+        <p className="mb-4 text-xs text-[var(--color-text-secondary)]">
           관심 종별, 경기 유형, 게시판을 설정하면 맞춤 콘텐츠를 받아볼 수 있습니다
         </p>
         <Link
           href="/profile/preferences"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#1B3C87] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#142D6B]"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-accent-hover,#142D6B)]"
         >
           <Sparkles className="h-4 w-4" />
           맞춤 설정 관리
@@ -434,7 +435,7 @@ export default function ProfileEditPage() {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="w-full rounded-[10px] bg-[#1B3C87] py-4 text-sm font-semibold text-white hover:bg-[#142D6B] disabled:opacity-60"
+        className="w-full rounded-[10px] bg-[var(--color-accent)] py-4 text-sm font-semibold text-white hover:bg-[var(--color-accent-hover,#142D6B)] disabled:opacity-60"
       >
         {saving ? "저장 중..." : "저장"}
       </button>

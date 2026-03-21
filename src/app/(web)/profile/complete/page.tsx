@@ -176,17 +176,18 @@ export default function ProfileCompletePage() {
     }
   };
 
+  /* 입력필드/라벨 공통 스타일 - CSS 변수로 다크모드 자동 대응 */
   const inp =
-    "w-full rounded-[16px] border border-[#E8ECF0] bg-[#FFFFFF] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#1B3C87] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/20 text-sm";
-  const lbl = "mb-1 block text-sm text-[#6B7280]";
+    "w-full rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm";
+  const lbl = "mb-1 block text-sm text-[var(--color-text-muted)]";
 
   return (
     <div className="mx-auto max-w-lg py-8">
       {/* 환영 메시지 */}
       <div className="mb-8 text-center">
-        <div className="mb-3"><svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-10 w-10 text-[#E31B23]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M4.93 4.93l14.14 14.14"/><path d="M19.07 4.93A10 10 0 0 1 22 12c0 2.76-1.12 5.26-2.93 7.07"/><path d="M4.93 19.07A10 10 0 0 1 2 12c0-2.76 1.12-5.26 2.93-7.07"/></svg></div>
-        <h1 className="text-2xl font-extrabold uppercase tracking-wide text-[#111827] sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>환영합니다!</h1>
-        <p className="mt-2 text-sm text-[#6B7280]">
+        <div className="mb-3"><svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-10 w-10 text-[var(--color-primary)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M4.93 4.93l14.14 14.14"/><path d="M19.07 4.93A10 10 0 0 1 22 12c0 2.76-1.12 5.26-2.93 7.07"/><path d="M4.93 19.07A10 10 0 0 1 2 12c0-2.76 1.12-5.26 2.93-7.07"/></svg></div>
+        <h1 className="text-2xl font-extrabold uppercase tracking-wide text-[var(--color-text-primary)] sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>환영합니다!</h1>
+        <p className="mt-2 text-sm text-[var(--color-text-muted)]">
           프로필을 완성하면 더 나은 경험을 제공해드릴 수 있어요.
         </p>
       </div>
@@ -196,8 +197,8 @@ export default function ProfileCompletePage() {
       )}
 
       {/* 기본 정보 */}
-      <div className="mb-6 rounded-[20px] border border-[#E8ECF0] bg-[#FFFFFF] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.07)]">
-        <h2 className="mb-4 font-semibold uppercase tracking-wide text-[#111827]" style={{ fontFamily: "var(--font-heading)" }}>기본 정보</h2>
+      <div className="mb-6 rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-[var(--shadow-card)]">
+        <h2 className="mb-4 font-semibold uppercase tracking-wide text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>기본 정보</h2>
         <div className="space-y-4">
           <div>
             <label className={lbl}>이름 (실명)</label>
@@ -216,8 +217,8 @@ export default function ProfileCompletePage() {
               <input
                 type="tel"
                 inputMode="numeric"
-                className={`flex-1 rounded-[16px] border bg-[#FFFFFF] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#1B3C87] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/20 text-sm ${
-                  verifyStep === "verified" ? "border-emerald-400" : "border-[#E8ECF0]"
+                className={`flex-1 rounded-[16px] border bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm ${
+                  verifyStep === "verified" ? "border-[var(--color-success,#34d399)]" : "border-[var(--color-border)]"
                 }`}
                 value={form.phone}
                 onChange={(e) => handlePhoneChange(e.target.value)}
@@ -229,14 +230,14 @@ export default function ProfileCompletePage() {
                   type="button"
                   onClick={handleSendCode}
                   disabled={sendingCode || stripPhone(form.phone).length < 10}
-                  className="flex-shrink-0 rounded-[10px] bg-[#1B3C87] px-4 py-3 text-sm font-medium text-white hover:bg-[#142D6B] disabled:opacity-50"
+                  className="flex-shrink-0 rounded-[10px] bg-[var(--color-accent)] px-4 py-3 text-sm font-medium text-white hover:bg-[var(--color-accent-hover,#142D6B)] disabled:opacity-50"
                 >
                   {sendingCode ? "발송 중..." : verifyStep === "sent" ? "재발송" : "인증요청"}
                 </button>
               )}
             </div>
             {verifyStep === "verified" && (
-              <p className="mt-1 px-1 text-xs text-emerald-500">인증 완료</p>
+              <p className="mt-1 px-1 text-xs text-[var(--color-success,#10b981)]">인증 완료</p>
             )}
           </div>
 
@@ -249,7 +250,7 @@ export default function ProfileCompletePage() {
                   type="text"
                   inputMode="numeric"
                   maxLength={6}
-                  className="flex-1 rounded-[16px] border border-[#E8ECF0] bg-[#FFFFFF] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#1B3C87] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/20 text-sm"
+                  className="flex-1 rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm"
                   value={verifyCode}
                   onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, ""))}
                   placeholder="인증번호 6자리"
@@ -258,7 +259,7 @@ export default function ProfileCompletePage() {
                   type="button"
                   onClick={handleVerifyCode}
                   disabled={verifyCode.length < 4}
-                  className="flex-shrink-0 rounded-[10px] bg-[#E31B23] px-4 py-3 text-sm font-medium text-white hover:bg-[#C8101E] disabled:opacity-50"
+                  className="flex-shrink-0 rounded-[10px] bg-[var(--color-primary)] px-4 py-3 text-sm font-medium text-white hover:bg-[var(--color-primary-hover,#C8101E)] disabled:opacity-50"
                 >
                   확인
                 </button>
@@ -276,11 +277,11 @@ export default function ProfileCompletePage() {
       </div>
 
       {/* 경기 정보 */}
-      <div className="mb-6 rounded-[20px] border border-[#E8ECF0] bg-[#FFFFFF] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.07)]">
-        <h2 className="mb-4 font-semibold uppercase tracking-wide text-[#111827]" style={{ fontFamily: "var(--font-heading)" }}>경기 정보</h2>
+      <div className="mb-6 rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-[var(--shadow-card)]">
+        <h2 className="mb-4 font-semibold uppercase tracking-wide text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>경기 정보</h2>
         <div className="space-y-4">
           <div>
-            <label className={lbl}>포지션 <span className="text-xs text-[#9CA3AF]">(복수 선택 가능)</span></label>
+            <label className={lbl}>포지션 <span className="text-xs text-[var(--color-text-secondary)]">(복수 선택 가능)</span></label>
             <div className="flex gap-2">
               {POSITIONS.map((pos) => (
                 <button
@@ -289,8 +290,8 @@ export default function ProfileCompletePage() {
                   onClick={() => togglePosition(pos)}
                   className={`flex-1 rounded-full border py-2 text-sm font-medium transition-colors ${
                     selectedPositions.includes(pos)
-                      ? "border-[#1B3C87] bg-[rgba(27,60,135,0.12)] text-[#1B3C87]"
-                      : "border-[#E8ECF0] text-[#6B7280] hover:border-[#1B3C87]"
+                      ? "border-[var(--color-accent)] bg-[rgba(27,60,135,0.12)] text-[var(--color-accent)]"
+                      : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-accent)]"
                   }`}
                   style={{ borderRadius: "10px" }}
                 >
@@ -327,7 +328,7 @@ export default function ProfileCompletePage() {
           </div>
           <div>
             <div className="mb-1 flex items-center justify-between">
-              <label className="text-sm text-[#6B7280]">자기소개</label>
+              <label className="text-sm text-[var(--color-text-muted)]">자기소개</label>
               <button
                 type="button"
                 onClick={handleGenerateBio}
@@ -346,7 +347,7 @@ export default function ProfileCompletePage() {
               placeholder="간단한 자기소개 (최대 255자)"
               maxLength={255}
             />
-            <p className="mt-1 text-xs text-[#9CA3AF]">
+            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
               {form.bio.length}/255자 · AI가 내 활동 데이터를 기반으로 작성해줍니다
             </p>
           </div>
@@ -358,13 +359,13 @@ export default function ProfileCompletePage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full rounded-[10px] bg-[#1B3C87] py-4 text-sm font-semibold text-white hover:bg-[#142D6B] disabled:opacity-60"
+          className="w-full rounded-[10px] bg-[var(--color-accent)] py-4 text-sm font-semibold text-white hover:bg-[var(--color-accent-hover,#142D6B)] disabled:opacity-60"
         >
           {saving ? "저장 중..." : "프로필 저장하고 시작하기"}
         </button>
         <button
           onClick={() => router.push("/")}
-          className="w-full rounded-[10px] border border-[#E8ECF0] py-4 text-sm font-medium text-[#6B7280] hover:bg-[#F5F7FA]"
+          className="w-full rounded-[10px] border border-[var(--color-border)] py-4 text-sm font-medium text-[var(--color-text-muted)] hover:bg-[var(--color-surface)]"
         >
           나중에 할게요
         </button>
