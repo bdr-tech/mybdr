@@ -311,12 +311,12 @@ a,
   }
 }
 
-/* Sidebar scaling to 80% - 사이드바 내부 컨텐츠를 80%로 축소하여 더 많은 요소 수용 */
+/* Sidebar scaling to 96% - 사이드바 내부 컨텐츠를 96%로 표시 (기존 80%에서 120% 확대 적용: 0.8 * 1.2 = 0.96) */
 .sidebar-scaled {
-  transform: scale(0.8);
+  transform: scale(0.96);
   transform-origin: top left;
-  width: 125%;
-  height: 125%;
+  width: 104.17%;
+  height: 104.17%;
 }
 
 /* Hide scrollbar for horizontal scroll sections - 수평 스크롤 영역 스크롤바 숨기기 */

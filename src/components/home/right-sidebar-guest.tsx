@@ -17,7 +17,7 @@
 
 export function RightSidebarGuest() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" style={{ fontSize: '120%' }}>
       {/* === 1. 가입 유도 CTA (네이비 배경) === */}
       <div className="bg-secondary rounded-xl p-8 relative overflow-hidden group border border-border">
         <div className="relative z-10">

@@ -15,7 +15,7 @@
 
 export function RightSidebarLoggedIn() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" style={{ fontSize: '120%' }}>
       {/* === 1. 오늘의 주요 경기 (네이비 배경) === */}
       <div className="bg-secondary rounded-xl p-6 relative overflow-hidden group border border-border">
         <div className="relative z-10">
