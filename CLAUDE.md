@@ -1,25 +1,5 @@
 # MyBDR - Basketball Tournament Platform
 
-## 개발팀 스킬 (`/team:*`)
-
-역할별 전문가를 슬래시 커맨드로 호출. `/team:dev`, `/team:architect` 등.
-작업 전 Dev/plan.md 승인 주석을 항상 확인할 것.
-
-## 이 프로젝트의 4단계 방어체계를 지키자. 
-1. 리서치(research.md)가 무지한 변경을 막아주고
-2. 계획(plan.md) 가 잘못된 변경을 막아주고
-3. 주석(plan.md의 내용을 사용자가 수정)으로 내 판단을 주입하고 
-4. 구현 명령이 방해 없이 실행됨. 
-
-
-
-## 리서치 / 기획 파일 위치 정보 
-1. Research.md (/Users/grizrider/CC/mybdr-dev/Dev/research.md)
-2. plan.md (/Users/grizrider/CC/mybdr-dev/Dev/plan.md)
-
-
-이 두 파일을 기준으로 프로젝트를 
-
 ## 프로젝트 개요
 Rails 8.0 기반 BDR Platform을 Next.js 15로 전환한 프로젝트.
 보안 최우선, Flutter 앱(bdr_stat) API 100% 호환.
@@ -27,22 +7,36 @@ Rails 8.0 기반 BDR Platform을 Next.js 15로 전환한 프로젝트.
 ## 기술 스택
 - **Framework**: Next.js 15 (App Router, TypeScript strict)
 - **ORM**: Prisma 6 + PostgreSQL (기존 Rails DB 유지)
-- **Auth**: JWT (API, Rails 호환) + NextAuth v5 (웹)
+- **Auth**: JWT (API, Rails 호환) + 커스텀 웹 세션 (getWebSession)
 - **Validation**: Zod
-- **CSS**: Tailwind CSS 4 (다크 테마 + 웜 오렌지 #F4A261)
+- **CSS**: Tailwind CSS 4 (BDR Red #E31B23 + 쿨 그레이)
+- **폰트**: Pretendard (한글 본문) + Space Grotesk (영문 제목)
+- **아이콘**: Material Symbols Outlined (lucide-react 제거됨)
 - **배포**: Vercel (Docker 없음)
+
+## 디자인 시스템 (2026-03-22 적용)
+- **상세 문서**: Dev/design/DESIGN.md
+- **색상**: Primary #E31B23, Navy #1B3C87, Info #0079B9
+- **다크모드 기본**: 쿨 그레이 (R=G=B), 핑크/살몬/코랄 절대 금지
+- **라이트모드**: html.light 클래스로 CSS 변수 자동 전환
+- **버튼**: border-radius 4px (pill 9999px 금지)
+- **하드코딩 색상 금지**: 반드시 var(--color-*) CSS 변수 사용
 
 ## 디렉토리 구조
 ```
-src/app/(web)/       → 웹 페이지 (NextAuth 세션)
+src/app/(web)/       → 웹 페이지 (커스텀 JWT 세션)
 src/app/(site)/      → 토너먼트 사이트 (서브도메인)
 src/app/api/v1/      → Flutter REST API (JWT)
+src/app/api/web/     → 웹 전용 API
 src/lib/auth/        → 인증 (JWT, RBAC)
 src/lib/security/    → 보안 (Rate Limit)
 src/lib/api/         → API 미들웨어 체인
 src/lib/validation/  → Zod 스키마
 src/lib/db/          → Prisma 싱글톤
 src/lib/utils/       → snake_case 변환 등
+Dev/design/          → 디자인 시안 (Stitch 내보내기)
+.claude/knowledge/   → 프로젝트 지식 베이스 (6파일)
+.claude/scratchpad.md → 작업 현황 + 진행 보고서
 ```
 
 ## 보안 규칙
@@ -57,28 +51,73 @@ src/lib/utils/       → snake_case 변환 등
 - TypeScript 코드: camelCase
 - API 응답: snake_case (자동 변환)
 - 파일명: kebab-case (Next.js 규약)
+- 하드코딩 색상 금지 → CSS 변수(var(--color-*)) 사용
+- 아이콘: Material Symbols `<span>` 태그 (lucide-react 금지)
+- 리디자인 원칙: API 유지 + UI만 변경 + 2열 레이아웃 + 클라이언트 페이지네이션
 
-## 기획 산출물
-`outputs/` 디렉토리에 Dylan→Sophia→Marcus→Aria 순서로 작성된 기획/분석/설계/디자인 문서 보관.
+## 리디자인 작업 규칙
+- 디자인 시안: Dev/design/{N}. {페이지명}/ 폴더에 code.html + screen.png
+- **API/데이터 패칭 절대 변경 금지** — UI 렌더링만 교체
+- DB에 없는 기능(좋아요/팔로우/티어)은 UI만 배치, 동작 미구현
+- 이미지 없으면 CSS 그라디언트 또는 이니셜로 대체
 
-## ⚡ 에이전트 실행 효율화 규칙 (2026-03-21 적용)
+---
 
-### 1. 병렬 실행
-- 독립적인 에이전트는 동시에 실행한다 (예: tester + reviewer 병렬)
-- 의존 관계가 있는 것만 순차 실행 (developer → tester)
+## ⚡ 에이전트 실행 + 기록 관리 규칙
 
-### 2. 스크래치패드 경량 모드
-- **소규모 작업** (파일 1~2개 수정): 스크래치패드 섹션 기록 생략, 작업 로그 한 줄만 추가
-- **대규모 작업** (파일 5개 이상, 새 기능): 기존처럼 섹션별 상세 기록
+### 실행 효율화
+1. **병렬 실행**: 독립 에이전트 동시 실행 (tester+reviewer 등)
+2. **확인 축소**: 명확한 요청은 바로 실행, 모호한 것만 확인
+3. **커밋 간소화**: tester 통과 시 PM이 직접 커밋
 
-### 3. 확인 단계 축소
-- **명확한 요청**: 바로 실행 (확인 질문 생략)
-- **모호한 요청**: 구체화 질문 후 진행
+### 에이전트별 기록 책임 (필수)
 
-### 4. tester + reviewer 통합
-- 기본적으로 **병렬 실행** (동시에 돌리고 결과 취합)
-- 소규모 수정은 **tester만 실행**, reviewer 생략
+| 에이전트 | 기록 의무 |
+|---------|----------|
+| **planner-architect** | scratchpad "기획설계" 섹션 + architecture.md + decisions.md |
+| **developer** | scratchpad "구현 기록" 섹션 (변경 파일 목록 + 주요 변경사항) |
+| **tester** | scratchpad "테스트 결과" 섹션 (통과/실패 항목 + 수정 요청) |
+| **debugger** | errors.md에 에러 패턴 기록 |
+| **pm** | 작업 로그 + index.md 갱신 + 진행 현황 갱신 + lessons.md + conventions.md 승격 판단 |
 
-### 5. 커밋 간소화
-- tester 통과 시 PM이 **직접 git commit 실행** (git-manager 에이전트 호출 생략)
-- 복잡한 git 작업(브랜치 생성, PR, 충돌 해결)만 git-manager 호출
+### PM 작업 완료 체크리스트 (매 작업 후 필수)
+```
+□ scratchpad 작업 로그 1줄 추가 (10건 이내)
+□ scratchpad 100줄 이내 유지 (초과 시 완료된 기획설계 섹션 삭제)
+□ 에러 발생 → errors.md 즉시 기록
+□ 30분+ 삽질 → lessons.md 기록
+□ 기술 결정 → decisions.md 기록 (architect가 안 했으면 PM이)
+□ 새 패턴 발견 → conventions.md 기록
+□ 구조 변경 → architecture.md 기록 (architect가 안 했으면 PM이)
+□ index.md 항목수 + 날짜 갱신
+□ 진행 현황표(완료/미완료) 업데이트
+□ 미푸시 커밋 있으면 사용자에게 알림
+```
+
+### 기록 구조
+```
+.claude/
+├── scratchpad.md         ← 현재 작업 + 진행 현황 + 작업 로그 (100줄 이내)
+└── knowledge/
+    ├── index.md          ← 목차 + 항목수 + 최근 지식 (PM 관리)
+    ├── architecture.md   ← 프로젝트 구조 (architect 기록, PM 검증)
+    ├── conventions.md    ← 코딩/디자인 규칙 (developer 기록, PM 승격)
+    ├── decisions.md      ← 기술 결정 이력 (architect 기록, PM 보충)
+    ├── errors.md         ← 에러/함정 모음 (debugger/tester 기록)
+    └── lessons.md        ← 배운 교훈 (PM 기록)
+```
+
+### scratchpad 구조 규칙
+1. **현재 작업** (항상 최상단) — 요청/상태/담당
+2. **진행 현황표** (프로젝트 전체) — 완료/미완료 페이지 대시보드
+3. **작업 로그** (최근 10건) — 날짜/담당/작업/결과
+4. **기획설계 섹션** (임시) — 작업 완료 시 삭제하고 로그에 요약
+5. **구현/테스트 섹션** (임시) — 작업 완료 시 삭제
+
+### knowledge 갱신 타이밍
+- **architecture.md**: planner-architect가 새 페이지 분석할 때
+- **conventions.md**: 새 패턴 3회 이상 반복 시 PM이 추가
+- **decisions.md**: 기술 선택 시 architect가 기록, PM이 누락분 보충
+- **errors.md**: 에러 해결 시 debugger/tester/PM이 즉시 기록
+- **lessons.md**: 삽질 30분+ 또는 비효율 발견 시 PM이 기록
+- **index.md**: 위 파일 변경될 때마다 PM이 갱신
