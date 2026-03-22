@@ -1,63 +1,286 @@
 "use client";
 
 /* ============================================================
- * HeroBento — 히어로 벤토 그리드
- * 좌측(col-span-2): LIVE NOW 비디오 플레이어 스타일 메인 배너
- * 우측(col-span-1): 오늘의 주요 경기 카드 + 나의 통계(로그인) / 서비스 소개(비로그인)
+ * HeroBento — 히어로 YouTube 슬라이드
+ * YouTube 추천 API에서 상위 4개 영상을 가져와 자동 슬라이드로 표시.
+ * 라이브 영상이 있으면 "LIVE NOW" 빨간 배지를 좌상단에 표시.
  *
- * 왜 벤토 그리드인가: 첫 화면에서 핵심 콘텐츠(라이브 경기)를 크게 보여주고,
- * 부가 정보를 작은 카드로 배치해 시각적 계층을 만든다.
+ * 왜 YouTube 슬라이드인가: 더미 이미지 대신 실제 BDR 영상 콘텐츠를
+ * 첫 화면에서 바로 보여줘서 사용자 참여를 유도한다.
  * ============================================================ */
 
-export function HeroBento() {
-  return (
-    /* 히어로 배너: 전체 너비 */
-    <div>
+import { useState, useEffect, useCallback, useRef } from "react";
 
-      {/* ===== 메인 배너: LIVE NOW 비디오 플레이어 스타일 ===== */}
-      <div className="relative h-[420px] rounded-xl overflow-hidden bg-card group border border-border">
-        {/* 배경 이미지 + 호버 시 확대 효과 */}
-        <div className="absolute inset-0 w-full h-full overflow-hidden">
-          <img
-            alt="2024 서울 챔피언십 결승"
-            className="w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-700"
-            src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&q=80"
-          />
-          {/* play_circle 오버레이: 영상처럼 보이게 하는 장치 */}
-          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
-            <span className="material-symbols-outlined text-white text-7xl drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]">
-              play_circle
+// API 응답의 영상 타입 정의
+interface RecommendVideo {
+  video_id: string;
+  title: string;
+  thumbnail: string;
+  published_at: string;
+  badges: string[];
+  is_live: boolean;
+}
+
+// 자동 슬라이드 간격 (5초)
+const AUTO_SLIDE_INTERVAL = 5000;
+// 수동 조작 후 자동 슬라이드 재개까지 대기 시간 (10초)
+const MANUAL_PAUSE_DURATION = 10000;
+
+export function HeroBento() {
+  // 영상 목록 상태
+  const [videos, setVideos] = useState<RecommendVideo[]>([]);
+  // 현재 보여주는 슬라이드 인덱스
+  const [currentIndex, setCurrentIndex] = useState(0);
+  // 로딩 상태 (API 호출 중)
+  const [isLoading, setIsLoading] = useState(true);
+  // 에러 상태
+  const [hasError, setHasError] = useState(false);
+  // 수동 조작 후 자동 슬라이드 일시 정지 여부
+  const [isPaused, setIsPaused] = useState(false);
+
+  // 타이머 참조: 자동 슬라이드용
+  const autoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // 타이머 참조: 수동 조작 후 재개 대기용
+  const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // --- API에서 영상 목록 가져오기 ---
+  useEffect(() => {
+    async function fetchVideos() {
+      try {
+        const res = await fetch("/api/web/youtube/recommend");
+        if (!res.ok) throw new Error("API 응답 실패");
+        const data = await res.json();
+        // 상위 4개만 사용
+        const top4 = (data.videos ?? []).slice(0, 4) as RecommendVideo[];
+        setVideos(top4);
+      } catch {
+        console.error("[HeroBento] 영상 목록 가져오기 실패");
+        setHasError(true);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchVideos();
+  }, []);
+
+  // --- 자동 슬라이드 타이머 ---
+  // 영상이 2개 이상이고, 일시정지 상태가 아닐 때만 자동 전환
+  useEffect(() => {
+    if (videos.length < 2 || isPaused) return;
+
+    autoTimerRef.current = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % videos.length);
+    }, AUTO_SLIDE_INTERVAL);
+
+    // 클린업: 컴포넌트 언마운트 또는 의존값 변경 시 타이머 제거
+    return () => {
+      if (autoTimerRef.current) clearInterval(autoTimerRef.current);
+    };
+  }, [videos.length, isPaused]);
+
+  // --- 수동 조작 시 자동 슬라이드 일시 정지 후 재개 ---
+  const pauseAutoSlide = useCallback(() => {
+    setIsPaused(true);
+    // 기존 재개 타이머가 있으면 취소
+    if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+    // 10초 후 자동 슬라이드 재개
+    pauseTimerRef.current = setTimeout(() => {
+      setIsPaused(false);
+    }, MANUAL_PAUSE_DURATION);
+  }, []);
+
+  // 클린업: 컴포넌트 언마운트 시 재개 타이머 제거
+  useEffect(() => {
+    return () => {
+      if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+    };
+  }, []);
+
+  // --- 이전 슬라이드로 이동 ---
+  const goPrev = useCallback(() => {
+    setCurrentIndex((prev) => (prev - 1 + videos.length) % videos.length);
+    pauseAutoSlide();
+  }, [videos.length, pauseAutoSlide]);
+
+  // --- 다음 슬라이드로 이동 ---
+  const goNext = useCallback(() => {
+    setCurrentIndex((prev) => (prev + 1) % videos.length);
+    pauseAutoSlide();
+  }, [videos.length, pauseAutoSlide]);
+
+  // --- 특정 슬라이드로 이동 (도트 클릭) ---
+  const goTo = useCallback(
+    (index: number) => {
+      setCurrentIndex(index);
+      pauseAutoSlide();
+    },
+    [pauseAutoSlide]
+  );
+
+  // --- 로딩 중: 스켈레톤 UI ---
+  if (isLoading) {
+    return (
+      <div>
+        <div className="relative h-[420px] rounded-xl overflow-hidden bg-card border border-border animate-pulse">
+          {/* 스켈레톤 중앙 아이콘 */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="material-symbols-outlined text-text-tertiary text-5xl">
+              smart_display
             </span>
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {/* 하단 그라디언트: 텍스트가 잘 보이도록 어둡게 처리 */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-
-        {/* 텍스트 오버레이 */}
-        <div className="absolute bottom-0 left-0 p-8 w-full pointer-events-none">
-          {/* LIVE NOW 뱃지 */}
-          <span className="inline-block px-3 py-1 bg-primary text-on-primary text-[10px] font-bold tracking-widest uppercase rounded mb-4">
-            LIVE NOW
-          </span>
-          {/* 제목: Space Grotesk 폰트 */}
-          <h2 className="text-4xl font-heading font-bold text-white mb-2 leading-tight">
-            2024 서울 챔피언십
-            <br />
-            결승 토너먼트
-          </h2>
-          <p className="text-text-secondary max-w-lg mb-6">
-            현재 최고의 랭킹을 자랑하는 두 팀의 치열한 대결이 시작되었습니다.
-            실시간 스코어를 확인하세요.
-          </p>
-          {/* CTA 버튼 */}
-          <button className="bg-primary hover:bg-primary-hover text-on-primary px-6 py-3 rounded font-bold flex items-center gap-2 transition-colors active:scale-95 pointer-events-auto">
-            실시간 중계 보기
-            <span className="material-symbols-outlined text-sm">arrow_forward</span>
-          </button>
+  // --- 영상 없음 또는 에러: 기존 더미 배너 유지 (fallback) ---
+  if (hasError || videos.length === 0) {
+    return (
+      <div>
+        <div className="relative h-[420px] rounded-xl overflow-hidden bg-card group border border-border">
+          <div className="absolute inset-0 w-full h-full overflow-hidden">
+            <img
+              alt="BDR 농구 대회"
+              className="w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-700"
+              src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&q=80"
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
+              <span className="material-symbols-outlined text-white text-7xl drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]">
+                play_circle
+              </span>
+            </div>
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+          <div className="absolute bottom-0 left-0 p-8 w-full pointer-events-none">
+            <span className="inline-block px-3 py-1 bg-primary text-on-primary text-[10px] font-bold tracking-widest uppercase rounded mb-4">
+              BDR
+            </span>
+            <h2 className="text-4xl font-heading font-bold text-white mb-2 leading-tight">
+              BDR 농구 대회
+              <br />
+              영상을 준비 중입니다
+            </h2>
+            <p className="text-text-secondary max-w-lg">
+              곧 새로운 경기 영상이 업데이트됩니다.
+            </p>
+          </div>
         </div>
       </div>
+    );
+  }
 
+  // --- 정상 상태: YouTube 슬라이드 ---
+  const currentVideo = videos[currentIndex];
+
+  return (
+    <div>
+      {/* 슬라이드 컨테이너 */}
+      <div className="relative h-[420px] rounded-xl overflow-hidden bg-black group border border-border">
+
+        {/* 슬라이드 트랙: translateX로 이동, transition으로 부드럽게 전환 */}
+        <div
+          className="flex h-full transition-transform duration-500 ease-in-out"
+          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+        >
+          {videos.map((video) => (
+            <div
+              key={video.video_id}
+              className="w-full h-full flex-shrink-0 relative"
+            >
+              {/* YouTube iframe 임베드 */}
+              {/* 라이브 영상은 autoplay=1로 자동재생, 일반 영상은 autoplay=0 */}
+              <iframe
+                src={`https://www.youtube.com/embed/${video.video_id}?autoplay=${video.is_live ? "1" : "0"}&rel=0&modestbranding=1&mute=${video.is_live ? "1" : "0"}`}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={video.title}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* LIVE NOW 배지: 현재 슬라이드가 라이브일 때만 표시 */}
+        {currentVideo.is_live && (
+          <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded shadow-lg animate-pulse">
+            <span className="w-2 h-2 bg-white rounded-full" />
+            LIVE NOW
+          </div>
+        )}
+
+        {/* 뱃지 목록: HOT, 디비전명 등 (LIVE 제외) */}
+        {currentVideo.badges.filter((b) => b !== "LIVE").length > 0 && (
+          <div className="absolute top-4 right-4 z-10 flex gap-2">
+            {currentVideo.badges
+              .filter((b) => b !== "LIVE")
+              .map((badge) => (
+                <span
+                  key={badge}
+                  className={`px-2 py-1 text-[10px] font-bold rounded ${
+                    badge === "HOT"
+                      ? "bg-orange-500 text-white"
+                      : "bg-white/20 text-white backdrop-blur-sm"
+                  }`}
+                >
+                  {badge}
+                </span>
+              ))}
+          </div>
+        )}
+
+        {/* 영상 제목 오버레이: 하단에 반투명 배경으로 표시 */}
+        <div className="absolute bottom-10 left-0 right-0 z-10 pointer-events-none">
+          <div className="px-6">
+            <p className="text-white text-sm font-medium truncate drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
+              {currentVideo.title}
+            </p>
+          </div>
+        </div>
+
+        {/* 좌측 화살표: hover 시에만 표시 */}
+        {videos.length > 1 && (
+          <button
+            onClick={goPrev}
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+            aria-label="이전 영상"
+          >
+            <span className="material-symbols-outlined text-xl">
+              chevron_left
+            </span>
+          </button>
+        )}
+
+        {/* 우측 화살표: hover 시에만 표시 */}
+        {videos.length > 1 && (
+          <button
+            onClick={goNext}
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+            aria-label="다음 영상"
+          >
+            <span className="material-symbols-outlined text-xl">
+              chevron_right
+            </span>
+          </button>
+        )}
+
+        {/* 도트 인디케이터: 하단 중앙에 현재 슬라이드 위치 표시 */}
+        {videos.length > 1 && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+            {videos.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => goTo(index)}
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                  index === currentIndex
+                    ? "bg-white scale-110"
+                    : "bg-white/40 hover:bg-white/60"
+                }`}
+                aria-label={`슬라이드 ${index + 1}로 이동`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
