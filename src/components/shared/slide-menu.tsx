@@ -59,36 +59,36 @@ export function SlideMenu({
         role="dialog"
         aria-modal="true"
         aria-label="전체 메뉴"
-        className={`fixed inset-y-0 left-0 z-[70] flex w-80 transform flex-col rounded-r-lg border-r border-[#3A3A3A] bg-[#1A1A1A] transition-transform duration-300 ${
+        className={`fixed inset-y-0 left-0 z-[70] flex w-80 transform flex-col rounded-r-lg border-r border-[var(--color-border)] bg-[var(--color-surface)] transition-transform duration-300 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* 프로필 섹션 */}
-        <div className="border-b border-[#3A3A3A] p-6">
+        <div className="border-b border-[var(--color-border)] p-6">
           {isLoggedIn ? (
             <>
               {/* 로그인 상태: 아바타 + 이름 + 역할 */}
               <div className="flex items-center gap-4">
                 {/* 아바타: 이름 첫 글자, 빨간 테두리 */}
-                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full border-2 border-[#E31B23] bg-[#2A2A2A] text-xl font-bold text-white">
+                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full border-2 border-[var(--color-primary)] bg-[var(--color-card)] text-xl font-bold text-[var(--color-text-primary)]">
                   {name?.trim() ? name.trim()[0].toUpperCase() : "U"}
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#E0E0E0]">{name || "사용자"}</p>
+                  <p className="text-lg font-bold text-[var(--color-text-primary)]">{name || "사용자"}</p>
                   {/* 역할 뱃지 */}
-                  <p className="text-xs font-medium text-[#E31B23]">
+                  <p className="text-xs font-medium text-[var(--color-primary)]">
                     {role === "super_admin" ? "관리자" : role === "tournament_admin" ? "대회 운영자" : "플레이어"}
                   </p>
                 </div>
               </div>
 
               {/* PRO 업그레이드 배너 */}
-              <div className="mt-4 rounded-lg border border-[#E31B23]/30 bg-[#E31B23]/10 p-3">
-                <p className="mb-2 text-xs text-[#E0E0E0]">PRO로 업그레이드하고 모든 기능을 사용하세요</p>
+              <div className="mt-4 rounded-lg border border-[var(--color-primary)]/30 bg-[var(--color-primary-light)] p-3">
+                <p className="mb-2 text-xs text-[var(--color-text-primary)]">PRO로 업그레이드하고 모든 기능을 사용하세요</p>
                 <Link
                   href="/pricing"
                   onClick={onClose}
-                  className="block w-full rounded bg-[#E31B23] py-2 text-center text-sm font-bold text-white transition-colors hover:bg-[#FF3B3B]"
+                  className="block w-full rounded bg-[var(--color-primary)] py-2 text-center text-sm font-bold text-white transition-colors hover:bg-[var(--color-primary-hover)]"
                 >
                   Upgrade Pro
                 </Link>
@@ -97,19 +97,19 @@ export function SlideMenu({
           ) : (
             /* 비로그인 상태: 로그인/회원가입 버튼 */
             <div className="flex flex-col gap-2">
-              <p className="mb-2 text-lg font-bold text-[#E31B23]">BDR</p>
-              <p className="mb-4 text-xs text-[#B0B0B0]">농구인을 위한 농구 플랫폼</p>
+              <p className="mb-2 text-lg font-bold text-[var(--color-primary)]">BDR</p>
+              <p className="mb-4 text-xs text-[var(--color-text-secondary)]">농구인을 위한 농구 플랫폼</p>
               <Link
                 href="/login"
                 onClick={onClose}
-                className="block w-full rounded bg-[#E31B23] py-2.5 text-center text-sm font-bold text-white"
+                className="block w-full rounded bg-[var(--color-primary)] py-2.5 text-center text-sm font-bold text-white"
               >
                 로그인
               </Link>
               <Link
                 href="/signup"
                 onClick={onClose}
-                className="block w-full rounded border border-[#3A3A3A] py-2.5 text-center text-sm font-bold text-[#E0E0E0]"
+                className="block w-full rounded border border-[var(--color-border)] py-2.5 text-center text-sm font-bold text-[var(--color-text-primary)]"
               >
                 회원가입
               </Link>
@@ -128,8 +128,8 @@ export function SlideMenu({
                 onClick={onClose}
                 className={`flex items-center gap-4 rounded-lg px-4 py-3 text-sm transition-colors ${
                   active
-                    ? "bg-[#E31B23]/10 font-bold text-[#E31B23]"
-                    : "text-[#B0B0B0] hover:bg-[#3A3A3A]"
+                    ? "bg-[var(--color-primary-light)] font-bold text-[var(--color-primary)]"
+                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-elevated)]"
                 }`}
               >
                 {/* Material Symbols 아이콘: 활성 시 FILL 1 */}
@@ -146,24 +146,16 @@ export function SlideMenu({
         </nav>
 
         {/* 하단: 유틸리티 버튼 + Settings + Logout */}
-        <div className="border-t border-[#3A3A3A] p-4">
-          {/* 테마 전환 + 글씨 크기 + 활동 지역 버튼 */}
+        <div className="border-t border-[var(--color-border)] p-4">
+          {/* 테마 전환 + 글씨 크기 버튼 (모바일 슬라이드 메뉴용) */}
           <div className="mb-2 flex items-center gap-2 px-2">
             <ThemeToggle />
             <TextSizeToggle />
-            <Link
-              href="/profile"
-              onClick={onClose}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[#888888] transition-colors hover:bg-[rgba(27,60,135,0.08)] hover:text-[#E0E0E0]"
-              title="활동 지역 설정"
-            >
-              <span className="material-symbols-outlined text-xl">location_on</span>
-            </Link>
           </div>
           <Link
             href="/profile"
             onClick={onClose}
-            className="flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-[#B0B0B0] transition-colors hover:text-[#E0E0E0]"
+            className="flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
           >
             <span className="material-symbols-outlined text-lg">settings</span>
             <span>Settings</span>
@@ -171,7 +163,7 @@ export function SlideMenu({
           {isLoggedIn && (
             <button
               onClick={() => { handleLogout(); onClose(); }}
-              className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-[#888888] transition-colors hover:text-[#E31B23]"
+              className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-primary)]"
             >
               <span className="material-symbols-outlined text-lg">logout</span>
               <span>Logout</span>

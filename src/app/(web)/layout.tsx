@@ -86,13 +86,13 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#111111]">
+    <div className="flex min-h-screen flex-col bg-[var(--color-background)]">
 
       {/* ========================================
        * 데스크탑 좌측 사이드바 (lg 이상에서만 표시)
        * fixed left-0, w-64, 어두운 배경
        * ======================================== */}
-      <aside className="fixed left-0 top-0 z-40 hidden h-full w-64 flex-col border-r border-[#222222] bg-[#111111] overflow-hidden lg:flex">
+      <aside className="fixed left-0 top-0 z-40 hidden h-full w-64 flex-col border-r border-[var(--color-border)] bg-[var(--color-background)] overflow-hidden lg:flex">
 
         {/* sidebar-scaled: 내부 컨텐츠를 80%로 축소하여 더 많은 요소 수용 */}
         <div className="sidebar-scaled p-8 flex flex-col h-full">
@@ -110,7 +110,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
             />
           </Link>
           {/* 서브텍스트: 브랜드 슬로건 */}
-          <span className="mt-1 text-[10px] uppercase tracking-wider text-[#888888]">
+          <span className="mt-1 text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">
             Elite Athletics
           </span>
         </div>
@@ -126,8 +126,8 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
                 prefetch={true}
                 className={`flex items-center gap-4 rounded-lg px-4 py-3 text-sm font-medium transition-all ${
                   active
-                    ? "bg-[#E31B23] text-white"
-                    : "text-[#888888] hover:bg-[#1A1A1A] hover:text-white"
+                    ? "bg-[var(--color-primary)] text-white"
+                    : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]"
                 }`}
               >
                 {/* Material Symbols 아이콘: 활성 시 FILL 1 */}
@@ -144,34 +144,34 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* 하단 영역: 플레이어 카드 + Upgrade Pro + Settings/Logout */}
-        <div className="mt-auto flex flex-col gap-3 border-t border-[#222222] pt-4">
+        <div className="mt-auto flex flex-col gap-3 border-t border-[var(--color-border)] pt-4">
 
           {/* 플레이어 카드: 로그인 상태에서만 표시 */}
           {user && (
-            <div className="rounded-xl border border-[#333333] bg-[#1A1A1A] p-4">
+            <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {/* 아바타: 이름 첫 글자 */}
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E31B23] text-sm font-bold text-white">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-primary)] text-sm font-bold text-white">
                     {user.name?.trim() ? user.name.trim()[0].toUpperCase() : "U"}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-white">{user.name || "사용자"}</p>
-                    <p className="text-[10px] text-[#888888]">Level 1</p>
+                    <p className="text-sm font-bold text-[var(--color-text-primary)]">{user.name || "사용자"}</p>
+                    <p className="text-[10px] text-[var(--color-text-muted)]">Level 1</p>
                   </div>
                 </div>
                 {/* 알림 벨 아이콘 (빨간 점 표시) */}
                 <Link href="/notifications" className="relative p-1">
-                  <span className="material-symbols-outlined text-xl text-[#888888]">notifications</span>
+                  <span className="material-symbols-outlined text-xl text-[var(--color-text-muted)]">notifications</span>
                   {unreadCount > 0 && (
-                    <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-[#E31B23]" />
+                    <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-[var(--color-primary)]" />
                   )}
                 </Link>
               </div>
               {/* "경기 시작하기" 버튼 */}
               <Link
                 href="/games/new"
-                className="mt-3 block w-full rounded-lg bg-[#E31B23] py-2.5 text-center text-sm font-bold text-white transition-colors hover:bg-[#FF3B3B]"
+                className="mt-3 block w-full rounded-lg bg-[var(--color-primary)] py-2.5 text-center text-sm font-bold text-white transition-colors hover:bg-[var(--color-primary-hover)]"
               >
                 경기 시작하기
               </Link>
@@ -182,7 +182,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
           {!user && (
             <Link
               href="/login"
-              className="block w-full rounded-lg bg-[#E31B23] py-2.5 text-center text-sm font-bold text-white transition-colors hover:bg-[#FF3B3B]"
+              className="block w-full rounded-lg bg-[var(--color-primary)] py-2.5 text-center text-sm font-bold text-white transition-colors hover:bg-[var(--color-primary-hover)]"
             >
               로그인
             </Link>
@@ -191,39 +191,23 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
           {/* Upgrade Pro 버튼 */}
           <Link
             href="/pricing"
-            className="block w-full rounded-lg bg-[#1B3C87] py-3 text-center text-sm font-bold text-white transition-colors hover:bg-[#2A4F9E]"
+            className="block w-full rounded-lg bg-[var(--color-accent)] py-3 text-center text-sm font-bold text-white transition-colors hover:bg-[var(--color-accent-hover)]"
           >
             Upgrade Pro
           </Link>
-
-          {/* 유틸리티 버튼: 테마 전환 + 글씨 크기 + 활동 지역 */}
-          <div className="flex items-center gap-2 px-2">
-            {/* 다크/라이트 모드 토글 */}
-            <ThemeToggle />
-            {/* 글씨 크기 조절 토글 */}
-            <TextSizeToggle />
-            {/* 활동 지역 설정 (프로필 페이지로 이동) */}
-            <Link
-              href="/profile"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[#888888] transition-colors hover:bg-[rgba(27,60,135,0.08)] hover:text-white"
-              title="활동 지역 설정"
-            >
-              <span className="material-symbols-outlined text-xl">location_on</span>
-            </Link>
-          </div>
 
           {/* Settings / Logout 링크 */}
           <div className="flex flex-col gap-1">
             <Link
               href="/profile"
-              className="flex items-center gap-3 px-4 py-2 text-sm text-[#888888] transition-colors hover:text-white"
+              className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)]"
             >
               <span className="material-symbols-outlined text-lg">settings</span>
               <span>Settings</span>
             </Link>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-3 px-4 py-2 text-sm text-[#888888] transition-colors hover:text-white"
+              className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)]"
             >
               <span className="material-symbols-outlined text-lg">logout</span>
               <span>Logout</span>
@@ -237,7 +221,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
        * 모바일 상단 헤더 (lg 이하에서만 표시)
        * fixed top, h-16, 어두운 배경
        * ======================================== */}
-      <header className="fixed top-0 z-50 flex h-16 w-full items-center justify-between border-b border-[#3A3A3A] bg-[#131313] px-4 lg:hidden">
+      <header className="fixed top-0 z-50 flex h-16 w-full items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-background)] px-4 lg:hidden">
         {/* 좌: BDR 로고 */}
         <Link href="/" prefetch={true}>
           <Image
@@ -252,14 +236,14 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
 
         {/* 우: 검색 + 알림(빨간 점) */}
         <div className="flex items-center gap-1">
-          <Link href="/games" className="rounded p-2 text-[#B0B0B0] hover:bg-[#2A2A2A]">
+          <Link href="/games" className="rounded p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]">
             <span className="material-symbols-outlined text-xl">search</span>
           </Link>
           {user && (
-            <Link href="/notifications" className="relative rounded p-2 text-[#B0B0B0] hover:bg-[#2A2A2A]">
+            <Link href="/notifications" className="relative rounded p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]">
               <span className="material-symbols-outlined text-xl">notifications</span>
               {unreadCount > 0 && (
-                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#E31B23]" />
+                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[var(--color-primary)]" />
               )}
             </Link>
           )}
@@ -272,28 +256,32 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
        * pointer-events-none으로 클릭 통과, 내부 요소만 클릭 가능
        * ======================================== */}
       <div className="pointer-events-none fixed right-0 top-0 z-50 hidden items-center justify-end gap-3 p-6 lg:flex" style={{ left: "16rem" }}>
+        {/* 다크/라이트 모드 토글 */}
+        <div className="pointer-events-auto"><ThemeToggle /></div>
+        {/* 글씨 크기 조절 토글 */}
+        <div className="pointer-events-auto"><TextSizeToggle /></div>
         {/* 검색 아이콘 */}
-        <Link href="/games" className="pointer-events-auto rounded p-2 text-[#B0B0B0] hover:bg-[#2A2A2A]">
+        <Link href="/games" className="pointer-events-auto rounded p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]">
           <span className="material-symbols-outlined text-xl">search</span>
         </Link>
         {/* 알림 아이콘 (빨간 점) */}
         {user && (
-          <Link href="/notifications" className="pointer-events-auto relative rounded p-2 text-[#B0B0B0] hover:bg-[#2A2A2A]">
+          <Link href="/notifications" className="pointer-events-auto relative rounded p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]">
             <span className="material-symbols-outlined text-xl">notifications</span>
             {unreadCount > 0 && (
-              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[#E31B23]" />
+              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[var(--color-primary)]" />
             )}
           </Link>
         )}
         {/* 프로필 아바타 */}
         {user ? (
-          <Link href="/profile" className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-[#3A3A3A] text-sm font-bold text-white">
+          <Link href="/profile" className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-elevated)] text-sm font-bold text-[var(--color-text-primary)]">
             {user.name?.trim() ? user.name.trim()[0].toUpperCase() : "U"}
           </Link>
         ) : (
           <Link
             href="/login"
-            className="pointer-events-auto rounded-lg bg-[#E31B23] px-4 py-1.5 text-sm font-bold text-white hover:bg-[#FF3B3B]"
+            className="pointer-events-auto rounded-lg bg-[var(--color-primary)] px-4 py-1.5 text-sm font-bold text-white hover:bg-[var(--color-primary-hover)]"
           >
             로그인
           </Link>
@@ -322,7 +310,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
        * 5개 탭, 활성=빨간색+scale-110, 비활성=회색
        * ======================================== */}
       <nav
-        className="fixed bottom-0 left-0 z-50 flex h-16 w-full items-center justify-around rounded-t-xl border-t border-[#3A3A3A] bg-[#1A1A1A] px-2 lg:hidden"
+        className="fixed bottom-0 left-0 z-50 flex h-16 w-full items-center justify-around rounded-t-xl border-t border-[var(--color-border)] bg-[var(--color-surface)] px-2 lg:hidden"
         style={{
           boxShadow: "0 -4px 12px rgba(0,0,0,0.5)",
           paddingBottom: "max(0px, env(safe-area-inset-bottom, 0px))",
@@ -338,7 +326,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
               <button
                 key="more-tab"
                 onClick={() => setSlideMenuOpen(true)}
-                className="flex flex-col items-center justify-center text-[#888888] transition-all"
+                className="flex flex-col items-center justify-center text-[var(--color-text-muted)] transition-all"
               >
                 <span className="material-symbols-outlined text-2xl">menu</span>
                 <span className="mt-0.5 text-[10px] font-medium">{item.label}</span>
@@ -353,8 +341,8 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
               prefetch={true}
               className={`flex flex-col items-center justify-center transition-all ${
                 active
-                  ? "scale-110 text-[#E31B23]"
-                  : "text-[#888888]"
+                  ? "scale-110 text-[var(--color-primary)]"
+                  : "text-[var(--color-text-muted)]"
               }`}
             >
               {/* Material Symbols 아이콘: 활성 시 FILL 1 */}
@@ -376,7 +364,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
        * ======================================== */}
       <Link
         href="/games/new"
-        className="fixed z-[100] flex h-14 w-14 items-center justify-center rounded-full bg-[#E31B23] text-white shadow-lg transition-transform active:scale-90 lg:hidden"
+        className="fixed z-[100] flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-primary)] text-white shadow-lg transition-transform active:scale-90 lg:hidden"
         style={{ bottom: "5rem", right: "1.5rem" }}
       >
         <span className="material-symbols-outlined text-3xl">add</span>

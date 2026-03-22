@@ -16,7 +16,9 @@ export function ThemeToggle() {
   const toggle = () => {
     const next = !dark;
     setDark(next);
+    /* dark/light 클래스를 동시에 토글 (CSS 변수가 html.light에 정의됨) */
     document.documentElement.classList.toggle("dark", next);
+    document.documentElement.classList.toggle("light", !next);
     localStorage.setItem("theme", next ? "dark" : "light");
   };
 
