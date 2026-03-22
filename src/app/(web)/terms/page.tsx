@@ -10,15 +10,15 @@ export default function TermsPage() {
     <div className="mx-auto max-w-2xl py-10">
       {/* 헤더 */}
       <div className="mb-8">
-        <h1 className="text-xl font-bold sm:text-2xl text-[#111827]">서비스 이용약관</h1>
-        <p className="mt-1 text-sm text-[#9CA3AF]">시행일: 2025년 1월 1일 · 최종 수정: 2026년 3월 1일</p>
+        <h1 className="text-xl font-bold sm:text-2xl text-[var(--color-text-primary)]">서비스 이용약관</h1>
+        <p className="mt-1 text-sm text-[var(--color-text-muted)]">시행일: 2025년 1월 1일 · 최종 수정: 2026년 3월 1일</p>
       </div>
 
-      <div className="space-y-8 text-sm leading-relaxed text-[#374151]">
+      <div className="space-y-8 text-sm leading-relaxed text-[var(--color-text-secondary)]">
 
         {/* 제1조 */}
         <section>
-          <h2 className="mb-3 text-base font-semibold text-[#111827]">제1조 (목적)</h2>
+          <h2 className="mb-3 text-base font-semibold text-[var(--color-text-primary)]">제1조 (목적)</h2>
           <p>
             이 약관은 MyBDR(이하 &quot;서비스&quot;)을 운영하는 BDR(이하 &quot;회사&quot;)이 제공하는
             농구 경기·대회·팀 매칭 플랫폼 서비스의 이용과 관련하여 회사와 이용자 간의 권리·의무 및
@@ -28,7 +28,7 @@ export default function TermsPage() {
 
         {/* 제2조 */}
         <section>
-          <h2 className="mb-3 text-base font-semibold text-[#111827]">제2조 (정의)</h2>
+          <h2 className="mb-3 text-base font-semibold text-[var(--color-text-primary)]">제2조 (정의)</h2>
           <ul className="space-y-2">
             <li>
               <span className="font-medium">① 서비스</span>: 회사가 제공하는 MyBDR 플랫폼
@@ -51,7 +51,7 @@ export default function TermsPage() {
 
         {/* 제3조 */}
         <section>
-          <h2 className="mb-3 text-base font-semibold text-[#111827]">제3조 (약관의 효력 및 변경)</h2>
+          <h2 className="mb-3 text-base font-semibold text-[var(--color-text-primary)]">제3조 (약관의 효력 및 변경)</h2>
           <ul className="space-y-2">
             <li>① 이 약관은 서비스 화면에 게시하거나 이메일 등으로 공지함으로써 효력이 발생합니다.</li>
             <li>
@@ -64,7 +64,7 @@ export default function TermsPage() {
 
         {/* 제4조 */}
         <section>
-          <h2 className="mb-3 text-base font-semibold text-[#111827]">제4조 (서비스 내용)</h2>
+          <h2 className="mb-3 text-base font-semibold text-[var(--color-text-primary)]">제4조 (서비스 내용)</h2>
           <p className="mb-2">회사는 다음과 같은 서비스를 제공합니다.</p>
           <ul className="space-y-1 pl-4">
             <li>• 픽업게임, 게스트 모집, 팀 대결 등 농구 경기 매칭 서비스</li>
@@ -78,7 +78,7 @@ export default function TermsPage() {
 
         {/* 제5조 */}
         <section>
-          <h2 className="mb-3 text-base font-semibold text-[#111827]">제5조 (이용계약의 성립)</h2>
+          <h2 className="mb-3 text-base font-semibold text-[var(--color-text-primary)]">제5조 (이용계약의 성립)</h2>
           <ul className="space-y-2">
             <li>① 이용계약은 이용자가 이 약관에 동의한 후 서비스에 가입하면 성립합니다.</li>
             <li>
@@ -95,7 +95,7 @@ export default function TermsPage() {
 
         {/* 제6조 */}
         <section>
-          <h2 className="mb-3 text-base font-semibold text-[#111827]">제6조 (회원의 의무)</h2>
+          <h2 className="mb-3 text-base font-semibold text-[var(--color-text-primary)]">제6조 (회원의 의무)</h2>
           <p className="mb-2">회원은 다음 행위를 하여서는 안 됩니다.</p>
           <ul className="space-y-1 pl-4">
             <li>• 타인의 정보 도용 또는 허위 사실 게시</li>
@@ -109,7 +109,7 @@ export default function TermsPage() {
 
         {/* 제7조 */}
         <section>
-          <h2 className="mb-3 text-base font-semibold text-[#111827]">제7조 (서비스 이용 제한)</h2>
+          <h2 className="mb-3 text-base font-semibold text-[var(--color-text-primary)]">제7조 (서비스 이용 제한)</h2>
           <ul className="space-y-2">
             <li>
               ① 회사는 회원이 제6조를 위반한 경우 경고·일시정지·영구정지 등의 조치를 취할 수 있습니다.
@@ -117,7 +117,7 @@ export default function TermsPage() {
             <li>
               ② 서비스 이용 제한에 이의가 있는 경우 회사 이메일
               ({" "}
-              <a href="mailto:bdr.wonyoung@gmail.com" className="text-[#E31B23] underline underline-offset-2">
+              <a href="mailto:bdr.wonyoung@gmail.com" className="text-[var(--color-primary)] underline underline-offset-2">
                 bdr.wonyoung@gmail.com
               </a>
               {" "})로 이의를 제기할 수 있습니다.
@@ -127,7 +127,7 @@ export default function TermsPage() {
 
         {/* 제8조 */}
         <section>
-          <h2 className="mb-3 text-base font-semibold text-[#111827]">제8조 (콘텐츠의 권리)</h2>
+          <h2 className="mb-3 text-base font-semibold text-[var(--color-text-primary)]">제8조 (콘텐츠의 권리)</h2>
           <ul className="space-y-2">
             <li>① 회원이 서비스 내에 게시한 콘텐츠의 저작권은 해당 회원에게 있습니다.</li>
             <li>
@@ -140,7 +140,7 @@ export default function TermsPage() {
 
         {/* 제9조 */}
         <section>
-          <h2 className="mb-3 text-base font-semibold text-[#111827]">제9조 (서비스 중단 및 변경)</h2>
+          <h2 className="mb-3 text-base font-semibold text-[var(--color-text-primary)]">제9조 (서비스 중단 및 변경)</h2>
           <ul className="space-y-2">
             <li>
               ① 회사는 시스템 점검·장애·천재지변 등 불가피한 사유로 서비스를 일시 중단할 수 있으며,
@@ -155,10 +155,10 @@ export default function TermsPage() {
 
         {/* 제10조 */}
         <section>
-          <h2 className="mb-3 text-base font-semibold text-[#111827]">제10조 (개인정보 보호)</h2>
+          <h2 className="mb-3 text-base font-semibold text-[var(--color-text-primary)]">제10조 (개인정보 보호)</h2>
           <p>
             회사는 이용자의 개인정보를{" "}
-            <Link href="/privacy" className="text-[#E31B23] underline underline-offset-2">
+            <Link href="/privacy" className="text-[var(--color-primary)] underline underline-offset-2">
               개인정보 처리방침
             </Link>
             에 따라 처리합니다. 개인정보 처리방침은 서비스 화면에서 언제든지 확인할 수 있습니다.
@@ -167,7 +167,7 @@ export default function TermsPage() {
 
         {/* 제11조 */}
         <section>
-          <h2 className="mb-3 text-base font-semibold text-[#111827]">제11조 (면책조항)</h2>
+          <h2 className="mb-3 text-base font-semibold text-[var(--color-text-primary)]">제11조 (면책조항)</h2>
           <ul className="space-y-2">
             <li>
               ① 회사는 천재지변·전쟁·인터넷 장애 등 불가항력으로 인한 서비스 제공 불가에 대해
@@ -186,7 +186,7 @@ export default function TermsPage() {
 
         {/* 제12조 */}
         <section>
-          <h2 className="mb-3 text-base font-semibold text-[#111827]">제12조 (유료 서비스 및 환불)</h2>
+          <h2 className="mb-3 text-base font-semibold text-[var(--color-text-primary)]">제12조 (유료 서비스 및 환불)</h2>
           <ul className="space-y-2">
             <li>① 유료 서비스의 요금·결제 방법은 서비스 내 요금 안내 페이지에 따릅니다.</li>
             <li>
@@ -199,7 +199,7 @@ export default function TermsPage() {
 
         {/* 제13조 */}
         <section>
-          <h2 className="mb-3 text-base font-semibold text-[#111827]">제13조 (준거법 및 분쟁 해결)</h2>
+          <h2 className="mb-3 text-base font-semibold text-[var(--color-text-primary)]">제13조 (준거법 및 분쟁 해결)</h2>
           <ul className="space-y-2">
             <li>① 이 약관은 대한민국 법률에 따라 해석·적용됩니다.</li>
             <li>
@@ -210,20 +210,20 @@ export default function TermsPage() {
         </section>
 
         {/* 부칙 */}
-        <section className="rounded-[16px] border border-[#E8ECF0] bg-[#F5F7FA] p-5">
-          <h2 className="mb-2 text-base font-semibold text-[#111827]">부칙</h2>
+        <section className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+          <h2 className="mb-2 text-base font-semibold text-[var(--color-text-primary)]">부칙</h2>
           <p>이 약관은 2026년 3월 1일부터 시행합니다.</p>
         </section>
 
       </div>
 
       {/* 하단 링크 */}
-      <div className="mt-10 flex items-center gap-4 border-t border-[#E8ECF0] pt-6 text-sm text-[#9CA3AF]">
-        <Link href="/privacy" className="hover:text-[#6B7280]">개인정보 처리방침</Link>
+      <div className="mt-10 flex items-center gap-4 border-t border-[var(--color-border)] pt-6 text-sm text-[var(--color-text-muted)]">
+        <Link href="/privacy" className="hover:text-[var(--color-text-muted)]">개인정보 처리방침</Link>
         <span>·</span>
-        <a href="mailto:bdr.wonyoung@gmail.com" className="hover:text-[#6B7280]">문의: bdr.wonyoung@gmail.com</a>
+        <a href="mailto:bdr.wonyoung@gmail.com" className="hover:text-[var(--color-text-muted)]">문의: bdr.wonyoung@gmail.com</a>
         <span>·</span>
-        <Link href="/" className="hover:text-[#6B7280]">홈으로</Link>
+        <Link href="/" className="hover:text-[var(--color-text-muted)]">홈으로</Link>
       </div>
     </div>
   );
