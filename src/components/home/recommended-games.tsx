@@ -1,20 +1,20 @@
 "use client";
 
 /* ============================================================
- * RecommendedGames — 추천/인기 경기 섹션 (리디자인)
+ * RecommendedGames -- 추천/인기 경기 섹션
  *
- * 왜 리디자인했는가: 기존 벤토 그리드를 모바일 가로 스크롤 + 데스크탑 2열 그리드로
- * 변경하여 다양한 카드 유형(Pickup Game / 대회)을 일관되게 보여준다.
+ * /api/web/recommended-games API 응답을 기반으로 동적 렌더링한다.
+ * API 실패 시 하드코딩 fallback 카드를 보여준다.
  *
  * 구조:
  * - 빨간 세로 막대 + 제목 + "전체보기" 링크
- * - Pickup Game 카드: 이미지 + 뱃지 + 제목 + 일시 + "예약하기" 버튼
- * - 대회 카드: 타입/제목/RECRUITING 뱃지 + 참가팀/개최일/상금 + "참가 신청" 버튼
+ * - 경기 카드: 유형별 아이콘/그라디언트 + 뱃지 + 제목 + 일시/장소 + "예약하기" 버튼
  * ============================================================ */
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+
 /* 세션 정보: 서버에서 getWebSession()으로 받은 JwtPayload를 전달받는다 */
 interface UserSession {
   sub: string;
@@ -23,6 +23,7 @@ interface UserSession {
   role: string;
 }
 
+/* API 응답의 각 경기 항목 (apiSuccess가 snake_case로 변환) */
 interface RecommendedGame {
   id: string;
   uuid: string | null;
@@ -35,6 +36,7 @@ interface RecommendedGame {
   match_reason: string[];
 }
 
+/* API 전체 응답 구조 */
 interface RecommendedData {
   user_name: string | null;
   games: RecommendedGame[];
@@ -43,6 +45,68 @@ interface RecommendedData {
 interface RecommendedGamesProps {
   session: UserSession | null;
 }
+
+/* ---- 경기 유형별 뱃지/그라디언트 매핑 ---- */
+/* game_type: 0=PICKUP, 1=GUEST, 2=PRACTICE (DB Int -> API에서 문자열로 변환) */
+const GAME_TYPE_CONFIG: Record<string, {
+  label: string;
+  icon: string;         // Material Symbols 아이콘명
+  gradient: string;     // 이미지 대신 보여줄 배경 그라디언트
+}> = {
+  "0": { label: "PICKUP",   icon: "sports_basketball", gradient: "linear-gradient(135deg, var(--color-primary), #1e40af)" },
+  "1": { label: "GUEST",    icon: "group_add",         gradient: "linear-gradient(135deg, #16a34a, #065f46)" },
+  "2": { label: "PRACTICE", icon: "fitness_center",    gradient: "linear-gradient(135deg, #d97706, #92400e)" },
+};
+
+/* 기본값: 알 수 없는 타입일 때 */
+const DEFAULT_TYPE_CONFIG = {
+  label: "GAME",
+  icon: "sports_basketball",
+  gradient: "linear-gradient(135deg, var(--color-primary), #1e40af)",
+};
+
+/* ---- 날짜/시간 포맷 헬퍼 ---- */
+/* ISO 문자열을 "MM.DD" 형태로 변환 */
+function formatDate(iso: string | null): string {
+  if (!iso) return "--";
+  const d = new Date(iso);
+  return `${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/* ISO 문자열을 "HH:MM" 형태로 변환 */
+function formatTime(iso: string | null): string {
+  if (!iso) return "--:--";
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+/* ---- API 실패 시 보여줄 fallback 더미 데이터 ---- */
+const FALLBACK_GAMES: RecommendedGame[] = [
+  {
+    id: "fallback-1", uuid: null,
+    title: "토요일 밤 5vs5 풀코트 매치",
+    scheduled_at: null, venue_name: null, city: null,
+    game_type: "0", spots_left: null, match_reason: [],
+  },
+  {
+    id: "fallback-2", uuid: null,
+    title: "서초 일요 조기 농구 5:5",
+    scheduled_at: null, venue_name: null, city: null,
+    game_type: "0", spots_left: null, match_reason: [],
+  },
+  {
+    id: "fallback-3", uuid: null,
+    title: "게스트 매치 - 강남 체육관",
+    scheduled_at: null, venue_name: null, city: null,
+    game_type: "1", spots_left: null, match_reason: [],
+  },
+  {
+    id: "fallback-4", uuid: null,
+    title: "팀 연습 경기",
+    scheduled_at: null, venue_name: null, city: null,
+    game_type: "2", spots_left: null, match_reason: [],
+  },
+];
 
 export function RecommendedGames({ session }: RecommendedGamesProps) {
   const [data, setData] = useState<RecommendedData | null>(null);
@@ -57,11 +121,13 @@ export function RecommendedGames({ session }: RecommendedGamesProps) {
   }, []);
 
   /* 로그인 시 "~님을 위한 추천", 비로그인 시 "인기 경기 및 토너먼트" */
-  /* API 응답의 user_name이 있으면 사용, 없으면 세션의 name 사용 */
   const userName = data?.user_name ?? session?.name;
   const title = session
     ? `"${userName ?? "Player"}"님을 위한 추천`
     : "인기 경기 및 토너먼트";
+
+  /* API 응답이 없거나 games 배열이 비어있으면 fallback 사용 */
+  const games = (data?.games && data.games.length > 0) ? data.games : FALLBACK_GAMES;
 
   if (loading) {
     return (
@@ -84,7 +150,6 @@ export function RecommendedGames({ session }: RecommendedGamesProps) {
       {/* 섹션 헤더: 빨간 세로 막대 + 제목 + 전체보기 */}
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-2xl font-bold font-heading tracking-tight text-text-primary flex items-center gap-3">
-          {/* 빨간 세로 막대 */}
           <span className="w-1.5 h-6 bg-primary" />
           {title}
         </h3>
@@ -98,147 +163,97 @@ export function RecommendedGames({ session }: RecommendedGamesProps) {
 
       {/* 반응형 레이아웃: 모바일 가로 스크롤 / 데스크탑 2열 그리드 */}
       <div className="flex flex-row overflow-x-auto gap-6 no-scrollbar -mx-6 px-6 md:grid md:grid-cols-2 md:overflow-visible md:mx-0 md:px-0">
-
-        {/* === Pickup Game 카드 1 === */}
-        <div className="min-w-[280px] md:min-w-0 bg-surface border border-border rounded-lg overflow-hidden hover:border-primary/50 transition-colors group">
-          {/* 이미지 영역 */}
-          <div className="relative h-40">
-            <img
-              alt="Basketball Pickup Game"
-              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-              src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&q=60"
-            />
-            {/* 뱃지 */}
-            <div className="absolute top-3 left-3 bg-primary text-on-primary text-[10px] font-bold px-2 py-1 rounded">
-              PICKUP GAME
-            </div>
-          </div>
-          {/* 카드 본문 */}
-          <div className="p-5">
-            <h4 className="text-lg font-bold text-text-primary mb-2">
-              토요일 밤 5vs5 풀코트 매치
-            </h4>
-            <div className="flex items-center gap-4 text-xs text-text-muted mb-4">
-              <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">calendar_today</span>
-                11.04
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">schedule</span>
-                19:00
-              </span>
-            </div>
-            <button className="w-full py-2.5 bg-primary text-on-primary text-sm font-bold rounded hover:brightness-110 transition-all active:scale-95">
-              예약하기
-            </button>
-          </div>
-        </div>
-
-        {/* === Pickup Game 카드 2 === */}
-        <div className="min-w-[280px] md:min-w-0 bg-surface border border-border rounded-lg overflow-hidden hover:border-primary/50 transition-colors group">
-          <div className="relative h-40">
-            <img
-              alt="Basketball Game 2"
-              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-              src="https://images.unsplash.com/photo-1574623452334-1e0ac2b3ccb4?w=400&q=60"
-            />
-            <div className="absolute top-3 left-3 bg-primary text-on-primary text-[10px] font-bold px-2 py-1 rounded">
-              PICKUP GAME
-            </div>
-          </div>
-          <div className="p-5">
-            <h4 className="text-lg font-bold text-text-primary mb-2">
-              서초 일요 조기 농구 5:5
-            </h4>
-            <div className="flex items-center gap-4 text-xs text-text-muted mb-4">
-              <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">calendar_today</span>
-                11.05
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">schedule</span>
-                07:00
-              </span>
-            </div>
-            <button className="w-full py-2.5 bg-primary text-on-primary text-sm font-bold rounded hover:brightness-110 transition-all active:scale-95">
-              예약하기
-            </button>
-          </div>
-        </div>
-
-        {/* === 대회 카드 1 === */}
-        <div className="min-w-[280px] md:min-w-0 bg-surface border border-border p-5 rounded-lg hover:border-primary/50 transition-colors group">
-          {/* 헤더: 타입 + 제목 + RECRUITING 뱃지 */}
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex flex-col">
-              <span className="text-[10px] text-text-muted font-bold uppercase">
-                {session ? "Tournament" : "Trending Tournament"}
-              </span>
-              <span className="text-lg font-bold text-text-primary">
-                BDR 오픈 챌린지 윈터
-              </span>
-            </div>
-            <span className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded font-bold uppercase">
-              RECRUITING
-            </span>
-          </div>
-          {/* 참가팀 / 개최일 / 상금 3열 */}
-          <div className="grid grid-cols-3 gap-2 mb-6 py-3 border-y border-border/30">
-            <div className="text-center">
-              <div className="text-[9px] text-text-muted mb-1">참가팀</div>
-              <div className="text-xs font-bold text-text-primary">12/16</div>
-            </div>
-            <div className="text-center border-l border-border/30">
-              <div className="text-[9px] text-text-muted mb-1">개최일</div>
-              <div className="text-xs font-bold text-text-primary">12.24</div>
-            </div>
-            <div className="text-center border-l border-border/30">
-              <div className="text-[9px] text-text-muted mb-1">상금</div>
-              <div className="text-xs font-bold text-text-primary">100만</div>
-            </div>
-          </div>
-          {/* 참가 신청 버튼: 호버 시 빨간색으로 변경 */}
-          <button className="w-full py-2.5 bg-card group-hover:bg-primary text-text-primary group-hover:text-on-primary text-sm font-bold transition-all rounded active:scale-95">
-            참가 신청
-          </button>
-        </div>
-
-        {/* === 대회 카드 2 === */}
-        <div className="min-w-[280px] md:min-w-0 bg-surface border border-border p-5 rounded-lg hover:border-primary/50 transition-colors group">
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex flex-col">
-              <span className="text-[10px] text-text-muted font-bold uppercase">
-                {session ? "Basketball" : "Big Match"}
-              </span>
-              <span className="text-lg font-bold text-text-primary">
-                연말 왕중왕전 토너먼트
-              </span>
-            </div>
-            <span className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded font-bold uppercase">
-              {session ? "RECRUITING" : "FULL"}
-            </span>
-          </div>
-          <div className="grid grid-cols-3 gap-2 mb-6 py-3 border-y border-border/30">
-            <div className="text-center">
-              <div className="text-[9px] text-text-muted mb-1">참가팀</div>
-              <div className="text-xs font-bold text-text-primary">8/8</div>
-            </div>
-            <div className="text-center border-l border-border/30">
-              <div className="text-[9px] text-text-muted mb-1">개최일</div>
-              <div className="text-xs font-bold text-text-primary">12.30</div>
-            </div>
-            <div className="text-center border-l border-border/30">
-              <div className="text-[9px] text-text-muted mb-1">
-                {session ? "대기팀" : "대기팀"}
-              </div>
-              <div className="text-xs font-bold text-text-primary">2</div>
-            </div>
-          </div>
-          <button className="w-full py-2.5 bg-card group-hover:bg-primary text-text-primary group-hover:text-on-primary text-sm font-bold transition-all rounded active:scale-95">
-            대기 신청
-          </button>
-        </div>
+        {games.map((game) => (
+          <GameCard key={game.id} game={game} />
+        ))}
       </div>
     </section>
+  );
+}
+
+/* ---- 개별 경기 카드 컴포넌트 ---- */
+/* 경기 유형에 따라 뱃지 색상/아이콘/그라디언트를 자동 적용한다 */
+function GameCard({ game }: { game: RecommendedGame }) {
+  const typeConfig = GAME_TYPE_CONFIG[game.game_type ?? "0"] ?? DEFAULT_TYPE_CONFIG;
+
+  /* 경기 상세 링크: uuid가 있으면 앞 8자리 사용, 없으면 id */
+  const href = `/games/${game.uuid?.slice(0, 8) ?? game.id}`;
+
+  /* 장소 텍스트: venue_name > city > 빈 문자열 */
+  const location = game.venue_name ?? game.city ?? "";
+
+  /* 남은 자리 텍스트 */
+  const spotsText = game.spots_left !== null ? `${game.spots_left}자리 남음` : null;
+
+  return (
+    <Link
+      href={href}
+      className="min-w-[280px] md:min-w-0 bg-surface border border-border rounded-lg overflow-hidden hover:border-primary/50 transition-colors group block"
+    >
+      {/* 이미지 영역: DB에 이미지가 없으므로 경기 유형별 그라디언트 + 아이콘 */}
+      <div
+        className="relative h-40 flex items-center justify-center"
+        style={{ background: typeConfig.gradient }}
+      >
+        {/* 유형별 대형 아이콘 (배경 장식) */}
+        <span
+          className="material-symbols-outlined text-white/20 select-none"
+          style={{ fontSize: "80px" }}
+        >
+          {typeConfig.icon}
+        </span>
+
+        {/* 유형 뱃지 (좌상단) */}
+        <div className="absolute top-3 left-3 bg-primary text-on-primary text-[10px] font-bold px-2 py-1 rounded">
+          {typeConfig.label}
+        </div>
+
+        {/* 추천 이유 뱃지 (우상단) - match_reason이 있을 때만 표시 */}
+        {game.match_reason.length > 0 && (
+          <div className="absolute top-3 right-3 bg-surface/90 text-primary text-[10px] font-bold px-2 py-1 rounded">
+            {game.match_reason[0]}
+          </div>
+        )}
+      </div>
+
+      {/* 카드 본문 */}
+      <div className="p-5">
+        {/* 경기 제목 */}
+        <h4 className="text-lg font-bold text-text-primary mb-2 line-clamp-1">
+          {game.title ?? "경기"}
+        </h4>
+
+        {/* 일시 + 장소 정보 */}
+        <div className="flex items-center gap-4 text-xs text-text-muted mb-4">
+          {/* 날짜 */}
+          <span className="flex items-center gap-1">
+            <span className="material-symbols-outlined text-sm">calendar_today</span>
+            {formatDate(game.scheduled_at)}
+          </span>
+          {/* 시간 */}
+          <span className="flex items-center gap-1">
+            <span className="material-symbols-outlined text-sm">schedule</span>
+            {formatTime(game.scheduled_at)}
+          </span>
+          {/* 장소 (있을 때만) */}
+          {location && (
+            <span className="flex items-center gap-1">
+              <span className="material-symbols-outlined text-sm">location_on</span>
+              <span className="truncate max-w-[100px]">{location}</span>
+            </span>
+          )}
+        </div>
+
+        {/* 남은 자리 표시 (있을 때만) */}
+        {spotsText && (
+          <p className="text-xs text-primary font-bold mb-3">{spotsText}</p>
+        )}
+
+        {/* 예약하기 버튼 */}
+        <span className="block w-full py-2.5 bg-primary text-on-primary text-sm font-bold rounded hover:brightness-110 transition-all active:scale-95 text-center">
+          예약하기
+        </span>
+      </div>
+    </Link>
   );
 }

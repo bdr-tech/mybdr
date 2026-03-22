@@ -32,6 +32,8 @@ interface ProfileData {
     bio: string | null;
     profile_image_url: string | null;
     total_games_participated: number | null;
+    /** 가입일 ISO 문자열 */
+    created_at: string | null;
   };
   teams?: { id: string; name: string; role: string }[];
   recent_games?: { id: string; title: string | null; scheduled_at: string | null; status: number }[];
@@ -53,6 +55,8 @@ interface StatsData {
     max_assists: number;
   } | null;
   monthly_games: number;
+  /** 승률 (0~100, 결과 확정 경기 없으면 null) */
+  win_rate: number | null;
 }
 
 export default function ProfilePage() {
@@ -128,7 +132,9 @@ export default function ProfilePage() {
         profileImageUrl={user.profile_image_url}
         position={user.position}
         city={user.city}
+        createdAt={user.created_at}
         totalGames={user.total_games_participated ?? 0}
+        winRate={statsRaw?.win_rate ?? null}
       />
 
       {/* 2. 핵심 스탯 3칸 카드 (PPG / RPG / APG) */}

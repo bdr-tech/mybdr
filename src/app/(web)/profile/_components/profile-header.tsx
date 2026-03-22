@@ -16,10 +16,12 @@ interface ProfileHeaderProps {
   position: string | null;
   /** 활동 지역 */
   city: string | null;
-  /** 가입일 ISO 문자열 (createdAt이 API에 없으므로 optional) */
+  /** 가입일 ISO 문자열 */
   createdAt?: string | null;
   /** 총 참가 경기 수 */
   totalGames: number;
+  /** 승률 (0~100, 결과 확정 경기가 없으면 null) */
+  winRate?: number | null;
 }
 
 /** 포지션 한글 이름 매핑 */
@@ -51,6 +53,7 @@ export function ProfileHeader({
   city,
   createdAt,
   totalGames,
+  winRate,
 }: ProfileHeaderProps) {
   const displayName = nickname ?? "사용자";
   const initial = displayName.trim()[0]?.toUpperCase() || "U";
@@ -187,12 +190,12 @@ export function ProfileHeader({
             backgroundColor: "var(--color-surface)",
           }}
         >
-          {/* 승률: DB에 없으므로 placeholder 표시 */}
+          {/* 승률: API에서 계산된 실제 값 표시 (없으면 -%) */}
           <div
             className="text-2xl font-bold"
             style={{ fontFamily: "var(--font-heading)", color: "var(--color-primary)" }}
           >
-            -%
+            {winRate != null ? `${winRate}%` : "-%"}
           </div>
           <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>
             Win Rate
