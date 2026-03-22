@@ -13,10 +13,12 @@ export default async function AdminLayout({
     redirect("/");
   }
 
+  // 배경: 프론트 디자인 시스템과 동일한 CSS 변수 사용
   return (
-    <div className="min-h-screen bg-[var(--color-surface)]">
+    <div className="min-h-screen bg-[var(--color-background)]">
       <AdminSidebar />
-      <main className="lg:ml-[260px]">
+      {/* ml-64: 사이드바 w-64에 맞춤 (기존 ml-[260px]에서 변경) */}
+      <main className="lg:ml-64">
         <div className="mx-auto max-w-7xl p-6">{children}</div>
       </main>
     </div>
