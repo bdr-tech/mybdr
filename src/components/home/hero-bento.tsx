@@ -7,6 +7,10 @@
  *
  * 왜 YouTube 슬라이드인가: 더미 이미지 대신 실제 BDR 영상 콘텐츠를
  * 첫 화면에서 바로 보여줘서 사용자 참여를 유도한다.
+ *
+ * [수정 2026-03-23]
+ * - 고정 높이(h-[420px]) → aspect-video로 변경하여 모바일 비율 유지
+ * - YouTube iframe API로 영상 재생 감지 → 자동 슬라이드 정지
  * ============================================================ */
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -45,11 +49,44 @@ export function HeroBento() {
   const [hasError, setHasError] = useState(false);
   // 수동 조작 후 자동 슬라이드 일시 정지 여부
   const [isPaused, setIsPaused] = useState(false);
+  // 영상 재생 중 여부 (YouTube Player API로 감지)
+  const [isPlaying, setIsPlaying] = useState(false);
 
   // 타이머 참조: 자동 슬라이드용
   const autoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // 타이머 참조: 수동 조작 후 재개 대기용
   const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // --- YouTube iframe API: 영상 재생 상태 감지 ---
+  // 방법 B: postMessage로 YouTube에서 보내는 재생 상태를 수신
+  // playerState: 1=재생중, 2=일시정지, 0=종료, -1=시작전
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      // YouTube iframe에서 오는 메시지만 처리 (보안)
+      if (event.origin !== "https://www.youtube.com") return;
+      try {
+        const data = JSON.parse(event.data);
+        if (data.event === "onStateChange") {
+          if (data.info === 1) {
+            // 재생 시작 → 자동 슬라이드 정지
+            setIsPlaying(true);
+          } else if (data.info === 2 || data.info === 0) {
+            // 일시정지 또는 종료 → 자동 슬라이드 재개
+            setIsPlaying(false);
+          }
+        }
+      } catch {
+        // YouTube 외 메시지는 무시
+      }
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
+  // --- 방법 A (fallback): 마우스/터치 인터랙션으로 정지 ---
+  // iframe 내부 클릭은 cross-origin이라 직접 감지 불가하므로
+  // 슬라이드 영역에 마우스가 올라가면 정지, 떠나면 재개
+  const [isHovering, setIsHovering] = useState(false);
 
   // --- API에서 영상 목록 가져오기 ---
   // 라이브(최대 2개) + 조회수 상위(최대 2개)를 조합하여 최대 4개 표시
@@ -79,9 +116,11 @@ export function HeroBento() {
   }, []);
 
   // --- 자동 슬라이드 타이머 ---
-  // 영상이 2개 이상이고, 일시정지 상태가 아닐 때만 자동 전환
+  // 영상이 2개 이상이고, 일시정지/재생중/호버 중이 아닐 때만 자동 전환
+  // isPlaying: YouTube API로 감지한 재생 상태 (방법 B)
+  // isHovering: 마우스 호버 감지 (방법 A fallback)
   useEffect(() => {
-    if (videos.length < 2 || isPaused) return;
+    if (videos.length < 2 || isPaused || isPlaying || isHovering) return;
 
     autoTimerRef.current = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % videos.length);
@@ -91,7 +130,7 @@ export function HeroBento() {
     return () => {
       if (autoTimerRef.current) clearInterval(autoTimerRef.current);
     };
-  }, [videos.length, isPaused]);
+  }, [videos.length, isPaused, isPlaying, isHovering]);
 
   // --- 수동 조작 시 자동 슬라이드 일시 정지 후 재개 ---
   const pauseAutoSlide = useCallback(() => {
@@ -136,7 +175,7 @@ export function HeroBento() {
   if (isLoading) {
     return (
       <div>
-        <div className="relative h-[420px] rounded-xl overflow-hidden bg-card border border-border animate-pulse">
+        <div className="relative aspect-video max-h-[420px] rounded-xl overflow-hidden bg-card border border-border animate-pulse">
           {/* 스켈레톤 중앙 아이콘 */}
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="material-symbols-outlined text-text-tertiary text-5xl">
@@ -152,7 +191,7 @@ export function HeroBento() {
   if (hasError || videos.length === 0) {
     return (
       <div>
-        <div className="relative h-[420px] rounded-xl overflow-hidden bg-card group border border-border">
+        <div className="relative aspect-video max-h-[420px] rounded-xl overflow-hidden bg-card group border border-border">
           <div className="absolute inset-0 w-full h-full overflow-hidden">
             <img
               alt="BDR 농구 대회"
@@ -189,8 +228,13 @@ export function HeroBento() {
 
   return (
     <div>
-      {/* 슬라이드 컨테이너 */}
-      <div className="relative h-[420px] rounded-xl overflow-hidden bg-black group border border-border">
+      {/* 슬라이드 컨테이너: aspect-video로 16:9 비율 유지, max-h로 데스크탑 제한 */}
+      <div
+        className="relative aspect-video max-h-[420px] rounded-xl overflow-hidden bg-black group border border-border"
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+        onTouchStart={() => setIsHovering(true)}
+      >
 
         {/* 슬라이드 트랙: translateX로 이동, transition으로 부드럽게 전환 */}
         <div
@@ -200,12 +244,13 @@ export function HeroBento() {
           {videos.map((video) => (
             <div
               key={video.video_id}
-              className="w-full h-full flex-shrink-0 relative"
+              className="w-full h-full flex-shrink-0"
             >
               {/* YouTube iframe 임베드 */}
+              {/* enablejsapi=1: 재생 상태 감지를 위해 YouTube Player API 활성화 */}
               {/* 라이브 영상은 autoplay=1로 자동재생, 일반 영상은 autoplay=0 */}
               <iframe
-                src={`https://www.youtube.com/embed/${video.video_id}?autoplay=${video.is_live ? "1" : "0"}&rel=0&modestbranding=1&mute=${video.is_live ? "1" : "0"}`}
+                src={`https://www.youtube.com/embed/${video.video_id}?enablejsapi=1&autoplay=${video.is_live ? "1" : "0"}&rel=0&modestbranding=1&mute=${video.is_live ? "1" : "0"}`}
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
