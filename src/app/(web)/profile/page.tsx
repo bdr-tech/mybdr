@@ -1,14 +1,26 @@
 "use client";
 
+/**
+ * 내 프로필 페이지 (/profile)
+ *
+ * API/데이터 패칭 100% 유지 - UI만 교체
+ * - useSWR로 /api/web/profile + /api/web/profile/stats 호출
+ * - 레이아웃: 헤더 → PPG/RPG/APG 3칸 → 능력치 분석(2열) + 팀 카드 → 최근 경기
+ */
+
 import useSWR from "swr";
 import Link from "next/link";
 import { ProfileHeader } from "./_components/profile-header";
-import { ActivityRing } from "./_components/activity-ring";
 import { StatBars } from "./_components/stat-bars";
+import { AbilitySection } from "./_components/ability-section";
+import { CurrentTeamCard } from "./_components/current-team-card";
 import { RecentGamesSection } from "./_components/recent-games-section";
-import { TeamsSection } from "./_components/teams-section";
-import { TournamentsSection } from "./_components/tournaments-section";
-import { PlayerInfoSection } from "./_components/player-info-section";
+
+// 기존 컴포넌트는 import 제거하되 파일은 삭제하지 않음
+// import { ActivityRing } from "./_components/activity-ring";
+// import { TeamsSection } from "./_components/teams-section";
+// import { TournamentsSection } from "./_components/tournaments-section";
+// import { PlayerInfoSection } from "./_components/player-info-section";
 
 interface ProfileData {
   user: {
@@ -44,6 +56,7 @@ interface StatsData {
 }
 
 export default function ProfilePage() {
+  // API 호출 로직 100% 유지
   const { data: profile, isLoading } = useSWR<ProfileData>("/api/web/profile", {
     revalidateOnFocus: false,
     dedupingInterval: 60000,
@@ -53,7 +66,7 @@ export default function ProfilePage() {
     dedupingInterval: 60000,
   });
 
-  // snake_case API 응답 → camelCase 변환
+  // snake_case API 응답 → camelCase 변환 (기존 로직 유지)
   const stats = statsRaw
     ? {
         careerAverages: statsRaw.career_averages
@@ -66,7 +79,6 @@ export default function ProfilePage() {
               avgBlocks: statsRaw.career_averages.avg_blocks,
             }
           : null,
-        // snake_case → camelCase 변환 (StatBars 컴포넌트가 camelCase를 기대)
         seasonHighs: statsRaw.season_highs
           ? {
               maxPoints: statsRaw.season_highs.max_points,
@@ -77,13 +89,13 @@ export default function ProfilePage() {
       }
     : undefined;
 
+  // 로딩 상태
   if (isLoading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center" style={{ color: 'var(--color-text-secondary)' }}>
+      <div className="flex min-h-[60vh] items-center justify-center" style={{ color: "var(--color-text-secondary)" }}>
         <div className="text-center">
           <div className="mb-2">
-            {/* 로딩 스피너: primary 색상 */}
-            <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-8 w-8 animate-spin" style={{ color: 'var(--color-primary)' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-8 w-8 animate-spin" style={{ color: "var(--color-primary)" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
           </div>
           <p>로딩 중...</p>
         </div>
@@ -91,13 +103,13 @@ export default function ProfilePage() {
     );
   }
 
+  // 에러/미로그인 상태
   if (!profile || "error" in profile) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
-          <p className="mb-4" style={{ color: 'var(--color-text-secondary)' }}>로그인이 필요합니다.</p>
-          {/* 로그인 버튼: accent 색상 */}
-          <Link href="/login" className="rounded-[10px] px-6 py-2 text-sm font-semibold text-white" style={{ backgroundColor: 'var(--color-accent)' }}>
+          <p className="mb-4" style={{ color: "var(--color-text-secondary)" }}>로그인이 필요합니다.</p>
+          <Link href="/login" className="rounded px-6 py-2 text-sm font-semibold text-white" style={{ backgroundColor: "var(--color-primary)" }}>
             로그인
           </Link>
         </div>
@@ -105,37 +117,64 @@ export default function ProfilePage() {
     );
   }
 
-  const { user, teams = [], recent_games: recentGames = [], tournaments = [] } = profile;
+  const { user, teams = [], recent_games: recentGames = [] } = profile;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 max-w-7xl">
+      {/* 1. 프로필 헤더: 아바타 + 이름 + 메타 + 통계 */}
       <ProfileHeader
         nickname={user.nickname}
         email={user.email}
         profileImageUrl={user.profile_image_url}
-      />
-
-      <ActivityRing
-        monthlyGames={statsRaw?.monthly_games ?? 0}
+        position={user.position}
+        city={user.city}
         totalGames={user.total_games_participated ?? 0}
-        totalTournaments={tournaments.length}
       />
 
+      {/* 2. 핵심 스탯 3칸 카드 (PPG / RPG / APG) */}
       <StatBars
         careerAverages={stats?.careerAverages ?? null}
         seasonHighs={stats?.seasonHighs ?? null}
       />
 
-      <RecentGamesSection games={recentGames} />
-      <TeamsSection teams={teams} />
-      <TournamentsSection tournaments={tournaments} />
+      {/* 3. 2열 레이아웃: 능력치 분석 + 현재 팀 */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* 좌측 7칸: 능력치 분석 (레이더 차트 + 바 차트) */}
+        <div className="lg:col-span-8">
+          {stats?.careerAverages ? (
+            <AbilitySection
+              avgPoints={stats.careerAverages.avgPoints}
+              avgRebounds={stats.careerAverages.avgRebounds}
+              avgAssists={stats.careerAverages.avgAssists}
+              avgSteals={stats.careerAverages.avgSteals}
+              avgBlocks={stats.careerAverages.avgBlocks}
+            />
+          ) : (
+            <div
+              className="rounded-xl border p-8 text-center"
+              style={{
+                borderColor: "var(--color-border)",
+                backgroundColor: "var(--color-surface)",
+              }}
+            >
+              <span className="material-symbols-outlined text-3xl mb-2" style={{ color: "var(--color-text-muted)" }}>
+                analytics
+              </span>
+              <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
+                경기 기록이 쌓이면 능력치 차트가 표시됩니다
+              </p>
+            </div>
+          )}
+        </div>
 
-      <PlayerInfoSection
-        position={user.position}
-        height={user.height}
-        city={user.city}
-        bio={user.bio}
-      />
+        {/* 우측 5칸: 현재 팀 카드 */}
+        <div className="lg:col-span-4">
+          <CurrentTeamCard teams={teams} />
+        </div>
+      </div>
+
+      {/* 4. 최근 경기 전적 */}
+      <RecentGamesSection games={recentGames} />
     </div>
   );
 }
