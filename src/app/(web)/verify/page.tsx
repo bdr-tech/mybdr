@@ -93,11 +93,11 @@ export default function VerifyPage() {
     <div className="flex min-h-[80vh] flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-extrabold uppercase tracking-wide sm:text-3xl text-[#111827]" style={{ fontFamily: "var(--font-heading)" }}>추가 인증이 필요해요</h1>
-          <p className="mt-1 text-sm text-[#6B7280]">서비스 이용을 위해 아래 정보를 인증해주세요.</p>
+          <h1 className="text-2xl font-extrabold uppercase tracking-wide sm:text-3xl text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>추가 인증이 필요해요</h1>
+          <p className="mt-1 text-sm text-[var(--color-text-muted)]">서비스 이용을 위해 아래 정보를 인증해주세요.</p>
         </div>
 
-        <div className="rounded-[16px] border border-[#E8ECF0] bg-[#FFFFFF] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.07)]">
+        <div className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.07)]">
           {error && (
             <div className="mb-4 rounded-[10px] bg-red-500/10 px-3 py-2 text-sm text-red-500">{error}</div>
           )}
@@ -106,8 +106,8 @@ export default function VerifyPage() {
           {needsPhone && step === "input" && (
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#6B7280]">
-                  전화번호 <span className="text-[#E31B23]">*</span>
+                <label className="mb-1 block text-sm font-medium text-[var(--color-text-muted)]">
+                  전화번호 <span className="text-[var(--color-primary)]">*</span>
                 </label>
                 <input
                   type="tel"
@@ -115,27 +115,27 @@ export default function VerifyPage() {
                   onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ""))}
                   placeholder="01012345678"
                   maxLength={11}
-                  className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
+                  className="w-full rounded-[12px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
                 />
               </div>
               {needsEmail && (
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[#6B7280]">
-                    이메일 <span className="text-xs text-[#9CA3AF]">(선택)</span>
+                  <label className="mb-1 block text-sm font-medium text-[var(--color-text-muted)]">
+                    이메일 <span className="text-xs text-[var(--color-text-muted)]">(선택)</span>
                   </label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="example@email.com"
-                    className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
+                    className="w-full rounded-[12px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
                   />
                 </div>
               )}
               <button
                 onClick={handleSubmit}
                 disabled={sending || !phone}
-                className="w-full rounded-[12px] bg-[#1B3C87] py-3 text-sm font-semibold text-white transition-all hover:bg-[#142D6B] active:scale-[0.98] disabled:opacity-50"
+                className="w-full rounded-[12px] bg-[var(--color-accent)] py-3 text-sm font-semibold text-white transition-all hover:bg-[var(--color-accent-hover)] active:scale-[0.98] disabled:opacity-50"
               >
                 {sending ? "발송 중..." : "인증 코드 받기"}
               </button>
@@ -145,8 +145,8 @@ export default function VerifyPage() {
           {/* 인증 코드 입력 */}
           {needsPhone && step === "verify-phone" && (
             <div className="space-y-3">
-              <p className="text-sm text-[#6B7280]">
-                <span className="font-medium text-[#111827]">{phone}</span>으로 인증 코드를 보냈습니다.
+              <p className="text-sm text-[var(--color-text-muted)]">
+                <span className="font-medium text-[var(--color-text-primary)]">{phone}</span>으로 인증 코드를 보냈습니다.
               </p>
               {sentCode && (
                 <div className="rounded-[10px] bg-amber-500/10 px-3 py-2 text-xs text-amber-600">
@@ -159,19 +159,19 @@ export default function VerifyPage() {
                 onChange={(e) => setVerifyCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
                 placeholder="6자리 인증 코드"
                 maxLength={6}
-                className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-4 py-3 text-center text-lg font-bold tracking-[0.5em] text-[#111827] placeholder:text-[#9CA3AF] placeholder:tracking-normal placeholder:text-sm placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
+                className="w-full rounded-[12px] border border-[var(--color-border)] bg-white px-4 py-3 text-center text-lg font-bold tracking-[0.5em] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] placeholder:tracking-normal placeholder:text-sm placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
                 autoFocus
               />
               <button
                 onClick={handleSubmit}
                 disabled={saving || verifyCode.length !== 6}
-                className="w-full rounded-[12px] bg-[#1B3C87] py-3 text-sm font-semibold text-white transition-all hover:bg-[#142D6B] active:scale-[0.98] disabled:opacity-50"
+                className="w-full rounded-[12px] bg-[var(--color-accent)] py-3 text-sm font-semibold text-white transition-all hover:bg-[var(--color-accent-hover)] active:scale-[0.98] disabled:opacity-50"
               >
                 {saving ? "확인 중..." : "인증 완료"}
               </button>
               <button
                 onClick={() => { setStep("input"); setVerifyCode(""); setSentCode(""); }}
-                className="w-full text-xs text-[#9CA3AF] hover:text-[#6B7280]"
+                className="w-full text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
               >
                 전화번호 다시 입력
               </button>
@@ -182,19 +182,19 @@ export default function VerifyPage() {
           {!needsPhone && needsEmail && (
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#6B7280]">이메일</label>
+                <label className="mb-1 block text-sm font-medium text-[var(--color-text-muted)]">이메일</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="example@email.com"
-                  className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
+                  className="w-full rounded-[12px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
                 />
               </div>
               <button
                 onClick={handleSubmit}
                 disabled={saving || !email}
-                className="w-full rounded-[12px] bg-[#1B3C87] py-3 text-sm font-semibold text-white transition-all hover:bg-[#142D6B] active:scale-[0.98] disabled:opacity-50"
+                className="w-full rounded-[12px] bg-[var(--color-accent)] py-3 text-sm font-semibold text-white transition-all hover:bg-[var(--color-accent-hover)] active:scale-[0.98] disabled:opacity-50"
               >
                 {saving ? "저장 중..." : "완료"}
               </button>
@@ -205,7 +205,7 @@ export default function VerifyPage() {
         {skipable && (
           <button
             onClick={() => router.push("/")}
-            className="mt-4 w-full text-center text-sm text-[#9CA3AF] hover:text-[#6B7280]"
+            className="mt-4 w-full text-center text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
           >
             나중에 하기
           </button>

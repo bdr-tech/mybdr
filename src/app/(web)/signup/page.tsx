@@ -9,13 +9,13 @@ export default function SignupPage() {
       <Card className="w-full max-w-md">
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-extrabold uppercase tracking-wide sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>회원가입</h1>
-          <p className="mt-1 text-sm text-[#6B7280]">BDR에 가입하고 농구를 즐기세요</p>
+          <p className="mt-1 text-sm text-[var(--color-text-muted)]">BDR에 가입하고 농구를 즐기세요</p>
         </div>
 
         {/* Google 회원가입 */}
         <a
           href="/api/auth/google"
-          className="flex w-full items-center justify-center gap-3 rounded-[16px] border border-[#CBD5E1] bg-white px-4 py-3 text-sm font-medium text-[#374151] transition-opacity hover:opacity-90 active:opacity-80"
+          className="flex w-full items-center justify-center gap-3 rounded-[16px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-medium text-[var(--color-text-secondary)] transition-opacity hover:opacity-90 active:opacity-80"
         >
           <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
             <path
@@ -38,9 +38,9 @@ export default function SignupPage() {
           Google로 시작하기
         </a>
 
-        <p className="mt-6 text-center text-sm text-[#6B7280]">
+        <p className="mt-6 text-center text-sm text-[var(--color-text-muted)]">
           이미 계정이 있으신가요?{" "}
-          <Link href="/login" className="text-[#E31B23] hover:underline">로그인</Link>
+          <Link href="/login" className="text-[var(--color-primary)] hover:underline">로그인</Link>
         </p>
       </Card>
     </div>

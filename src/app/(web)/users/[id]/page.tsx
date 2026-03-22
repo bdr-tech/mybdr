@@ -22,9 +22,9 @@ const ROLE_LABEL: Record<string, string> = {
 
 function StatBox({ value, label }: { value: number | string; label: string }) {
   return (
-    <div className="flex flex-col items-center rounded-[16px] border border-[#E8ECF0] bg-[#EEF2FF] px-4 py-3 min-w-[64px]">
-      <span className="text-lg font-bold text-[#111827]">{value}</span>
-      <span className="mt-0.5 text-xs text-[#6B7280]">{label}</span>
+    <div className="flex flex-col items-center rounded-[16px] border border-[var(--color-border)] bg-[var(--color-elevated)] px-4 py-3 min-w-[64px]">
+      <span className="text-lg font-bold text-[var(--color-text-primary)]">{value}</span>
+      <span className="mt-0.5 text-xs text-[var(--color-text-muted)]">{label}</span>
     </div>
   );
 }
@@ -67,40 +67,40 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
   return (
     <div className="space-y-4">
       {/* 프로필 히어로 */}
-      <div className="relative overflow-hidden rounded-[20px] bg-[#FFFFFF] p-6">
+      <div className="relative overflow-hidden rounded-[20px] bg-[var(--color-card)] p-6">
         {/* 배경 장식 */}
-        <div className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 rounded-full bg-[#1B3C87] opacity-5" />
+        <div className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 rounded-full bg-[var(--color-accent)] opacity-5" />
 
         <div className="relative flex items-start gap-4">
           {/* 아바타 */}
-          <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-[rgba(0,102,255,0.15)] text-3xl font-black text-[#E31B23] border-2 border-[#1B3C87]/30">
+          <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-[rgba(0,102,255,0.15)] text-3xl font-black text-[var(--color-primary)] border-2 border-[var(--color-accent)]/30">
             {initial}
           </div>
 
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-extrabold uppercase tracking-wide text-[#111827] sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>{displayName}</h1>
+            <h1 className="text-2xl font-extrabold uppercase tracking-wide text-[var(--color-text-primary)] sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>{displayName}</h1>
 
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               {user.position && (
-                <span className="rounded-full bg-[rgba(27,60,135,0.12)] px-2.5 py-0.5 text-xs font-medium text-[#E31B23]">
+                <span className="rounded-full bg-[rgba(27,60,135,0.12)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-primary)]">
                   {user.position}
                   {POSITION_LABEL[user.position] ? ` · ${POSITION_LABEL[user.position]}` : ""}
                 </span>
               )}
               {location && (
-                <span className="inline-flex items-center gap-1 text-sm text-[#6B7280]"><svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>{location}</span>
+                <span className="inline-flex items-center gap-1 text-sm text-[var(--color-text-muted)]"><svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>{location}</span>
               )}
             </div>
 
             {user.height && (
-              <p className="mt-1 text-sm text-[#9CA3AF]">키 {user.height}cm</p>
+              <p className="mt-1 text-sm text-[var(--color-text-muted)]">키 {user.height}cm</p>
             )}
           </div>
         </div>
 
         {/* 바이오 */}
         {user.bio && (
-          <p className="relative mt-4 border-t border-[#E8ECF0] pt-4 text-sm leading-relaxed text-[#6B7280]">
+          <p className="relative mt-4 border-t border-[var(--color-border)] pt-4 text-sm leading-relaxed text-[var(--color-text-muted)]">
             {user.bio}
           </p>
         )}
@@ -114,10 +114,10 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
       </div>
 
       {/* 소속 팀 */}
-      <div className="rounded-[16px] bg-[#FFFFFF] p-5">
+      <div className="rounded-[16px] bg-[var(--color-card)] p-5">
         <h2 className="mb-4 font-semibold uppercase tracking-wide" style={{ fontFamily: "var(--font-heading)" }}>
           소속 팀
-          <span className="ml-2 text-sm font-normal text-[#9CA3AF]">
+          <span className="ml-2 text-sm font-normal text-[var(--color-text-muted)]">
             {user.teamMembers.length}개
           </span>
         </h2>
@@ -134,7 +134,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
                 <Link
                   key={m.id.toString()}
                   href={`/teams/${m.team.id}`}
-                  className="flex items-center gap-3 rounded-[16px] border border-[#E8ECF0] bg-[#EEF2FF] px-4 py-3 transition-all hover:-translate-y-1 hover:shadow-lg"
+                  className="flex items-center gap-3 rounded-[16px] border border-[var(--color-border)] bg-[var(--color-elevated)] px-4 py-3 transition-all hover:-translate-y-1 hover:shadow-lg"
                 >
                   <div
                     className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold"
@@ -143,9 +143,9 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
                     {m.team.name.charAt(0)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-[#111827]">{m.team.name}</p>
+                    <p className="truncate font-medium text-[var(--color-text-primary)]">{m.team.name}</p>
                     {m.team.city && (
-                      <p className="text-xs text-[#9CA3AF]">{m.team.city}</p>
+                      <p className="text-xs text-[var(--color-text-muted)]">{m.team.city}</p>
                     )}
                   </div>
                   <span
@@ -153,7 +153,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
                     style={
                       m.role === "captain"
                         ? { backgroundColor: `${accentSafe}22`, color: accentSafe }
-                        : { backgroundColor: "#E8ECF0", color: "#6B7280" }
+                        : { backgroundColor: "var(--color-border)", color: "var(--color-text-muted)" }
                     }
                   >
                     {ROLE_LABEL[m.role ?? "member"] ?? m.role}
@@ -163,7 +163,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
             })}
           </div>
         ) : (
-          <p className="text-center text-sm text-[#6B7280]">소속 팀이 없습니다.</p>
+          <p className="text-center text-sm text-[var(--color-text-muted)]">소속 팀이 없습니다.</p>
         )}
       </div>
     </div>
