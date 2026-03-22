@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePreferFilter } from "@/contexts/prefer-filter-context";
 
-// API에서 내려오는 경기 데이터 타입 (snake_case로 자동 변환됨)
+// API에서 내려오는 경기 데이터 타입 (snake_case로 자동 변환됨) - 기존 유지
 interface GameFromApi {
   id: string;
   uuid: string | null;
@@ -27,14 +27,14 @@ interface GamesApiResponse {
   cities: string[];
 }
 
-// -- 경기 유형 뱃지 매핑 --
+// -- 경기 유형 뱃지 매핑 (기존 유지) --
 const TYPE_BADGE: Record<number, { label: string; color: string; bg: string }> = {
   0: { label: "PICKUP",   color: "#FFFFFF", bg: "#2563EB" },
   1: { label: "GUEST",    color: "#FFFFFF", bg: "#16A34A" },
   2: { label: "PRACTICE", color: "#FFFFFF", bg: "#D97706" },
 };
 
-// -- 경기 상태 라벨 매핑 --
+// -- 경기 상태 라벨 매핑 (기존 유지) --
 const STATUS_LABEL: Record<number, { text: string; color: string }> = {
   1: { text: "모집중", color: "#16A34A" },
   2: { text: "확정",   color: "#2563EB" },
@@ -42,7 +42,7 @@ const STATUS_LABEL: Record<number, { text: string; color: string }> = {
   4: { text: "취소",   color: "#EF4444" },
 };
 
-// -- 실력 뱃지 매핑 --
+// -- 실력 뱃지 매핑 (기존 유지) --
 const SKILL_BADGE: Record<string, { label: string; color: string; bg: string }> = {
   beginner:               { label: "초급",   color: "#16A34A", bg: "rgba(22,163,74,0.10)" },
   intermediate:           { label: "중급",   color: "#2563EB", bg: "rgba(37,99,235,0.10)" },
@@ -50,20 +50,57 @@ const SKILL_BADGE: Record<string, { label: string; color: string; bg: string }> 
   advanced:               { label: "상급",   color: "#DC2626", bg: "rgba(220,38,38,0.10)" },
 };
 
-// -- 스켈레톤 UI (로딩 중 표시) --
-// -- 스켈레톤 UI: CSS 변수로 다크 모드 자동 대응 --
+/**
+ * 상태 배지 계산 - 디자인 시안 기반
+ * LIVE (진행중), STARTS SOON (24시간 이내), FULLY BOOKED (인원 가득)
+ */
+function getStatusBadge(game: GameFromApi): { text: string; className: string } | null {
+  const cur = game.current_participants ?? 0;
+  const max = game.max_participants ?? 0;
+  const pct = max > 0 ? (cur / max) * 100 : 0;
+
+  // 진행중 -> LIVE 배지 (빨간색 + 깜빡이는 점)
+  if (game.status === 3) {
+    return { text: "LIVE", className: "bg-[var(--color-primary)] text-white" };
+  }
+
+  // 인원 가득 -> FULLY BOOKED (회색)
+  if (pct >= 100) {
+    return { text: "FULLY BOOKED", className: "bg-[#555555] text-white" };
+  }
+
+  // 모집중이고 24시간 이내 시작 -> STARTS SOON (노란색)
+  if (game.status === 1 && game.scheduled_at) {
+    const scheduledTime = new Date(game.scheduled_at).getTime();
+    const now = Date.now();
+    const hoursUntilStart = (scheduledTime - now) / (1000 * 60 * 60);
+    if (hoursUntilStart > 0 && hoursUntilStart <= 24) {
+      return { text: "STARTS SOON", className: "bg-black text-white" };
+    }
+  }
+
+  return null;
+}
+
+// -- 스켈레톤 UI: 새 카드 디자인에 맞춘 로딩 상태 --
 function GamesGridSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="rounded-[16px] overflow-hidden" style={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)" }}>
-          {/* 상단 컬러바 자리 */}
-          <div className="h-1" style={{ backgroundColor: "var(--color-border)" }} />
-          <div className="p-3.5 space-y-2.5">
-            <Skeleton className="h-4 w-14 rounded-[6px]" />
-            <Skeleton className="h-4 w-3/4 rounded" />
-            <Skeleton className="h-3 w-1/2 rounded" />
-            <Skeleton className="h-1.5 w-full rounded-full" />
+        <div key={i} className="rounded-xl overflow-hidden bg-[var(--color-card)] border border-[var(--color-border)]">
+          {/* 이미지 영역 스켈레톤 */}
+          <Skeleton className="h-48 w-full rounded-none" />
+          <div className="p-5 space-y-3">
+            <Skeleton className="h-3 w-16 rounded" />
+            <Skeleton className="h-5 w-3/4 rounded" />
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-2/3 rounded" />
+              <Skeleton className="h-3 w-1/2 rounded" />
+            </div>
+            <div className="flex items-center justify-between pt-2">
+              <Skeleton className="h-5 w-20 rounded" />
+              <Skeleton className="h-8 w-16 rounded" />
+            </div>
           </div>
         </div>
       ))}
@@ -71,102 +108,161 @@ function GamesGridSkeleton() {
   );
 }
 
-// -- 경기 카드 (API 응답 타입에 맞춤) --
+// -- 경기 카드: 디자인 시안(bdr_1, bdr_5)에 맞춘 이미지 카드 --
 function GameCard({ game }: { game: GameFromApi }) {
   const href = `/games/${game.uuid?.slice(0, 8) ?? game.id}`;
   const badge = TYPE_BADGE[game.game_type] ?? TYPE_BADGE[0];
-  const status = STATUS_LABEL[game.status] ?? null;
   const skill = game.skill_level && game.skill_level !== "all" ? SKILL_BADGE[game.skill_level] : null;
   const cur = game.current_participants ?? 0;
   const max = game.max_participants ?? 0;
   const pct = max > 0 ? Math.min((cur / max) * 100, 100) : 0;
-  const barColor = pct >= 100 ? "#EF4444" : pct >= 80 ? "#D97706" : "#1B3C87";
   const location = game.venue_name ?? game.city ?? "";
 
-  // Decimal 문자열 -> 숫자 변환 후 포맷
+  // 상태 배지 (LIVE / STARTS SOON / FULLY BOOKED)
+  const statusBadge = getStatusBadge(game);
+  const isFullyBooked = statusBadge?.text === "FULLY BOOKED";
+
+  // Decimal 문자열 -> 포맷된 가격
   const fee = game.fee_per_person && Number(game.fee_per_person) > 0
     ? `\u20A9${Number(game.fee_per_person).toLocaleString()}`
     : null;
 
-  // ISO string -> 한국 날짜/시간 포맷
+  // ISO string -> 한국 시간 포맷
+  const timeStr = game.scheduled_at
+    ? new Date(game.scheduled_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Seoul" })
+    : "";
+
   const dateStr = game.scheduled_at
-    ? `${new Date(game.scheduled_at).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric", timeZone: "Asia/Seoul" })} ${new Date(game.scheduled_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Seoul" })}`
+    ? new Date(game.scheduled_at).toLocaleDateString("ko-KR", { month: "short", day: "numeric", timeZone: "Asia/Seoul" })
     : "";
 
   return (
     <Link href={href}>
-      {/* WHOOP 스타일: 호버 시 떠오르지 않고 배경색 미세 변화 */}
-      <div className="group flex h-full flex-col rounded-[16px] overflow-hidden transition-all" style={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)" }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--color-card-hover)"; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = "var(--color-card)"; }}>
-        {/* 상단 컬러 바 */}
-        <div className="h-1" style={{ backgroundColor: badge.bg }} />
-
-        <div className="flex flex-1 flex-col p-3.5">
-          {/* Row 1: 유형 뱃지 + 상태 */}
-          <div className="mb-2 flex items-center justify-between">
-            <span
-              className="rounded-[6px] px-2 py-0.5 text-xs font-bold uppercase tracking-wider"
-              style={{ backgroundColor: badge.bg, color: badge.color }}
-            >
-              {badge.label}
+      {/* 디자인 시안: 이미지 카드 + 호버 시 그림자 */}
+      <div className={`group flex flex-col rounded-xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-card)] hover:shadow-lg transition-all h-full ${isFullyBooked ? "opacity-70 grayscale" : ""}`}>
+        {/* 이미지 영역 - aspect h-48 고정 높이 */}
+        <div className="relative h-48">
+          {/* placeholder 이미지: 경기장 타입별 기본 이미지 */}
+          <div className="w-full h-full bg-[var(--color-surface)] flex items-center justify-center">
+            <span className="material-symbols-outlined text-5xl text-[var(--color-text-muted)] opacity-40">
+              sports_basketball
             </span>
-            {status && (
-              <span className="text-[11px] font-bold" style={{ color: status.color }}>
-                {status.text}
-              </span>
-            )}
           </div>
 
-          {/* Row 2: 제목 */}
-          {/* 제목: CSS 변수로 다크 모드 텍스트 자동 대응 */}
-          <h3 className="mb-1 text-sm font-bold line-clamp-1 leading-tight transition-colors" style={{ color: "var(--color-text-primary)" }}>
-            {game.title}
-          </h3>
-
-          {/* Row 3: 날짜 + 장소 */}
-          <div className="mb-2 space-y-0.5">
-            {dateStr && (
-              <p className="flex items-center gap-1 text-xs" style={{ color: "var(--color-text-secondary)" }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 opacity-50"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                {dateStr}
-              </p>
-            )}
-            {location && (
-              <p className="flex items-center gap-1 text-xs" style={{ color: "var(--color-text-secondary)" }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 opacity-50"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                <span className="line-clamp-1">{location}</span>
-              </p>
-            )}
-          </div>
-
-          {/* Row 4: 참가 프로그레스 */}
-          {max > 0 && (
-            <div className="mb-2 flex items-center gap-2">
-              {/* 프로그레스바 배경: CSS 변수로 다크 모드 대응 */}
-              <div className="relative h-1.5 flex-1 overflow-hidden rounded-full" style={{ backgroundColor: "var(--color-border)" }}>
-                <div
-                  className="absolute left-0 top-0 h-full rounded-full transition-all"
-                  style={{ width: `${pct}%`, backgroundColor: barColor }}
-                />
-              </div>
-              <span className="text-[11px] font-bold tabular-nums" style={{ color: barColor }}>
-                {cur}/{max}
+          {/* 상태 배지 오버레이 (좌상단) */}
+          {statusBadge && (
+            <div className="absolute top-4 left-4 flex gap-2">
+              <span className={`text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 ${statusBadge.className}`}>
+                {/* LIVE일 때 깜빡이는 점 */}
+                {statusBadge.text === "LIVE" && (
+                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                )}
+                {statusBadge.text}
               </span>
             </div>
           )}
 
-          {/* Row 5: 참가비 + 난이도 */}
-          <div className="mt-auto flex items-center justify-between pt-1">
-            {/* 참가비: CSS 변수로 다크 모드 텍스트 대응 */}
-            <span className="text-xs font-semibold" style={{ color: "var(--color-text-primary)" }}>
-              {fee ?? <span style={{ color: "var(--color-text-muted)" }}>무료</span>}
-            </span>
-            {skill && (
-              <span
-                className="rounded-[6px] px-2 py-0.5 text-xs font-bold"
-                style={{ backgroundColor: skill.bg, color: skill.color }}
-              >
-                {skill.label}
+          {/* FULLY BOOKED 오버레이 */}
+          {isFullyBooked && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <span className="bg-white text-black font-black text-xs px-4 py-2 rounded">
+                FULLY BOOKED
               </span>
+            </div>
+          )}
+
+          {/* 유형 뱃지 (우상단) */}
+          <span
+            className="absolute top-4 right-4 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+            style={{ backgroundColor: badge.bg, color: badge.color }}
+          >
+            {badge.label}
+          </span>
+        </div>
+
+        {/* 정보 영역 */}
+        <div className="p-5 flex-1 flex flex-col">
+          {/* 종목 라벨 */}
+          <p className="text-[10px] text-[var(--color-primary)] font-bold uppercase tracking-wider mb-1">
+            {badge.label}
+          </p>
+
+          {/* 경기 제목 */}
+          <h3 className="text-lg font-bold mb-3 line-clamp-1 text-[var(--color-text-primary)]">
+            {game.title}
+          </h3>
+
+          {/* 장소 + 실력 정보 */}
+          <div className="space-y-2 mb-4">
+            {location && (
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[var(--color-text-muted)] text-sm">
+                  location_on
+                </span>
+                <span className="text-xs text-[var(--color-text-secondary)] line-clamp-1">
+                  {location}
+                </span>
+              </div>
+            )}
+            {(dateStr || timeStr) && (
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[var(--color-text-muted)] text-sm">
+                  schedule
+                </span>
+                <span className="text-xs text-[var(--color-text-secondary)]">
+                  {dateStr} {timeStr}
+                </span>
+              </div>
+            )}
+            {skill && (
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[var(--color-text-muted)] text-sm">
+                  equalizer
+                </span>
+                <span className="text-xs text-[var(--color-text-secondary)]">
+                  Level: {skill.label}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* 참가 프로그레스 (인원 있을 때만) */}
+          {max > 0 && (
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-[var(--color-primary)]">{cur}/{max}</span>
+                  <span className="text-[10px] text-[var(--color-text-muted)]">recruiting</span>
+                </div>
+              </div>
+              <div className="w-full bg-[var(--color-border)] h-1 rounded-full overflow-hidden">
+                <div
+                  className="bg-[var(--color-primary)] h-full rounded-full transition-all"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* 가격 + JOIN 버튼 */}
+          <div className="mt-auto pt-3 border-t border-[var(--color-border)] flex items-center justify-between">
+            <div>
+              {fee && <p className="text-[10px] text-[var(--color-text-muted)]">Entry Fee</p>}
+              <span className="text-lg font-bold text-[var(--color-text-primary)]">
+                {fee ?? <span className="text-sm text-[var(--color-text-muted)]">무료</span>}
+              </span>
+            </div>
+            {isFullyBooked ? (
+              <button
+                className="bg-[var(--color-border)] text-[var(--color-text-muted)] font-bold py-2 px-6 rounded text-sm cursor-not-allowed"
+                disabled
+              >
+                CLOSED
+              </button>
+            ) : (
+              <button className="bg-[var(--color-primary)] text-white font-bold py-2 px-6 rounded text-sm hover:bg-[var(--color-primary-hover)] transition-all">
+                JOIN
+              </button>
             )}
           </div>
         </div>
@@ -178,14 +274,12 @@ function GameCard({ game }: { game: GameFromApi }) {
 /**
  * GamesContent - 경기 목록 클라이언트 컴포넌트
  *
- * URL의 searchParams가 바뀔 때마다 /api/web/games를 호출하여
- * 경기 목록과 도시 목록을 가져온다.
- * GamesFilter에 도시 목록을 전달하고, 경기 카드를 렌더링한다.
+ * 기존 API 호출 로직(useEffect + fetch + AbortController) 100% 유지.
+ * UI만 디자인 시안(bdr_1, bdr_5)에 맞게 전면 교체.
  */
 export function GamesContent({
   GamesFilterComponent,
 }: {
-  // GamesFilter 컴포넌트를 외부에서 주입받음 (cities 데이터를 동적으로 전달하기 위해)
   GamesFilterComponent: React.ComponentType<{ cities: string[] }>;
 }) {
   const searchParams = useSearchParams();
@@ -194,18 +288,15 @@ export function GamesContent({
   const [cities, setCities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 전역 선호 필터 Context에서 상태를 읽어옴 (헤더 버튼으로 ON/OFF 전환)
+  // 전역 선호 필터 Context (기존 유지)
   const { preferFilter } = usePreferFilter();
 
-  // searchParams 또는 preferFilter가 바뀔 때마다 API 호출
+  // searchParams 또는 preferFilter가 바뀔 때마다 API 호출 (기존 로직 100% 유지)
   useEffect(() => {
-    // race condition 방지: 이전 요청이 완료되기 전에 새 요청이 발생하면 이전 요청을 취소
     const controller = new AbortController();
     setLoading(true);
 
-    // URL의 쿼리 파라미터를 기반으로 API 호출 URL 구성
     const params = new URLSearchParams(searchParams.toString());
-    // Context에서 preferFilter가 true이면 API에 prefer=true 추가
     if (preferFilter) {
       params.set("prefer", "true");
     } else {
@@ -225,40 +316,27 @@ export function GamesContent({
         }
       })
       .catch((error) => {
-        // 사용자가 필터를 빠르게 바꿔서 이전 요청이 취소된 경우 무시
         if (error instanceof Error && error.name === 'AbortError') return;
         setGames([]);
         setCities([]);
       })
       .finally(() => setLoading(false));
 
-    // cleanup: 의존성이 바뀌면 진행 중인 fetch를 취소
     return () => controller.abort();
   }, [searchParams, preferFilter]);
 
-  // 필터가 활성화되어 있는지 확인
-  const q = searchParams.get("q");
-  const type = searchParams.get("type");
-  const city = searchParams.get("city");
-  const date = searchParams.get("date");
-  const hasFilters = q || (type && type !== "all") || (city && city !== "all") || (date && date !== "all") || preferFilter;
-
   return (
     <>
-      {/* 헤더 영역 */}
-      <div className="mb-5 flex items-center justify-between">
-        <h1
-          className="text-2xl font-extrabold uppercase tracking-wide sm:text-3xl"
-          style={{ fontFamily: "var(--font-heading)" }}
-        >
-          GAMES
+      {/* 헤더 영역 - "Game Finder" + MY/NEW 버튼 */}
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>
+          Game Finder
         </h1>
         <div className="flex items-center gap-2">
           <Link
             href="/games/my-games"
             prefetch={true}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-black transition-colors"
-            style={{ backgroundColor: "var(--color-accent)", color: "var(--color-text-primary)" }}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-black transition-colors bg-[var(--color-accent)] text-[var(--color-text-primary)]"
             title="내 경기"
           >
             MY
@@ -266,17 +344,19 @@ export function GamesContent({
           <Link
             href="/games/new"
             prefetch={true}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-white transition-colors"
-            style={{ backgroundColor: "var(--color-primary)" }}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-white transition-colors bg-[var(--color-primary)]"
             title="경기 만들기"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M9 3v12M3 9h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </Link>
-          {/* 도시 목록은 API 응답에서 가져오므로 로딩 전에는 빈 배열 전달 */}
-          <GamesFilterComponent cities={cities} />
         </div>
+      </div>
+
+      {/* 필터 바 - 인라인 (검색 + 필터 4종 + Apply 버튼) */}
+      <div className="mb-6">
+        <GamesFilterComponent cities={cities} />
       </div>
 
       {/* 로딩 중이면 스켈레톤 표시 */}
@@ -284,16 +364,18 @@ export function GamesContent({
         <GamesGridSkeleton />
       ) : (
         <>
-          {/* 필터 활성 시 결과 카운트 */}
-          {/* 필터 결과 카운트: CSS 변수 적용 */}
-          {hasFilters && (
-            <p className="mb-4 text-sm" style={{ color: "var(--color-text-muted)" }}>
-              검색 결과 <span style={{ color: "var(--color-text-primary)" }}>{games.length}개</span>
-            </p>
-          )}
+          {/* "Available Games" + 건수 배지 (항상 표시) */}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2" style={{ fontFamily: "var(--font-heading)" }}>
+              Available Games
+              <span className="bg-[var(--color-surface)] text-[var(--color-text-secondary)] text-xs px-2 py-1 rounded">
+                {games.length} Active
+              </span>
+            </h2>
+          </div>
 
-          {/* 경기 카드 그리드 */}
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+          {/* 경기 카드 그리드 - 3열 레이아웃 (디자인 시안) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {games.map((g) => (
               <GameCard key={g.id} game={g} />
             ))}
@@ -301,9 +383,14 @@ export function GamesContent({
             {/* 빈 상태 */}
             {games.length === 0 && (
               <div className="col-span-full py-20 text-center">
-                <div className="mb-3 text-4xl">&#127936;</div>
-                <p style={{ color: "var(--color-text-secondary)" }}>
-                  {hasFilters ? "조건에 맞는 경기가 없습니다." : "등록된 경기가 없습니다."}
+                <span className="material-symbols-outlined text-5xl text-[var(--color-text-muted)] mb-3 block">
+                  sports_basketball
+                </span>
+                <p className="text-[var(--color-text-secondary)]">
+                  {(searchParams.get("q") || searchParams.get("type") || searchParams.get("city") || searchParams.get("date") || preferFilter)
+                    ? "조건에 맞는 경기가 없습니다."
+                    : "등록된 경기가 없습니다."
+                  }
                 </p>
               </div>
             )}
