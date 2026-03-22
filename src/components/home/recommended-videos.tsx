@@ -1,49 +1,68 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-// lucide-react 제거 → Material Symbols Outlined 사용
+/* ============================================================
+ * RecommendedVideos — BDR 추천 영상 섹션 (리디자인)
+ *
+ * 왜 리디자인했는가: 기존 가로 스크롤 전용에서
+ * 모바일 가로 스크롤 + 데스크탑 4열 그리드로 변경.
+ * 빨간 세로 막대 헤더 스타일로 통일.
+ *
+ * 구조:
+ * - 빨간 세로 막대 + "BDR 추천 영상" + "더보기" 링크
+ * - 비디오 카드: aspect-video 썸네일 + play_circle 호버 + 재생시간 + 제목 + 조회수
+ * ============================================================ */
+
+import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// API 응답에 맞춘 인터페이스
 interface VideoItem {
   video_id: string;
   title: string;
   thumbnail: string;
   published_at: string;
-  badges: string[];   // ["LIVE", "스타터스", "HOT", "맞춤"] 등
+  badges: string[];
   is_live: boolean;
 }
 
-/* 뱃지 유형별 스타일 반환 — Kinetic Pulse 색상 체계
- * cssVar가 있으면 CSS 변수를 style prop으로 적용 */
-function getBadgeStyle(badge: string): { bg: string; text: string; icon?: "flame" | "pulse"; cssVar?: string } {
-  switch (badge) {
-    case "LIVE":
-      // 빨간 배경 + 흰 텍스트 + 깜빡이는 점 — primary(Red)
-      return { bg: "bg-red-600", text: "text-white", icon: "pulse" };
-    case "HOT":
-      // Red→Navy 그라디언트
-      return { bg: "bg-gradient-to-r from-red-500 to-orange-400", text: "text-white", icon: "flame" };
-    case "맞춤":
-      // tertiary(밝은 블루) 계열
-      return { bg: "", text: "", cssVar: "tertiary" };
-    default:
-      // 디비전명 (스타터스, 챌린저 등) → primary-light 배경 + primary 텍스트
-      return { bg: "", text: "", cssVar: "primary" };
-  }
-}
+/* 더미 데이터: API 로딩 실패 시 또는 개발 중 표시용 */
+const DUMMY_VIDEOS = [
+  {
+    video_id: "dummy1",
+    title: "2023 서울 챌린지 베스트 골 TOP 10",
+    thumbnail: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&q=60",
+    duration: "12:45",
+    views: "24.5만회",
+    date: "2일 전",
+  },
+  {
+    video_id: "dummy2",
+    title: "실전에서 바로 써먹는 드리블 기술 가이드",
+    thumbnail: "https://images.unsplash.com/photo-1574623452334-1e0ac2b3ccb4?w=400&q=60",
+    duration: "08:20",
+    views: "12.8만회",
+    date: "1주일 전",
+  },
+  {
+    video_id: "dummy3",
+    title: "Storm FC의 우승 비결 인터뷰",
+    thumbnail: "https://images.unsplash.com/photo-1515523110800-9415d13b84a8?w=400&q=60",
+    duration: "15:10",
+    views: "5.2만회",
+    date: "3일 전",
+  },
+  {
+    video_id: "dummy4",
+    title: "매치데이 브이로그: 대회 현장의 열기",
+    thumbnail: "https://images.unsplash.com/photo-1504450758481-7338bbe75005?w=400&q=60",
+    duration: "05:45",
+    views: "1.9만회",
+    date: "22시간 전",
+  },
+];
 
-/* ============================================================
- * RecommendedVideos — Kinetic Pulse 디자인
- * - 카드: bg-surface-high, rounded-2xl, hover:bg-surface-bright
- * - No-Line 규칙: 보더 없이 surface 계층으로 구분
- * - YouTube 빨간색은 브랜드 색상이므로 그대로 유지
- * ============================================================ */
 export function RecommendedVideos() {
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [playingId, setPlayingId] = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/web/youtube/recommend", { credentials: "include" })
@@ -53,186 +72,111 @@ export function RecommendedVideos() {
       .finally(() => setLoading(false));
   }, []);
 
-  const scroll = (dir: "left" | "right") => {
-    if (!scrollRef.current) return;
-    const amount = scrollRef.current.offsetWidth * 0.7;
-    scrollRef.current.scrollBy({
-      left: dir === "left" ? -amount : amount,
-      behavior: "smooth",
-    });
-  };
-
   if (loading) {
     return (
-      <section>
-        <div className="mb-4 flex items-center gap-2">
-          <Skeleton className="h-8 w-56" />
-        </div>
-        <div className="flex gap-4 overflow-hidden">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-[200px] w-[280px] flex-shrink-0 rounded-2xl" />
+      <section className="mt-16">
+        <Skeleton className="h-8 w-48 mb-8" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="aspect-video rounded-xl" />
           ))}
         </div>
       </section>
     );
   }
 
-  if (videos.length === 0) return null;
+  /* API 데이터가 있으면 사용, 없으면 더미 데이터 */
+  const hasApiData = videos.length > 0;
 
   return (
-    <section>
-      {/* 헤더: YouTube 아이콘(브랜드 빨강) + 섹션 타이틀 */}
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FF0000]">
-            <span className="material-symbols-outlined text-sm text-white" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-          </div>
-          <h2
-            className="text-2xl font-bold"
-            style={{ fontFamily: "var(--font-heading)", color: "var(--color-text-primary)" }}
-          >
-            BDR 추천 영상
-          </h2>
-        </div>
+    <section className="mt-16">
+      {/* 섹션 헤더: 빨간 세로 막대 + 제목 + 더보기 */}
+      <div className="flex items-center justify-between mb-8">
+        <h3 className="text-2xl font-bold font-heading tracking-tight text-text-primary flex items-center gap-3">
+          <span className="w-1.5 h-6 bg-primary" />
+          BDR 추천 영상
+        </h3>
         <a
           href="https://www.youtube.com/@BDRBASKET"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm font-semibold hover:underline"
-          style={{ color: "#FF0000" }}
+          className="text-sm text-text-muted hover:text-primary transition-colors"
         >
-          채널 보기
+          더보기
         </a>
       </div>
 
-      {/* 영상 카드 가로 스크롤 */}
-      <div className="group relative">
-        {/* 스크롤 버튼 (데스크탑): surface-high 배경, No-Line */}
-        <button
-          onClick={() => scroll("left")}
-          className="absolute -left-3 top-1/2 z-10 hidden -translate-y-1/2 rounded-lg bg-surface-high p-1.5 shadow-md backdrop-blur-sm transition-opacity group-hover:opacity-100 md:block md:opacity-0"
-        >
-          <span className="material-symbols-outlined text-lg" style={{ color: "var(--color-text-primary)" }}>chevron_left</span>
-        </button>
-        <button
-          onClick={() => scroll("right")}
-          className="absolute -right-3 top-1/2 z-10 hidden -translate-y-1/2 rounded-lg bg-surface-high p-1.5 shadow-md backdrop-blur-sm transition-opacity group-hover:opacity-100 md:block md:opacity-0"
-        >
-          <span className="material-symbols-outlined text-lg" style={{ color: "var(--color-text-primary)" }}>chevron_right</span>
-        </button>
-
-        <div
-          ref={scrollRef}
-          className="scrollbar-hide flex gap-4 overflow-x-auto scroll-smooth pb-2"
-        >
-          {videos.map((v) => (
-            <div
-              key={v.video_id}
-              className="w-[260px] flex-shrink-0 sm:w-[300px]"
-            >
-              {/* 썸네일 / 플레이어: rounded-2xl (Kinetic Pulse 카드 라운딩) */}
-              <div className="relative aspect-video overflow-hidden rounded-2xl bg-surface-high">
-                {playingId === v.video_id ? (
-                  <iframe
-                    src={`https://www.youtube.com/embed/${v.video_id}?autoplay=1&rel=0`}
-                    title={v.title}
-                    className="absolute inset-0 h-full w-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
+      {/* 반응형 레이아웃: 모바일 가로 스크롤 / 데스크탑 4열 그리드 */}
+      <div className="flex flex-row overflow-x-auto gap-6 no-scrollbar -mx-6 px-6 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:mx-0 md:px-0">
+        {hasApiData
+          ? /* API 데이터 기반 카드 */
+            videos.slice(0, 4).map((v) => (
+              <a
+                key={v.video_id}
+                href={`https://www.youtube.com/watch?v=${v.video_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="min-w-[260px] md:min-w-0 group cursor-pointer"
+              >
+                <div className="aspect-video bg-surface rounded-xl overflow-hidden mb-3 relative border border-border">
+                  <img
+                    alt={v.title}
+                    className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
+                    src={v.thumbnail}
                   />
-                ) : (
-                  <button
-                    onClick={() => setPlayingId(v.video_id)}
-                    className="group/thumb relative block h-full w-full"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={v.thumbnail}
-                      alt={v.title}
-                      className="h-full w-full object-cover transition-transform group-hover/thumb:scale-105"
-                    />
-                    {/* 재생 오버레이 */}
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors group-hover/thumb:bg-black/40">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FF0000]/90 shadow-lg transition-transform group-hover/thumb:scale-110">
-                        <span className="material-symbols-outlined ml-0.5 text-xl text-white" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-                      </div>
-                    </div>
-
-                    {/* LIVE 인디케이터: 썸네일 좌상단 */}
-                    {v.is_live && (
-                      <div className="absolute left-2 top-2 flex items-center gap-1 rounded-lg bg-red-600 px-2 py-0.5 shadow-md">
-                        <span className="relative flex h-2 w-2">
-                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
-                          <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
-                        </span>
-                        <span className="text-[11px] font-bold text-white">LIVE</span>
-                      </div>
-                    )}
-                  </button>
-                )}
-              </div>
-
-              {/* 영상 정보: 텍스트 색상 CSS 변수 */}
-              <div className="mt-2.5 px-0.5">
-                <h3
-                  className="text-sm font-bold line-clamp-2 leading-tight"
-                  style={{ color: "var(--color-text-primary)" }}
-                >
-                  {v.title}
-                </h3>
-                {/* 뱃지 목록 + 날짜 */}
-                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  {v.badges.map((badge) => {
-                    const style = getBadgeStyle(badge);
-                    /* CSS 변수 기반 뱃지 vs Tailwind 클래스 기반 뱃지 분기 */
-                    if (style.cssVar) {
-                      return (
-                        <span
-                          key={badge}
-                          className="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[11px] font-semibold"
-                          style={{
-                            backgroundColor: `var(--color-${style.cssVar}-light)`,
-                            color: `var(--color-${style.cssVar})`,
-                          }}
-                        >
-                          {badge}
-                        </span>
-                      );
-                    }
-                    return (
-                      <span
-                        key={badge}
-                        className={`inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[11px] font-semibold ${style.bg} ${style.text}`}
-                      >
-                        {/* LIVE 뱃지: 깜빡이는 점 */}
-                        {style.icon === "pulse" && (
-                          <span className="relative flex h-1.5 w-1.5">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
-                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
-                          </span>
-                        )}
-                        {/* HOT 뱃지: 불꽃 아이콘 */}
-                        {style.icon === "flame" && (
-                          <span className="material-symbols-outlined text-[10px] text-white">local_fire_department</span>
-                        )}
-                        {badge}
+                  {/* play_circle 호버 오버레이 */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                    <span className="material-symbols-outlined text-white text-5xl">play_circle</span>
+                  </div>
+                  {/* LIVE 뱃지 */}
+                  {v.is_live && (
+                    <span className="absolute top-2 left-2 bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold flex items-center gap-1">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
                       </span>
-                    );
-                  })}
-                  {/* 날짜 텍스트 */}
-                  <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-                    {formatDate(v.published_at)}
+                      LIVE
+                    </span>
+                  )}
+                </div>
+                <h4 className="text-sm font-bold text-text-primary mb-1 line-clamp-1 group-hover:text-primary transition-colors">
+                  {v.title}
+                </h4>
+                <p className="text-[11px] text-text-muted">{formatDate(v.published_at)}</p>
+              </a>
+            ))
+          : /* 더미 데이터 기반 카드 */
+            DUMMY_VIDEOS.map((v) => (
+              <div key={v.video_id} className="min-w-[260px] md:min-w-0 group cursor-pointer">
+                <div className="aspect-video bg-surface rounded-xl overflow-hidden mb-3 relative border border-border">
+                  <img
+                    alt={v.title}
+                    className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
+                    src={v.thumbnail}
+                  />
+                  {/* play_circle 호버 오버레이 */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                    <span className="material-symbols-outlined text-white text-5xl">play_circle</span>
+                  </div>
+                  {/* 재생시간 뱃지 */}
+                  <span className="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] px-2 py-1 rounded font-bold">
+                    {v.duration}
                   </span>
                 </div>
+                <h4 className="text-sm font-bold text-text-primary mb-1 line-clamp-1 group-hover:text-primary transition-colors">
+                  {v.title}
+                </h4>
+                <p className="text-[11px] text-text-muted">
+                  조회수 {v.views} &bull; {v.date}
+                </p>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
       </div>
     </section>
   );
 }
 
+/* 날짜 포맷 헬퍼: ISO 문자열 -> "2일 전" 형태 */
 function formatDate(iso: string): string {
   if (!iso) return "";
   const d = new Date(iso);
