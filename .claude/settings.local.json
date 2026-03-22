@@ -174,7 +174,10 @@
       "Read(//c/0.programing/my-bdr-subin-main/**)",
       "Bash(grep -rn \"#[0-9A-Fa-f]\\\\{3,8\\\\}\" src/ --include=\"*.tsx\" --include=\"*.ts\" --include=\"*.jsx\" --include=\"*.js\")",
       "Bash(python3 -m json.tool)",
-      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(f{v[''''video_id'''']}: {v[''''view_count'''']}뷰 | {v[''''title''''][:40]}...\\) for v in d.get\\(''''popular_videos'''',[]\\)]\")"
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(f{v[''''video_id'''']}: {v[''''view_count'''']}뷰 | {v[''''title''''][:40]}...\\) for v in d.get\\(''''popular_videos'''',[]\\)]\")",
+      "Bash(ls \"C:/0.programing/my-bdr-subin-main/src/app/\\(web\\)/users/[id]/\")",
+      "Bash(ls -la \"C:/0.programing/my-bdr-subin-main/src/app/\\(web\\)/tournaments/[id]/bracket/\")",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }
