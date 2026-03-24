@@ -3,6 +3,7 @@
   "outputDirectory": ".next",
   "framework": "nextjs",
   "installCommand": "npm install",
+  "regions": ["icn1"],
   "crons": [
     {
       "path": "/api/cron/tournament-reminders",
