@@ -20,6 +20,8 @@ export const PROFILE_DETAIL_SELECT = {
   bio: true,
   profile_image_url: true,
   total_games_participated: true,
+  // 가입일 (profile-header에서 표시)
+  createdAt: true,
   // 신규 필드 (profile/edit 용)
   name: true,
   phone: true,
@@ -30,7 +32,6 @@ export const PROFILE_DETAIL_SELECT = {
   bank_code: true,
   account_number: true,
   account_holder: true,
-  createdAt: true,
 } as const;
 
 /** 게임 상세에서 사용하는 유저 프로필 select */
@@ -131,9 +132,10 @@ export async function getUserGameProfile(userId: bigint) {
 }
 
 /**
- * 플레이어 통계 — 커리어 평균, 시즌 하이, 승률
+ * 프로필 스탯 집계 — 커리어 평균 + 시즌 최고
  */
 export async function getPlayerStats(userId: bigint) {
+  // 유저의 tournamentTeamPlayer IDs 조회
   const players = await prisma.tournamentTeamPlayer.findMany({
     where: { userId },
     select: { id: true },
@@ -141,7 +143,7 @@ export async function getPlayerStats(userId: bigint) {
 
   const playerIds = players.map((p) => p.id);
   if (playerIds.length === 0) {
-    return { careerAverages: null, seasonHighs: null, winRate: null };
+    return { careerAverages: null, seasonHighs: null };
   }
 
   const [aggregate, maxStats] = await Promise.all([
@@ -169,31 +171,41 @@ export async function getPlayerStats(userId: bigint) {
     }),
   ]);
 
+  // --- 승률(Win Rate) 계산 ---
+  // 선수가 참여한 경기(MatchPlayerStat)에서 경기 결과(winner_team_id)와
+  // 선수가 속한 팀(tournamentTeamId)을 비교하여 승/패를 판별
   let winRate: number | null = null;
 
   if (aggregate._count.id > 0) {
+    // 선수의 모든 경기 기록을 가져온다 (경기의 승리팀 + 선수의 소속팀 포함)
     const matchRecords = await prisma.matchPlayerStat.findMany({
       where: { tournamentTeamPlayerId: { in: playerIds } },
       select: {
+        // 경기의 승리팀 ID
         tournamentMatch: {
           select: { winner_team_id: true },
         },
+        // 선수의 소속팀 ID
         tournamentTeamPlayer: {
           select: { tournamentTeamId: true },
         },
       },
     });
 
+    // 결과가 확정된 경기(winner_team_id가 있는 경기)만 필터링
     const finishedMatches = matchRecords.filter(
       (r) => r.tournamentMatch.winner_team_id != null
     );
 
     if (finishedMatches.length > 0) {
+      // 내 팀이 승리한 경기 수 계산
       const wins = finishedMatches.filter(
         (r) =>
           r.tournamentMatch.winner_team_id ===
           r.tournamentTeamPlayer.tournamentTeamId
       ).length;
+
+      // 승률 = (승리 / 결과확정 경기) * 100, 소수점 1자리
       winRate = Number(((wins / finishedMatches.length) * 100).toFixed(1));
     }
   }
@@ -214,6 +226,7 @@ export async function getPlayerStats(userId: bigint) {
       maxRebounds: maxStats._max.total_rebounds ?? 0,
       maxAssists: maxStats._max.assists ?? 0,
     },
+    // 승률 (결과 확정 경기가 없으면 null)
     winRate,
   };
 }
@@ -228,7 +241,7 @@ export async function getMonthlyGames(userId: bigint) {
   const count = await prisma.game_applications.count({
     where: {
       user_id: userId,
-      status: 1,
+      status: 1, // approved
       games: {
         scheduled_at: { gte: monthStart },
       },

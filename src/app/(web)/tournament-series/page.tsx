@@ -12,17 +12,17 @@ export default async function TournamentSeriesPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-xl sm:text-2xl font-bold">시리즈</h1>
+      <h1 className="mb-6 text-2xl font-extrabold uppercase tracking-wide sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>시리즈</h1>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {series.map((s) => (
           <Link key={s.id.toString()} href={`/tournament-series/${s.id}`}>
-            <Card className="hover:bg-[#EDF0F8] transition-colors cursor-pointer">
+            <Card className="hover:bg-[var(--color-elevated)] transition-colors cursor-pointer">
               <h3 className="font-semibold">{s.name}</h3>
-              {s.description && <p className="mt-1 text-sm text-[#6B7280]">{s.description}</p>}
+              {s.description && <p className="mt-1 text-sm text-[var(--color-text-muted)]">{s.description}</p>}
             </Card>
           </Link>
         ))}
-        {series.length === 0 && <Card className="col-span-full text-center text-[#6B7280]">시리즈가 없습니다.</Card>}
+        {series.length === 0 && <Card className="col-span-full text-center text-[var(--color-text-muted)]">시리즈가 없습니다.</Card>}
       </div>
     </div>
   );

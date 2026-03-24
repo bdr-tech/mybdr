@@ -1,26 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { TextSizeToggle } from "@/components/shared/text-size-toggle";
 
-// Rails _full_menu.html.erb 복제
-const menuSections = {
-  boards: [
-    { href: "/community", label: "게시판 전체" },
-    { href: "/community?category=general", label: "자유게시판" },
-    { href: "/community?category=info", label: "정보게시판" },
-    { href: "/community?category=review", label: "후기게시판" },
-    { href: "/community?category=marketplace", label: "장터게시판" },
-  ],
-  etc: [
-    { href: "/games/my-games", label: "내 경기", icon: "🏀" },
-    { href: "/teams", label: "내 팀", icon: "👕" },
-    { href: "/courts", label: "코트 찾기", icon: "📍" },
-    // { href: "/pricing", label: "요금제", icon: "💳" },
-    { href: "/profile", label: "프로필", icon: "👤" },
-    { href: "/tournament-admin", label: "대회 관리", icon: "⚙️", adminOnly: true },
-    { href: "/admin", label: "관리자", icon: "🔧", superAdminOnly: true },
-  ],
-};
+/* ============================================================
+ * 슬라이드 메뉴 네비게이션 항목 정의
+ * Material Symbols 아이콘명 사용
+ * ============================================================ */
+const menuItems = [
+  { href: "/", label: "홈", icon: "home" },
+  { href: "/games", label: "경기찾기", icon: "sports_basketball" },
+  { href: "/tournaments", label: "대회", icon: "emoji_events" },
+  { href: "/teams", label: "팀", icon: "groups" },
+  { href: "#", label: "랭킹", icon: "leaderboard" },
+  { href: "/community", label: "커뮤니티", icon: "forum" },
+];
 
 export function SlideMenu({
   open,
@@ -28,151 +24,150 @@ export function SlideMenu({
   isLoggedIn,
   role,
   name,
-  email,
 }: {
   open: boolean;
   onClose: () => void;
   isLoggedIn: boolean;
   role?: string;
   name?: string;
-  email?: string;
+  email?: string; /* header.tsx 호환용: 현재 UI에서는 미사용 */
 }) {
+  const pathname = usePathname();
+
+  /* 현재 경로가 활성 메뉴인지 판별 */
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
+
+  /* 로그아웃 핸들러 */
+  const handleLogout = async () => {
+    await fetch("/api/web/logout", { method: "POST", credentials: "include" });
+    window.location.href = "/login";
+  };
+
   return (
     <>
-      {/* Backdrop */}
+      {/* 오버레이: 배경 어둡게 + 블러 */}
       {open && (
         <div
-          className="fixed inset-0 z-[60] bg-black/60"
+          className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
           onClick={onClose}
         />
       )}
 
-      {/* Panel */}
+      {/* 패널: 왼쪽에서 슬라이드 (left-0) */}
       <div
         role="dialog"
         aria-modal="true"
         aria-label="전체 메뉴"
-        className={`fixed right-0 top-0 z-[70] h-full w-[300px] transform bg-[#FFFFFF] transition-transform duration-300 ${
-          open ? "translate-x-0" : "translate-x-full"
+        className={`fixed inset-y-0 left-0 z-[70] flex w-80 transform flex-col rounded-r-lg border-r border-[var(--color-border)] bg-[var(--color-surface)] transition-transform duration-300 ${
+          open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#E8ECF0] p-4">
-          <span className="font-bold text-[#E31B23]">메뉴</span>
-          <button
-            onClick={onClose}
-            aria-label="메뉴 닫기"
-            className="rounded-full p-2 text-[#6B7280] hover:bg-[#EDF0F8]"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="overflow-y-auto p-4" style={{ height: "calc(100% - 57px)" }}>
+        {/* 프로필 섹션 */}
+        <div className="border-b border-[var(--color-border)] p-6">
           {isLoggedIn ? (
             <>
-              {/* User Info — /profile 링크 */}
-              <Link
-                href="/profile"
-                onClick={onClose}
-                className="mb-6 flex items-center gap-3 rounded-[16px] bg-[#EDF0F8] p-4 transition-colors hover:bg-[#E8ECF0] active:opacity-80"
-              >
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#1B3C87] text-sm font-bold text-white">
+              {/* 로그인 상태: 아바타 + 이름 + 역할 */}
+              <div className="flex items-center gap-4">
+                {/* 아바타: 이름 첫 글자, 빨간 테두리 */}
+                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full border-2 border-[var(--color-primary)] bg-[var(--color-card)] text-xl font-bold text-[var(--color-text-primary)]">
                   {name?.trim() ? name.trim()[0].toUpperCase() : "U"}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold">{name || "사용자"}</p>
-                  {email && <p className="truncate text-xs text-[#6B7280]">{email}</p>}
+                <div>
+                  <p className="text-lg font-bold text-[var(--color-text-primary)]">{name || "사용자"}</p>
+                  {/* 역할 뱃지 */}
+                  <p className="text-xs font-medium text-[var(--color-primary)]">
+                    {role === "super_admin" ? "관리자" : role === "tournament_admin" ? "대회 운영자" : "플레이어"}
+                  </p>
                 </div>
-                <span className="flex-shrink-0 text-xs text-[#9CA3AF]">›</span>
-              </Link>
-
-              {/* 게시판 */}
-              <div className="mb-6">
-                <p className="mb-2 text-xs font-medium text-[#9CA3AF]">게시판</p>
-                {menuSections.boards.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={onClose}
-                    className="flex items-center rounded-[12px] px-3 py-2.5 text-sm text-[#6B7280] hover:bg-[#EDF0F8] hover:text-[#111827]"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
               </div>
 
-              {/* 기타 */}
-              <div className="mb-6">
-                <p className="mb-2 text-xs font-medium text-[#9CA3AF]">기타</p>
-                {menuSections.etc
-                  .filter((item) => {
-                    if (item.superAdminOnly) return role === "super_admin";
-                    if (item.adminOnly) return role === "super_admin" || role === "tournament_admin";
-                    return true;
-                  })
-                  .map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={onClose}
-                      className="flex items-center gap-2 rounded-[12px] px-3 py-2.5 text-sm text-[#6B7280] hover:bg-[#EDF0F8] hover:text-[#111827]"
-                    >
-                      {item.icon && <span>{item.icon}</span>}
-                      {item.label}
-                    </Link>
-                  ))}
+              {/* PRO 업그레이드 배너 */}
+              <div className="mt-4 rounded-lg border border-[var(--color-primary)]/30 bg-[var(--color-primary-light)] p-3">
+                <p className="mb-2 text-xs text-[var(--color-text-primary)]">PRO로 업그레이드하고 모든 기능을 사용하세요</p>
+                <Link
+                  href="/pricing"
+                  onClick={onClose}
+                  className="block w-full rounded bg-[var(--color-primary)] py-2 text-center text-sm font-bold text-white transition-colors hover:bg-[var(--color-primary-hover)]"
+                >
+                  Upgrade Pro
+                </Link>
               </div>
-
-              {/* 로그아웃 */}
-              <a
-                href="/api/auth/logout"
-                className="block w-full rounded-[12px] px-3 py-2.5 text-left text-sm text-[#DC2626] hover:bg-[rgba(239,68,68,0.1)]"
-              >
-                로그아웃
-              </a>
             </>
           ) : (
-            <div className="flex flex-col">
-              {/* 브랜드 */}
-              <div className="mb-6 rounded-[16px] bg-[#EDF0F8] px-5 py-6 text-center">
-                <p className="text-2xl font-bold text-[#E31B23]">BDR</p>
-                <p className="mt-1 text-xs text-[#6B7280]">농구인을 위한 농구 플랫폼</p>
-              </div>
-
-              {/* 기능 소개 */}
-              <div className="mb-6 space-y-3">
-                {[
-                  { icon: "🏀", title: "픽업게임", desc: "내 주변 경기 참가" },
-                  { icon: "👕", title: "팀 관리", desc: "팀원 모집 · 매니지먼트" },
-                  { icon: "🏆", title: "토너먼트", desc: "대회 참가 · 전적 관리" },
-                ].map((f) => (
-                  <div key={f.title} className="flex items-center gap-3 rounded-[12px] px-3 py-2">
-                    <span className="text-xl">{f.icon}</span>
-                    <div>
-                      <p className="text-sm font-medium text-[#111827]">{f.title}</p>
-                      <p className="text-xs text-[#9CA3AF]">{f.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* CTA 버튼 */}
+            /* 비로그인 상태: 로그인/회원가입 버튼 */
+            <div className="flex flex-col gap-2">
+              <p className="mb-2 text-lg font-bold text-[var(--color-primary)]">BDR</p>
+              <p className="mb-4 text-xs text-[var(--color-text-secondary)]">농구인을 위한 농구 플랫폼</p>
               <Link
                 href="/login"
                 onClick={onClose}
-                className="mb-2 w-full rounded-full bg-[#1B3C87] py-3 text-center text-sm font-semibold text-white hover:bg-[#142D6B]"
+                className="block w-full rounded bg-[var(--color-primary)] py-2.5 text-center text-sm font-bold text-white"
               >
                 로그인
               </Link>
               <Link
                 href="/signup"
                 onClick={onClose}
-                className="w-full rounded-full border border-[#E8ECF0] py-3 text-center text-sm font-medium text-[#6B7280] hover:bg-[#F5F6FA]"
+                className="block w-full rounded border border-[var(--color-border)] py-2.5 text-center text-sm font-bold text-[var(--color-text-primary)]"
               >
                 회원가입
               </Link>
             </div>
+          )}
+        </div>
+
+        {/* 네비게이션: 6개 메뉴 */}
+        <nav className="flex-1 space-y-1 overflow-y-auto p-4">
+          {menuItems.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href + item.label}
+                href={item.href}
+                onClick={onClose}
+                className={`flex items-center gap-4 rounded-lg px-4 py-3 text-sm transition-colors ${
+                  active
+                    ? "bg-[var(--color-primary-light)] font-bold text-[var(--color-primary)]"
+                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-elevated)]"
+                }`}
+              >
+                {/* Material Symbols 아이콘: 활성 시 FILL 1 */}
+                <span
+                  className="material-symbols-outlined text-xl"
+                  style={active ? { fontVariationSettings: "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24" } : undefined}
+                >
+                  {item.icon}
+                </span>
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* 하단: 유틸리티 버튼 + Settings + Logout */}
+        <div className="border-t border-[var(--color-border)] p-4">
+          {/* 테마 전환 + 글씨 크기 버튼 (모바일 슬라이드 메뉴용) */}
+          <div className="mb-2 flex items-center gap-2 px-2">
+            <ThemeToggle />
+            <TextSizeToggle />
+          </div>
+          <Link
+            href="/profile"
+            onClick={onClose}
+            className="flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+          >
+            <span className="material-symbols-outlined text-lg">settings</span>
+            <span>Settings</span>
+          </Link>
+          {isLoggedIn && (
+            <button
+              onClick={() => { handleLogout(); onClose(); }}
+              className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-primary)]"
+            >
+              <span className="material-symbols-outlined text-lg">logout</span>
+              <span>Logout</span>
+            </button>
           )}
         </div>
       </div>

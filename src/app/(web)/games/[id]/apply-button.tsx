@@ -43,7 +43,8 @@ export function GameApplyButton({
   }
 
   async function handleApply() {
-    if (!profileCompleted) {
+    // missingFields 기반 실시간 판단 (DB profile_completed 컬럼이 갱신 안 될 수 있음)
+    if (missingFields.length > 0) {
       setShowModal(true);
       return;
     }

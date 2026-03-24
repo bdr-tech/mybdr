@@ -161,6 +161,10 @@ export default async function TournamentDetailPage({ params }: { params: Promise
       entry_fee: true,
       registration_start_at: true,
       registration_end_at: true,
+      categories: true,
+      div_caps: true,
+      div_fees: true,
+      allow_waiting_list: true,
       bank_name: true,
       bank_account: true,
       bank_holder: true,
@@ -179,11 +183,11 @@ export default async function TournamentDetailPage({ params }: { params: Promise
   const isRegistrationOpen = isRegStatus && (!regOpen || regOpen <= now) && (!regClose || regClose >= now);
   const isRegistrationSoon = isRegStatus && regOpen && regOpen > now;
 
-  // 디비전별 등록 현황
-  const categories = {} as Record<string, string[]>;
-  const divCaps = {} as Record<string, number>;
-  const divFees = {} as Record<string, number>;
-  const hasCategories = false;
+  // 디비전별 등록 현황 (기존 로직 유지)
+  const categories = (tournament.categories ?? {}) as Record<string, string[]>;
+  const divCaps = (tournament.div_caps ?? {}) as Record<string, number>;
+  const divFees = (tournament.div_fees ?? {}) as Record<string, number>;
+  const hasCategories = Object.keys(categories).length > 0;
 
   let divisionCounts: { division: string | null; _count: { id: number } }[] = [];
   if (hasCategories) {
@@ -298,7 +302,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
             teamCount={tournament._count.tournamentTeams}
             maxTeams={tournament.maxTeams}
             divisions={divisions}
-            allowWaitingList={false}
+            allowWaitingList={tournament.allow_waiting_list}
             bankName={tournament.bank_name}
             bankAccount={tournament.bank_account}
             bankHolder={tournament.bank_holder}

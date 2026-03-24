@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { gameRulesSchema } from "./game-rules";
 
 export const subdomainCheckSchema = z.object({
   name: z
@@ -37,7 +36,16 @@ export const updateTournamentSchema = z
     auto_approve_teams: z.boolean(),
     primary_color: z.string().nullable(),
     secondary_color: z.string().nullable(),
-    game_rules: gameRulesSchema,
+    // 접수 설정
+    categories: z.record(z.string(), z.array(z.string())),
+    div_caps: z.record(z.string(), z.number().int().positive()),
+    div_fees: z.record(z.string(), z.number().min(0)),
+    allow_waiting_list: z.boolean(),
+    waiting_list_cap: z.number().int().positive().nullable(),
+    bank_name: z.string().nullable(),
+    bank_account: z.string().nullable(),
+    bank_holder: z.string().nullable(),
+    fee_notes: z.string().nullable(),
   })
   .partial()
   .refine(

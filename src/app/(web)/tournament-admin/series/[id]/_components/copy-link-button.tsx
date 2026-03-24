@@ -15,7 +15,7 @@ export function CopyLinkButton({ slug }: { slug: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="flex-shrink-0 rounded-full border border-[#E8ECF0] px-3 py-1.5 text-xs text-[#6B7280] hover:border-[#1B3C87] hover:text-[#1B3C87] transition-colors"
+      className="flex-shrink-0 rounded-full border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-muted)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
     >
       {copied ? "✓ 복사됨" : "🔗 공개 링크"}
     </button>

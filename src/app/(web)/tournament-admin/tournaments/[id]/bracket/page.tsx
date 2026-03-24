@@ -123,7 +123,7 @@ export default function BracketAdminPage() {
   };
 
   if (loading)
-    return <div className="flex h-40 items-center justify-center text-[#6B7280]">불러오는 중...</div>;
+    return <div className="flex h-40 items-center justify-center text-[var(--color-text-muted)]">불러오는 중...</div>;
 
   const round1Matches = data?.matches.filter((m) => m.round_number === 1) ?? [];
   const hasMatches = (data?.matches.length ?? 0) > 0;
@@ -138,11 +138,11 @@ export default function BracketAdminPage() {
       <div className="mb-6">
         <Link
           href={`/tournament-admin/tournaments/${id}`}
-          className="text-sm text-[#6B7280] hover:text-[#111827]"
+          className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
         >
           ← 대회 관리
         </Link>
-        <h1 className="mt-1 text-xl sm:text-2xl font-bold">대진표 생성</h1>
+        <h1 className="mt-1 text-xl font-bold sm:text-2xl">대진표 생성</h1>
       </div>
 
       {error && (
@@ -153,22 +153,22 @@ export default function BracketAdminPage() {
       <Card className="mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-[#111827]">생성 횟수</p>
+            <p className="text-sm font-medium text-[var(--color-text-primary)]">생성 횟수</p>
             <div className="mt-2 flex items-center gap-1">
               {Array.from({ length: versionLimit }).map((_, i) => (
                 <div
                   key={i}
                   className={`h-3 w-8 rounded-full ${
-                    i < versionUsed ? "bg-[#1B3C87]" : "bg-[#E8ECF0]"
+                    i < versionUsed ? "bg-[var(--color-accent)]" : "bg-[var(--color-border)]"
                   }`}
                 />
               ))}
-              <span className="ml-2 text-sm text-[#6B7280]">
+              <span className="ml-2 text-sm text-[var(--color-text-muted)]">
                 {versionUsed}/{versionLimit} 사용
               </span>
             </div>
             {!canGenerate && (
-              <p className="mt-1 text-xs text-[#DC2626]">
+              <p className="mt-1 text-xs text-[var(--color-error)]">
                 슈퍼관리자 승인 후 추가 생성 가능합니다.
               </p>
             )}
@@ -176,7 +176,7 @@ export default function BracketAdminPage() {
 
           <div className="flex items-center gap-2">
             {isActivated && (
-              <span className="rounded-full bg-[rgba(74,222,128,0.1)] px-3 py-1 text-xs font-medium text-[#16A34A]">
+              <span className="rounded-full bg-[rgba(74,222,128,0.1)] px-3 py-1 text-xs font-medium text-[var(--color-success)]">
                 ✓ 확정됨 (v{data?.activeVersion})
               </span>
             )}
@@ -184,7 +184,7 @@ export default function BracketAdminPage() {
               <button
                 onClick={activate}
                 disabled={activating || isActivated}
-                className="rounded-full bg-[rgba(27,60,135,0.08)] px-4 py-2 text-sm font-medium text-[#1B3C87] hover:bg-[rgba(27,60,135,0.15)] disabled:opacity-50"
+                className="rounded-full bg-[rgba(27,60,135,0.08)] px-4 py-2 text-sm font-medium text-[var(--color-accent)] hover:bg-[rgba(0,102,255,0.15)] disabled:opacity-50"
               >
                 {activating ? "처리 중..." : "최신 버전 확정"}
               </button>
@@ -211,16 +211,16 @@ export default function BracketAdminPage() {
 
         {/* 버전 히스토리 */}
         {(data?.versions.length ?? 0) > 0 && (
-          <div className="mt-4 border-t border-[#F1F5F9] pt-4">
-            <p className="mb-2 text-xs font-medium text-[#9CA3AF]">버전 히스토리</p>
+          <div className="mt-4 border-t border-[var(--color-border-subtle)] pt-4">
+            <p className="mb-2 text-xs font-medium text-[var(--color-text-muted)]">버전 히스토리</p>
             <div className="flex flex-wrap gap-2">
               {data?.versions.map((v) => (
                 <div
                   key={v.id}
                   className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs ${
                     v.is_active
-                      ? "bg-[rgba(74,222,128,0.1)] text-[#16A34A]"
-                      : "bg-[#EDF0F8] text-[#6B7280]"
+                      ? "bg-[rgba(74,222,128,0.1)] text-[var(--color-success)]"
+                      : "bg-[var(--color-elevated)] text-[var(--color-text-muted)]"
                   }`}
                 >
                   <span className="font-medium">v{v.version_number}</span>
@@ -236,25 +236,25 @@ export default function BracketAdminPage() {
       {/* 1라운드 팀 배치 편집 */}
       {round1Matches.length > 0 && (
         <div className="mb-6">
-          <h2 className="mb-3 text-sm font-semibold text-[#6B7280] uppercase tracking-wide">
+          <h2 className="mb-3 text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
             1라운드 팀 배치 편집
           </h2>
           <div className="space-y-3">
             {round1Matches.map((match) => (
               <Card key={match.id} className={match.status === "bye" ? "opacity-60" : ""}>
                 <div className="flex items-center gap-3">
-                  <span className="w-6 shrink-0 text-center text-xs text-[#9CA3AF]">
+                  <span className="w-6 shrink-0 text-center text-xs text-[var(--color-text-muted)]">
                     #{match.match_number ?? "-"}
                   </span>
 
                   {/* 홈팀 */}
                   <div className="flex-1">
-                    <label className="mb-1 block text-[10px] text-[#9CA3AF]">홈팀</label>
+                    <label className="mb-1 block text-xs text-[var(--color-text-muted)]">홈팀</label>
                     <select
                       disabled={match.status === "bye" || savingMatch === match.id}
                       value={match.homeTeamId ?? ""}
                       onChange={(e) => updateMatchTeam(match.id, "homeTeamId", e.target.value || null)}
-                      className="w-full rounded-[10px] border-none bg-[#EDF0F8] px-3 py-2 text-sm text-[#111827] disabled:opacity-50"
+                      className="w-full rounded-[10px] border-none bg-[var(--color-elevated)] px-3 py-2 text-sm text-[var(--color-text-primary)] disabled:opacity-50"
                     >
                       <option value="">미정</option>
                       {data?.approvedTeams.map((t) => (
@@ -263,16 +263,16 @@ export default function BracketAdminPage() {
                     </select>
                   </div>
 
-                  <span className="mt-4 text-[#9CA3AF]">vs</span>
+                  <span className="mt-4 text-[var(--color-text-muted)]">vs</span>
 
                   {/* 원정팀 */}
                   <div className="flex-1">
-                    <label className="mb-1 block text-[10px] text-[#9CA3AF]">원정팀</label>
+                    <label className="mb-1 block text-xs text-[var(--color-text-muted)]">원정팀</label>
                     <select
                       disabled={match.status === "bye" || savingMatch === match.id}
                       value={match.awayTeamId ?? ""}
                       onChange={(e) => updateMatchTeam(match.id, "awayTeamId", e.target.value || null)}
-                      className="w-full rounded-[10px] border-none bg-[#EDF0F8] px-3 py-2 text-sm text-[#111827] disabled:opacity-50"
+                      className="w-full rounded-[10px] border-none bg-[var(--color-elevated)] px-3 py-2 text-sm text-[var(--color-text-primary)] disabled:opacity-50"
                     >
                       <option value="">미정</option>
                       {data?.approvedTeams.map((t) => (
@@ -282,7 +282,7 @@ export default function BracketAdminPage() {
                   </div>
 
                   {match.status === "bye" && (
-                    <span className="mt-4 rounded-full bg-[#EDF0F8] px-2 py-0.5 text-[10px] text-[#9CA3AF]">
+                    <span className="mt-4 rounded-full bg-[var(--color-elevated)] px-2 py-0.5 text-xs text-[var(--color-text-muted)]">
                       부전승
                     </span>
                   )}
@@ -297,12 +297,12 @@ export default function BracketAdminPage() {
       {hasMatches && (
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-[#6B7280] uppercase tracking-wide">
+            <h2 className="text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
               전체 경기 ({data?.matches.length}경기)
             </h2>
             <Link
               href={`/tournament-admin/tournaments/${id}/matches`}
-              className="text-xs text-[#1B3C87] hover:underline"
+              className="text-xs text-[var(--color-accent)] hover:underline"
             >
               경기 관리로 이동 →
             </Link>
@@ -312,20 +312,20 @@ export default function BracketAdminPage() {
               const rMatches = data?.matches.filter((m) => m.round_number === rn) ?? [];
               return (
                 <div key={rn ?? "x"}>
-                  <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-[#9CA3AF]">
+                  <p className="mb-1 text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)]">
                     {rMatches[0]?.roundName ?? `라운드 ${rn}`}
                   </p>
                   {rMatches.map((m) => (
-                    <div key={m.id} className="mb-1 flex items-center gap-2 rounded-[10px] bg-[#F5F6FA] px-3 py-2 text-sm">
-                      <span className="w-5 text-center text-xs text-[#9CA3AF]">#{m.match_number ?? "-"}</span>
-                      <span className={`flex-1 text-right font-medium ${m.homeTeamId == null ? "text-[#9CA3AF]" : ""}`}>
+                    <div key={m.id} className="mb-1 flex items-center gap-2 rounded-[10px] bg-[var(--color-surface)] px-3 py-2 text-sm">
+                      <span className="w-5 text-center text-xs text-[var(--color-text-muted)]">#{m.match_number ?? "-"}</span>
+                      <span className={`flex-1 text-right font-medium ${m.homeTeamId == null ? "text-[var(--color-text-muted)]" : ""}`}>
                         {m.homeTeam?.team.name ?? "미정"}
                       </span>
-                      <span className="text-xs text-[#9CA3AF]">vs</span>
-                      <span className={`flex-1 font-medium ${m.awayTeamId == null ? "text-[#9CA3AF]" : ""}`}>
+                      <span className="text-xs text-[var(--color-text-muted)]">vs</span>
+                      <span className={`flex-1 font-medium ${m.awayTeamId == null ? "text-[var(--color-text-muted)]" : ""}`}>
                         {m.awayTeam?.team.name ?? "미정"}
                       </span>
-                      <span className={`text-[10px] ${STATUS_LABEL[m.status] ? "text-[#6B7280]" : ""}`}>
+                      <span className={`text-xs ${STATUS_LABEL[m.status] ? "text-[var(--color-text-muted)]" : ""}`}>
                         {STATUS_LABEL[m.status] ?? m.status}
                       </span>
                     </div>
@@ -338,7 +338,7 @@ export default function BracketAdminPage() {
       )}
 
       {!hasMatches && (
-        <Card className="py-16 text-center text-[#6B7280]">
+        <Card className="py-16 text-center text-[var(--color-text-muted)]">
           <div className="mb-3 text-4xl">🏆</div>
           <p className="font-medium">대진표가 없습니다</p>
           <p className="mt-1 text-sm">

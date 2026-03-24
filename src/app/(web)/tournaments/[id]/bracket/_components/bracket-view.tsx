@@ -67,7 +67,28 @@ export function BracketView({ rounds, tournamentId }: BracketViewProps) {
   const activeRoundData = rounds.find((r) => r.roundNumber === activeRound);
 
   return (
-    <div>
+    <section>
+      {/* 섹션 헤더: 시안 bdr_3의 "토너먼트 대진표 (Knockout Stage)" 스타일 */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+        <h3 className="text-xl font-bold flex items-center gap-2">
+          {/* 파란 세로 막대 (시안에서 secondary-navy 사용) */}
+          <span
+            className="w-1.5 h-6 rounded-sm"
+            style={{ backgroundColor: "var(--color-secondary)" }}
+          />
+          토너먼트 대진표 (Knockout Stage)
+        </h3>
+        {/* 범례: 실시간 / 예정 표시 */}
+        <div className="flex gap-4 items-center">
+          <span className="flex items-center gap-2 text-xs" style={{ color: "var(--color-text-muted)" }}>
+            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: "var(--color-primary)" }} /> 실시간 진행중
+          </span>
+          <span className="flex items-center gap-2 text-xs" style={{ color: "var(--color-text-muted)" }}>
+            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: "var(--color-border)" }} /> 경기 예정
+          </span>
+        </div>
+      </div>
+
       {/* 데스크톱: 전체 트리 뷰 */}
       <div className="hidden lg:block">
         <DesktopBracketView rounds={rounds} cardSize={cardSize} />
@@ -83,17 +104,17 @@ export function BracketView({ rounds, tournamentId }: BracketViewProps) {
               onClick={() => setActiveRound(round.roundNumber)}
               className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 ${
                 activeRound === round.roundNumber
-                  ? "bg-[#E31B23] text-white"
+                  ? "bg-[var(--color-primary)] text-white"
                   : round.hasLive
-                    ? "bg-white border border-[#E31B23] text-[#E31B23]"
-                    : "bg-white border border-[#E8ECF0] text-[#6B7280] hover:bg-[#F9FAFB]"
+                    ? "bg-[var(--color-card)] border border-[var(--color-primary)] text-[var(--color-primary)]"
+                    : "bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface)]"
               }`}
             >
               {round.roundName}
               {round.hasLive && activeRound !== round.roundNumber && (
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E31B23] opacity-75" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#E31B23]" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-primary)] opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--color-primary)]" />
                 </span>
               )}
             </button>
@@ -102,7 +123,7 @@ export function BracketView({ rounds, tournamentId }: BracketViewProps) {
 
         {/* 라운드 정보 */}
         {activeRoundData && (
-          <p className="mb-3 text-xs text-[#9CA3AF]">
+          <p className="mb-3 text-xs text-[var(--color-text-secondary)]">
             {activeRoundData.roundName} · {activeRoundData.matches.length}경기
           </p>
         )}
@@ -130,7 +151,7 @@ export function BracketView({ rounds, tournamentId }: BracketViewProps) {
           {activeRound > (rounds[0]?.roundNumber ?? 1) ? (
             <button
               onClick={() => setActiveRound(activeRound - 1)}
-              className="text-[#1B3C87] hover:underline"
+              className="text-[var(--color-accent)] hover:underline"
             >
               ← {rounds.find((r) => r.roundNumber === activeRound - 1)?.roundName}
             </button>
@@ -140,7 +161,7 @@ export function BracketView({ rounds, tournamentId }: BracketViewProps) {
           {activeRound < (rounds[rounds.length - 1]?.roundNumber ?? 1) ? (
             <button
               onClick={() => setActiveRound(activeRound + 1)}
-              className="text-[#1B3C87] hover:underline"
+              className="text-[var(--color-accent)] hover:underline"
             >
               {rounds.find((r) => r.roundNumber === activeRound + 1)?.roundName} →
             </button>
@@ -149,7 +170,7 @@ export function BracketView({ rounds, tournamentId }: BracketViewProps) {
           )}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -210,7 +231,7 @@ function DesktopBracketView({
   const padding = 16;
 
   return (
-    <div className="overflow-x-auto rounded-[16px] border border-[#E8ECF0] bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+    <div className="overflow-x-auto rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] p-6" style={{ boxShadow: 'var(--shadow-card)' }}>
       <div
         className="relative"
         style={{
@@ -229,13 +250,16 @@ function DesktopBracketView({
               width: `${cardWidth}px`,
             }}
           >
-            <span className="text-sm font-semibold text-[#6B7280] whitespace-nowrap">
+            <span
+              className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap"
+              style={{ color: "var(--color-text-muted)" }}
+            >
               {rh.roundName}
             </span>
             {rh.hasLive && (
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E31B23] opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#E31B23]" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-primary)] opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--color-primary)]" />
               </span>
             )}
           </div>
@@ -255,7 +279,7 @@ function DesktopBracketView({
             <path
               key={path.id}
               d={path.d}
-              stroke={path.isActive ? "rgba(244,162,97,0.5)" : "#D1D5DB"}
+              stroke={path.isActive ? "rgba(244,162,97,0.5)" : "var(--color-text-muted)"}
               strokeWidth={1.5}
               fill="none"
             />

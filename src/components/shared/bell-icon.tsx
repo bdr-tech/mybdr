@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+// lucide-react 제거 → Material Symbols Outlined 사용
 
 interface BellIconProps {
   unreadCount: number;
@@ -10,26 +11,15 @@ export function BellIcon({ unreadCount }: BellIconProps) {
   return (
     <Link
       href="/notifications"
-      className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#6B7280] hover:bg-[#EDF0F8] hover:text-[#111827] transition-colors"
+      // 하드코딩 색상 -> CSS 변수 기반 Tailwind 테마 클래스로 전환
+      className="relative flex h-9 w-9 items-center justify-center rounded-full text-text-secondary hover:bg-primary-light hover:text-text-primary transition-colors"
       aria-label={unreadCount > 0 ? `알림 ${unreadCount}개 읽지 않음` : "알림"}
     >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-      </svg>
+      {/* Material Symbols 알림 아이콘 -- 20px 크기 */}
+      <span className="material-symbols-outlined text-xl" aria-hidden="true">notifications</span>
+      {/* 읽지 않은 알림 뱃지 -- bg-error로 CSS 변수 기반 색상 사용 */}
       {unreadCount > 0 && (
-        <span className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FF4444] px-1 text-[10px] font-bold leading-none text-white">
+        <span className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-error px-1 text-xs font-bold leading-none text-white">
           {unreadCount > 99 ? "99+" : unreadCount}
         </span>
       )}

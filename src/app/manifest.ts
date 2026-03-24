@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "농구 경기와 대회를 쉽고 빠르게",
     start_url: "/",
     display: "standalone",
-    background_color: "#F5F6FA",
+    background_color: "#F5F7FA",
     theme_color: "#1B3C87",
     orientation: "portrait",
     icons: [

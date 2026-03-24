@@ -12,15 +12,15 @@ export function NewTeamForm() {
 
   return (
     <div>
-      <h1 className="mb-6 text-xl sm:text-2xl font-bold">팀 만들기</h1>
+      <h1 className="mb-6 text-2xl font-extrabold uppercase tracking-wide sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>팀 만들기</h1>
 
       {isUpgradeRequired && (
-        <div className="mb-4 rounded-[16px] border border-[#1B3C87]/30 bg-[rgba(27,60,135,0.08)] p-4">
-          <p className="mb-2 text-sm font-medium text-[#E31B23]">팀 생성은 팀장 이상 계정만 가능합니다.</p>
-          <p className="mb-3 text-xs text-[#6B7280]">팀장 플랜을 신청하면 최대 2개의 팀을 만들 수 있습니다.</p>
+        <div className="mb-4 rounded-[16px] border border-[var(--color-accent)]/30 bg-[var(--color-surface-bright)] p-4">
+          <p className="mb-2 text-sm font-medium text-[var(--color-primary)]">팀 생성은 팀장 이상 계정만 가능합니다.</p>
+          <p className="mb-3 text-xs text-[var(--color-text-muted)]">팀장 플랜을 신청하면 최대 2개의 팀을 만들 수 있습니다.</p>
           <Link
             href="/upgrade?reason=team_creation"
-            className="inline-flex items-center gap-1 rounded-[10px] bg-[#1B3C87] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#142D6B]"
+            className="inline-flex items-center gap-1 rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90"
           >
             플랜 신청하기 →
           </Link>
@@ -35,41 +35,41 @@ export function NewTeamForm() {
         )}
         <form action={formAction} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm text-[#6B7280]">팀 이름 *</label>
+            <label className="mb-1 block text-sm text-[var(--color-text-muted)]">팀 이름 *</label>
             <input
               name="name"
               type="text"
               required
-              className="w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
+              className="w-full rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
               placeholder="팀 이름"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm text-[#6B7280]">팀 소개</label>
+            <label className="mb-1 block text-sm text-[var(--color-text-muted)]">팀 소개</label>
             <textarea
               name="description"
               rows={3}
-              className="w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
+              className="w-full rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
               placeholder="팀 소개"
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm text-[#6B7280]">대표 색상</label>
+              <label className="mb-1 block text-sm text-[var(--color-text-muted)]">대표 색상</label>
               <input
                 name="primary_color"
                 type="color"
                 defaultValue="#E31B23"
-                className="h-12 w-full rounded-[16px] border-none bg-[#E8ECF0] p-1"
+                className="h-12 w-full cursor-pointer rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] p-1"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm text-[#6B7280]">보조 색상</label>
+              <label className="mb-1 block text-sm text-[var(--color-text-muted)]">보조 색상</label>
               <input
                 name="secondary_color"
                 type="color"
                 defaultValue="#E76F51"
-                className="h-12 w-full rounded-[16px] border-none bg-[#E8ECF0] p-1"
+                className="h-12 w-full cursor-pointer rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] p-1"
               />
             </div>
           </div>

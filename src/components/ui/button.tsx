@@ -2,41 +2,54 @@ import { type ButtonHTMLAttributes, type ReactNode } from "react";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "cta";
 
+// 각 variant별 스타일 정의
+// Phase 4-2: 하드코딩 색상 -> CSS 변수로 전환
+// cta: 웜 오렌지(#F4A261)로 변경 (기존 빨간색 #E31B23에서)
 const variants: Record<Variant, string> = {
+  // primary: 진한 텍스트색 배경 + 흰 텍스트
   primary:
-    "bg-[#1B3C87] text-white font-semibold hover:bg-[#142D6B]",
-  secondary:
-    "bg-[#FFFFFF] text-[#374151] border border-[#CBD5E1] hover:bg-[#F5F6FA] hover:border-[#1B3C87]",
-  ghost:
-    "text-[#E31B23] hover:bg-[rgba(27,60,135,0.12)]",
-  danger:
-    "bg-[rgba(220,38,38,0.2)] text-[#DC2626] hover:bg-[rgba(220,38,38,0.3)]",
+    "bg-color-text-primary text-color-text-on-primary font-bold hover:opacity-85",
+  // cta(주요 액션): 웜 오렌지 배경 + 흰 텍스트
   cta:
-    "bg-[#E31B23] text-white font-semibold hover:bg-[#C8101E]",
+    "bg-color-accent text-color-text-on-primary font-bold hover:bg-color-accent-hover",
+  // secondary: 카드 배경 + 테두리 스타일
+  secondary:
+    "bg-color-card text-color-text-primary border-2 border-color-text-primary font-bold hover:bg-color-card-hover",
+  // ghost: 텍스트만 보이는 버튼 (배경 없음)
+  ghost:
+    "text-color-primary font-bold hover:bg-color-primary-light",
+  // danger: 위험 동작용 (삭제, 탈퇴 등)
+  danger:
+    "bg-color-error/20 text-color-error font-bold hover:bg-color-error/30",
 };
 
 export function Button({
   children,
   variant = "primary",
-  loading = false,
   className = "",
-  disabled,
+  loading = false,
   ...props
 }: {
   children: ReactNode;
   variant?: Variant;
-  loading?: boolean;
   className?: string;
+  loading?: boolean;
 } & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
-      className={`rounded-full px-6 py-3 text-sm min-h-[44px] transition-all disabled:opacity-50 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B3C87] focus-visible:ring-offset-2 ${variants[variant]} ${className}`}
-      disabled={disabled || loading}
+      // 공통 스타일 + variant별 스타일 + 커스텀 className
+      // focus-visible: 키보드 접근성 (Tab 키로 포커스 시 링 표시)
+      className={`rounded-[10px] px-6 py-3 text-sm min-h-[44px] transition-all active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-color-primary focus-visible:ring-offset-2 ${variants[variant]} ${className}`}
+      disabled={loading || props.disabled}
       {...props}
     >
       {loading ? (
         <span className="inline-flex items-center gap-2">
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          {/* 로딩 스피너 애니메이션 */}
+          <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
           {children}
         </span>
       ) : (

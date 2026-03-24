@@ -23,13 +23,13 @@ export function RoundColumn({
   return (
     <div className="flex flex-col items-center flex-shrink-0">
       <div className="mb-4 flex items-center gap-2">
-        <h3 className="text-sm font-semibold text-[#6B7280] whitespace-nowrap">
+        <h3 className="text-sm font-semibold text-[var(--color-text-muted)] whitespace-nowrap">
           {round.roundName}
         </h3>
         {round.hasLive && (
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E31B23] opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#E31B23]" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-primary)] opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--color-primary)]" />
           </span>
         )}
       </div>

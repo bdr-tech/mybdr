@@ -9,6 +9,7 @@ export const TOURNAMENT_STATUS_LABEL: Record<string, string> = {
   registration: "모집중",
   registration_open: "모집중",
   registration_closed: "접수마감",
+  in_progress: "진행중",
   ongoing: "진행중",
   completed: "완료",
   cancelled: "취소",

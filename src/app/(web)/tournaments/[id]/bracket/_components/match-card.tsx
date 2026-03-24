@@ -28,10 +28,10 @@ function isLoser(match: BracketMatch, team: TeamSlot): boolean {
 function StatusBadge({ status }: { status: string }) {
   if (status === "in_progress") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(244,162,97,0.15)] px-2 py-0.5 text-[10px] font-bold text-[#E31B23]">
+      <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(244,162,97,0.15)] px-2 py-0.5 text-xs font-bold text-[var(--color-primary)]">
         <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E31B23] opacity-75" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#E31B23]" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-primary)] opacity-75" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--color-primary)]" />
         </span>
         LIVE
       </span>
@@ -43,14 +43,14 @@ function StatusBadge({ status }: { status: string }) {
     pending: { label: "대기", bg: "rgba(255,255,255,0.08)", color: "#6B7280" },
     completed: { label: "종료", bg: "rgba(74,222,128,0.1)", color: "#22C55E" },
     bye: { label: "부전승", bg: "rgba(255,255,255,0.08)", color: "#6B7280" },
-    cancelled: { label: "취소", bg: "rgba(239,68,68,0.1)", color: "#DC2626" },
+    cancelled: { label: "취소", bg: "rgba(239,68,68,0.1)", color: "#EF4444" },
   };
 
   const c = config[status] ?? config.scheduled;
 
   return (
     <span
-      className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+      className="rounded-full px-2 py-0.5 text-xs font-medium"
       style={{ backgroundColor: c.bg, color: c.color }}
     >
       {c.label}
@@ -84,16 +84,16 @@ function TeamRow({
       {/* 승자 표시 바 */}
       <div
         className={`w-0.5 self-stretch rounded-full flex-shrink-0 ${
-          winner ? "bg-[#E31B23]" : "bg-transparent"
+          winner ? "bg-[var(--color-primary)]" : "bg-transparent"
         }`}
       />
 
       {/* 팀명 */}
       <span
         className={`flex-1 truncate font-medium leading-tight ${
-          loser ? "text-[#9CA3AF]" : "text-[#111827]"
+          loser ? "text-[var(--color-text-secondary)]" : "text-[var(--color-text-primary)]"
         }`}
-      >
+>
         {isBye && position === "away"
           ? "부전승"
           : team !== null
@@ -105,10 +105,10 @@ function TeamRow({
       <span
         className={`flex-shrink-0 font-bold tabular-nums ${
           winner
-            ? "text-[#E31B23]"
+            ? "text-[var(--color-primary)]"
             : isLive
-              ? "text-[#E31B23]"
-              : "text-[#9CA3AF]"
+              ? "text-[var(--color-primary)]"
+              : "text-[var(--color-text-secondary)]"
         }`}
       >
         {showScore ? score : "-"}
@@ -126,24 +126,34 @@ export function MatchCard({ match, size = "lg", showBadge = false, className = "
     SIZE_MAP[size],
     // 상태별 스타일
     isBye
-      ? "border-dashed border-[#D1D5DB] bg-[#F9FAFB] opacity-70"
+      ? "border-dashed border-[var(--color-border)] bg-[var(--color-surface)] opacity-70"
       : isLive
-        ? "border-2 border-[#E31B23] bg-white shadow-[0_0_12px_rgba(244,162,97,0.15)]"
-        : "border-[#E8ECF0] bg-white",
+        ? "border-2 border-[var(--color-primary)] bg-[var(--color-card)] shadow-[0_0_12px_rgba(244,162,97,0.15)]"
+        : "border-[var(--color-border)] bg-[var(--color-card)]",
     // 호버 (bye 제외)
-    !isBye && "hover:border-[rgba(244,162,97,0.3)] hover:bg-[#FAFAFA] cursor-pointer",
+    !isBye && "hover:border-[rgba(244,162,97,0.3)] hover:bg-[var(--color-surface)] cursor-pointer",
     className,
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <div className={cardClasses}>
+    <div className={`${cardClasses} relative`}>
+      {/* LIVE NOW 배지 - 진행중 경기에 카드 상단 표시 (시안 bdr_3 참조) */}
+      {isLive && (
+        <div
+          className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 text-[8px] font-bold uppercase rounded z-10 text-white"
+          style={{ backgroundColor: "var(--color-primary)" }}
+        >
+          LIVE NOW
+        </div>
+      )}
+
       {/* 홈팀 */}
       <TeamRow match={match} team={match.homeTeam} score={match.homeScore} position="home" />
 
       {/* 구분선 */}
-      <div className={`border-t ${isBye ? "border-[#D1D5DB]" : "border-[#E8ECF0]"}`} />
+      <div className={`border-t ${isBye ? "border-[var(--color-border)]" : "border-[var(--color-border)]"}`} />
 
       {/* 어웨이팀 */}
       <TeamRow match={match} team={match.awayTeam} score={match.awayScore} position="away" />
@@ -151,7 +161,7 @@ export function MatchCard({ match, size = "lg", showBadge = false, className = "
       {/* 상태 뱃지 - showBadge=true일 때만 (모바일에서 사용) */}
       {showBadge && (isLive || match.status === "completed" || isBye) && (
         <>
-          <div className={`border-t ${isBye ? "border-[#D1D5DB]" : "border-[#E8ECF0]"}`} />
+          <div className={`border-t ${isBye ? "border-[var(--color-border)]" : "border-[var(--color-border)]"}`} />
           <div className="flex justify-center py-0.5">
             <StatusBadge status={match.status} />
           </div>
@@ -183,15 +193,15 @@ export function MobileMatchCard({
     <div
       className={`rounded-[16px] border overflow-hidden ${
         isBye
-          ? "border-dashed border-[#D1D5DB] bg-[#F9FAFB] opacity-70"
+          ? "border-dashed border-[var(--color-border)] bg-[var(--color-surface)] opacity-70"
           : isLive
-            ? "border-2 border-[#E31B23] bg-white shadow-[0_0_12px_rgba(244,162,97,0.15)]"
-            : "border-[#E8ECF0] bg-white"
+            ? "border-2 border-[var(--color-primary)] bg-[var(--color-card)] shadow-[0_0_12px_rgba(244,162,97,0.15)]"
+            : "border-[var(--color-border)] bg-[var(--color-card)]"
       }`}
     >
       {/* 매치 헤더 */}
-      <div className="flex items-center justify-between px-4 py-2 bg-[#F9FAFB]">
-        <span className="text-xs text-[#6B7280]">
+      <div className="flex items-center justify-between px-4 py-2 bg-[var(--color-surface)]">
+        <span className="text-xs text-[var(--color-text-muted)]">
           {match.matchNumber ? `경기 ${match.matchNumber}` : ""}
         </span>
         <StatusBadge status={match.status} />
@@ -205,12 +215,12 @@ export function MobileMatchCard({
       >
         <div
           className={`w-1 self-stretch rounded-full mr-3 flex-shrink-0 ${
-            homeWinner ? "bg-[#E31B23]" : "bg-transparent"
+            homeWinner ? "bg-[var(--color-primary)]" : "bg-transparent"
           }`}
         />
         <span
           className={`flex-1 font-medium ${
-            homeLoser ? "text-[#9CA3AF]" : "text-[#111827]"
+            homeLoser ? "text-[var(--color-text-secondary)]" : "text-[var(--color-text-primary)]"
           }`}
         >
           {match.homeTeam?.team.name ?? "TBD"}
@@ -218,10 +228,10 @@ export function MobileMatchCard({
         <span
           className={`text-lg font-bold tabular-nums ${
             homeWinner
-              ? "text-[#E31B23]"
+              ? "text-[var(--color-primary)]"
               : isLive
-                ? "text-[#E31B23]"
-                : "text-[#9CA3AF]"
+                ? "text-[var(--color-primary)]"
+                : "text-[var(--color-text-secondary)]"
           }`}
         >
           {showScore ? match.homeScore : "-"}
@@ -229,7 +239,7 @@ export function MobileMatchCard({
       </div>
 
       {/* 구분선 */}
-      <div className="border-t border-[#E8ECF0] mx-4" />
+      <div className="border-t border-[var(--color-border)] mx-4" />
 
       {/* 어웨이팀 행 */}
       <div
@@ -239,12 +249,12 @@ export function MobileMatchCard({
       >
         <div
           className={`w-1 self-stretch rounded-full mr-3 flex-shrink-0 ${
-            awayWinner ? "bg-[#E31B23]" : "bg-transparent"
+            awayWinner ? "bg-[var(--color-primary)]" : "bg-transparent"
           }`}
         />
         <span
           className={`flex-1 font-medium ${
-            awayLoser ? "text-[#9CA3AF]" : "text-[#111827]"
+            awayLoser ? "text-[var(--color-text-secondary)]" : "text-[var(--color-text-primary)]"
           }`}
         >
           {isBye && !match.awayTeam
@@ -254,10 +264,10 @@ export function MobileMatchCard({
         <span
           className={`text-lg font-bold tabular-nums ${
             awayWinner
-              ? "text-[#E31B23]"
+              ? "text-[var(--color-primary)]"
               : isLive
-                ? "text-[#E31B23]"
-                : "text-[#9CA3AF]"
+                ? "text-[var(--color-primary)]"
+                : "text-[var(--color-text-secondary)]"
           }`}
         >
           {showScore ? match.awayScore : "-"}
@@ -267,8 +277,8 @@ export function MobileMatchCard({
       {/* 일정 정보 */}
       {match.scheduledAt && (
         <>
-          <div className="border-t border-[#E8ECF0]" />
-          <div className="px-4 py-2 text-xs text-[#9CA3AF]">
+          <div className="border-t border-[var(--color-border)]" />
+          <div className="px-4 py-2 text-xs text-[var(--color-text-secondary)]">
             {new Date(match.scheduledAt).toLocaleDateString("ko-KR", {
               month: "long",
               day: "numeric",

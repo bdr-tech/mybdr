@@ -59,26 +59,26 @@ export function HostApplications({ gameId, applicants }: HostApplicationsProps) 
       {/* 대기 중 */}
       {pending.length > 0 && (
         <div>
-          <p className="mb-2 text-sm font-medium text-[#E31B23]">
+          <p className="mb-2 text-sm font-medium text-[var(--color-primary)]">
             승인 대기 {pending.length}명
           </p>
           <div className="space-y-2">
             {pending.map((a) => (
               <div
                 key={a.id}
-                className="flex items-center justify-between rounded-[12px] border border-[#E31B23]/30 bg-[#FFF7F0] px-4 py-3"
+                className="flex items-center justify-between rounded-[12px] border border-[var(--color-primary)]/30 bg-[var(--color-warning)]/5 px-4 py-3"
               >
                 <div>
                   <p className="text-sm font-medium">
                     {a.nickname ?? a.name ?? "익명"}
                   </p>
-                  <p className="text-xs text-[#6B7280]">
+                  <p className="text-xs text-[var(--color-text-muted)]">
                     {[a.position, a.city, a.district].filter(Boolean).join(" · ") || "정보 없음"}
                   </p>
                   {a.phone && (
                     <a
                       href={`tel:${a.phone}`}
-                      className="text-xs text-[#1B3C87] hover:underline"
+                      className="text-xs text-[var(--color-accent)] hover:underline"
                     >
                       {a.phone}
                     </a>
@@ -110,12 +110,12 @@ export function HostApplications({ gameId, applicants }: HostApplicationsProps) 
       {/* 처리 완료 */}
       {processed.length > 0 && (
         <div>
-          <p className="mb-2 text-sm font-medium text-[#6B7280]">처리 완료</p>
+          <p className="mb-2 text-sm font-medium text-[var(--color-text-muted)]">처리 완료</p>
           <div className="space-y-2">
             {processed.map((a) => (
               <div
                 key={a.id}
-                className="flex items-center justify-between rounded-[12px] bg-[#EDF0F8] px-4 py-2.5"
+                className="flex items-center justify-between rounded-[12px] bg-[var(--color-surface-bright)] px-4 py-2.5"
               >
                 <p className="text-sm">{a.nickname ?? a.name ?? "익명"}</p>
                 <Badge variant={a.status === 1 ? "success" : "error"}>
@@ -128,7 +128,7 @@ export function HostApplications({ gameId, applicants }: HostApplicationsProps) 
       )}
 
       {list.length === 0 && (
-        <p className="text-sm text-[#9CA3AF]">아직 신청자가 없습니다.</p>
+        <p className="text-sm text-[var(--color-text-secondary)]">아직 신청자가 없습니다.</p>
       )}
     </div>
   );

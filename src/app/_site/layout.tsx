@@ -24,10 +24,10 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       <div className="flex min-h-screen items-center justify-center bg-white">
         <div className="rounded-2xl bg-white p-12 text-center shadow-[0_4px_24px_rgba(0,0,0,0.08)]">
           <div className="mb-4 text-5xl">🏗️</div>
-          <h1 className="mb-2 text-xl font-bold text-[#111827]">
+          <h1 className="mb-2 text-xl font-bold text-[var(--color-text-primary)]">
             {site.site_name ?? site.tournament.name}
           </h1>
-          <p className="text-[#6B7280]">사이트 준비 중입니다</p>
+          <p className="text-[var(--color-text-muted)]">사이트 준비 중입니다</p>
         </div>
       </div>
     );

@@ -1,11 +1,14 @@
 type BadgeVariant = "default" | "success" | "error" | "warning" | "info";
 
+// 뱃지 variant별 스타일 정의
+// Phase 4-2: 하드코딩 색상 -> CSS 변수로 전환
+// 배경은 각 색상의 12% 투명도, 텍스트는 해당 색상 그대로
 const variants: Record<BadgeVariant, string> = {
-  default: "bg-[rgba(27,60,135,0.12)] text-[#1B3C87]",
-  success: "bg-[rgba(22,163,74,0.12)] text-[#16A34A]",
-  error: "bg-[rgba(220,38,38,0.12)] text-[#DC2626]",
-  warning: "bg-[rgba(217,119,6,0.12)] text-[#D97706]",
-  info: "bg-[rgba(37,99,235,0.12)] text-[#2563EB]",
+  default: "bg-color-primary-light text-color-primary",
+  success: "bg-color-success/12 text-color-success",
+  error:   "bg-color-error/12 text-color-error",
+  warning: "bg-color-warning/12 text-color-warning",
+  info:    "bg-color-info/12 text-color-info",
 };
 
 export function Badge({
