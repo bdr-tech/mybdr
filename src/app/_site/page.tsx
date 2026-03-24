@@ -46,7 +46,7 @@ export default async function SitePage() {
             <Card key={m.id} className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <span className="font-semibold">{m.homeTeam?.team.name ?? "TBD"}</span>
-                <span className="rounded-full bg-[#EEF2FF] px-3 py-1 text-sm font-bold">
+                <span className="rounded-full bg-[#EDF0F8] px-3 py-1 text-sm font-bold">
                   {m.homeScore} : {m.awayScore}
                 </span>
                 <span className="font-semibold">{m.awayTeam?.team.name ?? "TBD"}</span>
@@ -88,7 +88,7 @@ export default async function SitePage() {
                 const winPct = total > 0 ? ((t.wins ?? 0) / total).toFixed(3) : ".000";
                 return (
                   <tr key={t.id} className="border-b border-[#F1F5F9]">
-                    <td className="px-5 py-3 font-bold text-[#F4A261]">{i + 1}</td>
+                    <td className="px-5 py-3 font-bold text-[#E31B23]">{i + 1}</td>
                     <td className="px-5 py-3 font-medium">{t.team.name}</td>
                     <td className="px-5 py-3 text-center">{t.wins ?? 0}</td>
                     <td className="px-5 py-3 text-center">{t.losses ?? 0}</td>

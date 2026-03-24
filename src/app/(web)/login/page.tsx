@@ -32,7 +32,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col items-center justify-center px-4">
       {/* 브랜드 */}
       <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-[#F4A261]">BDR</h1>
+        <h1 className="text-4xl font-bold tracking-tight text-[#E31B23]">BDR</h1>
         <p className="mt-2 text-sm text-[#6B7280]">농구인을 위한 농구 플랫폼</p>
       </div>
 
@@ -86,7 +86,7 @@ export default function LoginPage() {
       {/* 회원가입 링크 */}
       <p className="mt-6 text-center text-sm text-[#6B7280]">
         계정이 없으신가요?{" "}
-        <Link href="/signup" className="font-medium text-[#F4A261] hover:underline">
+        <Link href="/signup" className="font-medium text-[#E31B23] hover:underline">
           회원가입
         </Link>
       </p>

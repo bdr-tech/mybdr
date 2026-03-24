@@ -85,7 +85,7 @@ export default function TournamentAdminsPage() {
     <div>
       <div className="mb-6">
         <Link href={`/tournament-admin/tournaments/${id}`} className="text-sm text-[#6B7280] hover:text-[#111827]">← 대회 관리</Link>
-        <h1 className="mt-1 text-2xl font-bold">관리자 관리</h1>
+        <h1 className="mt-1 text-xl sm:text-2xl font-bold">관리자 관리</h1>
       </div>
 
       {/* 추가 폼 */}
@@ -99,13 +99,13 @@ export default function TournamentAdminsPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="이메일 주소"
-            className="flex-1 rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
+            className="flex-1 rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
             onKeyDown={(e) => e.key === "Enter" && addAdmin()}
           />
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
+            className="rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
           >
             <option value="admin">관리자</option>
             <option value="staff">스태프</option>
@@ -129,7 +129,7 @@ export default function TournamentAdminsPage() {
             <Card key={admin.id}>
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EEF2FF] text-sm font-bold text-[#F4A261]">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EDF0F8] text-sm font-bold text-[#E31B23]">
                     {(admin.user.nickname ?? admin.user.email)[0].toUpperCase()}
                   </div>
                   <div>
@@ -138,12 +138,12 @@ export default function TournamentAdminsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="rounded-full bg-[#EEF2FF] px-3 py-1 text-xs text-[#6B7280]">
+                  <span className="rounded-full bg-[#EDF0F8] px-3 py-1 text-xs text-[#6B7280]">
                     {ROLE_LABEL[admin.role] ?? admin.role}
                   </span>
                   <button
                     onClick={() => removeAdmin(admin.id, admin.user.nickname ?? admin.user.email)}
-                    className="text-xs text-[#EF4444] hover:underline"
+                    className="text-xs text-[#DC2626] hover:underline"
                   >
                     제거
                   </button>

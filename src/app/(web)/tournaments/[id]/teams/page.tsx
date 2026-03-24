@@ -15,12 +15,12 @@ export default async function TournamentTeamsPage({ params }: { params: Promise<
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">참가팀</h1>
+      <h1 className="mb-6 text-xl sm:text-2xl font-bold">참가팀</h1>
       <div className="grid gap-4 sm:grid-cols-2">
         {teams.map((t) => (
           <Card key={t.id.toString()}>
             <div className="mb-3 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold" style={{ backgroundColor: `${t.team.primaryColor ?? "#F4A261"}20`, color: t.team.primaryColor ?? "#F4A261" }}>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold" style={{ backgroundColor: `${t.team.primaryColor ?? "#E31B23"}20`, color: t.team.primaryColor ?? "#E31B23" }}>
                 {t.team.name.charAt(0)}
               </div>
               <div>

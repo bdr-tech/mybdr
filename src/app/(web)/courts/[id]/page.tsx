@@ -36,7 +36,7 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
         <Link href="/courts" className="text-sm text-[#6B7280] hover:text-[#111827]">
           ← 코트 목록
         </Link>
-        <h1 className="mt-1 text-2xl font-bold">{court.name}</h1>
+        <h1 className="mt-1 text-xl sm:text-2xl font-bold">{court.name}</h1>
         <p className="mt-1 text-sm text-[#6B7280]">{court.address}</p>
       </div>
 
@@ -102,7 +102,7 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
                 {facilities.map((f, i) => (
                   <span
                     key={i}
-                    className="rounded-full bg-[#EEF2FF] px-2 py-0.5 text-xs text-[#6B7280]"
+                    className="rounded-full bg-[#EDF0F8] px-2 py-0.5 text-xs text-[#6B7280]"
                   >
                     {f}
                   </span>
@@ -130,7 +130,7 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
             href={`https://map.kakao.com/link/map/${encodeURIComponent(court.name)},${court.latitude},${court.longitude}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-full bg-[#0066FF] px-4 py-2 text-sm font-semibold text-white"
+            className="inline-flex items-center gap-1 rounded-full bg-[#1B3C87] px-4 py-2 text-sm font-semibold text-white"
           >
             카카오맵에서 보기 ↗
           </a>
@@ -160,13 +160,13 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
         {court.court_reviews.length > 0 ? (
           <div className="space-y-3">
             {court.court_reviews.map((r) => (
-              <div key={r.id.toString()} className="border-b border-[#EEF2FF] pb-3 last:border-0 last:pb-0">
+              <div key={r.id.toString()} className="border-b border-[#EDF0F8] pb-3 last:border-0 last:pb-0">
                 <div className="mb-1 flex items-center justify-between">
                   <span className="text-sm font-medium">
                     {r.users?.nickname ?? "사용자"}
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-[#F4A261]">
+                    <span className="text-xs text-[#E31B23]">
                       {"⭐".repeat(Math.min(r.rating, 5))}
                     </span>
                     <span className="text-xs text-[#9CA3AF]">

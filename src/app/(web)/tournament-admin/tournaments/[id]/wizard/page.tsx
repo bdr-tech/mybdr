@@ -4,6 +4,13 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  FIBA_TIMING_DEFAULTS,
+  FIBA_SHOT_CLOCK_DEFAULTS,
+  FIBA_FOULS_DEFAULTS,
+  FIBA_TIMEOUTS_DEFAULTS,
+  FIBA_SCORING_DEFAULTS,
+} from "@/lib/constants/game-rules-defaults";
 
 const FORMAT_OPTIONS = [
   { value: "single_elimination", label: "싱글 엘리미네이션" },
@@ -19,6 +26,36 @@ const STATUS_OPTIONS = [
   { value: "active", label: "진행 중" },
   { value: "completed", label: "종료" },
 ];
+
+type GameRulesData = {
+  // timing
+  quarter_minutes: number;
+  overtime_minutes: number;
+  halftime_seconds: number;
+  quarter_break_seconds: number;
+  before_overtime_seconds: number;
+  // shot_clock (FR-006)
+  shot_clock_full_seconds: number;
+  shot_clock_after_offensive_rebound_seconds: number;
+  shot_clock_decimal_threshold_seconds: number;
+  shot_clock_decimal_precision: number;
+  // fouls
+  foul_out_limit: number;
+  team_bonus_threshold: number;
+  team_double_bonus_threshold: number;
+  technical_foul_ejection_limit: number;
+  // timeouts (FR-010)
+  timeout_full_duration_seconds: number;
+  timeout_twenty_second_duration_seconds: number;
+  timeouts_first_half: number;
+  timeouts_second_half: number;
+  timeouts_overtime: number;
+  bonus_timeout_last2min_enabled: boolean;
+  bonus_timeout_last2min_count: number;
+  // scoring
+  three_point_line_enabled: boolean;
+  goaltending_violation_enabled: boolean;
+};
 
 type TournamentData = {
   name: string;
@@ -49,9 +86,107 @@ const STEPS = [
   { id: "basic", label: "기본 정보", icon: "📝" },
   { id: "schedule", label: "일정 / 장소", icon: "📅" },
   { id: "team", label: "팀 설정", icon: "🏀" },
+  { id: "game_rules", label: "경기 규칙", icon: "⏱" },
   { id: "rules", label: "규칙 / 상금", icon: "📜" },
   { id: "design", label: "디자인", icon: "🎨" },
 ];
+
+const DEFAULT_GAME_RULES: GameRulesData = {
+  quarter_minutes: FIBA_TIMING_DEFAULTS.quarter_minutes,
+  overtime_minutes: FIBA_TIMING_DEFAULTS.overtime_minutes,
+  halftime_seconds: FIBA_TIMING_DEFAULTS.halftime_seconds,
+  quarter_break_seconds: FIBA_TIMING_DEFAULTS.quarter_break_seconds,
+  before_overtime_seconds: FIBA_TIMING_DEFAULTS.before_overtime_seconds,
+  shot_clock_full_seconds: FIBA_SHOT_CLOCK_DEFAULTS.full_seconds,
+  shot_clock_after_offensive_rebound_seconds: FIBA_SHOT_CLOCK_DEFAULTS.after_offensive_rebound_seconds,
+  shot_clock_decimal_threshold_seconds: FIBA_SHOT_CLOCK_DEFAULTS.decimal_threshold_seconds,
+  shot_clock_decimal_precision: FIBA_SHOT_CLOCK_DEFAULTS.decimal_precision,
+  foul_out_limit: FIBA_FOULS_DEFAULTS.foul_out_limit,
+  team_bonus_threshold: FIBA_FOULS_DEFAULTS.team_bonus_threshold,
+  team_double_bonus_threshold: FIBA_FOULS_DEFAULTS.team_double_bonus_threshold,
+  technical_foul_ejection_limit: FIBA_FOULS_DEFAULTS.technical_foul_ejection_limit,
+  timeout_full_duration_seconds: FIBA_TIMEOUTS_DEFAULTS.full_duration_seconds,
+  timeout_twenty_second_duration_seconds: FIBA_TIMEOUTS_DEFAULTS.twenty_second_duration_seconds,
+  timeouts_first_half: FIBA_TIMEOUTS_DEFAULTS.timeouts_first_half,
+  timeouts_second_half: FIBA_TIMEOUTS_DEFAULTS.timeouts_second_half,
+  timeouts_overtime: FIBA_TIMEOUTS_DEFAULTS.timeouts_overtime,
+  bonus_timeout_last2min_enabled: FIBA_TIMEOUTS_DEFAULTS.bonus_timeout_last2min_enabled,
+  bonus_timeout_last2min_count: FIBA_TIMEOUTS_DEFAULTS.bonus_timeout_last2min_count,
+  three_point_line_enabled: FIBA_SCORING_DEFAULTS.three_point_line_enabled,
+  goaltending_violation_enabled: FIBA_SCORING_DEFAULTS.goaltending_violation_enabled,
+};
+
+/** 서버 game_rules JSON -> flat GameRulesData 변환 */
+function parseGameRules(json: Record<string, unknown> | null | undefined): GameRulesData {
+  if (!json) return { ...DEFAULT_GAME_RULES };
+  const t = (json.timing ?? {}) as Record<string, unknown>;
+  const sc = (json.shot_clock ?? {}) as Record<string, unknown>;
+  const f = (json.fouls ?? {}) as Record<string, unknown>;
+  const to = (json.timeouts ?? {}) as Record<string, unknown>;
+  const s = (json.scoring ?? {}) as Record<string, unknown>;
+  return {
+    quarter_minutes: (t.quarter_minutes as number) ?? DEFAULT_GAME_RULES.quarter_minutes,
+    overtime_minutes: (t.overtime_minutes as number) ?? DEFAULT_GAME_RULES.overtime_minutes,
+    halftime_seconds: (t.halftime_seconds as number) ?? DEFAULT_GAME_RULES.halftime_seconds,
+    quarter_break_seconds: (t.quarter_break_seconds as number) ?? DEFAULT_GAME_RULES.quarter_break_seconds,
+    before_overtime_seconds: (t.before_overtime_seconds as number) ?? DEFAULT_GAME_RULES.before_overtime_seconds,
+    shot_clock_full_seconds: (sc.full_seconds as number) ?? DEFAULT_GAME_RULES.shot_clock_full_seconds,
+    shot_clock_after_offensive_rebound_seconds: (sc.after_offensive_rebound_seconds as number) ?? DEFAULT_GAME_RULES.shot_clock_after_offensive_rebound_seconds,
+    shot_clock_decimal_threshold_seconds: (sc.decimal_threshold_seconds as number) ?? DEFAULT_GAME_RULES.shot_clock_decimal_threshold_seconds,
+    shot_clock_decimal_precision: (sc.decimal_precision as number) ?? DEFAULT_GAME_RULES.shot_clock_decimal_precision,
+    foul_out_limit: (f.foul_out_limit as number) ?? DEFAULT_GAME_RULES.foul_out_limit,
+    team_bonus_threshold: (f.team_bonus_threshold as number) ?? DEFAULT_GAME_RULES.team_bonus_threshold,
+    team_double_bonus_threshold: (f.team_double_bonus_threshold as number) ?? DEFAULT_GAME_RULES.team_double_bonus_threshold,
+    technical_foul_ejection_limit: (f.technical_foul_ejection_limit as number) ?? DEFAULT_GAME_RULES.technical_foul_ejection_limit,
+    timeout_full_duration_seconds: (to.full_duration_seconds as number) ?? DEFAULT_GAME_RULES.timeout_full_duration_seconds,
+    timeout_twenty_second_duration_seconds: (to.twenty_second_duration_seconds as number) ?? DEFAULT_GAME_RULES.timeout_twenty_second_duration_seconds,
+    timeouts_first_half: (to.timeouts_first_half as number) ?? DEFAULT_GAME_RULES.timeouts_first_half,
+    timeouts_second_half: (to.timeouts_second_half as number) ?? DEFAULT_GAME_RULES.timeouts_second_half,
+    timeouts_overtime: (to.timeouts_overtime as number) ?? DEFAULT_GAME_RULES.timeouts_overtime,
+    bonus_timeout_last2min_enabled: (to.bonus_timeout_last2min_enabled as boolean) ?? DEFAULT_GAME_RULES.bonus_timeout_last2min_enabled,
+    bonus_timeout_last2min_count: (to.bonus_timeout_last2min_count as number) ?? DEFAULT_GAME_RULES.bonus_timeout_last2min_count,
+    three_point_line_enabled: (s.three_point_line_enabled as boolean) ?? DEFAULT_GAME_RULES.three_point_line_enabled,
+    goaltending_violation_enabled: (s.goaltending_violation_enabled as boolean) ?? DEFAULT_GAME_RULES.goaltending_violation_enabled,
+  };
+}
+
+/** flat GameRulesData -> 섹션별 중첩 JSON (API 저장용) */
+function toGameRulesJson(gr: GameRulesData) {
+  return {
+    timing: {
+      quarter_minutes: gr.quarter_minutes,
+      overtime_minutes: gr.overtime_minutes,
+      halftime_seconds: gr.halftime_seconds,
+      quarter_break_seconds: gr.quarter_break_seconds,
+      before_overtime_seconds: gr.before_overtime_seconds,
+    },
+    shot_clock: {
+      full_seconds: gr.shot_clock_full_seconds,
+      after_offensive_rebound_seconds: gr.shot_clock_after_offensive_rebound_seconds,
+      decimal_threshold_seconds: gr.shot_clock_decimal_threshold_seconds,
+      decimal_precision: gr.shot_clock_decimal_precision,
+    },
+    fouls: {
+      foul_out_limit: gr.foul_out_limit,
+      team_bonus_threshold: gr.team_bonus_threshold,
+      team_double_bonus_threshold: gr.team_double_bonus_threshold,
+      technical_foul_ejection_limit: gr.technical_foul_ejection_limit,
+    },
+    timeouts: {
+      full_duration_seconds: gr.timeout_full_duration_seconds,
+      twenty_second_duration_seconds: gr.timeout_twenty_second_duration_seconds,
+      timeouts_first_half: gr.timeouts_first_half,
+      timeouts_second_half: gr.timeouts_second_half,
+      timeouts_overtime: gr.timeouts_overtime,
+      bonus_timeout_last2min_enabled: gr.bonus_timeout_last2min_enabled,
+      bonus_timeout_last2min_count: gr.bonus_timeout_last2min_count,
+    },
+    scoring: {
+      three_point_line_enabled: gr.three_point_line_enabled,
+      goaltending_violation_enabled: gr.goaltending_violation_enabled,
+    },
+  };
+}
 
 export default function TournamentWizardPage() {
   const { id } = useParams<{ id: string }>();
@@ -81,12 +216,16 @@ export default function TournamentWizardPage() {
     description: "",
     rules: "",
     prize_info: "",
-    primary_color: "#F4A261",
+    primary_color: "#E31B23",
     secondary_color: "#E76F51",
   });
+  const [gameRules, setGameRules] = useState<GameRulesData>({ ...DEFAULT_GAME_RULES });
 
   const set = (key: keyof TournamentData, value: string | number | boolean) =>
     setData((prev) => ({ ...prev, [key]: value }));
+
+  const setGR = (key: keyof GameRulesData, value: number | boolean) =>
+    setGameRules((prev) => ({ ...prev, [key]: value }));
 
   const toDateInput = (iso: string | null | undefined) => {
     if (!iso) return "";
@@ -103,14 +242,14 @@ export default function TournamentWizardPage() {
         name: t.name ?? "",
         format: t.format ?? "single_elimination",
         status: t.status ?? "draft",
-        startDate: toDateInput(t.startDate),
-        endDate: toDateInput(t.endDate),
+        startDate: toDateInput(t.startDate ?? t.start_date),
+        endDate: toDateInput(t.endDate ?? t.end_date),
         registration_start_at: toDateInput(t.registration_start_at),
         registration_end_at: toDateInput(t.registration_end_at),
         venue_name: t.venue_name ?? "",
         venue_address: t.venue_address ?? "",
         city: t.city ?? "",
-        maxTeams: String(t.maxTeams ?? 16),
+        maxTeams: String(t.maxTeams ?? t.max_teams ?? 16),
         team_size: String(t.team_size ?? 5),
         roster_min: String(t.roster_min ?? 5),
         roster_max: String(t.roster_max ?? 12),
@@ -120,9 +259,11 @@ export default function TournamentWizardPage() {
         description: t.description ?? "",
         rules: t.rules ?? "",
         prize_info: t.prize_info ?? "",
-        primary_color: t.primary_color ?? "#F4A261",
+        primary_color: t.primary_color ?? "#E31B23",
         secondary_color: t.secondary_color ?? "#E76F51",
       });
+      // game_rules 로드
+      setGameRules(parseGameRules(t.game_rules));
     } catch {
       setError("대회 정보를 불러오지 못했습니다.");
     } finally {
@@ -150,6 +291,7 @@ export default function TournamentWizardPage() {
           endDate: data.endDate || null,
           registration_start_at: data.registration_start_at || null,
           registration_end_at: data.registration_end_at || null,
+          game_rules: toGameRulesJson(gameRules),
         }),
       });
       if (!res.ok) {
@@ -164,9 +306,14 @@ export default function TournamentWizardPage() {
     }
   };
 
+  const resetGameRulesToFiba = () => {
+    setGameRules({ ...DEFAULT_GAME_RULES });
+  };
+
   const inputCls =
-    "w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50";
+    "w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50";
   const labelCls = "mb-1 block text-sm text-[#6B7280]";
+  const sectionTitleCls = "mt-4 mb-2 text-sm font-semibold text-[#374151]";
 
   if (loading)
     return (
@@ -183,7 +330,7 @@ export default function TournamentWizardPage() {
           ← 대회 관리
         </button>
       </div>
-      <h1 className="mb-6 text-2xl font-bold">대회 설정</h1>
+      <h1 className="mb-6 text-xl sm:text-2xl font-bold">대회 설정</h1>
 
       {/* 스텝 인디케이터 */}
       <div className="mb-6 flex gap-1 overflow-x-auto">
@@ -193,10 +340,10 @@ export default function TournamentWizardPage() {
             onClick={() => setStep(i)}
             className={`flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm transition-colors ${
               i === step
-                ? "bg-[#0066FF] font-semibold text-white"
+                ? "bg-[#1B3C87] font-semibold text-white"
                 : i < step
-                ? "bg-[rgba(74,222,128,0.2)] text-[#4ADE80]"
-                : "bg-[#EEF2FF] text-[#6B7280]"
+                ? "bg-[rgba(74,222,128,0.2)] text-[#16A34A]"
+                : "bg-[#EDF0F8] text-[#6B7280]"
             }`}
           >
             <span>{s.icon}</span>
@@ -265,7 +412,7 @@ export default function TournamentWizardPage() {
                 id="is_public"
                 checked={data.is_public}
                 onChange={(e) => set("is_public", e.target.checked)}
-                className="accent-[#F4A261]"
+                className="accent-[#E31B23]"
               />
               <label htmlFor="is_public" className="text-sm">공개 대회</label>
             </div>
@@ -343,15 +490,281 @@ export default function TournamentWizardPage() {
                 id="auto_approve"
                 checked={data.auto_approve_teams}
                 onChange={(e) => set("auto_approve_teams", e.target.checked)}
-                className="accent-[#F4A261]"
+                className="accent-[#E31B23]"
               />
               <label htmlFor="auto_approve" className="text-sm">팀 자동 승인</label>
             </div>
           </div>
         )}
 
-        {/* STEP 3: 규칙 / 상금 */}
+        {/* STEP 3: 경기 규칙 (FR-006, FR-010) */}
         {step === 3 && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">경기 규칙</h2>
+              <Button variant="ghost" onClick={resetGameRulesToFiba} className="text-xs">
+                FIBA 기본값으로 초기화
+              </Button>
+            </div>
+            <p className="text-xs text-[#6B7280]">
+              bdr_stat 앱에서 이 설정을 자동으로 읽습니다. 비어있으면 FIBA 기본값이 적용됩니다.
+            </p>
+
+            {/* 시간 설정 */}
+            <h3 className={sectionTitleCls}>시간 설정</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={labelCls}>쿼터 시간 (분)</label>
+                <input
+                  type="number"
+                  className={inputCls}
+                  value={gameRules.quarter_minutes}
+                  min={1}
+                  max={20}
+                  onChange={(e) => setGR("quarter_minutes", Number(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>연장전 시간 (분)</label>
+                <input
+                  type="number"
+                  className={inputCls}
+                  value={gameRules.overtime_minutes}
+                  min={1}
+                  max={10}
+                  onChange={(e) => setGR("overtime_minutes", Number(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>하프타임 휴식 (초)</label>
+                <input
+                  type="number"
+                  className={inputCls}
+                  value={gameRules.halftime_seconds}
+                  min={0}
+                  max={1800}
+                  step={30}
+                  onChange={(e) => setGR("halftime_seconds", Number(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>쿼터 간 휴식 (초)</label>
+                <input
+                  type="number"
+                  className={inputCls}
+                  value={gameRules.quarter_break_seconds}
+                  min={0}
+                  max={600}
+                  step={30}
+                  onChange={(e) => setGR("quarter_break_seconds", Number(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+
+            {/* 샷클락 (FR-006) */}
+            <h3 className={sectionTitleCls}>샷클락</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={labelCls}>샷클락 (초)</label>
+                <input
+                  type="number"
+                  className={inputCls}
+                  value={gameRules.shot_clock_full_seconds}
+                  min={10}
+                  max={60}
+                  onChange={(e) => setGR("shot_clock_full_seconds", Number(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>공격 리바운드 후 샷클락 (초)</label>
+                <input
+                  type="number"
+                  className={inputCls}
+                  value={gameRules.shot_clock_after_offensive_rebound_seconds}
+                  min={5}
+                  max={30}
+                  onChange={(e) => setGR("shot_clock_after_offensive_rebound_seconds", Number(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>소수점 표시 기준 (초 미만)</label>
+                <input
+                  type="number"
+                  className={inputCls}
+                  value={gameRules.shot_clock_decimal_threshold_seconds}
+                  min={0}
+                  max={24}
+                  onChange={(e) => setGR("shot_clock_decimal_threshold_seconds", Number(e.target.value) || 0)}
+                />
+                <p className="mt-1 text-xs text-[#9CA3AF]">이 시간 미만부터 소수점 표시 (FIBA: 5초)</p>
+              </div>
+              <div>
+                <label className={labelCls}>소수점 자릿수</label>
+                <select
+                  className={inputCls}
+                  value={gameRules.shot_clock_decimal_precision}
+                  onChange={(e) => setGR("shot_clock_decimal_precision", Number(e.target.value))}
+                >
+                  <option value={0}>없음 (정수만)</option>
+                  <option value={1}>1/10초 (4.7)</option>
+                  <option value={2}>1/100초 (4.72)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* 파울 */}
+            <h3 className={sectionTitleCls}>파울</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={labelCls}>파울아웃 한도</label>
+                <input
+                  type="number"
+                  className={inputCls}
+                  value={gameRules.foul_out_limit}
+                  min={3}
+                  max={10}
+                  onChange={(e) => setGR("foul_out_limit", Number(e.target.value) || 0)}
+                />
+                <p className="mt-1 text-xs text-[#9CA3AF]">FIBA: 5, NBA: 6</p>
+              </div>
+              <div>
+                <label className={labelCls}>팀 보너스 기준 (파울 수)</label>
+                <input
+                  type="number"
+                  className={inputCls}
+                  value={gameRules.team_bonus_threshold}
+                  min={1}
+                  max={10}
+                  onChange={(e) => setGR("team_bonus_threshold", Number(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>테크니컬 파울 퇴장 한도</label>
+                <input
+                  type="number"
+                  className={inputCls}
+                  value={gameRules.technical_foul_ejection_limit}
+                  min={1}
+                  max={5}
+                  onChange={(e) => setGR("technical_foul_ejection_limit", Number(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+
+            {/* 타임아웃 (FR-010) */}
+            <h3 className={sectionTitleCls}>타임아웃</h3>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <label className={labelCls}>전반 타임아웃 횟수</label>
+                <input
+                  type="number"
+                  className={inputCls}
+                  value={gameRules.timeouts_first_half}
+                  min={0}
+                  max={10}
+                  onChange={(e) => setGR("timeouts_first_half", Number(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>후반 타임아웃 횟수</label>
+                <input
+                  type="number"
+                  className={inputCls}
+                  value={gameRules.timeouts_second_half}
+                  min={0}
+                  max={10}
+                  onChange={(e) => setGR("timeouts_second_half", Number(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>연장전 타임아웃 횟수</label>
+                <input
+                  type="number"
+                  className={inputCls}
+                  value={gameRules.timeouts_overtime}
+                  min={0}
+                  max={5}
+                  onChange={(e) => setGR("timeouts_overtime", Number(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>일반 타임아웃 시간 (초)</label>
+                <input
+                  type="number"
+                  className={inputCls}
+                  value={gameRules.timeout_full_duration_seconds}
+                  min={10}
+                  max={120}
+                  onChange={(e) => setGR("timeout_full_duration_seconds", Number(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>20초 타임아웃 시간 (초)</label>
+                <input
+                  type="number"
+                  className={inputCls}
+                  value={gameRules.timeout_twenty_second_duration_seconds}
+                  min={10}
+                  max={60}
+                  onChange={(e) => setGR("timeout_twenty_second_duration_seconds", Number(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+            <div className="mt-2 space-y-3">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="bonus_timeout"
+                  checked={gameRules.bonus_timeout_last2min_enabled}
+                  onChange={(e) => setGR("bonus_timeout_last2min_enabled", e.target.checked)}
+                  className="accent-[#E31B23]"
+                />
+                <label htmlFor="bonus_timeout" className="text-sm">마지막 2분 보너스 타임아웃</label>
+              </div>
+              {gameRules.bonus_timeout_last2min_enabled && (
+                <div className="ml-8">
+                  <label className={labelCls}>보너스 타임아웃 횟수</label>
+                  <input
+                    type="number"
+                    className={inputCls}
+                    value={gameRules.bonus_timeout_last2min_count}
+                    min={0}
+                    max={3}
+                    onChange={(e) => setGR("bonus_timeout_last2min_count", Number(e.target.value) || 0)}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* 기타 */}
+            <h3 className={sectionTitleCls}>기타</h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="three_point"
+                  checked={gameRules.three_point_line_enabled}
+                  onChange={(e) => setGR("three_point_line_enabled", e.target.checked)}
+                  className="accent-[#E31B23]"
+                />
+                <label htmlFor="three_point" className="text-sm">3점 라인 사용</label>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="goaltending"
+                  checked={gameRules.goaltending_violation_enabled}
+                  onChange={(e) => setGR("goaltending_violation_enabled", e.target.checked)}
+                  className="accent-[#E31B23]"
+                />
+                <label htmlFor="goaltending" className="text-sm">골텐딩 바이올레이션 적용</label>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: 규칙 / 상금 */}
+        {step === 4 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">규칙 / 상금</h2>
             <div>
@@ -365,8 +778,8 @@ export default function TournamentWizardPage() {
           </div>
         )}
 
-        {/* STEP 4: 디자인 */}
-        {step === 4 && (
+        {/* STEP 5: 디자인 */}
+        {step === 5 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">디자인</h2>
             <div className="grid gap-4 sm:grid-cols-2">

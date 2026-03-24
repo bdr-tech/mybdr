@@ -37,7 +37,7 @@ const SKILL_LABEL: Record<string, string> = {
 
 function ParticipantBar({ current, max }: { current: number; max: number }) {
   const pct = max > 0 ? Math.min((current / max) * 100, 100) : 0;
-  const color = pct >= 100 ? "#EF4444" : pct >= 80 ? "#FBBF24" : "#4ADE80";
+  const color = pct >= 100 ? "#DC2626" : pct >= 80 ? "#D97706" : "#16A34A";
   return (
     <div className="flex items-center gap-2">
       <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-[#E8ECF0]">
@@ -67,12 +67,12 @@ export function PickupGameCard({ game }: { game: GameCardData }) {
     <Link href={href}>
       <div
         className="group relative overflow-hidden rounded-[16px] bg-white p-5 transition-all hover:bg-[#FFF8F0] hover:-translate-y-0.5 hover:shadow-lg"
-        style={{ borderLeft: "3px solid #F4A261" }}
+        style={{ borderLeft: "3px solid #E31B23" }}
       >
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="text-base">🏀</span>
-            <span className="text-xs font-medium" style={{ color: "#F4A261" }}>픽업</span>
+            <span className="text-xs font-medium" style={{ color: "#E31B23" }}>픽업</span>
           </div>
           <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
         </div>
@@ -107,7 +107,7 @@ export function PickupGameCard({ game }: { game: GameCardData }) {
           <div className="flex items-center gap-1.5">
             {game.contact_phone && <span className="rounded-full bg-[#FEF3C7] px-2 py-0.5 text-[#92400E]">📞 연락 가능</span>}
             {game.skill_level && game.skill_level !== "all" && (
-              <span className="rounded-full bg-[#EEF2FF] px-2 py-0.5 text-[#6B7280]">
+              <span className="rounded-full bg-[#EDF0F8] px-2 py-0.5 text-[#6B7280]">
                 {SKILL_LABEL[game.skill_level] ?? game.skill_level}
               </span>
             )}

@@ -91,7 +91,7 @@ export function PickupDetail({ game }: PickupDetailProps) {
             value={
               <a
                 href={`tel:${game.contact_phone}`}
-                className="text-[#0066FF] hover:underline"
+                className="text-[#1B3C87] hover:underline"
               >
                 {game.contact_phone}
               </a>

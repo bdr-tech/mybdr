@@ -10,7 +10,7 @@ export const GET = withWebAuth(async (ctx: WebAuthContext) => {
     if (!user) return apiError("User not found", 404);
 
     // account_number는 마스킹 처리 후 전송
-    const { account_number, ...userRest } = user;
+    const { account_number, createdAt, ...userRest } = user;
     const account_number_masked = account_number
       ? maskAccount(account_number.startsWith("enc:") ? account_number : account_number)
       : null;
@@ -19,6 +19,7 @@ export const GET = withWebAuth(async (ctx: WebAuthContext) => {
       user: {
         ...userRest,
         birth_date: user.birth_date?.toISOString().slice(0, 10) ?? null,
+        created_at: createdAt?.toISOString() ?? null,
         account_number_masked,
         has_account: !!account_number,
       },

@@ -71,23 +71,31 @@ export async function proxy(req: NextRequest) {
       );
     }
 
-    // Rate Limit 허용 헤더 추가 (응답에 주입)
-    const response = await processRequest(req, pathname, hostname);
-    response.headers.set("X-RateLimit-Limit", String(result.limit));
-    response.headers.set("X-RateLimit-Remaining", String(result.remaining));
-    response.headers.set("X-RateLimit-Reset", String(Math.ceil(result.resetAt / 1000)));
-    return response;
+    // API v1 토큰 존재 여부 체크 (early reject)
+    if (pathname.startsWith("/api/v1") && !isPublicApiRoute(pathname)) {
+      if (req.method !== "OPTIONS") {
+        const authHeader = req.headers.get("authorization");
+        const hasToken =
+          authHeader?.startsWith("Bearer ") || authHeader?.startsWith("Token ");
+        if (!hasToken) {
+          return NextResponse.json(
+            { error: "Unauthorized", code: "UNAUTHORIZED" },
+            { status: 401 }
+          );
+        }
+      }
+    }
+
+    // Rate Limit 헤더를 NextResponse.next()에 직접 설정하여 반환
+    // (await processRequest 패턴은 Next.js 16 proxy에서 블로킹 발생)
+    const headers = new Headers();
+    headers.set("X-RateLimit-Limit", String(result.limit));
+    headers.set("X-RateLimit-Remaining", String(result.remaining));
+    headers.set("X-RateLimit-Reset", String(Math.ceil(result.resetAt / 1000)));
+    return NextResponse.next({ headers });
   }
 
-  return processRequest(req, pathname, hostname);
-}
-
-async function processRequest(
-  req: NextRequest,
-  pathname: string,
-  hostname: string
-): Promise<NextResponse> {
-  // 2. 서브도메인 감지 → 토너먼트 사이트 라우팅
+  // 페이지 요청: 서브도메인 감지
   const subdomain = extractSubdomain(hostname, req.nextUrl.searchParams);
   if (subdomain) {
     const url = req.nextUrl.clone();
@@ -95,26 +103,6 @@ async function processRequest(
     const response = NextResponse.rewrite(url);
     response.headers.set("x-tournament-subdomain", subdomain);
     return response;
-  }
-
-  // 3. API v1 토큰 존재 여부만 체크 (early reject)
-  // M-11: JWT 서명 검증은 withAuth 미들웨어에서 1회만 수행.
-  // proxy에서는 토큰 유무만 확인하여 불필요한 요청을 조기 차단한다.
-  if (pathname.startsWith("/api/v1") && !isPublicApiRoute(pathname)) {
-    if (req.method === "OPTIONS") {
-      return NextResponse.next();
-    }
-
-    const authHeader = req.headers.get("authorization");
-    const hasToken =
-      authHeader?.startsWith("Bearer ") || authHeader?.startsWith("Token ");
-
-    if (!hasToken) {
-      return NextResponse.json(
-        { error: "Unauthorized", code: "UNAUTHORIZED" },
-        { status: 401 }
-      );
-    }
   }
 
   return NextResponse.next();

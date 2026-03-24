@@ -142,7 +142,7 @@ export default function BracketAdminPage() {
         >
           ← 대회 관리
         </Link>
-        <h1 className="mt-1 text-2xl font-bold">대진표 생성</h1>
+        <h1 className="mt-1 text-xl sm:text-2xl font-bold">대진표 생성</h1>
       </div>
 
       {error && (
@@ -159,7 +159,7 @@ export default function BracketAdminPage() {
                 <div
                   key={i}
                   className={`h-3 w-8 rounded-full ${
-                    i < versionUsed ? "bg-[#0066FF]" : "bg-[#E8ECF0]"
+                    i < versionUsed ? "bg-[#1B3C87]" : "bg-[#E8ECF0]"
                   }`}
                 />
               ))}
@@ -168,7 +168,7 @@ export default function BracketAdminPage() {
               </span>
             </div>
             {!canGenerate && (
-              <p className="mt-1 text-xs text-[#EF4444]">
+              <p className="mt-1 text-xs text-[#DC2626]">
                 슈퍼관리자 승인 후 추가 생성 가능합니다.
               </p>
             )}
@@ -176,7 +176,7 @@ export default function BracketAdminPage() {
 
           <div className="flex items-center gap-2">
             {isActivated && (
-              <span className="rounded-full bg-[rgba(74,222,128,0.1)] px-3 py-1 text-xs font-medium text-[#4ADE80]">
+              <span className="rounded-full bg-[rgba(74,222,128,0.1)] px-3 py-1 text-xs font-medium text-[#16A34A]">
                 ✓ 확정됨 (v{data?.activeVersion})
               </span>
             )}
@@ -184,7 +184,7 @@ export default function BracketAdminPage() {
               <button
                 onClick={activate}
                 disabled={activating || isActivated}
-                className="rounded-full bg-[rgba(0,102,255,0.08)] px-4 py-2 text-sm font-medium text-[#0066FF] hover:bg-[rgba(0,102,255,0.15)] disabled:opacity-50"
+                className="rounded-full bg-[rgba(27,60,135,0.08)] px-4 py-2 text-sm font-medium text-[#1B3C87] hover:bg-[rgba(27,60,135,0.15)] disabled:opacity-50"
               >
                 {activating ? "처리 중..." : "최신 버전 확정"}
               </button>
@@ -219,8 +219,8 @@ export default function BracketAdminPage() {
                   key={v.id}
                   className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs ${
                     v.is_active
-                      ? "bg-[rgba(74,222,128,0.1)] text-[#4ADE80]"
-                      : "bg-[#EEF2FF] text-[#6B7280]"
+                      ? "bg-[rgba(74,222,128,0.1)] text-[#16A34A]"
+                      : "bg-[#EDF0F8] text-[#6B7280]"
                   }`}
                 >
                   <span className="font-medium">v{v.version_number}</span>
@@ -254,7 +254,7 @@ export default function BracketAdminPage() {
                       disabled={match.status === "bye" || savingMatch === match.id}
                       value={match.homeTeamId ?? ""}
                       onChange={(e) => updateMatchTeam(match.id, "homeTeamId", e.target.value || null)}
-                      className="w-full rounded-[10px] border-none bg-[#EEF2FF] px-3 py-2 text-sm text-[#111827] disabled:opacity-50"
+                      className="w-full rounded-[10px] border-none bg-[#EDF0F8] px-3 py-2 text-sm text-[#111827] disabled:opacity-50"
                     >
                       <option value="">미정</option>
                       {data?.approvedTeams.map((t) => (
@@ -272,7 +272,7 @@ export default function BracketAdminPage() {
                       disabled={match.status === "bye" || savingMatch === match.id}
                       value={match.awayTeamId ?? ""}
                       onChange={(e) => updateMatchTeam(match.id, "awayTeamId", e.target.value || null)}
-                      className="w-full rounded-[10px] border-none bg-[#EEF2FF] px-3 py-2 text-sm text-[#111827] disabled:opacity-50"
+                      className="w-full rounded-[10px] border-none bg-[#EDF0F8] px-3 py-2 text-sm text-[#111827] disabled:opacity-50"
                     >
                       <option value="">미정</option>
                       {data?.approvedTeams.map((t) => (
@@ -282,7 +282,7 @@ export default function BracketAdminPage() {
                   </div>
 
                   {match.status === "bye" && (
-                    <span className="mt-4 rounded-full bg-[#EEF2FF] px-2 py-0.5 text-[10px] text-[#9CA3AF]">
+                    <span className="mt-4 rounded-full bg-[#EDF0F8] px-2 py-0.5 text-[10px] text-[#9CA3AF]">
                       부전승
                     </span>
                   )}
@@ -302,7 +302,7 @@ export default function BracketAdminPage() {
             </h2>
             <Link
               href={`/tournament-admin/tournaments/${id}/matches`}
-              className="text-xs text-[#0066FF] hover:underline"
+              className="text-xs text-[#1B3C87] hover:underline"
             >
               경기 관리로 이동 →
             </Link>
@@ -316,7 +316,7 @@ export default function BracketAdminPage() {
                     {rMatches[0]?.roundName ?? `라운드 ${rn}`}
                   </p>
                   {rMatches.map((m) => (
-                    <div key={m.id} className="mb-1 flex items-center gap-2 rounded-[10px] bg-[#F5F7FA] px-3 py-2 text-sm">
+                    <div key={m.id} className="mb-1 flex items-center gap-2 rounded-[10px] bg-[#F5F6FA] px-3 py-2 text-sm">
                       <span className="w-5 text-center text-xs text-[#9CA3AF]">#{m.match_number ?? "-"}</span>
                       <span className={`flex-1 text-right font-medium ${m.homeTeamId == null ? "text-[#9CA3AF]" : ""}`}>
                         {m.homeTeam?.team.name ?? "미정"}

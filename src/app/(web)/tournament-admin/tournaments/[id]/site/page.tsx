@@ -12,8 +12,8 @@ const TEMPLATES = [
     slug: "classic-tournament",
     name: "Classic",
     desc: "깔끔한 화이트 배경의 모던 레이아웃",
-    navBg: "#0066FF",
-    bg: "#F5F7FA",
+    navBg: "#1B3C87",
+    bg: "#F5F6FA",
     cardBg: "#FFFFFF",
   },
   {
@@ -30,17 +30,17 @@ const TEMPLATES = [
     desc: "타이포그래피 중심의 미니멀한 느낌",
     navBg: "#FFFFFF",
     bg: "#FFFFFF",
-    cardBg: "#F5F7FA",
+    cardBg: "#F5F6FA",
   },
 ];
 
 const COLOR_PRESETS = [
-  { hex: "#0066FF", name: "토스 블루" },
-  { hex: "#EF4444", name: "레드" },
-  { hex: "#F4A261", name: "오렌지" },
+  { hex: "#1B3C87", name: "토스 블루" },
+  { hex: "#DC2626", name: "레드" },
+  { hex: "#E31B23", name: "오렌지" },
   { hex: "#22C55E", name: "그린" },
   { hex: "#8B5CF6", name: "퍼플" },
-  { hex: "#FBBF24", name: "골드" },
+  { hex: "#D97706", name: "골드" },
   { hex: "#0EA5E9", name: "스카이" },
   { hex: "#1F2937", name: "다크" },
 ];
@@ -120,7 +120,7 @@ export default function TournamentSitePage() {
 
   // 상태
   const [selectedTemplate, setSelectedTemplate] = useState("classic-tournament");
-  const [selectedColor, setSelectedColor] = useState("#0066FF");
+  const [selectedColor, setSelectedColor] = useState("#1B3C87");
   const [subdomain, setSubdomain] = useState("");
 
   const load = useCallback(async () => {
@@ -217,7 +217,7 @@ export default function TournamentSitePage() {
           <Link href={`/tournament-admin/tournaments/${id}`} className="text-sm text-[#6B7280] hover:text-[#111827]">
             ← 대회 관리
           </Link>
-          <h1 className="mt-1 text-2xl font-bold">사이트 관리</h1>
+          <h1 className="mt-1 text-xl sm:text-2xl font-bold">사이트 관리</h1>
         </div>
 
         {/* 발행 중 상태 카드 */}
@@ -241,7 +241,7 @@ export default function TournamentSitePage() {
               <button
                 onClick={() => togglePublish(false)}
                 disabled={publishing}
-                className="rounded-full border border-[#EF4444]/30 px-4 py-2 text-sm text-[#EF4444] hover:bg-[#EF4444]/5 disabled:opacity-50"
+                className="rounded-full border border-[#DC2626]/30 px-4 py-2 text-sm text-[#DC2626] hover:bg-[#DC2626]/5 disabled:opacity-50"
               >
                 {publishing ? "처리 중..." : "비공개 전환"}
               </button>
@@ -318,7 +318,7 @@ export default function TournamentSitePage() {
         <Link href={`/tournament-admin/tournaments/${id}`} className="text-sm text-[#6B7280] hover:text-[#111827]">
           ← 대회 관리
         </Link>
-        <h1 className="mt-1 text-2xl font-bold">사이트 만들기</h1>
+        <h1 className="mt-1 text-xl sm:text-2xl font-bold">사이트 만들기</h1>
         <p className="mt-1 text-sm text-[#6B7280]">
           3단계로 대회 전용 웹사이트를 만들어보세요
         </p>
@@ -331,7 +331,7 @@ export default function TournamentSitePage() {
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold transition-colors ${
                 step === s
-                  ? "bg-[#0066FF] text-white"
+                  ? "bg-[#1B3C87] text-white"
                   : step > s
                   ? "bg-[#22C55E] text-white"
                   : "bg-[#E8ECF0] text-[#9CA3AF]"
@@ -427,7 +427,7 @@ function Step1({
             onClick={() => onChange(tpl.slug)}
             className={`rounded-2xl border-2 p-4 text-left transition-all ${
               selected === tpl.slug
-                ? "border-[#0066FF] shadow-[0_0_0_4px_rgba(0,102,255,0.1)]"
+                ? "border-[#1B3C87] shadow-[0_0_0_4px_rgba(27,60,135,0.1)]"
                 : "border-[#E8ECF0] hover:border-[#C4C9D4]"
             }`}
           >
@@ -436,7 +436,7 @@ function Step1({
               <div className="flex items-center justify-between">
                 <p className="font-semibold text-[#111827]">{tpl.name}</p>
                 {selected === tpl.slug && (
-                  <span className="text-xs font-medium text-[#0066FF]">선택됨 ✓</span>
+                  <span className="text-xs font-medium text-[#1B3C87]">선택됨 ✓</span>
                 )}
               </div>
               <p className="mt-0.5 text-sm text-[#6B7280]">{tpl.desc}</p>
@@ -495,7 +495,7 @@ function Step2({
             <div
               className={`h-14 w-14 rounded-full shadow-md transition-transform ${
                 selected === c.hex
-                  ? "scale-110 ring-4 ring-[#0066FF]/30 ring-offset-2"
+                  ? "scale-110 ring-4 ring-[#1B3C87]/30 ring-offset-2"
                   : "hover:scale-105"
               }`}
               style={{ backgroundColor: c.hex }}
@@ -582,7 +582,7 @@ function Step3({
       </p>
 
       {/* 요약 */}
-      <div className="mb-6 grid gap-3 rounded-2xl bg-[#F5F7FA] p-4 md:grid-cols-2">
+      <div className="mb-6 grid gap-3 rounded-2xl bg-[#F5F6FA] p-4 md:grid-cols-2">
         <div>
           <p className="text-xs text-[#9CA3AF]">선택한 템플릿</p>
           <p className="mt-1 font-semibold text-[#111827]">{tplName}</p>
@@ -604,11 +604,11 @@ function Step3({
       {/* URL 설정 */}
       <div className="mb-6">
         <label className="mb-2 block text-sm font-medium text-[#111827]">
-          사이트 주소 <span className="text-[#EF4444]">*</span>
+          사이트 주소 <span className="text-[#DC2626]">*</span>
         </label>
         <div className="flex items-center gap-2">
           <input
-            className="flex-1 rounded-2xl border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
+            className="flex-1 rounded-2xl border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
             value={subdomain}
             onChange={(e) =>
               onChange(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
@@ -622,7 +622,7 @@ function Step3({
         </div>
         {subdomain && (
           <p className="mt-2 text-sm text-[#9CA3AF]">
-            https://<span className="text-[#0066FF]">{subdomain}</span>.mybdr.kr
+            https://<span className="text-[#1B3C87]">{subdomain}</span>.mybdr.kr
           </p>
         )}
       </div>

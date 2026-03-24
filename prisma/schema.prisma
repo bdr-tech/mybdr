@@ -54,6 +54,9 @@ model User {
   tutorial_completed_community                                              Boolean                      @default(false)
   preferred_divisions                                                       Json                         @default("[]")
   preferred_board_categories                                                Json                         @default("[]")
+  preferred_game_types                                                      Json                         @default("[]")
+  prefer_filter_enabled                                                     Boolean                      @default(false)
+  onboarding_step                                                           Int                          @default(0)
   profile_completed                                                         Boolean                      @default(false)
   profileReminderShownAt                                                    DateTime?                    @map("profile_reminder_shown_at") @db.Timestamp(6)
   admin_logs                                                                admin_logs[]
@@ -153,6 +156,12 @@ model Tournament {
   bank_name                              String?                 @db.VarChar
   bank_account                           String?                 @db.VarChar
   bank_holder                            String?                 @db.VarChar
+  categories                             Json?                   @default("{}")  @db.JsonB
+  div_caps                               Json?                   @default("{}")  @db.JsonB
+  div_fees                               Json?                   @default("{}")  @db.JsonB
+  allow_waiting_list                     Boolean?                @default(false)
+  waiting_list_cap                       Int?
+  fee_notes                              String?
   createdAt                              DateTime                @map("created_at") @db.Timestamp(6) @default(now())
   updatedAt                              DateTime                @updatedAt @map("updated_at") @db.Timestamp(6)
   primary_color                          String?                 @db.VarChar
@@ -340,6 +349,7 @@ model TournamentTeamPlayer {
   avg_points       Decimal?          @default(0.0) @db.Decimal(5, 1)
   avg_rebounds     Decimal?          @default(0.0) @db.Decimal(5, 1)
   avg_assists      Decimal?          @default(0.0) @db.Decimal(5, 1)
+  is_elite         Boolean           @default(false)
   createdAt        DateTime          @map("created_at") @db.Timestamp(6) @default(now())
   updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamp(6)
   playerStats      MatchPlayerStat[]

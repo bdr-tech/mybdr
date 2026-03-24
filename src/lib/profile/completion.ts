@@ -7,7 +7,7 @@ export interface ProfileCompletionFields {
   phone: string | null;
   position: string | null;
   city: string | null;
-  district: string | null;
+  district?: string | null;
 }
 
 export function checkProfileCompletion(
@@ -18,8 +18,7 @@ export function checkProfileCompletion(
     !!fields.nickname?.trim() &&
     !!fields.phone?.trim() &&
     !!fields.position?.trim() &&
-    !!fields.city?.trim() &&
-    !!fields.district?.trim()
+    !!fields.city?.trim()
   );
 }
 
@@ -30,6 +29,5 @@ export function getMissingFields(fields: ProfileCompletionFields): string[] {
   if (!fields.phone?.trim()) missing.push("전화번호");
   if (!fields.position?.trim()) missing.push("포지션");
   if (!fields.city?.trim()) missing.push("시/도");
-  if (!fields.district?.trim()) missing.push("구/동");
   return missing;
 }

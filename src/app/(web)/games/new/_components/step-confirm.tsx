@@ -43,7 +43,7 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
 
   return (
     <div aria-live="polite">
-      <h2 className="mb-2 text-2xl font-bold text-[#111827]">이렇게 만들까요?</h2>
+      <h2 className="mb-2 text-xl sm:text-2xl font-bold text-[#111827]">이렇게 만들까요?</h2>
       <p className="mb-6 text-sm text-[#9CA3AF]">내용을 확인하고 경기를 만들어보세요.</p>
 
       {/* Error toast */}
@@ -56,11 +56,11 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
       {/* Preview Card */}
       <div
         className="mb-6 overflow-hidden rounded-[16px] border border-[#E8ECF0] bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
-        style={{ borderLeft: "3px solid #F4A261" }}
+        style={{ borderLeft: "3px solid #E31B23" }}
       >
         <div className="mb-3 flex items-center gap-1.5">
           <span className="text-base">{typeEmoji}</span>
-          <span className="text-xs font-medium text-[#F4A261]">{typeLabel}</span>
+          <span className="text-xs font-medium text-[#E31B23]">{typeLabel}</span>
         </div>
 
         <h3 className="mb-3 text-lg font-semibold leading-snug text-[#111827]">{title}</h3>
@@ -98,7 +98,7 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
 
         {data.allowGuests && data.gameType !== "1" && (
           <div className="mt-2">
-            <span className="rounded-full bg-[#EEF2FF] px-2 py-0.5 text-xs text-[#6B7280]">
+            <span className="rounded-full bg-[#EDF0F8] px-2 py-0.5 text-xs text-[#6B7280]">
               게스트 허용
             </span>
           </div>
@@ -118,7 +118,7 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="flex w-full items-center justify-between px-5 py-4 text-sm font-medium text-[#6B7280] hover:bg-[#F5F7FA] transition-colors"
+          className="flex w-full items-center justify-between px-5 py-4 text-sm font-medium text-[#6B7280] hover:bg-[#F5F6FA] transition-colors"
           aria-expanded={showAdvanced}
         >
           <span>추가 설정 (선택)</span>
@@ -137,7 +137,7 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
                 onChange={(e) => updateData("description", e.target.value)}
                 rows={3}
                 placeholder="경기 상세 설명"
-                className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
+                className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
               />
             </div>
 
@@ -149,7 +149,7 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
                 onChange={(e) => updateData("requirements", e.target.value)}
                 rows={2}
                 placeholder="예: 남성만, 3점슈터 우대"
-                className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
+                className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
               />
             </div>
 
@@ -162,14 +162,14 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
                   value={data.entryFeeNote}
                   onChange={(e) => updateData("entryFeeNote", e.target.value)}
                   placeholder="예: 음료 지참, 5,000원 현장 납부 등"
-                  className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
+                  className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
                 />
               </div>
             )}
 
             {/* Recurring */}
             <div>
-              <div className="flex items-center justify-between rounded-[12px] bg-[#F5F7FA] px-4 py-3">
+              <div className="flex items-center justify-between rounded-[12px] bg-[#F5F6FA] px-4 py-3">
                 <div>
                   <p className="text-sm font-medium text-[#111827]">반복 경기</p>
                   <p className="text-xs text-[#9CA3AF]">정기적으로 반복되는 경기</p>
@@ -180,7 +180,7 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
                   aria-checked={data.isRecurring}
                   onClick={() => updateData("isRecurring", !data.isRecurring)}
                   className={`relative h-6 w-12 flex-shrink-0 rounded-full transition-colors ${
-                    data.isRecurring ? "bg-[#0066FF]" : "bg-[#CBD5E1]"
+                    data.isRecurring ? "bg-[#1B3C87]" : "bg-[#CBD5E1]"
                   }`}
                 >
                   <span
@@ -198,7 +198,7 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
                     <select
                       value={data.recurrenceRule}
                       onChange={(e) => updateData("recurrenceRule", e.target.value)}
-                      className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-3 py-2 text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
+                      className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-3 py-2 text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
                     >
                       {RECURRENCE_RULES.map((r) => (
                         <option key={r.value} value={r.value}>{r.label}</option>
@@ -213,7 +213,7 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
                       onChange={(e) => updateData("recurringCount", parseInt(e.target.value) || 2)}
                       min={2}
                       max={52}
-                      className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-3 py-2 text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
+                      className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-3 py-2 text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
                     />
                   </div>
                 </div>
@@ -228,7 +228,7 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
                 onChange={(e) => updateData("notes", e.target.value)}
                 rows={2}
                 placeholder="기타 안내사항"
-                className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
+                className="w-full rounded-[12px] border border-[#E8ECF0] bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
               />
             </div>
           </div>

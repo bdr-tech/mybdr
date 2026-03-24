@@ -66,6 +66,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (data.auto_approve_teams !== undefined) updateData.auto_approve_teams = data.auto_approve_teams;
   if (data.primary_color !== undefined) updateData.primary_color = data.primary_color;
   if (data.secondary_color !== undefined) updateData.secondary_color = data.secondary_color;
+  if (data.game_rules !== undefined) updateData.game_rules = data.game_rules;
 
   const updated = await updateTournament(id, updateData);
 

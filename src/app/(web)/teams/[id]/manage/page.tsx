@@ -75,12 +75,12 @@ export default function TeamManagePage({ params }: { params: { id: string } }) {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">멤버 관리</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">멤버 관리</h1>
           <p className="mt-0.5 text-sm text-[#6B7280]">가입 신청 처리</p>
         </div>
         <Link
           href={`/teams/${id}`}
-          className="rounded-full border border-[#E8ECF0] px-4 py-2 text-sm text-[#6B7280] transition-colors hover:bg-[#EEF2FF]"
+          className="rounded-full border border-[#E8ECF0] px-4 py-2 text-sm text-[#6B7280] transition-colors hover:bg-[#EDF0F8]"
         >
           팀 상세로
         </Link>
@@ -114,14 +114,14 @@ export default function TeamManagePage({ params }: { params: { id: string } }) {
                 className="rounded-[16px] bg-white p-5"
               >
                 <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[#EEF2FF] text-lg font-bold text-[#0066FF]">
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[#EDF0F8] text-lg font-bold text-[#1B3C87]">
                     {displayName.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold text-[#111827]">{displayName}</p>
                       {req.user?.position && (
-                        <span className="rounded-full bg-[#EEF2FF] px-2 py-0.5 text-xs text-[#0066FF]">
+                        <span className="rounded-full bg-[#EDF0F8] px-2 py-0.5 text-xs text-[#1B3C87]">
                           {req.user.position}
                         </span>
                       )}
@@ -130,7 +130,7 @@ export default function TeamManagePage({ params }: { params: { id: string } }) {
                       <p className="mt-0.5 text-xs text-[#9CA3AF]">📍 {location}</p>
                     )}
                     {req.message && (
-                      <p className="mt-2 rounded-[8px] bg-[#F5F7FA] px-3 py-2 text-sm text-[#6B7280]">
+                      <p className="mt-2 rounded-[8px] bg-[#F5F6FA] px-3 py-2 text-sm text-[#6B7280]">
                         {req.message}
                       </p>
                     )}

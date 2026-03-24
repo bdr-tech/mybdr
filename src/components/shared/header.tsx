@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Home, Dribbble, Trophy, MessageSquare, Menu } from "lucide-react";
 import { SlideMenu } from "./slide-menu";
 import { UserDropdown } from "./user-dropdown";
 import { BellIcon } from "./bell-icon";
+import { ThemeToggle } from "./theme-toggle";
 
 const navItems = [
   { href: "/", label: "홈", Icon: Home },
@@ -21,7 +23,6 @@ const desktopNavItems = [
   { href: "/teams", label: "팀" },
   { href: "/tournaments", label: "대회" },
   { href: "/community", label: "커뮤니티" },
-  // { href: "/pricing", label: "요금제" },
 ];
 
 interface SessionUser {
@@ -29,6 +30,7 @@ interface SessionUser {
   email: string;
   name: string;
   role: string;
+  profileImage?: string | null;
 }
 
 export function Header() {
@@ -72,10 +74,17 @@ export function Header() {
     <>
       {/* Top Navbar */}
       <header className="sticky top-0 z-50 border-b border-[#E8ECF0] bg-[#FFFFFF]/95 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4">
           {/* Logo */}
-          <Link href="/" prefetch={true} className="flex items-center gap-1.5">
-            <span className="text-lg font-bold text-[#F4A261]">BDR</span>
+          <Link href="/" prefetch={true} className="flex items-center">
+            <Image
+              src="/images/logo.png"
+              alt="BDR"
+              width={87}
+              height={40}
+              className="h-10 w-auto"
+              priority
+            />
           </Link>
 
           {/* Desktop Nav */}
@@ -87,7 +96,7 @@ export function Header() {
                 prefetch={true}
                 className={`rounded-full px-4 py-2 text-sm transition-colors ${
                   isActive(item.href)
-                    ? "bg-[rgba(0,102,255,0.12)] font-medium text-[#0066FF]"
+                    ? "bg-[rgba(27,60,135,0.12)] font-medium text-[#1B3C87]"
                     : "text-[#6B7280] hover:text-[#111827]"
                 }`}
               >
@@ -96,17 +105,16 @@ export function Header() {
             ))}
           </nav>
 
-          {/* Right: Bell + User */}
+          {/* Right: Theme + Bell + User */}
           <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <BellIcon unreadCount={unreadCount} />
             {user ? (
-              <>
-                <BellIcon unreadCount={unreadCount} />
-                <UserDropdown name={user.name} role={user.role} />
-              </>
+              <UserDropdown name={user.name} role={user.role} profileImage={user.profileImage} />
             ) : (
               <Link
                 href="/login"
-                className="rounded-full bg-[#0066FF] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0052CC]"
+                className="rounded-full bg-[#1B3C87] px-4 py-2 text-sm font-semibold text-white hover:bg-[#142D6B]"
               >
                 로그인
               </Link>
@@ -128,24 +136,30 @@ export function Header() {
                 key={item.href}
                 href={item.href}
                 prefetch={true}
-                className={`flex flex-col items-center gap-0.5 py-2.5 text-[11px] transition-colors active:opacity-70 ${
+                className={`relative flex flex-col items-center gap-0.5 py-2.5 text-[11px] transition-colors active:opacity-70 ${
                   active
-                    ? "text-[#F4A261] font-semibold"
+                    ? "text-[#E31B23] font-semibold"
                     : "text-[#9CA3AF]"
                 }`}
               >
-                <item.Icon size={22} strokeWidth={active ? 2.5 : 1.5} />
+                {active && (
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-8 rounded-b-full bg-[#E31B23]" />
+                )}
+                <item.Icon size={24} strokeWidth={active ? 2.5 : 1.5} />
                 {item.label}
               </Link>
             );
           })}
           <button
             onClick={() => setMenuOpen(true)}
-            className={`flex flex-col items-center gap-0.5 py-2.5 text-[11px] active:opacity-70 ${
-              menuOpen ? "text-[#F4A261] font-semibold" : "text-[#9CA3AF]"
+            className={`relative flex flex-col items-center gap-0.5 py-2.5 text-[11px] active:opacity-70 ${
+              menuOpen ? "text-[#E31B23] font-semibold" : "text-[#9CA3AF]"
             }`}
           >
-            <Menu size={22} strokeWidth={menuOpen ? 2.5 : 1.5} />
+            {menuOpen && (
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-8 rounded-b-full bg-[#E31B23]" />
+            )}
+            <Menu size={24} strokeWidth={menuOpen ? 2.5 : 1.5} />
             전체
           </button>
         </div>

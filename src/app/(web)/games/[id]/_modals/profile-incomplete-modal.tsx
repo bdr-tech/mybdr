@@ -37,13 +37,13 @@ export function ProfileIncompleteModal({
         <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 rounded-[12px] border border-[#E8ECF0] py-2.5 text-sm text-[#6B7280] hover:bg-[#F5F7FA]"
+            className="flex-1 rounded-[12px] border border-[#E8ECF0] py-2.5 text-sm text-[#6B7280] hover:bg-[#F5F6FA]"
           >
             나중에
           </button>
           <Link
             href="/profile/edit"
-            className="flex-1 rounded-[12px] bg-[#0066FF] py-2.5 text-center text-sm font-semibold text-white hover:bg-[#0052CC]"
+            className="flex-1 rounded-[12px] bg-[#1B3C87] py-2.5 text-center text-sm font-semibold text-white hover:bg-[#142D6B]"
           >
             프로필 완성하기
           </Link>

@@ -5,6 +5,9 @@ import { VALID_TRANSITIONS } from "@/lib/tournaments/match-transitions";
 import { parseBigIntParam } from "@/lib/utils/parse-bigint";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { getMatch, updateMatch, deleteMatch } from "@/lib/services/match";
+import { prisma } from "@/lib/db/prisma";
+import { createNotificationBulk } from "@/lib/notifications/create";
+import { NOTIFICATION_TYPES } from "@/lib/notifications/types";
 
 type Ctx = { params: Promise<{ id: string; matchId: string }> };
 
@@ -101,6 +104,39 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
       }),
     }
   );
+
+  // 경기 취소 시 참가자(양 팀 선수)에게 알림 발송 (fire-and-forget)
+  if (status === "cancelled") {
+    const teamIds = [match.homeTeamId, match.awayTeamId].filter(
+      (tid): tid is bigint => tid !== null && tid !== undefined
+    );
+
+    if (teamIds.length > 0) {
+      // 양 팀의 모든 활성 선수(userId) 조회 후 알림 일괄 발송
+      prisma.tournamentTeamPlayer
+        .findMany({
+          where: { tournamentTeamId: { in: teamIds }, is_active: true },
+          select: { userId: true },
+        })
+        .then((players) => {
+          const uniqueUserIds = [...new Set(players.map((p) => p.userId))];
+          if (uniqueUserIds.length === 0) return;
+
+          return createNotificationBulk(
+            uniqueUserIds.map((uid) => ({
+              userId: uid,
+              notificationType: NOTIFICATION_TYPES.GAME_CANCELLED,
+              title: "경기가 취소되었습니다",
+              content: `배정된 경기가 취소되었습니다. 자세한 내용은 대회 페이지를 확인해주세요.`,
+              actionUrl: `/tournaments/${id}`,
+              notifiableType: "TournamentMatch",
+              notifiableId: matchBigInt,
+            }))
+          );
+        })
+        .catch(() => {}); // 알림 실패가 취소 처리를 실패시키면 안 됨
+    }
+  }
 
   // TC-006: 이미 completed였던 매치는 전적 재갱신 금지 (중복 increment 방지)
   // M-04: fire-and-forget 제거 -> await + 실패 시 warning 응답

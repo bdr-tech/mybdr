@@ -22,7 +22,7 @@ export default async function NotificationsPage() {
   return (
     <div>
       <div className="mb-6 flex items-center gap-3">
-        <h1 className="text-2xl font-bold">알림</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">알림</h1>
         {unreadCount > 0 && (
           <Badge>{unreadCount}개 안읽음</Badge>
         )}
@@ -33,7 +33,7 @@ export default async function NotificationsPage() {
           {notifications.map((n) => (
             <Card
               key={n.id.toString()}
-              className={`transition-colors ${n.status === "unread" ? "border-l-2 border-[#0066FF]" : "opacity-70"}`}
+              className={`transition-colors ${n.status === "unread" ? "border-l-2 border-[#1B3C87]" : "opacity-70"}`}
             >
               {n.action_url ? (
                 <Link href={n.action_url} className="block">

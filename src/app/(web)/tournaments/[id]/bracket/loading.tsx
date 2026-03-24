@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function BracketLoading() {
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">대진표</h1>
+      <h1 className="mb-6 text-xl sm:text-2xl font-bold">대진표</h1>
 
       {/* 데스크톱 스켈레톤 */}
       <div className="hidden lg:block">

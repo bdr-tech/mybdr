@@ -71,10 +71,10 @@ export default async function PricingPage() {
             return (
               <div
                 key={plan.id.toString()}
-                className="relative rounded-[20px] border border-[#E8ECF0] bg-[#FFFFFF] p-6 transition-all hover:border-[#0066FF]/50"
+                className="relative rounded-[20px] border border-[#E8ECF0] bg-[#FFFFFF] p-6 transition-all hover:border-[#1B3C87]/50"
               >
                 {isSubscribed && (
-                  <span className="absolute right-4 top-4 rounded-full bg-[rgba(74,222,128,0.15)] px-3 py-0.5 text-xs font-medium text-[#4ADE80]">
+                  <span className="absolute right-4 top-4 rounded-full bg-[rgba(74,222,128,0.15)] px-3 py-0.5 text-xs font-medium text-[#16A34A]">
                     구독 중
                   </span>
                 )}
@@ -89,7 +89,7 @@ export default async function PricingPage() {
                 </p>
 
                 <div className="mb-6">
-                  <span className="text-3xl font-bold text-[#F4A261]">
+                  <span className="text-3xl font-bold text-[#E31B23]">
                     {plan.price.toLocaleString()}원
                   </span>
                   <span className="ml-1 text-sm text-[#9CA3AF]">
@@ -98,20 +98,20 @@ export default async function PricingPage() {
                 </div>
 
                 {isSubscribed ? (
-                  <div className="rounded-[12px] bg-[rgba(74,222,128,0.08)] py-3 text-center text-sm text-[#4ADE80]">
+                  <div className="rounded-[12px] bg-[rgba(74,222,128,0.08)] py-3 text-center text-sm text-[#16A34A]">
                     이미 구독 중입니다
                   </div>
                 ) : session ? (
                   <Link
                     href={`/pricing/checkout?planId=${plan.id.toString()}`}
-                    className="block rounded-[12px] bg-[#0066FF] py-3 text-center text-sm font-semibold text-black transition-colors hover:bg-[#0052CC]"
+                    className="block rounded-[12px] bg-[#1B3C87] py-3 text-center text-sm font-semibold text-black transition-colors hover:bg-[#142D6B]"
                   >
                     시작하기
                   </Link>
                 ) : (
                   <Link
                     href="/login"
-                    className="block rounded-[12px] bg-[#0066FF] py-3 text-center text-sm font-semibold text-black transition-colors hover:bg-[#0052CC]"
+                    className="block rounded-[12px] bg-[#1B3C87] py-3 text-center text-sm font-semibold text-black transition-colors hover:bg-[#142D6B]"
                   >
                     로그인 후 시작하기
                   </Link>
@@ -130,7 +130,7 @@ export default async function PricingPage() {
         </p>
         <a
           href="mailto:bdr.wonyoung@gmail.com"
-          className="inline-flex items-center gap-2 rounded-[12px] border border-[#0066FF]/30 px-6 py-3 text-sm font-medium text-[#F4A261] transition-colors hover:bg-[rgba(0,102,255,0.1)]"
+          className="inline-flex items-center gap-2 rounded-[12px] border border-[#1B3C87]/30 px-6 py-3 text-sm font-medium text-[#E31B23] transition-colors hover:bg-[rgba(27,60,135,0.1)]"
         >
           bdr.wonyoung@gmail.com
         </a>

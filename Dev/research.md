@@ -10,7 +10,7 @@
 
 1. [알림(Notification) 시스템](#1-알림notification-시스템)
 2. [대회(Tournament) 관리 시스템](#2-대회tournament-관리-시스템)
-3. [팀(Team) 페이지](#3-팀team-페이지)
+3. [팀(Team) 페이지 - NBA.com 참고](#3-팀team-페이지---nbacom-참고)
 4. [레퍼런스 사이트 분석](#4-레퍼런스-사이트-분석)
 5. [구현 우선순위 요약](#5-구현-우선순위-요약)
 
@@ -430,12 +430,12 @@ Bracket Reset: WB 우승팀이 패배 시 재경기
 
 ```
 Phase 1: 풀리그 (라운드 로빈)
-  - 전반(1,2쿼터): 지역수비 불가
-  - 후반(3,4쿼터): 수비 제한 없음
+  - 전반(1,2쿼터)
+  - 후반(3,4쿼터)
 
 Phase 2: 상위 4팀 싱글 일리미네이션 (3-4위전 포함)
 
-시상: 1위 100만원, 2위 80만원, 3위 50만원
+시상: 1위 100만원, 2위 80만원, 3위 50만원(상금은 대회별로 상이할수 있으므로 대회관리자가 수정할수 있도록 함)
 ```
 
 ### 2.4 대회 관리자 워크플로우 (생활체육 농구 최적화)
@@ -448,7 +448,7 @@ Phase 2: 상위 4팀 싱글 일리미네이션 (3-4위전 포함)
    ├── 팀 신청 수신 ✅
    ├── 신청팀 승인/거부 ✅
    ├── 시드 번호 배정 ✅
-   └── 참가비 확인 ❌ (현재 수동)
+   └── 참가비 확인 ❌ (현재 수동) > 토스 페이먼츠 입금확인 구현 가능확인(대회관리자용 관리자 페이지에서 확인여부)
 
 3. 대진표 생성 (status: active)
    ├── 자동 대진표 생성 버튼 ❌
@@ -492,20 +492,8 @@ POST /api/v1/tournaments/[id]/matches/batch-sync  -- 경기 결과 일괄 동기
 #### 경기 기록 화면 권고 설계
 
 ```
-┌─────────────────────────────────┐
-│  1쿼터  ·  10:00   [⏸] [⏭]    │
-├────────────────┬────────────────┤
-│   Team A       │    Team B      │
-│      32        │      28        │
-├────────────────┼────────────────┤
-│ [+2]  [+3]  [1] │ [+2]  [+3]  [1] │
-│ [파울] [UNDO]   │ [파울] [UNDO]   │
-├─────────────────────────────────┤
-│  09:45  Team A +3               │
-│  09:20  Team B +2               │
-└─────────────────────────────────┘
-
-[다음 쿼터]          [경기 종료]
+bdr_stat 앱의 구현내용을 참고할것. 
+로그 기능 "중요하게" 구현해야함.
 ```
 
 **UX 원칙**:
@@ -513,39 +501,77 @@ POST /api/v1/tournaments/[id]/matches/batch-sync  -- 경기 결과 일괄 동기
 2. **UNDO 필수**: 오입력 즉시 취소 가능
 3. **팀 단위 기록**: 선수 특정 없이 "+2" 만으로도 기록 가능 (빠른 진행)
 4. **버튼 최소 48dp**: 심판이 한 손으로 조작 가능하게
-5. **오프라인 지원**: 로컬 저장 후 동기화 (체육관 WiFi 불안정 대비)
+5. **오프라인 지원**: 로컬 저장 후 동기화 (체육관 WiFi 및 셀룰러 데이터 연결 불안정 대비)
 6. **경기 종료 → 자동 대진표 업데이트**: 결과 확인 → 다음 경기 매칭 공지
 
 ---
 
-## 3. 팀(Team) 페이지
+## 3. 팀(Team) 페이지 - NBA.com 참고
 
-### 3.1 NBA.com에서 취사선택
+### 3.1 NBA.com 팀 페이지 실측 분석
 
-NBA.com은 프로 리그 전용 기능이 많아 생활체육에는 과도하다. 취사선택 기준:
+#### 팀 목록 페이지 (`/teams`)
 
-#### ✅ 생활체육에도 유효한 패턴
+**실제 레이아웃**:
+```
+[H1] ALL TEAMS
 
-| NBA 패턴 | 이유 |
-|----------|------|
-| 팀 컬러 풀 배너 (헤더) | 팀 정체성 즉각 전달 — `primaryColor` 필드 이미 존재 |
-| 탭 네비게이션 (개요/로스터/경기기록/대회이력) | 정보 계층 정리 — 페이지 복잡도 줄임 |
-| 최근 경기 가로 스크롤 카드 | 모바일 UX 좋음 — 공간 효율적 |
-| 팀 컬러 기반 카드 그리드 (목록) | 팀 식별력 ↑, 시각적으로 풍부 |
+[동호회 디비전 그리드. (D3~D6, 여성부, 대학부, 중장년부 등)]
+D-League   |   Womam    |   Location
+────────────────────────────────────────
 
-#### ❌ 생활체육에는 불필요한 NBA 기능
+...
+```
 
-| NBA 기능 | 제외 이유 |
-|----------|---------|
-| 리그 순위 비교 통계 바 (PPG 19th 115.0 등) | 플랫폼 전체 집계 데이터 없음, 과도한 복잡도 |
-| Coaching Staff 섹션 | 생활체육 팀에 정식 코치진 없는 경우가 대부분 |
-| Retired Numbers / Hall of Fame | 프로 구단 전용, 생활체육 무관 |
-| All Time Records / Achievements | 역사 기록 시스템 불필요 |
-| FOLLOW 버튼 | SNS 팔로우 개념 불필요 |
-| Store / Tickets / SNS 링크 | 수익화 링크 불필요 |
-| 선수 신장/체중/나이/출신교/평점 | 생활체육 선수는 이 정보 입력 안 함 |
-| 5컬럼 팀 그리드 | 팀 수 규모상 2~3컬럼으로 충분 |
-| 디비전 그루핑 | 생활체육에 리그 디비전 구조 없음 |
+**카드 디자인 특성**:
+- 소형 원형 팀 로고 (40px) + 팀명 인라인
+- 디비전명: 전부 대문자, 라벨 스타일
+- 링크 4개(Profile/Stats/Schedule/Tickets)를 small colored 텍스트로 배열
+- 배경: 흰색, 정보 밀도 낮음 — 스캔에 최적화
+
+#### 팀 상세 페이지 (`/teams/[slug]`)
+
+**헤더 영역 (팀 컬러 배경)**:
+```
+[풀 위드 배너 — 팀 고유 컬러 (#007A33 셀틱스 그린)]
+  [팀 배경 패턴]   [대형 팀 로고]   BOSTON CELTICS
+                                   40 - 20 | 2nd in Eastern
+                                   [FOLLOW 버튼]
+  ─────────────────────────────────────────────────
+  통계 비교 바 (리그 순위 + 수치):
+  PPG 19th 115.0 | RPG 6th 46.1 | APG 29th 24.4 | OPPG 1st 107.4
+```
+
+**탭 네비게이션**:
+```
+Profile | Schedule | Stats        [팀 공식사이트 | Store | Tickets | SNS]
+```
+
+**Profile 탭 섹션 순서**:
+
+| 섹션 | 내용 |
+|------|------|
+| UPCOMING GAMES | 가로 스크롤 경기 카드 (중계방송 포함) |
+| ROSTER | 선수 테이블 (번호/포지션/신장/체중/나이/경력/출신교) |
+| ACHIEVEMENTS | 우승 연도 목록, 디비전 우승 |
+| BACKGROUND | 창단연도/도시/홈 경기장/GM/감독 |
+
+**디자인 토큰 (측정값)**:
+```
+헤더 배경: 팀 primaryColor (셀틱스 = #007A33)
+텍스트 on 헤더: 흰색 (#FFFFFF)
+통계 랭킹: 대문자 + 굵은 폰트
+바디 배경: #FFFFFF
+섹션 헤더: 진한 회색, 대문자 레이블 스타일
+링크 색: #0060A9 (NBA 파랑)
+섹션 간 여백: ~48px
+```
+
+**모바일 반응형**:
+- 헤더 배너: 세로 스택으로 재배열
+- 통계 바: 가로 스크롤 유지
+- UPCOMING GAMES: 가로 스크롤 카드 패턴 (★ 좋은 모바일 UX)
+- 로스터 테이블: 가로 스크롤
 
 ### 3.2 현재 팀 페이지 현황
 
@@ -556,10 +582,10 @@ NBA.com은 프로 리그 전용 기능이 많아 생활체육에는 과도하다
   모바일: 팀명만 표시
   데스크탑: W-L-인원수 표시
 
-개선 방향:
-  → 카드 그리드 레이아웃 (팀 컬러 적용)
-  → 카드에 전적 + 인원수 표시
-  → 지역 필터 유지 (디비전 그루핑 X)
+NBA.com 참고 개선:
+  → 카드 그리드 레이아웃 (팀 컬러 호버)
+  → 전적 + 빠른 통계 카드에 표시
+  → 도시 그루핑 (NBA 디비전처럼)
 ```
 
 #### 팀 상세 (`/teams/[id]`)
@@ -572,15 +598,17 @@ NBA.com은 프로 리그 전용 기능이 많아 생활체육에는 과도하다
   ✅ 가입 버튼 (조건부 표시)
 
 미구현:
-  ❌ 탭 네비게이션 (개요/로스터/경기기록/대회이력)
+  ❌ 탭 네비게이션 (개요/로스터/경기기록/대회이력/통계)
   ❌ 경기 기록 탭
   ❌ 대회 이력 탭
+  ❌ 개인 통계 탭
   ❌ 팀 멤버 가입신청 처리 UI
 ```
 
 ### 3.3 팀 목록 — 카드 그리드 제안
 
 ```tsx
+// 팀 카드 컴포넌트
 function TeamCard({ team }: { team: TeamWithStats }) {
   const accent =
     team.primaryColor !== "#FFFFFF" ? team.primaryColor : team.secondaryColor;
@@ -589,21 +617,16 @@ function TeamCard({ team }: { team: TeamWithStats }) {
 
   return (
     <Link href={`/teams/${team.uuid}`}>
-      <div
-        className="rounded-[16px] border border-[#E8ECF0] bg-white p-4
-                   transition-all hover:shadow-md hover:border-transparent"
-      >
+      <div className="group rounded-[16px] border border-[#E8ECF0] bg-white p-4 transition-all hover:shadow-md hover:border-transparent"
+           style={{ "--accent": accent } as React.CSSProperties}>
+
         {/* 팀 로고 or 이니셜 */}
-        <div
-          className="mx-auto mb-3 h-16 w-16 rounded-full flex items-center
-                     justify-center text-2xl font-bold text-white"
-          style={{ backgroundColor: accent }}
-        >
-          {team.logoUrl ? (
-            <img src={team.logoUrl} alt={team.name} className="h-full w-full rounded-full object-cover" />
-          ) : (
-            team.name[0]
-          )}
+        <div className="mx-auto mb-3 h-16 w-16 rounded-full flex items-center
+                        justify-center text-2xl font-bold text-white"
+             style={{ backgroundColor: accent }}>
+          {team.logoUrl
+            ? <img src={team.logoUrl} alt={team.name} className="h-full w-full rounded-full object-cover" />
+            : team.name[0]}
         </div>
 
         <h3 className="text-center text-sm font-semibold text-[#111827] truncate">
@@ -630,8 +653,8 @@ function TeamCard({ team }: { team: TeamWithStats }) {
   );
 }
 
-// 목록 레이아웃 — 2~4컬럼으로 충분
-<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+// 목록 레이아웃
+<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
   {teams.map((team) => <TeamCard key={team.id.toString()} team={team} />)}
 </div>
 ```
@@ -640,79 +663,65 @@ function TeamCard({ team }: { team: TeamWithStats }) {
 
 ```tsx
 // URL: /teams/[id]?tab=roster
-// 4개 탭으로 충분 — "통계" 별도 탭 불필요 (개요에 통합)
 const TEAM_TABS = [
-  { key: "overview",    label: "개요"      },
-  { key: "roster",      label: "로스터"    },
-  { key: "games",       label: "경기 기록" },
-  { key: "tournaments", label: "대회 이력" },
+  { key: "overview",     label: "개요"      },
+  { key: "roster",       label: "로스터"    },
+  { key: "games",        label: "경기 기록" },
+  { key: "tournaments",  label: "대회 이력" },
+  { key: "stats",        label: "통계"      },
 ] as const;
 ```
 
-**개요 탭 레이아웃**:
+**개요 탭 레이아웃** (NBA.com 참고):
 ```
 [팀 컬러 풀 배너]
   [로고]  팀명
          서울 강남 · 창단 2019년
-         팀장: 홍길동
+         팀장: 홍길동 👑
 
-[기본 통계 카드 4개]
+[통계 4개 카드]
    23승   8패   74%승률   2대회
+
+[통계 비교 바] (리그 평균 대비)
+  득점   18.3점   리그평균 15.2점  ▲
+  실점   14.1점   리그평균 15.8점  ▼
 
 [최근 경기 — 가로 스크롤 카드]
   W 72-58 vs 버닝버즈  UBL 4강  2026.02.15
   L 61-70 vs 타이거즈  일반경기  2026.02.08
-  ...
 ```
 
-> 리그 평균 대비 통계 비교는 미구현. 전체 플랫폼 집계 데이터가 충분히 쌓인 후 도입 검토.
-
-**로스터 탭** (생활체육 기준 간소화):
+**로스터 탭** (NBA 스타일):
 ```
-포지션별 그루핑: PG → SG → SF → PF → C (선택 입력)
+포지션별 그루핑: PG → SG → SF → PF → C → 감독/코치
 
-테이블 컬럼 (필수만):
-  # | 선수명 | 포지션 | 역할(주장/멤버) | 가입일
+테이블 컬럼:
+  # | 선수명 | 포지션 | 역할 | 가입일 | 출전 | 평점
 
-→ 신장/체중/나이/출신교/평점 등 입력 부담 주는 항목 제외
-→ 선수 클릭 시 별도 페이지 없이 인라인 정보로 충분
+선수 행 클릭 → 선수 프로필 모달 또는 개인 페이지
 ```
 
-**경기 기록 탭**:
-```
-날짜 | 경기 종류(대회/일반) | 상대팀 | 승패 | 점수
-2026.02.15  UBL 4강     vs 버닝버즈   W   72-58
-2026.02.08  일반경기     vs 타이거즈   L   61-70
-```
-
-**대회 이력 탭**:
-```
-대회명 | 연도 | 부문 | 최종 성적
-UBL 2025   2025   오픈부   준우승
-BDR컵 2024  2024  일반부   8강
-```
-
-### 3.5 팀 통계 카드 (개요 탭용)
+### 3.5 팀 통계 카드 (NBA 통계 바 스타일)
 
 ```tsx
-// 리그 평균 비교 없이 팀 자체 수치만 표시
-function TeamStatsGrid({ team }: { team: Team }) {
-  const total = team.wins + team.losses + team.draws;
-  const winRate = total > 0 ? Math.round((team.wins / total) * 100) : 0;
-
+function StatsCompareBar({ label, value, leagueAvg, unit = "" }: {
+  label: string; value: number; leagueAvg: number; unit?: string
+}) {
+  const isAbove = value >= leagueAvg;
   return (
-    <div className="grid grid-cols-4 gap-3">
-      {[
-        { label: "승",   value: team.wins,              color: "#0066FF" },
-        { label: "패",   value: team.losses,            color: "#EF4444" },
-        { label: "승률", value: `${winRate}%`,          color: "#F4A261" },
-        { label: "대회", value: team.tournaments_count, color: "#10B981" },
-      ].map(({ label, value, color }) => (
-        <div key={label} className="rounded-[12px] bg-[#F5F7FA] p-3 text-center">
-          <div className="text-2xl font-bold" style={{ color }}>{value}</div>
-          <div className="mt-1 text-xs text-[#6B7280]">{label}</div>
-        </div>
-      ))}
+    <div className="flex items-center justify-between py-2 border-b border-[#E8ECF0] last:border-0">
+      <span className="text-sm text-[#6B7280]">{label}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium text-[#111827]">
+          {value}{unit}
+        </span>
+        <span className="text-xs text-[#9CA3AF]">
+          리그평균 {leagueAvg}{unit}
+        </span>
+        <span className={`text-xs font-bold ${isAbove ? "text-[#10B981]" : "text-[#EF4444]"}`}>
+          {isAbove ? "▲" : "▼"}
+        </span>
+      </div>
     </div>
   );
 }
@@ -795,7 +804,7 @@ function TeamStatsGrid({ team }: { team: Team }) {
 |------|---------|-----------|
 | 농구 특화 통계 | ❌ 없음 | ✅ 쿼터 점수, 개인 통계 |
 | 모바일 점수 입력 | ❌ | ✅ bdr_stat Flutter 앱 |
-| 팀 프로필 (로스터/전적/경기기록) | ❌ 단순 | ✅ 탭 구조 + 카드 그리드 |
+| 팀 프로필 (로스터/전적) | ❌ 단순 | ✅ NBA.com 스타일 |
 | 실시간 알림 | ❌ | ✅ 인앱 알림 (예정) |
 | Flutter API | ❌ | ✅ 100% 호환 |
 | D-Day 카운트다운 | ✅ | ❌ 미구현 |
@@ -926,730 +935,6 @@ function TeamStatsGrid({ team }: { team: Team }) {
 | 5 | 개인 통계 집계 서비스 | 배치 잡 필요 |
 | 6 | 대회 공개 사이트 (서브도메인) | TournamentSite 스키마 있음 |
 | 7 | 팀 나이대/지역 분포 통계 | sfinder 참고 |
-
----
-
-## 6. 프로필 수정 (Profile Edit)
-
-> **목적**: 픽업/게스트 경기 참가 시 필요한 개인 정보 + 환불 계좌 정보를 수집·관리하는 프로필 수정 페이지 설계.
-
-### 6.1 현재 상태 분석
-
-**현재 프로필 수정 가능 필드** (`src/app/(web)/profile/page.tsx`):
-
-| 필드 | 타입 | 현재 UI |
-|------|------|---------|
-| `nickname` | String? | ✅ 수정 가능 |
-| `position` | String? | ✅ 수정 가능 (PG/SG/SF/PF/C) |
-| `height` | Int? | ✅ 수정 가능 (cm) |
-| `city` | String? | ✅ 수정 가능 |
-| `bio` | String? | ✅ 수정 가능 |
-
-**Prisma 스키마에 존재하지만 UI 미노출 필드**:
-
-| 필드 | 타입 | DB 컬럼 | 비고 |
-|------|------|---------|------|
-| `name` | String? | `name` | 실명 (Rails 레거시) |
-| `birth_date` | Date? | `birth_date` | 나이 계산 기준 |
-| `weight` | Int? | `weight` | 체중 (선택) |
-| `district` | String? | `district` | 세부 지역 |
-| `phone` | String? | `phone` | §0.2 마이그레이션에서 추가됨 |
-| `bank_name` | String? | `bank_name` | 환불 계좌 은행명 |
-| `bank_code` | String? | `bank_code` | 은행 코드 |
-| `account_number` | String? | `account_number` | 계좌번호 ⚠️ 암호화 필수 |
-| `account_holder` | String? | `account_holder` | 예금주명 |
-
----
-
-### 6.2 픽업/게스트 경기용 필수 프로필 필드
-
-경기 참가 신청 시 호스트에게 전달되는 신청자 정보 요건:
-
-| 필드 | 표시명 | 필수 | 수집 이유 |
-|------|--------|------|---------|
-| `name` | 이름 | ✅ | 실명 식별 (노쇼 대응) |
-| `birth_date` | 생년월일 | ✅ | 나이대 확인 (경기별 연령 제한 대응) |
-| `height` | 키 | ✅ | 포지션/팀 밸런싱 |
-| `position` | 포지션 | ✅ | 픽업 팀 구성 |
-| `phone` | 전화번호 | ✅ | 노쇼 방지 연락 |
-| `city` | 활동 지역 | ✅ | 지역 기반 매칭 |
-| `weight` | 몸무게 | ➖ | 선택 (일부 경기 참고용) |
-| `profile_image` | 프로필 사진 | ➖ | 선택 (완성도 지표) |
-
-**나이 표시 방식**: `birth_date`로 현재 나이 계산 → 프로필 카드에 "25세" 형태로 표시.
-직접 나이 입력 대신 생년월일을 저장하는 이유: 해마다 자동으로 나이가 갱신되어 데이터 정확도 유지.
-
-```typescript
-// 나이 계산 유틸리티 (KST 기준)
-export function calcAge(birthDate: Date): number {
-  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-  const birth = new Date(birthDate.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-  let age = now.getFullYear() - birth.getFullYear();
-  const m = now.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
-  return age;
-}
-```
-
----
-
-### 6.3 계좌 정보 수집 — 법적 검토 결과
-
-> **근거법**: 개인정보보호법(PIPA), 개인정보의 안전성 확보조치 기준(개인정보보호위원회 고시 제2023-6호)
-
-#### 법적 분류
-
-계좌번호는 **일반 개인정보**로 분류된다.
-
-| 분류 | 해당 정보 | 계좌번호 해당 여부 |
-|------|----------|-----------------|
-| 고유식별정보 (제24조) | 주민번호·여권번호·운전면허·외국인등록번호 | ❌ |
-| 민감정보 (제23조) | 사상/신념·건강·성생활·생체인식 등 | ❌ |
-| 일반 개인정보 | 이름·주소·전화번호·이메일·**계좌번호** | ✅ |
-
-단, **저장 시 암호화는 2023년 9월부터 명시적 법적 의무**:
-
-> 개인정보의 안전성 확보조치 기준 제7조 제2항 (2023.9.22 시행): 계좌번호는 신용카드번호와 함께 **안전한 암호 알고리즘으로 암호화하여 저장** 의무 대상에 신규 추가됨.
-
-#### 수집 요건 (개인정보보호법 제15조·제16조)
-
-1. **별도 동의**: 회원가입 동의와 분리된 환불 계좌 동의 필요
-2. **수집 항목 명시**: 은행명·계좌번호·예금주명 3항목
-3. **목적 명시**: "환불금 송금 처리"
-4. **보유 기간 명시**: "환불 완료 후 파기 / 거래 기록은 5년 보관"
-5. **최소 수집 원칙**: 주민번호·계좌 비밀번호 수집 절대 금지
-
-동의 문구 예시:
-```
-[환불 계좌 정보 수집·이용 동의]
-수집 항목: 은행명, 계좌번호, 예금주명
-수집 목적: 참가비·게스트비·픽업비 환불금 송금
-보유 기간: 환불 완료 후 즉시 파기
-            (거래 기록은 전자상거래법에 따라 5년 보관)
-□ 동의합니다 (필수)
-```
-
-#### 1원 인증(실명확인) 여부
-
-개인정보보호법은 계좌 수집 시 실명확인을 **의무화하지 않는다**. 소규모 플랫폼의 표준 관행:
-- 당근마켓·번개장터·소규모 스포츠 플랫폼: 계좌번호+은행+예금주명만 수집 후 직접 이체
-- 계좌 불일치 시 은행 단계에서 반환되는 구조로 실무 처리
-- **1원 인증은 선택 사항** — 향후 대규모 정산 기능 도입 시 추가 검토
-
-#### 수집 최소 정보 (3가지)
-
-| 항목 | 필드명 | 용도 |
-|------|--------|------|
-| 은행명 | `bank_name` | 이체 대상 은행 식별 |
-| 계좌번호 | `account_number` | 이체 대상 계좌 |
-| 예금주명 | `account_holder` | 수취인 확인 |
-
-> 주민번호·계좌 비밀번호는 수집 금지 (과잉 수집 = 법 위반)
-
----
-
-### 6.4 계좌 정보 보안 설계
-
-```
-[현재 스키마 상태]
-users 테이블:
-  bank_name       String?   -- 평문 저장 (허용)
-  bank_code       String?   -- 평문 저장 (허용)
-  account_number  String?   -- ⚠️ 암호화 필수 (법적 의무)
-  account_holder  String?   -- 평문 저장 (허용)
-```
-
-**암호화 설계**:
-- 알고리즘: AES-256-GCM (복호화 필요하므로 해시 불가)
-- 키 관리: 환경변수 `ACCOUNT_ENCRYPTION_KEY` (Vercel 시크릿)
-- 저장: `account_number` 컬럼에 `encrypted:` prefix + base64 인코딩 값 저장
-- 표시: 마스킹 처리 (예: `123-****-789012` 형태로만 노출)
-
-```typescript
-// src/lib/security/account-crypto.ts
-import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
-
-const KEY = Buffer.from(process.env.ACCOUNT_ENCRYPTION_KEY!, "hex"); // 32 bytes
-
-export function encryptAccount(plain: string): string {
-  const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", KEY, iv);
-  const encrypted = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);
-  const tag = cipher.getAuthTag();
-  return `enc:${Buffer.concat([iv, tag, encrypted]).toString("base64")}`;
-}
-
-export function decryptAccount(stored: string): string {
-  const buf = Buffer.from(stored.replace("enc:", ""), "base64");
-  const iv = buf.slice(0, 12);
-  const tag = buf.slice(12, 28);
-  const encrypted = buf.slice(28);
-  const decipher = createDecipheriv("aes-256-gcm", KEY, iv);
-  decipher.setAuthTag(tag);
-  return decipher.update(encrypted) + decipher.final("utf8");
-}
-
-export function maskAccount(plain: string): string {
-  if (plain.length <= 4) return "****";
-  return plain.slice(0, 3) + "-****-" + plain.slice(-4);
-}
-```
-
----
-
-### 6.5 국내 은행 목록 (드롭다운 옵션)
-
-```typescript
-// src/lib/constants/banks.ts
-export const BANKS = [
-  // 시중은행
-  { code: "004", name: "KB국민은행" },
-  { code: "088", name: "신한은행" },
-  { code: "020", name: "우리은행" },
-  { code: "081", name: "KEB하나은행" },
-  // 특수은행
-  { code: "011", name: "NH농협은행" },
-  { code: "003", name: "IBK기업은행" },
-  { code: "071", name: "우체국" },
-  // 인터넷전문은행
-  { code: "090", name: "카카오뱅크" },
-  { code: "089", name: "케이뱅크" },
-  { code: "092", name: "토스뱅크" },
-  // 지방은행
-  { code: "032", name: "부산은행" },
-  { code: "034", name: "광주은행" },
-  { code: "037", name: "전북은행" },
-  { code: "039", name: "경남은행" },
-  { code: "035", name: "제주은행" },
-  // 외국계
-  { code: "023", name: "SC제일은행" },
-  { code: "027", name: "한국씨티은행" },
-  { code: "002", name: "KDB산업은행" },
-] as const;
-```
-
----
-
-### 6.6 프로필 수정 페이지 설계
-
-**파일 경로**:
-```
-src/app/(web)/profile/
-├── page.tsx           ← 기존: 프로필 조회 (탭)
-└── edit/
-    └── page.tsx       ← 신규: 프로필 수정 (전용 페이지)
-
-src/app/api/web/profile/
-└── route.ts           ← 기존 PATCH 엔드포인트 확장
-```
-
-**수정 페이지 섹션 구성** (`/profile/edit`):
-
-```
-┌─────────────────────────────────┐
-│  프로필 수정                     │
-├─────────────────────────────────┤
-│ 기본 정보                        │
-│  이름 (실명)      [__________]   │
-│  닉네임           [__________]   │
-│  생년월일         [____년__월__일]│
-│  전화번호         [__________]   │
-│  활동 지역        [시/도 드롭다운]│
-│  세부 지역        [구/군 드롭다운]│
-├─────────────────────────────────┤
-│ 경기 정보                        │
-│  포지션    [PG][SG][SF][PF][C]   │
-│  키 (cm)          [___]          │
-│  몸무게 (kg)      [___] (선택)   │
-│  자기소개         [textarea]     │
-├─────────────────────────────────┤
-│ 환불 계좌 정보                   │
-│  [개인정보 수집·이용 동의 □]     │
-│  은행 선택  [드롭다운]           │
-│  계좌번호   [__________]         │
-│  예금주명   [__________]         │
-│  ℹ️ 참가비·게스트비 환불 시 사용  │
-├─────────────────────────────────┤
-│  [저장]          [취소]          │
-└─────────────────────────────────┘
-```
-
-**API 확장** (`PATCH /api/web/profile`):
-```typescript
-// 기존 필드 외 추가 수정 대상
-const profileSchema = z.object({
-  nickname:       z.string().min(1).max(20).optional(),
-  name:           z.string().min(1).max(30).optional(),
-  birth_date:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  phone:          z.string().regex(/^010-?\d{4}-?\d{4}$/).optional(),
-  position:       z.enum(["PG","SG","SF","PF","C"]).optional(),
-  height:         z.number().int().min(100).max(250).optional(),
-  weight:         z.number().int().min(30).max(200).optional(),
-  city:           z.string().max(20).optional(),
-  district:       z.string().max(20).optional(),
-  bio:            z.string().max(255).optional(),
-  // 계좌 정보 (동의 시만 수집)
-  bank_name:      z.string().optional(),
-  bank_code:      z.string().optional(),
-  account_number: z.string().optional(),  // → 저장 전 encryptAccount() 처리
-  account_holder: z.string().max(20).optional(),
-  account_consent: z.boolean().optional(), // 동의 여부 (서버에서 검증)
-});
-```
-
-**트레이드오프**:
-- ✅ 생년월일로 나이 자동 계산 → 매년 갱신 불필요
-- ✅ 계좌 암호화 유틸리티 분리 → `src/lib/security/account-crypto.ts`
-- ⚠️ `ACCOUNT_ENCRYPTION_KEY` 환경변수 Vercel 시크릿 등록 필수
-- ⚠️ 기존 `account_number` 컬럼에 이미 평문 데이터가 있다면 마이그레이션 스크립트 필요
-- ⚠️ 계좌 수집 동의 체크박스 미체크 시 API에서 계좌 필드 업데이트 거부
-
----
-
-## 7. 홈 즐겨찾기 퀵 메뉴
-
-> **목적**: 사용자가 홈 상단에 자주 쓰는 메뉴 4개를 직접 설정해 빠르게 접근 (토스뱅크 "자주 쓰는 메뉴" 패턴)
-
-### 7.1 UX 레퍼런스 — 토스뱅크 자주 쓰는 메뉴
-
-토스 앱 홈 상단 4개 퀵 액션 버튼 커스터마이징 구조:
-
-```
-[홈 화면 기본 상태]
- ┌──────────────────────────────┐
- │ 자주 쓰는 메뉴          [편집] │
- │ [🏀경기찾기][👥내팀][🏆대회][⚡픽업] │
- └──────────────────────────────┘
-
-[편집 버튼 클릭 → 편집 모드]
- ┌──────────────────────────────┐
- │ 선택됨 (4/4)          [완료]  │
- │ [🏀경기찾기✕][👥내팀✕][🏆대회✕][⚡픽업✕] │
- ├──────────────────────────────┤
- │ 전체 메뉴                    │
- │ [📅내일정] [📊내기록] [💬커뮤니티] │
- │ [🥇랭킹]   [📍코트찾기] [🔔알림] │
- └──────────────────────────────┘
-```
-
-**핵심 UX 원칙**:
-- 최대 4개 고정 (오버플로우 불가)
-- 탭 선택으로 추가/제거 (드래그 불필요 — 4개 항목에서 DnD는 과잉 설계)
-- 완료 버튼으로 즉시 저장 (낙관적 업데이트)
-- 미로그인 시: 기본 4개 고정 표시 (편집 불가)
-
----
-
-### 7.2 저장 방식 결정 — DB vs localStorage
-
-| 항목 | localStorage | DB 저장 |
-|------|-------------|---------|
-| 기기 간 동기화 | ❌ | ✅ |
-| Flutter 앱 연동 | ❌ | ✅ |
-| 구현 복잡도 | 낮음 | 중간 |
-| 오프라인 지원 | ✅ | ❌ |
-| 서버 비용 | 없음 | 미미함 (4개 문자열) |
-
-**권고: DB 저장 + localStorage 캐시 (낙관적 업데이트)**
-
-로그인 필수 플랫폼이고 Flutter 앱(bdr_stat)과 동기화가 필요하므로 DB 저장이 적합하다.
-
----
-
-### 7.3 DB 스키마 설계
-
-기존 `users` 테이블에 컬럼 추가로 처리 (별도 테이블 불필요 — 데이터 크기 극소):
-
-```sql
--- migration: add_quick_menu_to_users
-ALTER TABLE users ADD COLUMN quick_menu_items TEXT[] DEFAULT ARRAY['find_game','my_team','tournaments','pickup'];
-```
-
-```prisma
-// prisma/schema.prisma - users 모델에 추가
-quickMenuItems  String[]  @default(["find_game","my_team","tournaments","pickup"]) @map("quick_menu_items")
-```
-
-별도 테이블 대신 users 컬럼을 선택하는 이유:
-- 사용자당 1개만 존재 (1:1 관계)
-- 4개 문자열 ID = 수십 바이트 수준
-- JOIN 불필요 → 프로필 로드 시 함께 조회
-
----
-
-### 7.4 전체 메뉴 후보 풀
-
-| 메뉴 ID | 표시명 | 아이콘 | 링크 | 기본 포함 |
-|---------|--------|--------|------|---------|
-| `find_game` | 경기 찾기 | 🏀 | `/games` | ✅ |
-| `my_team` | 내 팀 | 👥 | `/teams` | ✅ |
-| `tournaments` | 대회 보기 | 🏆 | `/tournaments` | ✅ |
-| `pickup` | 픽업 신청 | ⚡ | `/games?type=pickup` | ✅ |
-| `my_schedule` | 내 일정 | 📅 | `/schedule` | - |
-| `stats` | 내 기록 | 📊 | `/profile?tab=stats` | - |
-| `community` | 커뮤니티 | 💬 | `/community` | - |
-| `ranking` | 랭킹 | 🥇 | `/ranking` | - |
-| `venue` | 코트 찾기 | 📍 | `/courts` | - |
-| `notifications` | 알림 | 🔔 | `/notifications` | - |
-
----
-
-### 7.5 구현 설계
-
-**파일 경로**:
-```
-src/components/home/
-└── quick-menu.tsx          ← 신규: 퀵 메뉴 컴포넌트 (Client Component)
-
-src/app/(web)/
-└── page.tsx                ← 기존 수정: QuickMenu 컴포넌트 삽입
-
-src/app/api/web/user/
-└── quick-menu/
-    └── route.ts            ← 신규: GET + PUT 엔드포인트
-```
-
-**컴포넌트 API 연동**:
-```typescript
-// GET /api/web/user/quick-menu → { menu_items: string[] }
-// PUT /api/web/user/quick-menu → body: { menu_items: string[] }
-
-// 낙관적 업데이트 패턴
-const handleSave = async (newItems: string[]) => {
-  setItems(newItems);                                    // 즉시 UI 반영
-  localStorage.setItem("quickMenu", JSON.stringify(newItems)); // 캐시
-  await fetch("/api/web/user/quick-menu", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ menu_items: newItems }),
-    credentials: "include",
-  });
-};
-```
-
-**홈 페이지 삽입 위치**:
-```
-[홈 페이지 레이아웃]
- ┌──────────────────┐
- │ 헤더 (sticky)     │
- ├──────────────────┤
- │ 퀵 메뉴 (4버튼)   │ ← QuickMenu 컴포넌트 삽입
- ├──────────────────┤
- │ 최근 경기         │
- ├──────────────────┤
- │ 진행 중 대회      │
- └──────────────────┘
-```
-
-**트레이드오프**:
-- ✅ users 컬럼 추가 방식 → JOIN 없이 조회 가능, 마이그레이션 최소화
-- ✅ 낙관적 업데이트 → 네트워크 지연 없이 즉시 반응
-- ✅ 기본값 DB 설정 → 첫 로그인 시 별도 초기화 API 불필요
-- ⚠️ `quick_menu_items` 컬럼 = DB 마이그레이션 필요
-- ⚠️ 미로그인 사용자: localStorage 캐시만 사용, 서버 저장 없음
-- ⚠️ 편집 모드는 Client Component 필요 (useState + 이벤트 처리)
-
----
-
----
-
-## 8. bdr_stat ↔ mybdr 대회 연동 (Flutter 스탯 기록 시스템)
-
-> **작성일**: 2026-03-05
-> **범위**: Flutter bdr_stat 앱 → mybdr 대회 시스템 실시간 스탯 연동 설계
-> **상태**: 리서치 완료, plan.md 작성 대기
-
-### 8.1 프로젝트 목표
-
-대회 진행 중 경기별 스탯을 Flutter 앱으로 실시간 기록하고, 대회 공개 사이트(rookie.mybdr.kr)에서 라이브 스코어보드로 표시한다.
-
-```
-[Flutter 기록원 앱] ──쓰기──▶ [Next.js /api/v1] ──▶ [Supabase DB]
-                                                          │
-[대회 사이트 웹] ◀──Realtime 구독──────────────────────────┘
-[Flutter 앱]    ◀──Supabase SDK 직독──────────────────────┘
-```
-
----
-
-### 8.2 확정된 의사결정 (Q&A 결과)
-
-| 항목 | 결정 | 근거 |
-|------|------|------|
-| 앱 사용자 역할 | 스탯 기록원 1명 | 시간관리자는 별도 기기로 독립 운영, 앱과 무관 |
-| 기록원 자격 | mybdr 가입 회원 필수 | 기존 JWT 인증 재사용, 별도 임시계정 불필요 |
-| 기록원 지정 단위 | 대회 단위 | 경기별 재지정 불필요, 대회 전체 기록 담당 |
-| 지정 방식 | 회원 ID/이메일 검색 | 대회 주최자가 mybdr 관리 화면에서 직접 지정 |
-| 스탯 저장 방식 | 이벤트 스트림 | match_events 테이블에 모든 액션 로그 저장 |
-| MatchPlayerStat | 미사용 | events에서 실시간 집계, 별도 집계값 테이블 불필요 |
-| 쓰기 경로 | Flutter → `/api/v1` | 인증/검증 서버에서 처리 |
-| 읽기/실시간 | Supabase SDK 직접 구독 | 빠른 UI 반응, Realtime 채널 활용 |
-| 공개 범위 | 완전 공개 | 대회 사이트(rookie.mybdr.kr) 누구나 조회 |
-| 오프라인 대응 | 온라인 기본 + 로컬 큐 | 연결 끊김 시 로컬 큐 유지 → 복구 시 자동 flush |
-| Undo | 마지막 이벤트 취소 | undone 플래그 방식, 이벤트 삭제 아님 |
-
----
-
-### 8.3 시스템 전체 흐름
-
-```
-1. [대회 주최자 - mybdr 웹 관리 페이지]
-   → 기록원 지정: 회원 검색 → tournament_recorders 테이블 저장
-
-2. [기록원 - Flutter bdr_stat 앱]
-   a. 로그인 → POST /api/v1/auth/login (기존 JWT)
-   b. 담당 경기 목록 조회 → GET /api/v1/recorder/matches
-   c. 경기 시작 버튼 → PATCH /api/v1/matches/{id}/status { status: "in_progress" }
-   d. 스탯 이벤트 입력 → POST /api/v1/matches/{id}/events
-   e. Undo → PATCH /api/v1/matches/{id}/events/{eventId}/undo
-   f. 경기 종료 버튼 → PATCH /api/v1/matches/{id}/status { status: "completed" }
-   g. (오프라인 시) 이벤트 로컬 큐 적재 → 연결 복구 시 자동 flush
-
-3. [Supabase Realtime]
-   → match_events INSERT/UPDATE 감지 → 웹/앱 구독자에게 broadcast
-
-4. [대회 사이트 - rookie.mybdr.kr]
-   → Supabase SDK로 match_events 구독 → 라이브 스코어보드 실시간 갱신
-```
-
----
-
-### 8.4 신규 DB 테이블 설계
-
-#### `tournament_recorders` — 기록원 지정
-
-```prisma
-model tournament_recorders {
-  id            BigInt     @id @default(autoincrement())
-  tournamentId  String     @map("tournament_id")      // Tournament FK
-  recorderId    BigInt     @map("recorder_id")        // User FK (mybdr 회원)
-  assignedBy    BigInt     @map("assigned_by")        // 지정한 주최자 userId
-  isActive      Boolean    @default(true) @map("is_active")
-  createdAt     DateTime   @default(now()) @map("created_at")
-
-  tournament    Tournament @relation(fields: [tournamentId], references: [id])
-  recorder      users      @relation("recorder", fields: [recorderId], references: [id])
-
-  @@unique([tournamentId, recorderId])
-  @@index([tournamentId])
-  @@map("tournament_recorders")
-}
-```
-
-#### `match_events` — 이벤트 스트림 (핵심)
-
-```prisma
-model match_events {
-  id           BigInt    @id @default(autoincrement())
-  matchId      BigInt    @map("match_id")          // TournamentMatch FK
-  tournamentId String    @map("tournament_id")     // 집계 쿼리 최적화용 역정규화
-  teamId       BigInt?   @map("team_id")           // 어느 팀의 이벤트인지
-  playerId     BigInt?   @map("player_id")         // 선수 특정 시 (선택)
-
-  // 이벤트 종류
-  // score_2, score_3, free_throw, rebound_off, rebound_def,
-  // assist, steal, block, turnover, foul_personal, foul_technical,
-  // timeout, quarter_start, quarter_end, game_start, game_end
-  eventType    String    @map("event_type")
-
-  value        Int?      // 득점 이벤트 시 점수값 (2, 3, 1)
-  quarter      Int?      // 몇 쿼터 이벤트인지 (1~4, 5=OT)
-  gameTime     String?   @map("game_time")         // "09:45" 형태 (표시용)
-
-  undone       Boolean   @default(false)           // Undo 처리됨
-  undoneAt     DateTime? @map("undone_at")
-  undoneBy     BigInt?   @map("undone_by")         // Undo 실행한 recorder
-
-  recordedBy   BigInt    @map("recorded_by")       // 기록원 userId
-  createdAt    DateTime  @default(now()) @map("created_at")
-
-  match        TournamentMatch @relation(fields: [matchId], references: [id])
-
-  @@index([matchId, undone])           // 경기별 유효 이벤트 조회
-  @@index([matchId, createdAt])        // 타임라인 순서 조회
-  @@index([tournamentId, teamId])      // 팀 누적 통계 집계
-  @@map("match_events")
-}
-```
-
----
-
-### 8.5 실시간 집계 로직 (이벤트 → 스코어)
-
-MatchPlayerStat 집계값 테이블 없이 match_events에서 직접 계산:
-
-```typescript
-// 경기 현재 스코어 계산
-const score = await prisma.match_events.aggregate({
-  where: {
-    matchId: matchBigInt,
-    teamId: teamBigInt,
-    eventType: { in: ["score_2", "score_3", "free_throw"] },
-    undone: false,
-  },
-  _sum: { value: true },
-});
-// score._sum.value → 현재 팀 득점
-
-// 또는 Supabase SDK에서 클라이언트 실시간 집계
-const events = supabase
-  .channel(`match:${matchId}`)
-  .on('postgres_changes', {
-    event: 'INSERT',
-    schema: 'public',
-    table: 'match_events',
-    filter: `match_id=eq.${matchId}`,
-  }, (payload) => {
-    // 이벤트 수신 시 로컬 상태 갱신
-    updateScore(payload.new);
-  })
-  .subscribe();
-```
-
----
-
-### 8.6 신규 API 엔드포인트 (`/api/v1/`)
-
-| Method | Path | 인증 | 설명 |
-|--------|------|------|------|
-| GET | `/recorder/matches` | JWT + recorder role | 담당 대회의 경기 목록 |
-| PATCH | `/matches/{matchId}/status` | JWT + recorder | 경기 시작/종료 상태 변경 |
-| POST | `/matches/{matchId}/events` | JWT + recorder | 스탯 이벤트 입력 |
-| PATCH | `/matches/{matchId}/events/{eventId}/undo` | JWT + recorder | 마지막 이벤트 취소 |
-| GET | `/matches/{matchId}/events` | public | 이벤트 목록 + 집계 (스코어보드용) |
-
----
-
-### 8.7 JWT 역할 확장
-
-현재 JWT `role` 값: `player` | `team_admin` | `admin` | `super_admin`
-
-추가 필요:
-```typescript
-// 토너먼트 스코프 recorder 역할
-// 방식: JWT 페이로드에 recorder_tournament_ids 배열 추가
-{
-  sub: "123",
-  role: "player",
-  recorder_tournament_ids: ["abc123", "def456"]  // 기록원으로 지정된 대회 ID 목록
-}
-```
-
-**검증 미들웨어**:
-```typescript
-// src/lib/auth/require-recorder.ts
-export async function requireRecorder(req: NextRequest, tournamentId: string) {
-  const session = await verifyToken(token);
-  if (!session) return { error: 401 };
-
-  // JWT 페이로드 또는 DB에서 기록원 권한 확인
-  const isRecorder = await prisma.tournament_recorders.findFirst({
-    where: { tournamentId, recorderId: BigInt(session.sub), isActive: true },
-  });
-  if (!isRecorder) return { error: 403 };
-  return { session };
-}
-```
-
----
-
-### 8.8 mybdr 웹 관리 화면 변경
-
-**위치**: `/tournament-admin/tournaments/[id]` → "기록원 관리" 탭 추가
-
-```
-┌─────────────────────────────────┐
-│ 기록원 관리                      │
-├─────────────────────────────────┤
-│ [회원 검색: 이메일 또는 ID]  [추가] │
-├─────────────────────────────────┤
-│ 현재 기록원                      │
-│  홍길동 (hong@example.com)  [삭제] │
-│  김철수 (kim@example.com)   [삭제] │
-└─────────────────────────────────┘
-```
-
-**API**:
-- `POST /api/web/tournaments/[id]/recorders` — 기록원 추가
-- `DELETE /api/web/tournaments/[id]/recorders/[userId]` — 기록원 제거
-
----
-
-### 8.9 오프라인 대응 (Flutter 앱)
-
-```
-[온라인 상태]
-  이벤트 입력 → POST /api/v1/matches/{id}/events → 즉시 저장
-
-[오프라인 감지]
-  이벤트 입력 → 로컬 SQLite/Hive 큐에 적재
-  상태 표시: "오프라인 저장됨 (3개 대기 중)"
-
-[온라인 복구]
-  큐 flush → POST /api/v1/matches/{id}/events/batch
-  순서 보장: created_at 기준 오름차순 전송
-  중복 방지: 이벤트에 클라이언트 UUID 포함 → 서버에서 idempotency 처리
-```
-
----
-
-### 8.10 Flutter 앱 화면 설계 (UX 가이드)
-
-```
-┌─────────────────────────────────┐
-│  4강 · BDR컵 2026               │
-│  Team A  vs  Team B             │
-├──────────┬──────────────────────┤
-│    32    │          28          │
-│  Team A  │        Team B        │
-├──────────┼──────────────────────┤
-│ [+2] [+3] [FT] [RB] [파울]     │
-│ [+2] [+3] [FT] [RB] [파울]     │
-├─────────────────────────────────┤
-│  09:45  Team A +3               │
-│  09:20  Team B +2 (Undo)       │
-│                                  │
-│              [UNDO]             │
-└─────────────────────────────────┘
-│  [경기 시작]        [경기 종료]  │
-└─────────────────────────────────┘
-```
-
-**UX 원칙**:
-1. 팀 단위 기록 기본 (선수 특정 불필요 — 빠른 진행)
-2. UNDO = 마지막 이벤트 1개만 취소 (단순)
-3. 오프라인 상태 배너 표시 (상단 노란색)
-4. 경기 시작/종료 버튼은 실수 방지를 위해 확인 다이얼로그 표시
-5. 버튼 최소 48dp (한 손 조작)
-
----
-
-### 8.11 현재 코드베이스와의 연결점
-
-| 현재 파일 | 연결 방식 |
-|----------|---------|
-| `prisma/schema.prisma` | `match_events`, `tournament_recorders` 테이블 추가 |
-| `src/app/api/v1/` | recorder 전용 엔드포인트 신규 추가 |
-| `src/app/(web)/tournament-admin/` | 기록원 관리 탭 UI 추가 |
-| `src/lib/auth/` | `requireRecorder()` 미들웨어 추가 |
-| `TournamentMatch` | `match_events` relation 추가 |
-| `src/app/_site/` | Supabase Realtime 구독 → 라이브 스코어보드 |
-
----
-
-### 8.12 구현 우선순위
-
-| 단계 | 작업 | 공수 |
-|------|------|------|
-| Phase 1 | DB 마이그레이션 (match_events, tournament_recorders) | 0.5일 |
-| Phase 1 | JWT recorder role 확장 + requireRecorder 미들웨어 | 0.5일 |
-| Phase 1 | POST /api/v1/matches/{id}/events 이벤트 입력 API | 1일 |
-| Phase 1 | PATCH undo API + GET events API | 0.5일 |
-| Phase 1 | GET /api/v1/recorder/matches | 0.5일 |
-| Phase 2 | 대회 관리 화면 기록원 지정 UI | 1일 |
-| Phase 2 | Supabase Realtime 구독 → 라이브 스코어보드 | 1.5일 |
-| Phase 3 | 오프라인 큐 + batch sync API | 1.5일 |
-| Phase 3 | PATCH status (경기 시작/종료) | 0.5일 |
 
 ---
 

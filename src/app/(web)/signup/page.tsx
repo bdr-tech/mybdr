@@ -8,7 +8,7 @@ export default function SignupPage() {
     <div className="flex min-h-[80vh] items-center justify-center">
       <Card className="w-full max-w-md">
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold">회원가입</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">회원가입</h1>
           <p className="mt-1 text-sm text-[#6B7280]">BDR에 가입하고 농구를 즐기세요</p>
         </div>
 
@@ -40,7 +40,7 @@ export default function SignupPage() {
 
         <p className="mt-6 text-center text-sm text-[#6B7280]">
           이미 계정이 있으신가요?{" "}
-          <Link href="/login" className="text-[#F4A261] hover:underline">로그인</Link>
+          <Link href="/login" className="text-[#E31B23] hover:underline">로그인</Link>
         </p>
       </Card>
     </div>

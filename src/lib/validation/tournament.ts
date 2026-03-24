@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { gameRulesSchema } from "./game-rules";
 
 export const subdomainCheckSchema = z.object({
   name: z
@@ -36,6 +37,7 @@ export const updateTournamentSchema = z
     auto_approve_teams: z.boolean(),
     primary_color: z.string().nullable(),
     secondary_color: z.string().nullable(),
+    game_rules: gameRulesSchema,
   })
   .partial()
   .refine(

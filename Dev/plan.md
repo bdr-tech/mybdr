@@ -2342,3 +2342,810 @@ export function LiveScoreboard({ matchId, initialScore }: Props) {
 
 *이 계획서는 Dev/research.md + 코드베이스 직접 분석 결과를 종합했습니다.*
 *판단 미기입 항목(`<!-- [판단 주입] -->`)은 구현 전 의견 추가 필요.*
+
+---
+
+# 9. Subin 머지 계획 (전체)
+
+> 작성일: 2026-03-23 (2차 정밀 분석 반영)
+> 근거: `cobby8/my-bdr-subin` (master) vs `bdr-tech/mybdr` 전체 diff
+> 상태: **⛔ 아직 구현하지마** — 판단 주석 작성 후 명시적 승인 필요
+> 참고: OAuth 시스템(카카오/네이버/구글)은 **별도 프로젝트**로 분리
+> Prisma 스키마: ✅ 두 레포 100% 동일 (1548줄, diff 0) — 마이그레이션 불필요
+
+---
+
+## §9.0 변경 요약
+
+| Phase | 카테고리 | 신규 | 수정 | 난이도 | 유형 |
+|-------|---------|------|------|--------|------|
+| 1 | 컬러 시스템 교체 | 0 | ~80 | 낮음 | 디자인 |
+| 2 | UI 컴포넌트 + 반응형 개선 | 1 | ~90 | 낮음 | 디자인 |
+| 3 | 다크모드 + 텍스트 크기 토글 | 2 | 3 | 중간 | 기능+디자인 |
+| 4 | 프로필 시스템 전면 개편 | 14 | 1 | **높음** | 기능 |
+| 5 | 유저 공개 프로필 | 4 | 1 | 중간 | 기능 |
+| 6 | Admin 시스템 재구조화 | 13 | 2 | **높음** | 기능 |
+| 7 | 홈페이지 리디자인 + 사이드바 | 8 | 1 | 중간 | 기능+디자인 |
+| 8 | 게임 위자드 + 목록 개편 | 5 | 6 | 중간 | 기능+디자인 |
+| 9 | 대회 상세 + 참가 신청 | 7 | 2 | 중간 | 기능 |
+| 10 | 팀/대회/커뮤니티 목록 개편 | 3 | ~10 | 중간 | 기능+디자인 |
+| 11 | 선호 필터 + 지역/부 시스템 | 5 | 0 | 중간 | 기능 |
+| 12 | 신규 API 엔드포인트 | 9 | 4 | 중간 | 기능 |
+| 13 | 인증/미들웨어/서비스 변경 | 0 | 6 | **높음** | 핵심로직 |
+| 14 | next.config + 메타데이터 | 1 | 2 | 낮음 | 설정 |
+| — | ~~OAuth 시스템~~ | ~~8~~ | ~~3~~ | ~~높음~~ | ~~별도 프로젝트~~ |
+
+**총계**: 신규 ~72개 파일 + 수정 ~120개 파일 (OAuth 제외)
+
+---
+
+## §9.1 Phase 1 — 컬러 시스템 교체
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### 변경 내용
+
+전체 앱 컬러 팔레트 교체. ~200개 하드코딩 인스턴스.
+
+| 요소 | 현재 (mybdr) | 변경 (subin) |
+|------|-------------|-------------|
+| Primary | `#0066FF` (Toss Blue) | `#1B3C87` (Navy) |
+| Primary hover | `#0052CC` | `#142D6B` |
+| Accent | `#F4A261` (Warm Orange) | `#E31B23` (Red) |
+| Accent hover | — | `#C8101E` |
+| Success | `#4ADE80` | `#16A34A` |
+| Error | `#EF4444` | `#DC2626` |
+| Warning | `#FBBF24` | `#D97706` |
+| Info | `#60A5FA` | `#2563EB` |
+| Background | `#F5F7FA` | `#F5F6FA` |
+| Elevated | `#EEF2FF` | `#EDF0F8` |
+
+### 구현 방법
+
+1. `globals.css`의 CSS 변수값 업데이트
+2. 컴포넌트 내 하드코딩된 hex값 → CSS 변수 참조로 리팩토링 (권장)
+3. `rgba(0,102,255,...)` 등 투명도 변형도 치환 대상
+4. site-templates의 동적 primaryColor/secondaryColor는 건드리지 않음
+
+---
+
+## §9.2 Phase 2 — UI 컴포넌트 + 반응형 개선
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### §9.2.1 Button (`src/components/ui/button.tsx`)
+- 신규 `cta` variant (빨간색 `#E31B23`)
+- `loading` prop + 스피너 애니메이션
+- `active:scale-[0.97]` press effect
+- 포커스 링 navy로 변경
+
+### §9.2.2 Card (`src/components/ui/card.tsx`)
+- 반응형 패딩: `p-5` → `p-4 sm:p-5`
+
+### §9.2.3 Header (`src/components/shared/header.tsx`)
+- 로고: 텍스트 "BDR" → `<img src="/images/logo.png">` (87px)
+- 높이: `h-14` → `h-20`
+- `profile_image` Next/Image 지원
+- 모바일 하단 내비: active indicator → 빨간 top-line 바, 아이콘 22→24px
+- ThemeToggle 항상 표시 (Phase 3 연결)
+
+### §9.2.4 UserDropdown / SlideMenu / QuickMenu
+- UserDropdown: 프로필 이미지 + 아바타+이름 나란히
+- SlideMenu: 브랜드 orange→red, 로그인 blue→navy
+- QuickMenu: 라벨 축약, "알림" 제거 (10→9개)
+
+### §9.2.5 전체 페이지 반응형 (일괄)
+- Heading: `text-2xl` → `text-xl sm:text-2xl`
+- Card 패딩: `p-5` → `p-4 sm:p-5`
+- 필터 터치: `min-h-[44px]`
+
+### §9.2.6 메타데이터 / SEO / 에셋
+- `layout.tsx`: `metadataBase`, OpenGraph, Twitter card
+- `public/images/logo.png` 추가 필요
+
+---
+
+## §9.3 Phase 3 — 다크모드 + 텍스트 크기 토글
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### 신규 파일
+| 파일 | 설명 |
+|------|------|
+| `src/components/shared/theme-toggle.tsx` | Sun/Moon 토글, localStorage 기반 |
+| `src/components/shared/text-size-toggle.tsx` | 텍스트 크기 토글, `html.large-text` 클래스 + localStorage |
+
+### 수정 파일
+| 파일 | 변경 |
+|------|------|
+| `globals.css` | `html.dark` CSS 변수 오버라이드 블록 |
+| `layout.tsx` | flash-free 인라인 스크립트, `suppressHydrationWarning` |
+| `header.tsx` | `<ThemeToggle />` 삽입 |
+
+### ⚠️ 다크모드 구현 방식 주의
+subin은 `html.dark [class*="bg-[#FFFFFF]"]` + `!important`로 오버라이드함 (취약).
+**권장**: Phase 1에서 CSS 변수 통합 후, 변수 오버라이드만으로 다크모드 처리.
+
+---
+
+## §9.4 Phase 4 — 프로필 시스템 전면 개편 ⭐
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### 신규 파일 (14개)
+
+**프로필 컴포넌트** (`src/app/(web)/profile/_components/`):
+| 파일 | 설명 |
+|------|------|
+| `profile-header.tsx` | 아바타, **티어 배지** (ROOKIE/BRONZE/SILVER/GOLD/PLATINUM), 포지션, 도시, 총경기+승률 |
+| `radar-chart.tsx` | SVG 레이더 차트 (라이브러리 없음, 6축/5축 지원) |
+| `ability-section.tsx` | 2열: 레이더 차트 + 6개 프로그레스 바 (스탯 정규화 0-100) |
+| `stat-bars.tsx` | PPG/RPG/APG 3카드 스탯 |
+| `current-team-card.tsx` | 현재 소속팀 카드 (역할, 팀컬러) |
+| `recent-games-section.tsx` | 최근 5경기 리스트 |
+| `activity-ring.tsx` | 월별 도전 위젯 (conic-gradient, Bronze/Silver/Gold 마일스톤) |
+| `player-info-section.tsx` | 포지션/키/도시 + 바이오 |
+| `teams-section.tsx` | 소속팀 목록 |
+| `tournaments-section.tsx` | 참가 대회 목록 |
+| `section-wrapper.tsx` | 재사용 카드 래퍼 |
+
+**온보딩 플로우** (신규):
+| 파일 | 설명 |
+|------|------|
+| `profile/complete/page.tsx` | **온보딩 페이지** — 이름, 전화, RegionPicker, 포지션, 키/몸무게, AI 바이오 생성, `profile_completed: true` |
+| `profile/complete/preferences/page.tsx` | 온보딩 선호 설정 (PreferenceForm, "onboarding" 모드) |
+| `profile/preferences/page.tsx` | 일반 선호 설정 (PreferenceForm, "settings" 모드) |
+
+### 수정 파일
+| 파일 | 변경 |
+|------|------|
+| `profile/page.tsx` | **완전 재작성** — 탭 기반 → 컴포넌트 기반. SWR로 `/api/web/profile` + `/api/web/profile/stats` 호출 |
+
+### 의존성
+- `/api/web/profile/stats` API (Phase 12)
+- `/api/web/profile/generate-bio` API (Phase 12) — **GEMINI_API_KEY 필요**
+- RegionPicker (Phase 11)
+- PreferenceForm (Phase 11)
+
+---
+
+## §9.5 Phase 5 — 유저 공개 프로필
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### 신규 파일 (4개)
+`src/app/(web)/users/[id]/_components/`:
+| 파일 | 설명 |
+|------|------|
+| `action-buttons.tsx` | "메시지 보내기" + "팔로우" (준비중 alert) |
+| `user-radar-section.tsx` | 5축 펜타곤 레이더 (SHOOTING/PACE/PASSING/DEFENSE/DRIBBLE) |
+| `user-recent-games.tsx` | 최근 5경기 테이블 (PTS/AST/REB) |
+| `user-stats-section.tsx` | 4카드 평균 스탯 + 프로그레스 바 |
+
+### 수정 파일
+| 파일 | 변경 |
+|------|------|
+| `users/[id]/page.tsx` | **완전 재작성** — `Promise.all` 3쿼리 (유저정보 + 커리어 평균 aggregate + 최근5경기). 2열 헤더 + 티어배지 + MVP 하이라이트 |
+
+---
+
+## §9.6 Phase 6 — Admin 시스템 재구조화 ⭐
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### 핵심 변경: Route Group 이동
+- **현재**: `src/app/(web)/admin/` (web 레이아웃 공유)
+- **변경**: `src/app/(admin)/admin/` (독립 route group + 전용 레이아웃)
+
+### 신규 파일 (13개)
+| 파일 | 설명 |
+|------|------|
+| `(admin)/admin/layout.tsx` | 서버컴포넌트, `getWebSession()` + `super_admin` 체크, `AdminSidebar` + `lg:ml-64` |
+| `(admin)/admin/page.tsx` | 대시보드 — 유저/대회/경기/팀 수 `Promise.all` 쿼리 |
+| `(admin)/admin/users/page.tsx` | 유저 목록 (50/page, 검색, 슈퍼어드민 수) |
+| `(admin)/admin/users/admin-users-table.tsx` | 클릭→모달, 탭(info/edit), 역할변경, 상태토글, **위험 작업**(강퇴/영구삭제) |
+| `(admin)/admin/users/admin-user-actions.tsx` | 인라인 confirm/cancel |
+| `(admin)/admin/settings/page.tsx` | 유지보수 모드 토글 + 캐시 클리어 |
+| `(admin)/admin/payments/page.tsx` | 결제 목록 + 통계 (총건수/결제완료/총액) |
+| `(admin)/admin/plans/page.tsx` | 요금제 CRUD, 프로모션 관리 |
+| `(admin)/admin/logs/page.tsx` | 활동 로그 (날짜 그룹, KST, 마크다운 내보내기, severity) |
+| `(admin)/admin/suggestions/page.tsx` | 건의사항 목록 |
+| `(admin)/admin/tournaments/page.tsx` | 대회 관리 (상태 전이, 운영자 정보) |
+| `(admin)/admin/analytics/page.tsx` | 월별 가입 차트 (bar chart, raw SQL 6개월) |
+| `(admin)/admin/loading.tsx` | 스켈레톤 |
+
+### 수정 파일
+| 파일 | 변경 |
+|------|------|
+| `components/admin/sidebar.tsx` | 이모지→Material Symbols 아이콘, 흰배경→다크(#111111), "BDR SPORTS" + red Admin 배지 |
+| `actions/admin-users.ts` | 서버 액션 추가 (역할변경, 상태변경, 어드민토글, 강퇴, 삭제) |
+
+### ⚠️ 주의사항
+- 기존 `(web)/admin/` 페이지와 **중복** — 기존 것 삭제 필요
+- 서버 액션(`admin-users.ts`)이 확장됨 — mybdr 현재 버전과 diff 확인 필요
+
+---
+
+## §9.7 Phase 7 — 홈페이지 리디자인 + 사이드바
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### 신규 파일 (8개)
+| 파일 | 설명 |
+|------|------|
+| `components/home/hero-section.tsx` | 로그인/비로그인 분기 히어로 |
+| `components/home/personal-hero.tsx` | 5슬라이드 캐러셀 (391줄) |
+| `components/home/hero-bento.tsx` | YouTube 슬라이더 (자동5초, LIVE감지, autoplay) |
+| `components/home/recommended-games.tsx` | 스마트 추천 그리드 |
+| `components/home/recommended-videos.tsx` | YouTube 추천 비디오 4카드 |
+| `components/home/notable-teams.tsx` | 주목할 팀 Top 4 |
+| `components/home/right-sidebar-logged-in.tsx` | 로그인 우측 사이드바 (오늘경기/내스탯/랭킹/커뮤니티) |
+| `components/home/right-sidebar-guest.tsx` | 비로그인 우측 사이드바 (CTA/기능소개/경기/성장/랭킹/커뮤니티) |
+
+### 수정 파일
+| 파일 | 변경 |
+|------|------|
+| `(web)/page.tsx` | 202줄→~20줄. `<HeroSection />` + `<QuickMenu />` + `<RecommendedGames />` + Right Sidebar |
+
+### 사이드바 API 의존성
+- `right-sidebar-logged-in.tsx`: `/api/web/profile/stats`, `/api/web/teams`, `/api/web/community` 호출
+- `right-sidebar-guest.tsx`: 동일 API들 (Promise.allSettled + fallback)
+- `hero-bento.tsx` / `recommended-videos.tsx`: `/api/web/youtube/recommend` — **YOUTUBE_API_KEY 필요**
+
+---
+
+## §9.8 Phase 8 — 게임 위자드 + 목록 개편
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### 신규 파일 (5개)
+| 파일 | 설명 |
+|------|------|
+| `games/_components/game-card-compact.tsx` | 3카드 → 1통합 카드 (유형별 보더 색, 진행률 바, 실력배지) |
+| `games/_components/games-content.tsx` | 게임 목록 컨텐츠 래퍼 |
+| `games/[id]/_components/participants-grid.tsx` | 참가자 그리드 |
+| `games/[id]/_components/host-card.tsx` | 호스트 정보 카드 |
+| `games/[id]/_components/price-card.tsx` | 참가비 카드 |
+| `games/[id]/_components/hero-banner.tsx` | 경기 상세 히어로 배너 |
+
+### 수정 파일 (6개)
+| 파일 | 변경 |
+|------|------|
+| `game-wizard.tsx` | 4단계→3단계, endTime 필드 |
+| `step-type.tsx` | 라벨 축약, 3열 그리드, 선택시 자동 다음단계 |
+| `step-when-where.tsx` | TimePicker, 프리셋 저장, 실력 셀렉터(7단계), AdvancedSettings |
+| `games/page.tsx` | 3카드→GameCardCompact, `grid-cols-2` (모바일 항상 2열), 원형 아이콘 버튼 |
+| `games-filter.tsx` | 접이식 패널, Search/X, "전체 해제", outside-click-to-close |
+| `games/[id]/page.tsx` | 프로필 완료 체크 `profile_completed` → `getMissingFields()` 실시간 검증 |
+
+---
+
+## §9.9 Phase 9 — 대회 상세 + 참가 신청
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### 신규 파일 (7개)
+| 파일 | 설명 |
+|------|------|
+| `tournaments/[id]/join/page.tsx` | **4단계 참가 위자드** (팀선택→부/카테고리→로스터/유니폼→확인). 부별 상한, 대기, 등번호 검증 |
+| `tournaments/[id]/_components/tournament-hero.tsx` | 풀폭 히어로 (그라데이션, 상태/형식 배지) |
+| `tournaments/[id]/_components/tournament-sidebar.tsx` | 참가비, 부별 진행률 바, Google Calendar, D-day 카운트다운, 입금 정보 |
+| `tournaments/[id]/_components/tournament-about.tsx` | 설명 파서 (keyvalue/numbered/bullets/prizes/sponsors 섹션) |
+| `tournaments/[id]/bracket/_components/group-standings.tsx` | 조별 순위표 |
+| `tournaments/[id]/bracket/_components/finals-sidebar.tsx` | 결승 사이드바 |
+| `tournaments/[id]/bracket/_components/tournament-dashboard-header.tsx` | 대회 대시보드 헤더 |
+
+### 수정 파일
+| 파일 | 변경 |
+|------|------|
+| `tournaments/[id]/page.tsx` | 상세 페이지 확장 (hero + sidebar + about 컴포넌트 적용) |
+| `tournaments/[id]/bracket/page.tsx` | 대진표 페이지 확장 |
+
+### 대회 관리 컴포넌트 (신규 3개)
+| 파일 | 설명 |
+|------|------|
+| `components/tournament/registration-settings-form.tsx` | 접수 설정 폼 |
+| `components/tournament/team-settings-form.tsx` | 팀 설정 폼 |
+| `components/tournament/schedule-form.tsx` | 일정 설정 폼 |
+
+---
+
+## §9.10 Phase 10 — 팀/대회/커뮤니티 목록 개편
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### 신규 파일
+| 파일 | 설명 |
+|------|------|
+| `teams/_components/teams-content.tsx` | 팀 목록 컨텐츠 래퍼 |
+| `tournaments/_components/tournaments-content.tsx` | 대회 목록 컨텐츠 래퍼 |
+| `community/_components/community-content.tsx` | 커뮤니티 목록 래퍼 |
+| `community/_components/community-sidebar.tsx` | 커뮤니티 사이드바 |
+| `community/[id]/_components/share-button.tsx` | 공유 버튼 |
+| `community/[id]/_components/post-detail-sidebar.tsx` | 게시글 상세 사이드바 |
+
+### 주요 수정 패턴 (팀/대회/커뮤니티 공통)
+- 서버→클라이언트 전환 (SWR 데이터 페칭)
+- 선호 필터 연동 (Phase 11)
+- 목록 페이지 레이아웃 변경 (사이드바 추가)
+- 필터 UI 개편
+
+---
+
+## §9.11 Phase 11 — 선호 필터 + 지역/부 시스템
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### 신규 파일 (5개)
+| 파일 | 설명 |
+|------|------|
+| `src/contexts/prefer-filter-context.tsx` | 전역 선호 필터 Context (페이지 변경 시 DB 기본값 리셋, 로그인 인식) |
+| `src/components/shared/preference-form.tsx` | 공유 선호 설정 폼 (부/경기유형/게시판 카테고리 멀티셀렉트, 칩 UI) |
+| `src/components/shared/region-picker.tsx` | 다중 지역 선택 (최대 3개, 시도→구군 캐스케이딩, **Geolocation + Nominatim 역지오코딩**) |
+| `src/lib/constants/regions.ts` | 한국 전체 시도→구군 매핑 (17개 시도) |
+| `src/lib/constants/divisions.ts` | BDR 부 시스템 (D3-D8, i/U/S/W시리즈), 카테고리/성별 필터 유틸 |
+
+### 의존 관계
+- Phase 4 (프로필 온보딩)에서 RegionPicker, PreferenceForm 사용
+- Phase 10 (목록 페이지)에서 PreferFilterContext 사용
+- Phase 12 (`/api/web/preferences`) 에서 선호도 저장/조회
+
+---
+
+## §9.12 Phase 12 — 신규 API 엔드포인트
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### 신규 API (9개)
+| 엔드포인트 | 메서드 | 설명 | 환경변수 |
+|-----------|--------|------|---------|
+| `/api/web/dashboard` | GET | 대시보드 병렬 쿼리 (다음경기/스탯/팀/대회/추천) | — |
+| `/api/web/recommended-games` | GET | 스마트 추천 (패턴 스코어링/도시 폴백/최신) | — |
+| `/api/web/profile/stats` | GET | 플레이어 통계 (커리어 avg + 시즌 하이 + 승률) | — |
+| `/api/web/profile/generate-bio` | POST | **AI 바이오 생성** (Gemini 2.5 Flash) | `GEMINI_API_KEY` |
+| `/api/web/youtube/recommend` | GET | YouTube 추천 (BDR 채널, 스코어링, 5-30분 캐시) | `YOUTUBE_API_KEY`, `BDR_YOUTUBE_UPLOADS_PLAYLIST_ID` |
+| `/api/web/preferences` | GET/PATCH | 선호 설정 (부/게시판/경기유형) | — |
+| `/api/web/teams` | GET | 공개 팀 목록 (검색/도시/승수 정렬, BigInt 직렬화) | — |
+| `/api/web/check-duplicate` | GET | 이메일/닉네임 중복 확인 | — |
+| `/api/web/community` | GET | 커뮤니티 목록 (카테고리/검색/선호필터) | — |
+| `/api/web/games` | GET | 경기 목록 (검색/유형/도시/날짜/선호필터) | — |
+| `/api/web/tournaments/[id]/join` | GET/POST | **대회 참가 신청** (부 상한, 대기, 트랜잭션, 알림) | — |
+
+### 수정된 기존 API (4개)
+| 엔드포인트 | 변경 |
+|-----------|------|
+| `/api/web/me` | `profile_image`/`profile_image_url` DB 조회 추가 |
+| `/api/web/profile` | 응답 필드 옵셔널화 (`teams?`, `recent_games?`) |
+| `/api/v1/matches/[id]/stats` | 기능 변경 확인 필요 |
+| `/api/web/tournaments/[id]/matches/[matchId]` | 기능 변경 확인 필요 |
+
+### DB 컬럼 의존성 (선호 필터)
+subin의 preferences API가 참조하는 컬럼 — 스키마 확인 결과:
+- ✅ `users.preferred_divisions` (JSON) — 존재 + GIN 인덱스
+- ✅ `users.preferred_board_categories` (JSON) — 존재
+- ✅ `users.profile_completed` (Boolean) — 존재 + 인덱스
+- ❌ `users.preferred_game_types` (JSON) — **미존재, 마이그레이션 필요**
+- ❌ `users.prefer_filter_enabled` (Boolean) — **미존재, 마이그레이션 필요**
+- ❌ `users.onboarding_step` (Integer) — **미존재, 마이그레이션 필요**
+
+→ Phase 11/12 착수 전 Prisma 마이그레이션 3건 추가 필수.
+
+---
+
+## §9.13 Phase 13 — 인증/미들웨어/서비스 변경 ⭐
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### §9.13.1 `src/app/actions/auth.ts` (충돌 위험: 높음)
+
+| 항목 | 현재 (mybdr) | 변경 (subin) |
+|------|-------------|-------------|
+| 쿠키 secure | `secure: true` 항상 | `secure: isProduction` (dev에서 false) |
+| 가입 검증 | 기본만 | passwordConfirm, 닉네임 2-20자, 비번 복잡도(문자+숫자+특수문자), 닉네임 중복체크(대소문자 무관) |
+| 가입 후 리다이렉트 | `/` | `/profile/complete` (온보딩) |
+| devLoginAction | 없음 | 추가 (첫 active 유저로 자동로그인, dev 전용) |
+
+### §9.13.2 `src/proxy.ts` (충돌 위험: 높음)
+
+- `processRequest()` 헬퍼 함수 **제거** → 인라인으로 전환
+- 이유: "Next.js 16 proxy에서 blocking 이슈"
+- API v1 토큰 체크는 인라인으로 이동
+
+### §9.13.3 `src/lib/services/user.ts`
+
+추가된 함수:
+- `getPlayerStats()` — matchPlayerStat aggregate (커리어 평균 + 시즌 하이 + **승률 계산**)
+- `getMonthlyGames()` — 이번 달 승인된 game_applications 카운트
+- `PROFILE_DETAIL_SELECT`에 `createdAt` 추가
+
+### §9.13.4 `src/lib/services/game.ts`
+- 게임 목록/도시 목록 함수 변경 확인 필요
+
+### §9.13.5 `src/lib/services/tournament.ts`
+- 대회 서비스 변경 확인 필요
+
+### §9.13.6 `src/lib/profile/completion.ts`
+- 프로필 완료도 체크 로직 변경
+
+---
+
+## §9.14 Phase 14 — next.config + 메타데이터
+
+<!-- 전부 교체: mybdr에 엎어씌워 / 단 oauth관련 내용은 보류 -->
+
+### next.config.ts 변경
+| 항목 | 현재 | 변경 |
+|------|------|------|
+| CSP style-src | `self unsafe-inline` | + `https://fonts.googleapis.com` |
+| CSP font-src | `self data:` | + `https://fonts.gstatic.com` |
+| CSP frame-src | 카카오 우편번호만 | + `accounts.google.com`, `nid.naver.com`, `kauth.kakao.com`, YouTube |
+| images.remotePatterns | 없음 | kakaocdn, pstatic, googleusercontent 추가 |
+
+⚠️ frame-src의 OAuth 관련 도메인은 OAuth 별도 프로젝트와 겹침 — YouTube만 먼저 적용 가능
+
+---
+
+## §9.15 예상 문제점 및 대응
+
+### 🔴 높음
+
+| 문제 | 설명 | 대응 |
+|------|------|------|
+| auth.ts 행동 변경 | 쿠키 보안, 가입 플로우, 리다이렉트가 모두 바뀜 | 항목별 선택 적용. devLoginAction은 dev 환경 전용 확인 |
+| proxy.ts 구조 변경 | processRequest 제거. mybdr도 수정했을 수 있음 | 양쪽 diff 비교 후 subin 방식 채택 여부 판단 |
+| Admin route group 이동 | `(web)/admin/` → `(admin)/admin/` — 기존 페이지와 중복 | 기존 `(web)/admin/` 삭제 후 subin 구조 적용 |
+| 프로필 페이지 완전 재작성 | 기존 탭 UI 전부 폐기 | subin 버전 채택, 컴포넌트 14개 일괄 복사 |
+| users/[id] 완전 재작성 | 새 쿼리 3개 + 컴포넌트 4개 | subin 버전 채택 |
+
+### 🟡 중간
+
+| 문제 | 설명 | 대응 |
+|------|------|------|
+| 선호 필터 DB 컬럼 | 5개 중 3개 누락 확인 (`preferred_game_types`, `prefer_filter_enabled`, `onboarding_step`) | **마이그레이션 3건 추가 필수** (Phase 11 전) |
+| 환경변수 3개 필요 | `GEMINI_API_KEY`, `YOUTUBE_API_KEY`, `BDR_YOUTUBE_UPLOADS_PLAYLIST_ID` | 없으면 해당 기능 비활성화 (fallback 존재) |
+| (web)/layout.tsx 변경 | 사이드바/선호필터 Context 추가됨 | mybdr 현재 레이아웃과 수동 머지 |
+| 대회 참가 API 의존성 | `createNotification`, `NOTIFICATION_TYPES` import | mybdr 알림 시스템과 호환 확인 |
+
+### 🟢 낮음 (해결됨)
+
+| 문제 | 상태 |
+|------|------|
+| Prisma 스키마 불일치 | ✅ 100% 동일 확인 |
+| 로고 에셋 | subin에서 복사 |
+| package.json | mybdr 기준 유지 |
+
+---
+
+## §9.16 실행 순서 권고
+
+```
+Phase 1 (컬러) ──→ Phase 2 (UI/반응형) ──→ Phase 3 (다크모드)
+      │
+      ├──→ Phase 11 (선호필터/지역/부) ──→ Phase 12 (API) ──→ Phase 14 (config)
+      │
+      ├──→ Phase 13 (auth/proxy/서비스) ← 가장 먼저 검토, 가장 신중하게
+      │
+      ├──→ Phase 4 (프로필) ──→ Phase 5 (유저 프로필)
+      │
+      ├──→ Phase 6 (Admin) ← 독립 작업 가능
+      │
+      ├──→ Phase 7 (홈) ──→ Phase 8 (게임)
+      │
+      └──→ Phase 9 (대회) ──→ Phase 10 (목록 개편)
+```
+
+### 추천 실행 그룹
+
+**Group A (기반)**: Phase 1 → 2 → 3 → 14 (컬러/UI/다크모드/config)
+**Group B (핵심 로직)**: Phase 13 (auth/proxy) — 가장 먼저 리뷰, 가장 신중하게
+**Group C (시스템)**: Phase 11 → 12 (선호필터 + API)
+**Group D (페이지)**: Phase 4 → 5 → 7 → 8 → 9 → 10 (프로필/홈/게임/대회/목록)
+**Group E (Admin)**: Phase 6 — 독립 진행 가능
+
+각 Phase 완료 후 `next build` 검증 필수.
+
+---
+
+## §9.17 제외 항목 (별도 프로젝트)
+
+| 항목 | 파일 수 | 사유 |
+|------|---------|------|
+| OAuth 시스템 (카카오/네이버/구글) | 8 신규 + 3 수정 | NextAuth v5와 인증 체계 충돌 |
+| `/verify` 전화번호 인증 | 3 신규 | OAuth 의존 |
+| Dev 로그인 액션 | 1 수정 | OAuth 의존 (단, Phase 13에서 별도 검토 가능) |
+| OAuth용 CSP frame-src | — | YouTube는 Phase 14에서 적용, OAuth 도메인은 별도 |
+
+### 필요 환경변수 총정리
+| 변수 | 용도 | 필수 |
+|------|------|------|
+| `GEMINI_API_KEY` | AI 바이오 생성 (Phase 4) | 선택 (없으면 기능 비활성) |
+| `YOUTUBE_API_KEY` | YouTube 추천 (Phase 7) | 선택 (없으면 더미 데이터) |
+| `BDR_YOUTUBE_UPLOADS_PLAYLIST_ID` | YouTube 채널 ID | 선택 |
+| `PRISMA_LOG` | Prisma 쿼리 로깅 (Phase 13) | 선택 (dev에서만) |
+
+---
+
+## §9.18 3차 정밀 검수 — 추가 발견 사항
+
+> 작성일: 2026-03-23
+> 전수 파일 비교 (subin 336파일 vs mybdr 261파일, 공통 248파일 중 diff 있는 127파일 전체 분석)
+
+### §9.18.1 🔴 핵심 발견: FIBA 게임 규칙 ↔ 대회 접수 설정 교체
+
+**mybdr에만 있고 subin이 삭제한 파일 2개**:
+- `src/lib/constants/game-rules-defaults.ts` — FIBA 게임 규칙 상수 (쿼터 타이밍, 샷클락, 파울, 타임아웃, 득점)
+- `src/lib/validation/game-rules.ts` — 게임 규칙 Zod 스키마
+
+**subin이 이걸 대체한 내용**:
+- 대회 위자드 Step 3: 게임 규칙 편집 → **접수 설정** (카테고리, 부별 상한/참가비, 계좌정보, 대기명단)
+- `tournament.ts` 서비스: `game_rules` → registration 설정 (categories, div_caps, div_fees, bank 정보)
+- `tournament.ts` validation: `gameRulesSchema` → registration 설정 스키마
+- `/api/web/tournaments/[id]` PATCH: `game_rules` 필드 → registration 설정 필드
+
+⚠️ **판단 필요**: FIBA 규칙 시스템을 버릴 것인가, 접수 설정과 공존시킬 것인가?
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### §9.18.2 🔴 (web)/layout.tsx 완전 재작성
+
+| 항목 | 현재 mybdr | subin |
+|------|-----------|-------|
+| 줄 수 | ~19줄 | ~399줄 |
+| 네비게이션 | Header 컴포넌트만 import | **전체 인라인**: 데스크탑 사이드바 + 모바일 하단바 + FAB |
+| 아이콘 | Lucide React | Material Symbols Outlined (폰트) |
+| Context | 없음 | `PreferFilterProvider` 래핑 |
+| 슬라이드메뉴 | Header 내부 | layout에서 직접 렌더 |
+| ThemeToggle | 없음 | 사이드바 하단 |
+| TextSizeToggle | 없음 | 사이드바 하단 |
+
+이건 Header 컴포넌트를 사실상 대체하는 수준. **기존 Header와의 관계 정리 필요**.
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### §9.18.3 대회 관리 위자드 대폭 변경
+
+**기존 위자드** (`tournament-admin/tournaments/new/wizard/page.tsx`):
+- 5단계: 템플릿 → 정보 → URL → 디자인 → 미리보기
+
+**subin 위자드**:
+- 7단계: 템플릿 → 정보 → **일정** → **접수설정** → **팀설정** → 디자인 → 미리보기
+- 공유 컴포넌트 3개: `ScheduleForm`, `RegistrationSettingsForm`, `TeamSettingsForm`
+- `autoCalcMaxTeams` 로직 (부별 상한 합계 자동 계산)
+- 부별 참가비, 계좌정보, 대기명단 설정
+
+**수정 위자드** (`tournaments/[id]/wizard/page.tsx`) 도 동일 구조로 변경됨.
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### §9.18.4 알림 시스템 확장
+
+subin이 추가한 알림 발송 로직:
+| 위치 | 트리거 | 수신자 |
+|------|--------|--------|
+| `/api/v1/matches/[id]/status` | 경기 취소 시 | 양팀 전체 선수 (bulk) |
+| `/api/web/tournaments/[id]/matches/[matchId]` | 경기 취소 시 | 양팀 전체 선수 (bulk) |
+| `/api/web/teams/[id]/join` | 팀 가입 신청 시 | 팀 캡틴 |
+| `lib/notifications/types.ts` | — | `TOURNAMENT_JOIN_SUBMITTED`, `TOURNAMENT_JOIN_RECEIVED` 타입 추가 |
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### §9.18.5 로그인 페이지 이메일 로그인 추가
+
+- 현재 mybdr: OAuth 전용 (Kakao/Google 버튼)
+- subin: OAuth + **이메일/비밀번호 로그인 모달** (`loginAction` 서버 액션), body scroll lock
+
+※ OAuth는 별도 프로젝트이지만, 이메일 로그인은 독립 기능으로 적용 가능
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+### §9.18.6 커뮤니티/팀 목록 → 클라이언트 컴포넌트 전환
+
+| 페이지 | 현재 mybdr | subin |
+|--------|-----------|-------|
+| `community/page.tsx` | 서버 컴포넌트 (직접 Prisma 쿼리) | `<Suspense>` + `<CommunityContent>` 클라이언트 |
+| `teams/page.tsx` | 서버 컴포넌트 (직접 Prisma 쿼리) | `<Suspense>` + `<TeamsContent>` 클라이언트 |
+| `tournaments/page.tsx` | 서버 컴포넌트 | `<Suspense>` + `<TournamentsContent>` 클라이언트 |
+
+**이유**: 선호 필터 Context 연동 + SWR 클라이언트 데이터 페칭. 서버→클라이언트 아키텍처 전환.
+
+### §9.18.7 팀 상세 기능 추가
+
+| 항목 | 변경 |
+|------|------|
+| `teams/[id]/page.tsx` | `computeDivision` 함수 (GOLD/ROOKIE 배지), Material Symbols 아이콘 탭 |
+| `overview-tab.tsx` | 사전 계산된 `team` prop (중복 DB쿼리 제거), `topMembers` 쿼리 |
+| `games-tab.tsx` | 경기 행 클릭 가능 (Link 추가) |
+| `join-button.tsx` | **Web Share API** 공유 버튼 + 대전 신청 플레이스홀더 |
+| `teams-filter.tsx` | **정렬 옵션** (랭킹/최신/승률), `totalCount` prop, 탭 스타일 UI |
+
+### §9.18.8 API 기능 변경 상세
+
+| API | 변경 |
+|-----|------|
+| `/api/web/me` | DB 쿼리 추가 (`profile_image`, `prefer_filter_enabled` 반환) |
+| `/api/web/tournaments` | **GET 핸들러 추가** (공개 대회 목록 + 선호 필터) |
+| `/api/v1/matches/[id]/stats` | 간소화: match/quarterScores 쿼리 제거, 스탯만 반환 |
+| `/api/v1/tournaments/[id]/matches/sync` | `Promise.allSettled` 병렬화 + `postProcessStatus` 응답 |
+| `actions/admin-users.ts` | **`forceWithdrawUserAction`** 추가 (개인정보 익명화 + 탈퇴 처리) |
+| `actions/teams.ts` | `crypto.randomUUID()` → `node:crypto`, 멤버 상태 `"active"` → `"approved"` |
+
+### §9.18.9 기반 인프라 변경
+
+| 파일 | 변경 |
+|------|------|
+| `lib/db/prisma.ts` | 쿼리 로깅 `PRISMA_LOG=true` 환경변수 제어 (기본 off) |
+| `lib/admin/log.ts` | `"critical"` severity 추가 |
+| `lib/profile/completion.ts` | `district` 필수 제거 (city만 필요) |
+| `app/layout.tsx` | Space Grotesk + Pretendard CDN + Material Symbols 폰트 추가 |
+| `app/manifest.ts` | 디자인 변경만 |
+| `globals.css` | 전체 CSS 변수 시스템 재설계 (다크모드 기본 cool gray + BDR Red) |
+
+### §9.18.10 "디자인만" 확인된 파일 (기능 변경 없음)
+
+다음 파일들은 컬러/반응형/레이아웃만 변경, 로직 변경 없음 확인:
+- tournament-admin: matches, site, bracket, [id]/page, tournaments/page, layout, loading, templates, series/*
+- privacy, terms, signup
+- community: comment-form, loading, new
+- teams: manage, team-card, new-team-form, loading, tournaments-tab, roster-tab (minor)
+- pricing (page, checkout, success, fail), upgrade, notifications
+- courts/[id], offline
+- site-templates/classic.tsx
+- manifest.ts
+
+---
+
+## §9.19 최종 전수 통계
+
+### 파일 수
+| 구분 | 수 |
+|------|-----|
+| subin 전체 src 파일 | 336 |
+| mybdr 전체 src 파일 | 261 |
+| subin에만 있는 신규 파일 | **88** |
+| mybdr에만 있는 파일 (subin 삭제/이동) | **13** |
+| 공통 파일 중 diff 있는 파일 | **127** |
+| 공통 파일 중 동일 | 121 |
+
+### 삭제된 파일 정리
+| 파일 | 사유 |
+|------|------|
+| `(web)/admin/*.tsx` (11개) | `(admin)/admin/`으로 이동 |
+| `lib/constants/game-rules-defaults.ts` | 접수 설정으로 교체 |
+| `lib/validation/game-rules.ts` | 접수 설정 스키마로 교체 |
+
+### 변경 분류 최종
+| 분류 | 파일 수 |
+|------|---------|
+| 기능 변경 (로직/API/쿼리) | ~45 |
+| 디자인만 (컬러/반응형/레이아웃) | ~82 |
+| 완전 재작성 | ~8 |
+| OAuth (별도 프로젝트) | ~11 |
+
+### 판단 필요 항목 요약
+1. ⭐ FIBA 게임 규칙 삭제 vs 접수 설정 공존 (§9.18.1)
+2. ⭐ (web)/layout.tsx 완전 재작성 + Header 관계 (§9.18.2)
+3. ⭐ 대회 위자드 5단계→7단계 (§9.18.3)
+4. 이메일 로그인 (OAuth와 별개로 적용 가능) (§9.18.5)
+5. 서버→클라이언트 아키텍처 전환 (§9.18.6)
+6. `/api/v1/matches/[id]/stats` 간소화 — Flutter 앱 호환성 (§9.18.8)
+
+---
+
+## §9.20 4차 최종 검수 — byte-level 전수조사 결과
+
+> 작성일: 2026-03-23
+> 방법: 공통 248파일 전체 `diff -u` → 컬러/반응형 필터링 후 기능변경만 추출 (11,412줄 분석)
+
+### §9.20.1 3차에서 누락된 기능 변경
+
+#### 🔴 Flutter API 호환성 (mybdr이 subin보다 앞서 있는 부분)
+
+<!-- Flutter API 관련 부분 : 보류 -->
+
+mybdr에는 있지만 subin에는 **없는** 최근 변경사항 (mybdr이 subin 포크 이후 추가한 것):
+
+| 파일 | mybdr 추가분 | 영향 |
+|------|-------------|------|
+| `/api/v1/tournaments/[id]/full-data` | `game_rules` 필드 반환 추가 | ⚠️ Flutter bdr_stat 앱이 game_rules에 의존 |
+| `/api/v1/tournaments/[id]/full-data` | `user_name`: `name ?? nickname` 으로 확장, `user_nickname` 별도 반환, `is_active: true` 추가 | ⚠️ Flutter 앱 선수 표시 로직에 영향 |
+| `/api/v1/tournaments/verify` | `game_rules: true` select 추가 | Flutter verify 응답에 game_rules 포함 |
+| `lib/constants/tournament-status.ts` | `in_progress` 키 삭제 (mybdr), subin에는 아직 있음 | subin 버전 적용 시 중복 키 주의 |
+
+**⚠️ 핵심**: subin 버전으로 덮어쓰면 mybdr이 최근 추가한 Flutter API 필드들(`game_rules`, `user_name` 확장, `user_nickname`, `is_active`)이 **사라짐**. 반드시 수동 머지 필요.
+
+<!-- 전부 교체: mybdr에 엎어씌워 -->
+
+#### 🟡 SlideMenu 네비 구조 변경
+
+| 항목 | mybdr | subin |
+|------|-------|-------|
+| 메뉴 구조 | Rails `_full_menu.html.erb` 복제, `menuSections` 객체 (boards/etc) | `menuItems` 배열, Material Symbols 아이콘 |
+| import | 없음 | `usePathname`, `ThemeToggle`, `TextSizeToggle` 추가 |
+| 게시판 | 카테고리별 링크 (자유/정보/후기/장터) | 단순 "커뮤니티" 1개 |
+
+#### 🟡 커뮤니티 상세 페이지 기능 추가
+
+`community/[id]/page.tsx`: subin이 `PostDetailSidebar`, `ShareButton`, `formatRelativeTime`, `Metadata` generation, 카테고리 breadcrumbs 추가
+
+#### 🟡 게임 상세 섹션 UI 리팩토링
+
+`pickup-detail.tsx`, `guest-detail.tsx`, `team-match-detail.tsx`:
+- mybdr: 테이블 레이아웃 (`InfoRow` 컴포넌트 + `<tr>/<th>/<td>`)
+- subin: 카드 레이아웃 (시설안내/경기규칙 분리, CSS 변수 스타일링)
+- subin 주석: "데이터 로직 100% 유지, UI만 변경" — 실제로 `rules` 파싱 로직이 추가됨
+
+#### 🟡 프로필 완료 체크 변경
+
+`apply-button.tsx`:
+- mybdr: `if (!profileCompleted)` — DB `profile_completed` 플래그 기반
+- subin: `if (missingFields.length > 0)` — 실시간 `getMissingFields()` 기반
+
+`/api/web/profile/route.ts`:
+- subin: `createdAt` 추출하여 `created_at` ISO 문자열로 반환 (프로필 헤더 가입일 표시용)
+- mybdr: `createdAt` 미추출
+
+#### 🟢 대진표 페이지 확장
+
+`tournaments/[id]/bracket/page.tsx`:
+- subin: 추가 import (`TournamentDashboardHeader`, `GroupStandings`, `FinalsSidebar`)
+- subin: 추가 쿼리 (대회 venue/entry_fee, tournamentTeam 전체 조회 + 순위 정렬)
+- subin: 2열 레이아웃 (좌: 조별리그 순위 + 대진표, 우: 사이드바)
+
+#### 🟢 디자인만 확인 (기능 변경 없음)
+
+아래 파일들은 4차에서도 컬러/CSS변수/레이아웃만 변경 확인:
+- `_site/*` (layout, page, registration, results, schedule, teams) — CSS 변수 migration만
+- `community/comment-form.tsx` — textarea→div 구조 변경, 서버 액션 동일
+- `community/loading.tsx` — 2열 레이아웃 스켈레톤 (5→8 카드)
+- `community/new/page.tsx` — 디자인만
+- `courts/*` — 디자인만
+- `game cards` (guest/pickup/team-match) — 디자인만
+- `pricing/*` — 이모지→텍스트 약어 (🏀→"TM", ⛹️→"PU")
+- `site-templates/classic.tsx` — CSS 변수 migration + 주석 추가
+- `Footer.tsx` — 디자인만
+
+### §9.20.2 설정 파일 최종 확인
+
+#### next.config.ts (Phase 14 보완)
+
+| 항목 | subin 추가 | 적용 여부 |
+|------|-----------|----------|
+| `style-src` | + `https://fonts.googleapis.com` | ✅ 폰트 CDN 사용 시 필수 |
+| `font-src` | + `https://fonts.gstatic.com` | ✅ 폰트 CDN 사용 시 필수 |
+| `frame-src` | + `accounts.google.com`, `nid.naver.com`, `kauth.kakao.com`, YouTube | ⚠️ OAuth는 별도, YouTube만 적용 |
+| `images.remotePatterns` | kakaocdn, pstatic, googleusercontent | ⚠️ OAuth 프로필 이미지용 — 별도 프로젝트와 겹침 |
+
+#### package.json
+
+- 이름: `mybdr-dev` → mybdr 유지
+- 포트: `3001` → mybdr 기본(3000) 유지
+- **의존성 차이 없음** (동일 패키지)
+
+### §9.20.3 최종 머지 시 "mybdr 우선" 보호 목록
+
+subin으로 덮어쓰면 안 되는 mybdr 최근 변경분:(중요))
+
+| 파일 | mybdr 보호 내용 | 사유 |
+|------|----------------|------|
+| `/api/v1/tournaments/[id]/full-data` | `game_rules`, `user_name` 확장, `user_nickname`, `is_active` | Flutter 앱 호환 |
+| `/api/v1/tournaments/verify` | `game_rules: true` | Flutter 앱 호환 |
+| `lib/constants/tournament-status.ts` | `in_progress` 키 삭제 | mybdr이 정리한 것, subin은 중복 보유 |
+| `lib/constants/game-rules-defaults.ts` | 파일 전체 | FIBA 규칙 시스템 (판단 후 결정) |
+| `lib/validation/game-rules.ts` | 파일 전체 | FIBA 규칙 검증 (판단 후 결정) |
+
+---
+
+## §9.21 최종 판단 필요 항목 (전체)
+
+| # | 항목 | 심각도 | 섹션 |
+|---|------|--------|------|
+| 1 | FIBA 게임 규칙 삭제 vs 접수 설정 공존 | 🔴 | §9.18.1 |
+| 2 | `(web)/layout.tsx` 완전 재작성 + Header 관계 정리 | 🔴 | §9.18.2 |
+| 3 | 대회 위자드 5단계→7단계 | 🔴 | §9.18.3 |
+| 4 | Flutter API 필드 보호 (`game_rules`, `user_name` 확장 등) | 🔴 | §9.20.1 |
+| 5 | `/api/v1/matches/[id]/stats` 간소화 — Flutter 앱 호환 | 🟡 | §9.18.8 |
+| 6 | 이메일 로그인 (OAuth와 별개 적용 가능) | 🟡 | §9.18.5 |
+| 7 | 서버→클라이언트 아키텍처 전환 (커뮤니티/팀/대회) | 🟡 | §9.18.6 |
+| 8 | SlideMenu 네비 구조 변경 | 🟡 | §9.20.1 |
+| 9 | 프로필 완료 체크: DB 플래그 vs 실시간 검증 | 🟡 | §9.20.1 |
+| 10 | images.remotePatterns (OAuth 프로필 이미지) | 🟢 | §9.20.2 |

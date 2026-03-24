@@ -10,7 +10,7 @@ export function BellIcon({ unreadCount }: BellIconProps) {
   return (
     <Link
       href="/notifications"
-      className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#6B7280] hover:bg-[#EEF2FF] hover:text-[#111827] transition-colors"
+      className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#6B7280] hover:bg-[#EDF0F8] hover:text-[#111827] transition-colors"
       aria-label={unreadCount > 0 ? `알림 ${unreadCount}개 읽지 않음` : "알림"}
     >
       <svg

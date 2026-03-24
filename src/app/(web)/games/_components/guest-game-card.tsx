@@ -36,7 +36,7 @@ const SKILL_LABEL: Record<string, string> = {
 
 function ParticipantBar({ current, max }: { current: number; max: number }) {
   const pct = max > 0 ? Math.min((current / max) * 100, 100) : 0;
-  const color = pct >= 100 ? "#EF4444" : pct >= 80 ? "#FBBF24" : "#4ADE80";
+  const color = pct >= 100 ? "#DC2626" : pct >= 80 ? "#D97706" : "#16A34A";
   return (
     <div className="flex items-center gap-2">
       <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-[#E8ECF0]">
@@ -61,12 +61,12 @@ export function GuestGameCard({ game }: { game: GameCardData }) {
     <Link href={href}>
       <div
         className="group relative overflow-hidden rounded-[16px] bg-white p-5 transition-all hover:bg-[#EFF6FF] hover:-translate-y-0.5 hover:shadow-lg"
-        style={{ borderLeft: "3px solid #60A5FA" }}
+        style={{ borderLeft: "3px solid #2563EB" }}
       >
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="text-base">🤝</span>
-            <span className="text-xs font-medium" style={{ color: "#60A5FA" }}>게스트 모집</span>
+            <span className="text-xs font-medium" style={{ color: "#2563EB" }}>게스트 모집</span>
           </div>
           <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
         </div>
@@ -107,7 +107,7 @@ export function GuestGameCard({ game }: { game: GameCardData }) {
               <span className="rounded-full bg-[#EFF6FF] px-2 py-0.5 text-[#3B82F6]">개인 참가 OK</span>
             )}
             {game.skill_level && game.skill_level !== "all" && (
-              <span className="rounded-full bg-[#EEF2FF] px-2 py-0.5 text-[#6B7280]">
+              <span className="rounded-full bg-[#EDF0F8] px-2 py-0.5 text-[#6B7280]">
                 {SKILL_LABEL[game.skill_level] ?? game.skill_level}
               </span>
             )}

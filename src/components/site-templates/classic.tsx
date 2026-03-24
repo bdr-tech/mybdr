@@ -260,7 +260,7 @@ function HomePage({
           <div className="overflow-hidden rounded-2xl border border-[#E8ECF0]">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-[#E8ECF0] bg-[#F5F7FA] text-xs font-medium text-[#6B7280]">
+                <tr className="border-b border-[#E8ECF0] bg-[#F5F6FA] text-xs font-medium text-[#6B7280]">
                   <th className="px-4 py-3 text-left">순위</th>
                   <th className="px-4 py-3 text-left">팀</th>
                   <th className="px-4 py-3 text-center">승</th>
@@ -272,7 +272,7 @@ function HomePage({
                 {teams.slice(0, 5).map((t, i) => (
                   <tr
                     key={t.id.toString()}
-                    className="border-b border-[#E8ECF0] last:border-0 hover:bg-[#F5F7FA]"
+                    className="border-b border-[#E8ECF0] last:border-0 hover:bg-[#F5F6FA]"
                   >
                     <td className="px-4 py-3">
                       <span
@@ -378,7 +378,7 @@ function TeamsPage({ teams, primary }: { teams: TeamEntry[]; primary: string }) 
       <div className="overflow-hidden rounded-2xl border border-[#E8ECF0]">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#E8ECF0] bg-[#F5F7FA] text-xs font-medium text-[#6B7280]">
+            <tr className="border-b border-[#E8ECF0] bg-[#F5F6FA] text-xs font-medium text-[#6B7280]">
               <th className="px-4 py-3 text-left">순위</th>
               <th className="px-4 py-3 text-left">팀명</th>
               <th className="px-4 py-3 text-center">승</th>
@@ -393,7 +393,7 @@ function TeamsPage({ teams, primary }: { teams: TeamEntry[]; primary: string }) 
             {teams.map((t, i) => (
               <tr
                 key={t.id.toString()}
-                className="border-b border-[#E8ECF0] last:border-0 hover:bg-[#F5F7FA]"
+                className="border-b border-[#E8ECF0] last:border-0 hover:bg-[#F5F6FA]"
               >
                 <td className="px-4 py-3 text-center">
                   <span
@@ -527,8 +527,8 @@ function RegistrationPage({
 }) {
   const statusColors: Record<string, string> = {
     registration_open: "#22C55E",
-    registration_closed: "#EF4444",
-    ongoing: "#F4A261",
+    registration_closed: "#DC2626",
+    ongoing: "#E31B23",
     completed: "#9CA3AF",
   };
   const statusColor = statusColors[tournament.status ?? ""] ?? "#6B7280";
@@ -602,7 +602,7 @@ function RegistrationPage({
             신청하기 →
           </a>
         ) : (
-          <div className="rounded-2xl bg-[#F5F7FA] p-4 text-center text-sm text-[#9CA3AF]">
+          <div className="rounded-2xl bg-[#F5F6FA] p-4 text-center text-sm text-[#9CA3AF]">
             {tournament.status === "completed"
               ? "대회가 종료되었습니다"
               : "현재 참가 신청을 받지 않습니다"}
@@ -630,7 +630,7 @@ export function ClassicTemplate({
   currentPage,
   templateType,
 }: ClassicTemplateProps) {
-  const primary = site.primaryColor ?? "#0066FF";
+  const primary = site.primaryColor ?? "#1B3C87";
   const secondary = site.secondaryColor ?? "#E76F51";
   const siteName = site.site_name ?? site.tournament.name;
 

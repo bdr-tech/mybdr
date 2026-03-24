@@ -49,21 +49,21 @@ export default function NewSeriesPage() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="mb-6 text-2xl font-bold">새 시리즈 만들기</h1>
+      <h1 className="mb-6 text-xl sm:text-2xl font-bold">새 시리즈 만들기</h1>
 
       <Card>
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* 시리즈 이름 */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-[#111827]">
-              시리즈 이름 <span className="text-[#EF4444]">*</span>
+              시리즈 이름 <span className="text-[#DC2626]">*</span>
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="예: BDR 서울 올스타전"
-              className="w-full rounded-[12px] border border-[#E8ECF0] bg-[#F5F7FA] px-4 py-3 text-sm outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF]"
+              className="w-full rounded-[12px] border border-[#E8ECF0] bg-[#F5F6FA] px-4 py-3 text-sm outline-none focus:border-[#1B3C87] focus:ring-1 focus:ring-[#1B3C87]"
               required
               autoFocus
             />
@@ -84,12 +84,12 @@ export default function NewSeriesPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="예: 매분기 진행되는 BDR 정기 대회"
-              className="w-full rounded-[12px] border border-[#E8ECF0] bg-[#F5F7FA] px-4 py-3 text-sm outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF]"
+              className="w-full rounded-[12px] border border-[#E8ECF0] bg-[#F5F6FA] px-4 py-3 text-sm outline-none focus:border-[#1B3C87] focus:ring-1 focus:ring-[#1B3C87]"
             />
           </div>
 
           {error && (
-            <p className="rounded-[12px] bg-[rgba(239,68,68,0.1)] px-4 py-3 text-sm text-[#EF4444]">
+            <p className="rounded-[12px] bg-[rgba(239,68,68,0.1)] px-4 py-3 text-sm text-[#DC2626]">
               {error}
             </p>
           )}

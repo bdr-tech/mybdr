@@ -36,12 +36,12 @@ export function TeamMatchCard({ game }: { game: GameCardData }) {
     <Link href={href}>
       <div
         className="group relative overflow-hidden rounded-[16px] bg-white p-5 transition-all hover:bg-[#F0FDF4] hover:-translate-y-0.5 hover:shadow-lg"
-        style={{ borderLeft: "3px solid #4ADE80" }}
+        style={{ borderLeft: "3px solid #16A34A" }}
       >
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="text-base">⚔️</span>
-            <span className="text-xs font-medium" style={{ color: "#4ADE80" }}>팀 대결</span>
+            <span className="text-xs font-medium" style={{ color: "#16A34A" }}>팀 대결</span>
           </div>
           <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
         </div>

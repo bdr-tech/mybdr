@@ -31,7 +31,7 @@ export default function NewTournamentWizardPage() {
     startDate: "",
     endDate: "",
     subdomain: "",
-    primaryColor: "#F4A261",
+    primaryColor: "#E31B23",
     secondaryColor: "#E76F51",
   });
 
@@ -81,7 +81,7 @@ export default function NewTournamentWizardPage() {
         </p>
         <Link
           href="/tournaments"
-          className="mt-2 rounded-full bg-[#0066FF] px-6 py-2 text-sm font-semibold text-white hover:bg-[#0052CC] transition-colors"
+          className="mt-2 rounded-full bg-[#1B3C87] px-6 py-2 text-sm font-semibold text-white hover:bg-[#142D6B] transition-colors"
         >
           대회 목록으로 돌아가기
         </Link>
@@ -117,7 +117,7 @@ export default function NewTournamentWizardPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">새 대회 만들기</h1>
+      <h1 className="mb-6 text-xl sm:text-2xl font-bold">새 대회 만들기</h1>
 
       {/* Step Indicator */}
       <div className="mb-8 flex gap-1 overflow-x-auto">
@@ -127,10 +127,10 @@ export default function NewTournamentWizardPage() {
             onClick={() => i < currentStep && setCurrentStep(i)}
             className={`flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm transition-colors ${
               i === currentStep
-                ? "bg-[#0066FF] font-semibold text-white"
+                ? "bg-[#1B3C87] font-semibold text-white"
                 : i < currentStep
-                  ? "bg-[rgba(74,222,128,0.2)] text-[#4ADE80] cursor-pointer"
-                  : "bg-[#EEF2FF] text-[#6B7280] cursor-not-allowed"
+                  ? "bg-[rgba(74,222,128,0.2)] text-[#16A34A] cursor-pointer"
+                  : "bg-[#EDF0F8] text-[#6B7280] cursor-not-allowed"
             }`}
           >
             <span>{step.icon}</span>
@@ -149,7 +149,7 @@ export default function NewTournamentWizardPage() {
                   key={t}
                   onClick={() => update("template", t)}
                   className={`cursor-pointer rounded-[16px] border p-6 text-center transition-colors ${
-                    form.template === t ? "border-[#0066FF] bg-[rgba(0,102,255,0.08)]" : "border-[#E8ECF0] hover:border-[#0066FF]"
+                    form.template === t ? "border-[#1B3C87] bg-[rgba(27,60,135,0.08)]" : "border-[#E8ECF0] hover:border-[#1B3C87]"
                   }`}
                 >
                   <div className="mb-2 text-2xl">🏆</div>
@@ -167,24 +167,24 @@ export default function NewTournamentWizardPage() {
               type="text"
               value={form.name}
               onChange={(e) => update("name", e.target.value)}
-              className="w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
+              className="w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
               placeholder="대회 이름 *"
             />
             <select
               value={form.format}
               onChange={(e) => update("format", e.target.value)}
-              className="w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
+              className="w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
             >
               {FORMAT_OPTIONS.map((f) => <option key={f}>{f}</option>)}
             </select>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-xs text-[#6B7280]">시작일</label>
-                <input type="date" value={form.startDate} onChange={(e) => update("startDate", e.target.value)} className="w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50" />
+                <input type="date" value={form.startDate} onChange={(e) => update("startDate", e.target.value)} className="w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50" />
               </div>
               <div>
                 <label className="mb-1 block text-xs text-[#6B7280]">종료일</label>
-                <input type="date" value={form.endDate} onChange={(e) => update("endDate", e.target.value)} className="w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50" />
+                <input type="date" value={form.endDate} onChange={(e) => update("endDate", e.target.value)} className="w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50" />
               </div>
             </div>
           </div>
@@ -198,7 +198,7 @@ export default function NewTournamentWizardPage() {
                 type="text"
                 value={form.subdomain}
                 onChange={(e) => update("subdomain", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-                className="flex-1 rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
+                className="flex-1 rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
                 placeholder="my-tournament (영문·숫자·하이픈)"
               />
               <span className="text-sm text-[#6B7280]">.mybdr.kr</span>
@@ -227,7 +227,7 @@ export default function NewTournamentWizardPage() {
           <div className="space-y-4 py-4">
             <div className="mb-2 text-center text-4xl">🎉</div>
             <h2 className="text-center text-lg font-semibold">미리보기</h2>
-            <div className="rounded-[16px] bg-[#EEF2FF] p-4 space-y-2 text-sm">
+            <div className="rounded-[16px] bg-[#EDF0F8] p-4 space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-[#6B7280]">대회명</span><span className="font-medium">{form.name || "미입력"}</span></div>
               <div className="flex justify-between"><span className="text-[#6B7280]">형식</span><span>{form.format}</span></div>
               <div className="flex justify-between"><span className="text-[#6B7280]">기간</span><span>{form.startDate || "-"} ~ {form.endDate || "-"}</span></div>

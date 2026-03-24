@@ -23,6 +23,7 @@ export const TOURNAMENT_LIST_SELECT = {
   city: true,
   venue_name: true,
   maxTeams: true,
+  divisions: true,  // 목록에서 종별 표시용
   _count: { select: { tournamentTeams: true } },
 } as const;
 
@@ -78,6 +79,10 @@ export const TOURNAMENT_DETAIL_INCLUDE = {
 
 export interface TournamentListFilters {
   status?: string;
+  /** 선호 지역 필터 -- 여러 도시를 OR 조건으로 검색 (prefer=true 시 사용) */
+  cities?: string[];
+  /** 선호 종별 필터 -- Json 배열 교집합 매칭 (prefer=true 시 사용) */
+  divisions?: string[];
   take?: number;
 }
 
@@ -90,6 +95,28 @@ export interface CreateTournamentInput {
   primaryColor?: string;
   secondaryColor?: string;
   subdomain?: string;
+  // 접수 설정
+  description?: string;
+  registrationStartAt?: Date | null;
+  registrationEndAt?: Date | null;
+  venueName?: string;
+  venueAddress?: string;
+  city?: string;
+  categories?: Record<string, string[]>;
+  divCaps?: Record<string, number>;
+  divFees?: Record<string, number>;
+  allowWaitingList?: boolean;
+  waitingListCap?: number | null;
+  entryFee?: number;
+  bankName?: string;
+  bankAccount?: string;
+  bankHolder?: string;
+  feeNotes?: string;
+  maxTeams?: number;
+  teamSize?: number;
+  rosterMin?: number;
+  rosterMax?: number;
+  autoApproveTeams?: boolean;
 }
 
 export interface UpdateTournamentData {
@@ -168,12 +195,36 @@ function toMyTournamentItem(
  * 대회 목록 (공개) — tournaments/page.tsx, 홈페이지에서 사용
  */
 export async function listTournaments(filters: TournamentListFilters = {}) {
-  const { status, take = 60 } = filters;
+  const { status, cities, divisions, take = 60 } = filters;
+
+  // where 조건을 동적으로 구성
+  const where: Record<string, unknown> = {
+    status: status && status !== "all" ? status : { not: "draft" },
+  };
+
+  // 선호 지역(cities)이 있으면 OR 조건으로 도시 필터 적용
+  if (cities && cities.length > 0) {
+    where.city = { in: cities, mode: "insensitive" };
+  }
+
+  // 선호 종별(divisions) 필터: Json 배열 교집합 매칭
+  // divisions 배열의 각 값에 대해 OR 조건을 만들고, AND로 감싸서
+  // 기존/미래의 다른 OR 조건과 충돌하지 않도록 한다.
+  // 예: divisions = ["챌린저", "비기너스"] 이면
+  //     tournaments.divisions에 "챌린저" OR "비기너스"가 포함된 대회 매칭
+  if (divisions && divisions.length > 0) {
+    where.AND = [
+      ...(Array.isArray(where.AND) ? (where.AND as unknown[]) : []),
+      {
+        OR: divisions.map((div) => ({
+          divisions: { path: [], array_contains: div },
+        })),
+      },
+    ];
+  }
 
   return prisma.tournament.findMany({
-    where: {
-      status: status && status !== "all" ? status : { not: "draft" },
-    },
+    where,
     orderBy: { startDate: "desc" },
     take,
     select: TOURNAMENT_LIST_SELECT,
@@ -274,9 +325,25 @@ export async function createTournament(input: CreateTournamentInput) {
       format: input.format ?? "single_elimination",
       startDate: input.startDate ?? null,
       endDate: input.endDate ?? null,
-      primary_color: input.primaryColor || "#F4A261",
+      primary_color: input.primaryColor || "#E31B23",
       secondary_color: input.secondaryColor || "#E76F51",
       status: "draft",
+      // 접수 설정
+      description: input.description ?? null,
+      registration_start_at: input.registrationStartAt ?? null,
+      registration_end_at: input.registrationEndAt ?? null,
+      venue_name: input.venueName ?? null,
+      venue_address: input.venueAddress ?? null,
+      city: input.city ?? null,
+      entry_fee: input.entryFee ?? 0,
+      bank_name: input.bankName ?? null,
+      bank_account: input.bankAccount ?? null,
+      bank_holder: input.bankHolder ?? null,
+      maxTeams: input.maxTeams ?? 16,
+      team_size: input.teamSize ?? 5,
+      roster_min: input.rosterMin ?? 5,
+      roster_max: input.rosterMax ?? 12,
+      auto_approve_teams: input.autoApproveTeams ?? false,
     },
   });
 
@@ -287,7 +354,7 @@ export async function createTournament(input: CreateTournamentInput) {
         tournamentId: tournament.id,
         subdomain: input.subdomain,
         isPublished: false,
-        primaryColor: input.primaryColor || "#F4A261",
+        primaryColor: input.primaryColor || "#E31B23",
         secondaryColor: input.secondaryColor || "#E76F51",
       },
     });

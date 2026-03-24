@@ -45,15 +45,15 @@ export default async function UpgradePage({
         <h1 className="mb-2 text-xl font-bold text-[#111827]">{info.title}</h1>
         <p className="mb-6 text-sm text-[#6B7280]">{info.description}</p>
 
-        <div className="mb-6 rounded-[16px] bg-[#EEF2FF] p-5 text-left">
+        <div className="mb-6 rounded-[16px] bg-[#EDF0F8] p-5 text-left">
           <div className="mb-3 flex items-center justify-between">
             <span className="font-semibold text-[#111827]">{MEMBERSHIP_LABELS[mt as MembershipType]}</span>
-            <span className="text-lg font-bold text-[#0066FF]">{MEMBERSHIP_PRICES[mt as MembershipType]}</span>
+            <span className="text-lg font-bold text-[#1B3C87]">{MEMBERSHIP_PRICES[mt as MembershipType]}</span>
           </div>
           <ul className="space-y-1.5">
             {info.features.map((f) => (
               <li key={f} className="flex items-center gap-2 text-sm text-[#6B7280]">
-                <span className="text-[#0066FF]">✓</span>
+                <span className="text-[#1B3C87]">✓</span>
                 {f}
               </li>
             ))}
@@ -68,7 +68,7 @@ export default async function UpgradePage({
 
         <a
           href="mailto:bdr.wonyoung@gmail.com?subject=플랜 신청 문의"
-          className="mb-3 flex w-full items-center justify-center rounded-[12px] bg-[#0066FF] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#0052CC]"
+          className="mb-3 flex w-full items-center justify-center rounded-[12px] bg-[#1B3C87] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#142D6B]"
         >
           관리자에게 문의하기
         </a>

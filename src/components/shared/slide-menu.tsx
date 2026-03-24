@@ -58,11 +58,11 @@ export function SlideMenu({
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#E8ECF0] p-4">
-          <span className="font-bold text-[#F4A261]">메뉴</span>
+          <span className="font-bold text-[#E31B23]">메뉴</span>
           <button
             onClick={onClose}
             aria-label="메뉴 닫기"
-            className="rounded-full p-2 text-[#6B7280] hover:bg-[#EEF2FF]"
+            className="rounded-full p-2 text-[#6B7280] hover:bg-[#EDF0F8]"
           >
             ✕
           </button>
@@ -75,9 +75,9 @@ export function SlideMenu({
               <Link
                 href="/profile"
                 onClick={onClose}
-                className="mb-6 flex items-center gap-3 rounded-[16px] bg-[#EEF2FF] p-4 transition-colors hover:bg-[#E8ECF0] active:opacity-80"
+                className="mb-6 flex items-center gap-3 rounded-[16px] bg-[#EDF0F8] p-4 transition-colors hover:bg-[#E8ECF0] active:opacity-80"
               >
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#0066FF] text-sm font-bold text-white">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#1B3C87] text-sm font-bold text-white">
                   {name?.trim() ? name.trim()[0].toUpperCase() : "U"}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -95,7 +95,7 @@ export function SlideMenu({
                     key={item.href}
                     href={item.href}
                     onClick={onClose}
-                    className="flex items-center rounded-[12px] px-3 py-2.5 text-sm text-[#6B7280] hover:bg-[#EEF2FF] hover:text-[#111827]"
+                    className="flex items-center rounded-[12px] px-3 py-2.5 text-sm text-[#6B7280] hover:bg-[#EDF0F8] hover:text-[#111827]"
                   >
                     {item.label}
                   </Link>
@@ -116,7 +116,7 @@ export function SlideMenu({
                       key={item.href}
                       href={item.href}
                       onClick={onClose}
-                      className="flex items-center gap-2 rounded-[12px] px-3 py-2.5 text-sm text-[#6B7280] hover:bg-[#EEF2FF] hover:text-[#111827]"
+                      className="flex items-center gap-2 rounded-[12px] px-3 py-2.5 text-sm text-[#6B7280] hover:bg-[#EDF0F8] hover:text-[#111827]"
                     >
                       {item.icon && <span>{item.icon}</span>}
                       {item.label}
@@ -127,7 +127,7 @@ export function SlideMenu({
               {/* 로그아웃 */}
               <a
                 href="/api/auth/logout"
-                className="block w-full rounded-[12px] px-3 py-2.5 text-left text-sm text-[#EF4444] hover:bg-[rgba(239,68,68,0.1)]"
+                className="block w-full rounded-[12px] px-3 py-2.5 text-left text-sm text-[#DC2626] hover:bg-[rgba(239,68,68,0.1)]"
               >
                 로그아웃
               </a>
@@ -135,8 +135,8 @@ export function SlideMenu({
           ) : (
             <div className="flex flex-col">
               {/* 브랜드 */}
-              <div className="mb-6 rounded-[16px] bg-[#EEF2FF] px-5 py-6 text-center">
-                <p className="text-2xl font-bold text-[#F4A261]">BDR</p>
+              <div className="mb-6 rounded-[16px] bg-[#EDF0F8] px-5 py-6 text-center">
+                <p className="text-2xl font-bold text-[#E31B23]">BDR</p>
                 <p className="mt-1 text-xs text-[#6B7280]">농구인을 위한 농구 플랫폼</p>
               </div>
 
@@ -161,14 +161,14 @@ export function SlideMenu({
               <Link
                 href="/login"
                 onClick={onClose}
-                className="mb-2 w-full rounded-full bg-[#0066FF] py-3 text-center text-sm font-semibold text-white hover:bg-[#0052CC]"
+                className="mb-2 w-full rounded-full bg-[#1B3C87] py-3 text-center text-sm font-semibold text-white hover:bg-[#142D6B]"
               >
                 로그인
               </Link>
               <Link
                 href="/signup"
                 onClick={onClose}
-                className="w-full rounded-full border border-[#E8ECF0] py-3 text-center text-sm font-medium text-[#6B7280] hover:bg-[#F5F7FA]"
+                className="w-full rounded-full border border-[#E8ECF0] py-3 text-center text-sm font-medium text-[#6B7280] hover:bg-[#F5F6FA]"
               >
                 회원가입
               </Link>

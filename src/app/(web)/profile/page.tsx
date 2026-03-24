@@ -1,20 +1,26 @@
 "use client";
 
-import { useState } from "react";
+/**
+ * 내 프로필 페이지 (/profile)
+ *
+ * API/데이터 패칭 100% 유지 - UI만 교체
+ * - useSWR로 /api/web/profile + /api/web/profile/stats 호출
+ * - 레이아웃: 헤더 → PPG/RPG/APG 3칸 → 능력치 분석(2열) + 팀 카드 → 최근 경기
+ */
+
 import useSWR from "swr";
 import Link from "next/link";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { TOURNAMENT_STATUS_LABEL } from "@/lib/constants/tournament-status";
+import { ProfileHeader } from "./_components/profile-header";
+import { StatBars } from "./_components/stat-bars";
+import { AbilitySection } from "./_components/ability-section";
+import { CurrentTeamCard } from "./_components/current-team-card";
+import { RecentGamesSection } from "./_components/recent-games-section";
 
-const tabs = [
-  { id: "info", label: "정보" },
-  { id: "games", label: "경기" },
-  { id: "stats", label: "기록" },
-  { id: "teams", label: "팀" },
-  { id: "tournaments", label: "대회" },
-];
+// 기존 컴포넌트는 import 제거하되 파일은 삭제하지 않음
+// import { ActivityRing } from "./_components/activity-ring";
+// import { TeamsSection } from "./_components/teams-section";
+// import { TournamentsSection } from "./_components/tournaments-section";
+// import { PlayerInfoSection } from "./_components/player-info-section";
 
 interface ProfileData {
   user: {
@@ -26,38 +32,88 @@ interface ProfileData {
     bio: string | null;
     profile_image_url: string | null;
     total_games_participated: number | null;
+    /** 가입일 ISO 문자열 */
+    created_at: string | null;
   };
-  teams: { id: string; name: string; role: string }[];
-  recentGames: { id: string; title: string | null; scheduled_at: string | null; status: number }[];
-  tournaments: { id: string; name: string; status: string | null }[];
+  teams?: { id: string; name: string; role: string }[];
+  recent_games?: { id: string; title: string | null; scheduled_at: string | null; status: number }[];
+  tournaments?: { id: string; name: string; status: string | null }[];
+}
+
+interface StatsData {
+  career_averages: {
+    games_played: number;
+    avg_points: number;
+    avg_rebounds: number;
+    avg_assists: number;
+    avg_steals: number;
+    avg_blocks: number;
+  } | null;
+  season_highs: {
+    max_points: number;
+    max_rebounds: number;
+    max_assists: number;
+  } | null;
+  monthly_games: number;
+  /** 승률 (0~100, 결과 확정 경기 없으면 null) */
+  win_rate: number | null;
 }
 
 export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState("info");
+  // API 호출 로직 100% 유지
   const { data: profile, isLoading } = useSWR<ProfileData>("/api/web/profile", {
     revalidateOnFocus: false,
-    dedupingInterval: 60000, // 60초 내 중복 요청 방지
+    dedupingInterval: 60000,
+  });
+  const { data: statsRaw } = useSWR<StatsData>("/api/web/profile/stats", {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000,
   });
 
-  const initial = profile?.user.nickname?.trim()?.[0]?.toUpperCase() || "U";
+  // snake_case API 응답 → camelCase 변환 (기존 로직 유지)
+  const stats = statsRaw
+    ? {
+        careerAverages: statsRaw.career_averages
+          ? {
+              gamesPlayed: statsRaw.career_averages.games_played,
+              avgPoints: statsRaw.career_averages.avg_points,
+              avgRebounds: statsRaw.career_averages.avg_rebounds,
+              avgAssists: statsRaw.career_averages.avg_assists,
+              avgSteals: statsRaw.career_averages.avg_steals,
+              avgBlocks: statsRaw.career_averages.avg_blocks,
+            }
+          : null,
+        seasonHighs: statsRaw.season_highs
+          ? {
+              maxPoints: statsRaw.season_highs.max_points,
+              maxRebounds: statsRaw.season_highs.max_rebounds,
+              maxAssists: statsRaw.season_highs.max_assists,
+            }
+          : null,
+      }
+    : undefined;
 
+  // 로딩 상태
   if (isLoading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center text-[#6B7280]">
+      <div className="flex min-h-[60vh] items-center justify-center" style={{ color: "var(--color-text-secondary)" }}>
         <div className="text-center">
-          <div className="mb-2 text-3xl">⏳</div>
+          <div className="mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-8 w-8 animate-spin" style={{ color: "var(--color-primary)" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+          </div>
           <p>로딩 중...</p>
         </div>
       </div>
     );
   }
 
+  // 에러/미로그인 상태
   if (!profile || "error" in profile) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
-          <p className="mb-4 text-[#6B7280]">로그인이 필요합니다.</p>
-          <Link href="/login" className="rounded-full bg-[#0066FF] px-6 py-2 text-sm font-semibold text-white">
+          <p className="mb-4" style={{ color: "var(--color-text-secondary)" }}>로그인이 필요합니다.</p>
+          <Link href="/login" className="rounded px-6 py-2 text-sm font-semibold text-white" style={{ backgroundColor: "var(--color-primary)" }}>
             로그인
           </Link>
         </div>
@@ -65,137 +121,66 @@ export default function ProfilePage() {
     );
   }
 
-  const { user, teams, recentGames, tournaments } = profile;
+  const { user, teams = [], recent_games: recentGames = [] } = profile;
 
   return (
-    <div>
-      <Card className="mb-6">
-        <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-[#0066FF] text-2xl font-bold text-white">
-            {initial}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="truncate text-xl font-bold">{user.nickname ?? "사용자"}</h1>
-            <p className="truncate text-sm text-[#6B7280]">{user.email}</p>
-            {user.position && (
-              <span className="mt-1 inline-block rounded-full bg-[rgba(0,102,255,0.12)] px-2 py-0.5 text-xs text-[#F4A261]">
-                {user.position}
-              </span>
-            )}
-          </div>
-          {/* 기존 onClick 모달 → /profile/edit 전용 페이지로 변경 */}
-          <Link href="/profile/edit" className="flex-shrink-0">
-            <Button variant="secondary" className="text-xs">프로필 수정</Button>
-          </Link>
-        </div>
-      </Card>
+    <div className="space-y-6 max-w-7xl">
+      {/* 1. 프로필 헤더: 아바타 + 이름 + 메타 + 통계 */}
+      <ProfileHeader
+        nickname={user.nickname}
+        email={user.email}
+        profileImageUrl={user.profile_image_url}
+        position={user.position}
+        city={user.city}
+        createdAt={user.created_at}
+        totalGames={user.total_games_participated ?? 0}
+        winRate={statsRaw?.win_rate ?? null}
+      />
 
-      <div className="mb-4 flex gap-1 overflow-x-auto">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`whitespace-nowrap rounded-full px-4 py-2 text-sm transition-colors ${
-              activeTab === tab.id
-                ? "bg-[rgba(0,102,255,0.12)] font-medium text-[#F4A261]"
-                : "text-[#6B7280] hover:text-[#111827]"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* 2. 핵심 스탯 3칸 카드 (PPG / RPG / APG) */}
+      <StatBars
+        careerAverages={stats?.careerAverages ?? null}
+        seasonHighs={stats?.seasonHighs ?? null}
+      />
+
+      {/* 3. 2열 레이아웃: 능력치 분석 + 현재 팀 */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* 좌측 7칸: 능력치 분석 (레이더 차트 + 바 차트) */}
+        <div className="lg:col-span-8">
+          {stats?.careerAverages ? (
+            <AbilitySection
+              avgPoints={stats.careerAverages.avgPoints}
+              avgRebounds={stats.careerAverages.avgRebounds}
+              avgAssists={stats.careerAverages.avgAssists}
+              avgSteals={stats.careerAverages.avgSteals}
+              avgBlocks={stats.careerAverages.avgBlocks}
+            />
+          ) : (
+            <div
+              className="rounded-xl border p-8 text-center"
+              style={{
+                borderColor: "var(--color-border)",
+                backgroundColor: "var(--color-surface)",
+              }}
+            >
+              <span className="material-symbols-outlined text-3xl mb-2" style={{ color: "var(--color-text-muted)" }}>
+                analytics
+              </span>
+              <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
+                경기 기록이 쌓이면 능력치 차트가 표시됩니다
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* 우측 5칸: 현재 팀 카드 */}
+        <div className="lg:col-span-4">
+          <CurrentTeamCard teams={teams} />
+        </div>
       </div>
 
-      <Card>
-        {activeTab === "info" && (
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-[#6B7280]">닉네임</span>
-              <span>{user.nickname ?? "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#6B7280]">포지션</span>
-              <span>{user.position ?? "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#6B7280]">키</span>
-              <span>{user.height ? `${user.height}cm` : "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#6B7280]">지역</span>
-              <span>{user.city ?? "-"}</span>
-            </div>
-            {user.bio && (
-              <div className="mt-2 rounded-[12px] bg-[#EEF2FF] px-4 py-3 text-sm text-[#6B7280]">
-                {user.bio}
-              </div>
-            )}
-          </div>
-        )}
-        {activeTab === "games" &&
-          (recentGames.length > 0 ? (
-            <div className="space-y-2">
-              {recentGames.map((g) => (
-                <Link
-                  key={g.id}
-                  href={`/games/${g.id.slice(0, 8)}`}
-                  className="flex items-center justify-between rounded-[12px] bg-[#EEF2FF] px-4 py-2 hover:bg-[#E8ECF0]"
-                >
-                  <span className="text-sm">{g.title ?? "경기"}</span>
-                  <span className="text-xs text-[#6B7280]">
-                    {g.scheduled_at
-                      ? new Date(g.scheduled_at).toLocaleDateString("ko-KR")
-                      : "-"}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[#6B7280]">참여한 경기 이력이 없습니다.</p>
-          ))}
-        {activeTab === "stats" && (
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-[#6B7280]">총 참가 경기</span>
-              <span>{user.total_games_participated ?? 0}회</span>
-            </div>
-          </div>
-        )}
-        {activeTab === "teams" &&
-          (teams.length > 0 ? (
-            <div className="space-y-2">
-              {teams.map((t) => (
-                <Link
-                  key={t.id}
-                  href={`/teams/${t.id}`}
-                  className="flex items-center justify-between rounded-[12px] bg-[#EEF2FF] px-4 py-2 hover:bg-[#E8ECF0]"
-                >
-                  <span className="text-sm font-medium">{t.name}</span>
-                  <Badge>{t.role === "captain" ? "주장" : "멤버"}</Badge>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[#6B7280]">소속 팀이 없습니다.</p>
-          ))}
-        {activeTab === "tournaments" &&
-          (tournaments.length > 0 ? (
-            <div className="space-y-2">
-              {tournaments.map((t) => (
-                <Link
-                  key={t.id}
-                  href={`/tournaments/${t.id}`}
-                  className="flex items-center justify-between rounded-[12px] bg-[#EEF2FF] px-4 py-2 hover:bg-[#E8ECF0]"
-                >
-                  <span className="text-sm">{t.name}</span>
-                  <span className="text-xs text-[#6B7280]">{TOURNAMENT_STATUS_LABEL[t.status ?? ""] ?? t.status ?? "-"}</span>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[#6B7280]">참가한 대회가 없습니다.</p>
-          ))}
-      </Card>
+      {/* 4. 최근 경기 전적 */}
+      <RecentGamesSection games={recentGames} />
     </div>
   );
 }

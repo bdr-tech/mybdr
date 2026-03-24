@@ -47,10 +47,10 @@ export function UpgradeModal({ reason, onClose }: UpgradeModalProps) {
           </button>
         </div>
 
-        <div className="mb-5 rounded-[16px] bg-[#EEF2FF] px-4 py-3">
+        <div className="mb-5 rounded-[16px] bg-[#EDF0F8] px-4 py-3">
           <p className="text-sm text-[#111827]">
             <span className="font-semibold">{info.plan}</span>
-            <span className="ml-2 text-[#F4A261]">{info.price}</span>
+            <span className="ml-2 text-[#E31B23]">{info.price}</span>
           </p>
           <p className="mt-1 text-xs text-[#6B7280]">현재 관리자 승인으로 이용 가능합니다.</p>
         </div>
@@ -59,13 +59,13 @@ export function UpgradeModal({ reason, onClose }: UpgradeModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-[12px] border border-[#E8ECF0] py-2.5 text-sm font-medium text-[#6B7280] hover:bg-[#F5F7FA]"
+            className="flex-1 rounded-[12px] border border-[#E8ECF0] py-2.5 text-sm font-medium text-[#6B7280] hover:bg-[#F5F6FA]"
           >
             닫기
           </button>
           <Link
             href="/upgrade"
-            className="flex-1 rounded-[12px] bg-[#0066FF] py-2.5 text-center text-sm font-semibold text-white hover:bg-[#0052CC]"
+            className="flex-1 rounded-[12px] bg-[#1B3C87] py-2.5 text-center text-sm font-semibold text-white hover:bg-[#142D6B]"
           >
             플랜 알아보기
           </Link>

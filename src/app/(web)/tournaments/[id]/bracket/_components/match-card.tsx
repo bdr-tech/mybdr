@@ -28,10 +28,10 @@ function isLoser(match: BracketMatch, team: TeamSlot): boolean {
 function StatusBadge({ status }: { status: string }) {
   if (status === "in_progress") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(244,162,97,0.15)] px-2 py-0.5 text-[10px] font-bold text-[#F4A261]">
+      <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(244,162,97,0.15)] px-2 py-0.5 text-[10px] font-bold text-[#E31B23]">
         <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#F4A261] opacity-75" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#F4A261]" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E31B23] opacity-75" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#E31B23]" />
         </span>
         LIVE
       </span>
@@ -43,7 +43,7 @@ function StatusBadge({ status }: { status: string }) {
     pending: { label: "대기", bg: "rgba(255,255,255,0.08)", color: "#6B7280" },
     completed: { label: "종료", bg: "rgba(74,222,128,0.1)", color: "#22C55E" },
     bye: { label: "부전승", bg: "rgba(255,255,255,0.08)", color: "#6B7280" },
-    cancelled: { label: "취소", bg: "rgba(239,68,68,0.1)", color: "#EF4444" },
+    cancelled: { label: "취소", bg: "rgba(239,68,68,0.1)", color: "#DC2626" },
   };
 
   const c = config[status] ?? config.scheduled;
@@ -84,7 +84,7 @@ function TeamRow({
       {/* 승자 표시 바 */}
       <div
         className={`w-0.5 self-stretch rounded-full flex-shrink-0 ${
-          winner ? "bg-[#F4A261]" : "bg-transparent"
+          winner ? "bg-[#E31B23]" : "bg-transparent"
         }`}
       />
 
@@ -105,9 +105,9 @@ function TeamRow({
       <span
         className={`flex-shrink-0 font-bold tabular-nums ${
           winner
-            ? "text-[#F4A261]"
+            ? "text-[#E31B23]"
             : isLive
-              ? "text-[#F4A261]"
+              ? "text-[#E31B23]"
               : "text-[#9CA3AF]"
         }`}
       >
@@ -128,7 +128,7 @@ export function MatchCard({ match, size = "lg", showBadge = false, className = "
     isBye
       ? "border-dashed border-[#D1D5DB] bg-[#F9FAFB] opacity-70"
       : isLive
-        ? "border-2 border-[#F4A261] bg-white shadow-[0_0_12px_rgba(244,162,97,0.15)]"
+        ? "border-2 border-[#E31B23] bg-white shadow-[0_0_12px_rgba(244,162,97,0.15)]"
         : "border-[#E8ECF0] bg-white",
     // 호버 (bye 제외)
     !isBye && "hover:border-[rgba(244,162,97,0.3)] hover:bg-[#FAFAFA] cursor-pointer",
@@ -185,7 +185,7 @@ export function MobileMatchCard({
         isBye
           ? "border-dashed border-[#D1D5DB] bg-[#F9FAFB] opacity-70"
           : isLive
-            ? "border-2 border-[#F4A261] bg-white shadow-[0_0_12px_rgba(244,162,97,0.15)]"
+            ? "border-2 border-[#E31B23] bg-white shadow-[0_0_12px_rgba(244,162,97,0.15)]"
             : "border-[#E8ECF0] bg-white"
       }`}
     >
@@ -205,7 +205,7 @@ export function MobileMatchCard({
       >
         <div
           className={`w-1 self-stretch rounded-full mr-3 flex-shrink-0 ${
-            homeWinner ? "bg-[#F4A261]" : "bg-transparent"
+            homeWinner ? "bg-[#E31B23]" : "bg-transparent"
           }`}
         />
         <span
@@ -218,9 +218,9 @@ export function MobileMatchCard({
         <span
           className={`text-lg font-bold tabular-nums ${
             homeWinner
-              ? "text-[#F4A261]"
+              ? "text-[#E31B23]"
               : isLive
-                ? "text-[#F4A261]"
+                ? "text-[#E31B23]"
                 : "text-[#9CA3AF]"
           }`}
         >
@@ -239,7 +239,7 @@ export function MobileMatchCard({
       >
         <div
           className={`w-1 self-stretch rounded-full mr-3 flex-shrink-0 ${
-            awayWinner ? "bg-[#F4A261]" : "bg-transparent"
+            awayWinner ? "bg-[#E31B23]" : "bg-transparent"
           }`}
         />
         <span
@@ -254,9 +254,9 @@ export function MobileMatchCard({
         <span
           className={`text-lg font-bold tabular-nums ${
             awayWinner
-              ? "text-[#F4A261]"
+              ? "text-[#E31B23]"
               : isLive
-                ? "text-[#F4A261]"
+                ? "text-[#E31B23]"
                 : "text-[#9CA3AF]"
           }`}
         >

@@ -10,7 +10,7 @@ export default function TermsPage() {
     <div className="mx-auto max-w-2xl py-10">
       {/* 헤더 */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#111827]">서비스 이용약관</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-[#111827]">서비스 이용약관</h1>
         <p className="mt-1 text-sm text-[#9CA3AF]">시행일: 2025년 1월 1일 · 최종 수정: 2026년 3월 1일</p>
       </div>
 
@@ -117,7 +117,7 @@ export default function TermsPage() {
             <li>
               ② 서비스 이용 제한에 이의가 있는 경우 회사 이메일
               ({" "}
-              <a href="mailto:bdr.wonyoung@gmail.com" className="text-[#F4A261] underline underline-offset-2">
+              <a href="mailto:bdr.wonyoung@gmail.com" className="text-[#E31B23] underline underline-offset-2">
                 bdr.wonyoung@gmail.com
               </a>
               {" "})로 이의를 제기할 수 있습니다.
@@ -158,7 +158,7 @@ export default function TermsPage() {
           <h2 className="mb-3 text-base font-semibold text-[#111827]">제10조 (개인정보 보호)</h2>
           <p>
             회사는 이용자의 개인정보를{" "}
-            <Link href="/privacy" className="text-[#F4A261] underline underline-offset-2">
+            <Link href="/privacy" className="text-[#E31B23] underline underline-offset-2">
               개인정보 처리방침
             </Link>
             에 따라 처리합니다. 개인정보 처리방침은 서비스 화면에서 언제든지 확인할 수 있습니다.
@@ -210,7 +210,7 @@ export default function TermsPage() {
         </section>
 
         {/* 부칙 */}
-        <section className="rounded-[16px] border border-[#E8ECF0] bg-[#F5F7FA] p-5">
+        <section className="rounded-[16px] border border-[#E8ECF0] bg-[#F5F6FA] p-5">
           <h2 className="mb-2 text-base font-semibold text-[#111827]">부칙</h2>
           <p>이 약관은 2026년 3월 1일부터 시행합니다.</p>
         </section>

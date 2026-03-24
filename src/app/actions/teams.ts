@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 import { getWebSession } from "@/lib/auth/web-session";
@@ -11,7 +12,7 @@ export async function createTeamAction(_prevState: { error: string } | null, for
 
   const name = (formData.get("name") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
-  const primaryColor = (formData.get("primary_color") as string) || "#F4A261";
+  const primaryColor = (formData.get("primary_color") as string) || "#E31B23";
   const secondaryColor = (formData.get("secondary_color") as string) || "#E76F51";
 
   if (!name) {
@@ -41,7 +42,7 @@ export async function createTeamAction(_prevState: { error: string } | null, for
 
     const team = await prisma.team.create({
       data: {
-        uuid: crypto.randomUUID(),
+        uuid: randomUUID(),
         name,
         description: description || null,
         primaryColor,
@@ -57,14 +58,16 @@ export async function createTeamAction(_prevState: { error: string } | null, for
         teamId: team.id,
         userId,
         role: "captain",
-        status: "active",
+        status: "approved",
         joined_at: new Date(),
       },
     });
 
     createdTeamId = team.id;
-  } catch {
-    return { error: "팀 생성 중 오류가 발생했습니다." };
+  } catch (e) {
+    console.error("[createTeamAction]", e);
+    const msg = e instanceof Error ? e.message : String(e);
+    return { error: `팀 생성 중 오류가 발생했습니다. (${msg.slice(0, 100)})` };
   }
 
   redirect(`/teams/${createdTeamId.toString()}`);

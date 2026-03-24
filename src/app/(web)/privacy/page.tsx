@@ -10,7 +10,7 @@ export default function PrivacyPage() {
     <div className="mx-auto max-w-2xl py-10">
       {/* 헤더 */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#111827]">개인정보 처리방침</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-[#111827]">개인정보 처리방침</h1>
         <p className="mt-1 text-sm text-[#9CA3AF]">시행일: 2025년 1월 1일 · 최종 수정: 2026년 3월 1일</p>
       </div>
 
@@ -145,7 +145,7 @@ export default function PrivacyPage() {
           </ul>
           <p className="mt-2">
             권리 행사는 서비스 내 프로필 설정 또는{" "}
-            <a href="mailto:bdr.wonyoung@gmail.com" className="text-[#F4A261] underline underline-offset-2">
+            <a href="mailto:bdr.wonyoung@gmail.com" className="text-[#E31B23] underline underline-offset-2">
               bdr.wonyoung@gmail.com
             </a>
             으로 요청하시면 지체 없이 처리합니다.
@@ -178,13 +178,13 @@ export default function PrivacyPage() {
         {/* 제9조 */}
         <section>
           <h2 className="mb-3 text-base font-semibold text-[#111827]">제9조 (개인정보 보호책임자)</h2>
-          <div className="rounded-[16px] border border-[#E8ECF0] bg-[#F5F7FA] p-4">
+          <div className="rounded-[16px] border border-[#E8ECF0] bg-[#F5F6FA] p-4">
             <p className="font-medium text-[#111827]">개인정보 보호책임자</p>
             <ul className="mt-2 space-y-1 text-[#6B7280]">
               <li>성명: BDR 운영팀</li>
               <li>
                 이메일:{" "}
-                <a href="mailto:bdr.wonyoung@gmail.com" className="text-[#F4A261]">
+                <a href="mailto:bdr.wonyoung@gmail.com" className="text-[#E31B23]">
                   bdr.wonyoung@gmail.com
                 </a>
               </li>
@@ -208,7 +208,7 @@ export default function PrivacyPage() {
         </section>
 
         {/* 부칙 */}
-        <section className="rounded-[16px] border border-[#E8ECF0] bg-[#F5F7FA] p-5">
+        <section className="rounded-[16px] border border-[#E8ECF0] bg-[#F5F6FA] p-5">
           <h2 className="mb-2 text-base font-semibold text-[#111827]">부칙</h2>
           <p>이 방침은 2026년 3월 1일부터 시행합니다.</p>
         </section>

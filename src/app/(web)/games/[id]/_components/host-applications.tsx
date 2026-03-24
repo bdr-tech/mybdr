@@ -59,14 +59,14 @@ export function HostApplications({ gameId, applicants }: HostApplicationsProps) 
       {/* 대기 중 */}
       {pending.length > 0 && (
         <div>
-          <p className="mb-2 text-sm font-medium text-[#F4A261]">
+          <p className="mb-2 text-sm font-medium text-[#E31B23]">
             승인 대기 {pending.length}명
           </p>
           <div className="space-y-2">
             {pending.map((a) => (
               <div
                 key={a.id}
-                className="flex items-center justify-between rounded-[12px] border border-[#F4A261]/30 bg-[#FFF7F0] px-4 py-3"
+                className="flex items-center justify-between rounded-[12px] border border-[#E31B23]/30 bg-[#FFF7F0] px-4 py-3"
               >
                 <div>
                   <p className="text-sm font-medium">
@@ -78,7 +78,7 @@ export function HostApplications({ gameId, applicants }: HostApplicationsProps) 
                   {a.phone && (
                     <a
                       href={`tel:${a.phone}`}
-                      className="text-xs text-[#0066FF] hover:underline"
+                      className="text-xs text-[#1B3C87] hover:underline"
                     >
                       {a.phone}
                     </a>
@@ -115,7 +115,7 @@ export function HostApplications({ gameId, applicants }: HostApplicationsProps) 
             {processed.map((a) => (
               <div
                 key={a.id}
-                className="flex items-center justify-between rounded-[12px] bg-[#EEF2FF] px-4 py-2.5"
+                className="flex items-center justify-between rounded-[12px] bg-[#EDF0F8] px-4 py-2.5"
               >
                 <p className="text-sm">{a.nickname ?? a.name ?? "익명"}</p>
                 <Badge variant={a.status === 1 ? "success" : "error"}>

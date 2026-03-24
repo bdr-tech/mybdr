@@ -49,7 +49,7 @@ export default async function SiteSchedulePage() {
 
   return (
     <div>
-      <h2 className="mb-6 text-2xl font-bold">경기 일정</h2>
+      <h2 className="mb-6 text-xl sm:text-2xl font-bold">경기 일정</h2>
       {dates.length === 0 ? (
         <Card className="py-12 text-center text-[#6B7280]">
           <div className="mb-2 text-3xl">📅</div>
@@ -80,7 +80,7 @@ export default async function SiteSchedulePage() {
                         <span
                           className={`font-semibold ${
                             m.winner_team_id && m.winner_team_id === m.homeTeamId
-                              ? "text-[#F4A261]"
+                              ? "text-[#E31B23]"
                               : ""
                           }`}
                         >
@@ -91,7 +91,7 @@ export default async function SiteSchedulePage() {
                       {/* 스코어 */}
                       <div className="flex items-center gap-1 text-center">
                         {m.status === "completed" || m.status === "in_progress" ? (
-                          <span className="min-w-[4rem] rounded-[8px] bg-[#EEF2FF] px-3 py-1 font-mono font-bold">
+                          <span className="min-w-[4rem] rounded-[8px] bg-[#EDF0F8] px-3 py-1 font-mono font-bold">
                             {m.homeScore} : {m.awayScore}
                           </span>
                         ) : (
@@ -111,7 +111,7 @@ export default async function SiteSchedulePage() {
                         <span
                           className={`font-semibold ${
                             m.winner_team_id && m.winner_team_id === m.awayTeamId
-                              ? "text-[#F4A261]"
+                              ? "text-[#E31B23]"
                               : ""
                           }`}
                         >

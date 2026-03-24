@@ -48,20 +48,20 @@ export default function AddEditionPage() {
       <Link href={`/tournament-admin/series/${id}`} className="mb-4 inline-block text-xs text-[#9CA3AF] hover:text-[#6B7280]">
         ← 시리즈로 돌아가기
       </Link>
-      <h1 className="mb-6 text-2xl font-bold">새 회차 추가</h1>
+      <h1 className="mb-6 text-xl sm:text-2xl font-bold">새 회차 추가</h1>
 
       <Card>
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* 날짜 */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-[#111827]">
-              대회 날짜 <span className="text-[#EF4444]">*</span>
+              대회 날짜 <span className="text-[#DC2626]">*</span>
             </label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full rounded-[12px] border border-[#E8ECF0] bg-[#F5F7FA] px-4 py-4 text-sm outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF]"
+              className="w-full rounded-[12px] border border-[#E8ECF0] bg-[#F5F6FA] px-4 py-4 text-sm outline-none focus:border-[#1B3C87] focus:ring-1 focus:ring-[#1B3C87]"
               required
               autoFocus
             />
@@ -77,7 +77,7 @@ export default function AddEditionPage() {
               value={venueName}
               onChange={(e) => setVenueName(e.target.value)}
               placeholder="예: 강남구민체육센터"
-              className="w-full rounded-[12px] border border-[#E8ECF0] bg-[#F5F7FA] px-4 py-4 text-sm outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF]"
+              className="w-full rounded-[12px] border border-[#E8ECF0] bg-[#F5F6FA] px-4 py-4 text-sm outline-none focus:border-[#1B3C87] focus:ring-1 focus:ring-[#1B3C87]"
             />
           </div>
 
@@ -93,13 +93,13 @@ export default function AddEditionPage() {
               onChange={(e) => setMaxTeams(Math.max(2, Number(e.target.value)))}
               min={2}
               max={64}
-              className="w-full rounded-[12px] border border-[#E8ECF0] bg-[#F5F7FA] px-4 py-4 text-sm outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF]"
+              className="w-full rounded-[12px] border border-[#E8ECF0] bg-[#F5F6FA] px-4 py-4 text-sm outline-none focus:border-[#1B3C87] focus:ring-1 focus:ring-[#1B3C87]"
             />
             <p className="mt-1.5 text-xs text-[#9CA3AF]">기본값 8팀, 최대 64팀</p>
           </div>
 
           {error && (
-            <p className="rounded-[12px] bg-[rgba(239,68,68,0.1)] px-4 py-3 text-sm text-[#EF4444]">
+            <p className="rounded-[12px] bg-[rgba(239,68,68,0.1)] px-4 py-3 text-sm text-[#DC2626]">
               {error}
             </p>
           )}

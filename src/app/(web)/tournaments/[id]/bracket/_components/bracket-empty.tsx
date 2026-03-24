@@ -12,7 +12,7 @@ export function BracketEmpty({ tournamentId }: { tournamentId: string }) {
       </p>
       <Link
         href={`/tournaments/${tournamentId}/teams`}
-        className="rounded-full bg-[#0066FF] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#0052CC]"
+        className="rounded-full bg-[#1B3C87] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#142D6B]"
       >
         참가팀 보러가기
       </Link>

@@ -21,7 +21,7 @@ export function WizardProgress({ steps, currentStep, onStepClick }: WizardProgre
         aria-label={`${steps.length}단계 중 ${currentStep + 1}단계`}
       >
         <div
-          className="h-full bg-[#F4A261] transition-all duration-200 ease-out"
+          className="h-full bg-[#E31B23] transition-all duration-200 ease-out"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -41,10 +41,10 @@ export function WizardProgress({ steps, currentStep, onStepClick }: WizardProgre
               disabled={!isClickable}
               className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs transition-colors ${
                 isActive
-                  ? "bg-[#0066FF] font-semibold text-white"
+                  ? "bg-[#1B3C87] font-semibold text-white"
                   : isCompleted
                     ? "bg-[rgba(74,222,128,0.15)] text-[#22C55E] cursor-pointer hover:bg-[rgba(74,222,128,0.25)]"
-                    : "bg-[#F5F7FA] text-[#9CA3AF] cursor-not-allowed"
+                    : "bg-[#F5F6FA] text-[#9CA3AF] cursor-not-allowed"
               }`}
               aria-current={isActive ? "step" : undefined}
             >

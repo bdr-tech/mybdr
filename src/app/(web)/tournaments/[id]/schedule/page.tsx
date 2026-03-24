@@ -17,13 +17,13 @@ export default async function SchedulePage({ params }: { params: Promise<{ id: s
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">일정</h1>
+      <h1 className="mb-6 text-xl sm:text-2xl font-bold">일정</h1>
       <div className="space-y-3">
         {matches.map((m) => (
           <Card key={m.id.toString()} className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="min-w-[80px] font-medium">{m.homeTeam?.team.name ?? "TBD"}</span>
-              <span className="rounded-full bg-[#EEF2FF] px-3 py-1 text-sm font-bold">{m.homeScore}:{m.awayScore}</span>
+              <span className="rounded-full bg-[#EDF0F8] px-3 py-1 text-sm font-bold">{m.homeScore}:{m.awayScore}</span>
               <span className="min-w-[80px] font-medium">{m.awayTeam?.team.name ?? "TBD"}</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-[#9CA3AF]">

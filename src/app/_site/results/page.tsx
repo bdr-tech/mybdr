@@ -32,7 +32,7 @@ export default async function SiteResultsPage() {
 
   return (
     <div>
-      <h2 className="mb-6 text-2xl font-bold">경기 결과</h2>
+      <h2 className="mb-6 text-xl sm:text-2xl font-bold">경기 결과</h2>
 
       {completed.length === 0 ? (
         <Card className="py-12 text-center text-[#6B7280]">
@@ -61,7 +61,7 @@ export default async function SiteResultsPage() {
                           {/* 홈팀 */}
                           <div className="flex flex-1 items-center justify-end gap-2">
                             {homeWin && (
-                              <span className="text-xs font-bold text-[#F4A261]">WIN</span>
+                              <span className="text-xs font-bold text-[#E31B23]">WIN</span>
                             )}
                             <div className="flex items-center gap-2">
                               {m.homeTeam?.team.primaryColor && (
@@ -71,7 +71,7 @@ export default async function SiteResultsPage() {
                                 />
                               )}
                               <span
-                                className={`font-semibold ${homeWin ? "text-[#F4A261]" : "text-[#111827]"}`}
+                                className={`font-semibold ${homeWin ? "text-[#E31B23]" : "text-[#111827]"}`}
                               >
                                 {m.homeTeam?.team.name ?? "TBD"}
                               </span>
@@ -81,13 +81,13 @@ export default async function SiteResultsPage() {
                           {/* 스코어 */}
                           <div className="flex items-center gap-2">
                             <span
-                              className={`min-w-[2rem] text-center text-2xl font-bold ${homeWin ? "text-[#F4A261]" : ""}`}
+                              className={`min-w-[2rem] text-center text-xl sm:text-2xl font-bold ${homeWin ? "text-[#E31B23]" : ""}`}
                             >
                               {m.homeScore}
                             </span>
                             <span className="text-[#9CA3AF]">:</span>
                             <span
-                              className={`min-w-[2rem] text-center text-2xl font-bold ${awayWin ? "text-[#F4A261]" : ""}`}
+                              className={`min-w-[2rem] text-center text-xl sm:text-2xl font-bold ${awayWin ? "text-[#E31B23]" : ""}`}
                             >
                               {m.awayScore}
                             </span>
@@ -103,13 +103,13 @@ export default async function SiteResultsPage() {
                                 />
                               )}
                               <span
-                                className={`font-semibold ${awayWin ? "text-[#F4A261]" : "text-[#111827]"}`}
+                                className={`font-semibold ${awayWin ? "text-[#E31B23]" : "text-[#111827]"}`}
                               >
                                 {m.awayTeam?.team.name ?? "TBD"}
                               </span>
                             </div>
                             {awayWin && (
-                              <span className="text-xs font-bold text-[#F4A261]">WIN</span>
+                              <span className="text-xs font-bold text-[#E31B23]">WIN</span>
                             )}
                           </div>
                         </div>

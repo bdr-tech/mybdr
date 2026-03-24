@@ -5,23 +5,55 @@ import { createStatSchema, bulkStatsSchema } from "@/lib/validation/match";
 import { apiSuccess, notFound, validationError, forbidden } from "@/lib/api/response";
 import { mapStatToPrisma } from "@/lib/utils/stat-mapper";
 
-// FR-026: 매치 스탯 조회
+// FR-026: 매치 스탯 조회 (Sprint 2: quarter_scores 포함)
 async function getHandler(
   _req: NextRequest,
   ctx: AuthContext & { params: Promise<{ id: string }> }
 ) {
   const { id: matchId } = await ctx.params;
+  const matchIdBig = BigInt(matchId);
 
-  const stats = await prisma.matchPlayerStat.findMany({
-    where: { tournamentMatchId: BigInt(matchId) },
-    include: {
-      tournamentTeamPlayer: {
-        select: { jerseyNumber: true, position: true, users: { select: { nickname: true } } },
+  // 경기 기본 정보 + quarter_scores 포함 조회
+  const [match, stats] = await Promise.all([
+    prisma.tournamentMatch.findUnique({
+      where: { id: matchIdBig },
+      select: {
+        id: true,
+        homeScore: true,
+        awayScore: true,
+        quarterScores: true,
+        status: true,
+        homeTeamId: true,
+        awayTeamId: true,
       },
-    },
-  });
+    }),
+    prisma.matchPlayerStat.findMany({
+      where: { tournamentMatchId: matchIdBig },
+      include: {
+        tournamentTeamPlayer: {
+          select: {
+            jerseyNumber: true,
+            position: true,
+            tournamentTeamId: true,
+            users: { select: { nickname: true } },
+          },
+        },
+      },
+    }),
+  ]);
 
-  return apiSuccess(stats);
+  return apiSuccess({
+    match: match ? {
+      id: Number(match.id),
+      homeScore: match.homeScore,
+      awayScore: match.awayScore,
+      quarterScores: match.quarterScores,
+      status: match.status,
+      homeTeamId: match.homeTeamId ? Number(match.homeTeamId) : null,
+      awayTeamId: match.awayTeamId ? Number(match.awayTeamId) : null,
+    } : null,
+    playerStats: stats,
+  });
 }
 
 // FR-026: 스탯 생성

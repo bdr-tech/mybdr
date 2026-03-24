@@ -4,16 +4,15 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 
 const MENU_POOL = [
-  { id: "find_game",    label: "경기 찾기",  icon: "🏀", href: "/games" },
-  { id: "my_team",      label: "내 팀",      icon: "👥", href: "/teams" },
-  { id: "tournaments",  label: "대회 보기",  icon: "🏆", href: "/tournaments" },
-  { id: "pickup",       label: "픽업 신청",  icon: "⚡", href: "/games?type=pickup" },
-  { id: "my_schedule",  label: "내 일정",    icon: "📅", href: "/schedule" },
-  { id: "stats",        label: "내 기록",    icon: "📊", href: "/profile?tab=stats" },
-  { id: "community",   label: "커뮤니티",   icon: "💬", href: "/community" },
-  { id: "ranking",      label: "랭킹",       icon: "🥇", href: "/ranking" },
-  { id: "venue",        label: "코트 찾기",  icon: "📍", href: "/courts" },
-  { id: "notifications",label: "알림",       icon: "🔔", href: "/notifications" },
+  { id: "find_game",    label: "경기",      icon: "🏀", href: "/games" },
+  { id: "my_team",      label: "내팀",      icon: "👥", href: "/teams" },
+  { id: "tournaments",  label: "대회",      icon: "🏆", href: "/tournaments" },
+  { id: "pickup",       label: "픽업",      icon: "⚡", href: "/games?type=pickup" },
+  { id: "my_schedule",  label: "일정",      icon: "📅", href: "/schedule" },
+  { id: "stats",        label: "기록",      icon: "📊", href: "/profile?tab=stats" },
+  { id: "community",   label: "게시판",    icon: "💬", href: "/community" },
+  { id: "ranking",      label: "랭킹",      icon: "🥇", href: "/ranking" },
+  { id: "venue",        label: "코트",      icon: "📍", href: "/courts" },
 ] as const;
 
 type MenuId = (typeof MENU_POOL)[number]["id"];
@@ -85,7 +84,7 @@ export function QuickMenu() {
           <button
             onClick={saveEdit}
             disabled={saving || pending.length === 0}
-            className="rounded-full bg-[#0066FF] px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+            className="rounded-full bg-[#1B3C87] px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
           >
             완료
           </button>
@@ -97,7 +96,7 @@ export function QuickMenu() {
             <button
               key={m.id}
               onClick={() => toggleItem(m.id)}
-              className="flex items-center gap-1 rounded-full bg-[rgba(0,102,255,0.12)] px-3 py-1.5 text-xs font-medium text-[#0066FF]"
+              className="flex items-center gap-1 rounded-full bg-[rgba(27,60,135,0.12)] px-3 py-1.5 text-xs font-medium text-[#1B3C87]"
             >
               {m.icon} {m.label} ✕
             </button>
@@ -113,7 +112,7 @@ export function QuickMenu() {
                 key={m.id}
                 onClick={() => toggleItem(m.id)}
                 disabled={pending.length >= MAX_ITEMS}
-                className="flex flex-col items-center gap-1 rounded-[12px] border border-[#E8ECF0] py-3 text-xs text-[#6B7280] transition-colors hover:border-[#0066FF] hover:text-[#0066FF] disabled:opacity-40"
+                className="flex flex-col items-center gap-1 rounded-[12px] border border-[#E8ECF0] py-3 text-xs text-[#6B7280] transition-colors hover:border-[#1B3C87] hover:text-[#1B3C87] disabled:opacity-40"
               >
                 <span className="text-lg">{m.icon}</span>
                 {m.label}
@@ -141,7 +140,7 @@ export function QuickMenu() {
       <div className="grid grid-cols-4 gap-2">
         {menuItems.map((m) => (
           <Link key={m.id} href={m.href}>
-            <div className="flex flex-col items-center gap-1.5 rounded-[16px] border border-[#E8ECF0] bg-[#FFFFFF] py-4 text-center transition-colors hover:bg-[#EEF2FF]">
+            <div className="flex flex-col items-center gap-1.5 rounded-[16px] border border-[#E8ECF0] bg-[#FFFFFF] py-4 text-center transition-colors hover:bg-[#EDF0F8]">
               <span className="text-2xl">{m.icon}</span>
               <span className="text-[10px] font-medium text-[#374151]">{m.label}</span>
             </div>

@@ -46,10 +46,10 @@ const STATUS_LABEL: Record<string, string> = {
 
 const STATUS_COLOR: Record<string, string> = {
   pending: "text-[#9CA3AF]",
-  scheduled: "text-[#60A5FA]",
-  in_progress: "text-[#FBBF24]",
-  completed: "text-[#4ADE80]",
-  cancelled: "text-[#EF4444]",
+  scheduled: "text-[#2563EB]",
+  in_progress: "text-[#D97706]",
+  completed: "text-[#16A34A]",
+  cancelled: "text-[#DC2626]",
   bye: "text-[#6B7280]",
 };
 
@@ -137,7 +137,7 @@ function ScoreModal({
           <div>
             <label className="mb-1 block text-xs text-[#6B7280]">홈팀</label>
             <select
-              className="w-full rounded-[12px] border-none bg-[#EEF2FF] px-3 py-2 text-sm text-[#111827]"
+              className="w-full rounded-[12px] border-none bg-[#EDF0F8] px-3 py-2 text-sm text-[#111827]"
               value={homeTeamId}
               onChange={(e) => setHomeTeamId(e.target.value)}
             >
@@ -150,7 +150,7 @@ function ScoreModal({
           <div>
             <label className="mb-1 block text-xs text-[#6B7280]">원정팀</label>
             <select
-              className="w-full rounded-[12px] border-none bg-[#EEF2FF] px-3 py-2 text-sm text-[#111827]"
+              className="w-full rounded-[12px] border-none bg-[#EDF0F8] px-3 py-2 text-sm text-[#111827]"
               value={awayTeamId}
               onChange={(e) => setAwayTeamId(e.target.value)}
             >
@@ -169,7 +169,7 @@ function ScoreModal({
             min={0}
             value={homeScore}
             onChange={(e) => setHomeScore(Number(e.target.value))}
-            className="w-full rounded-[12px] border-none bg-[#EEF2FF] px-3 py-3 text-center text-2xl font-bold text-[#111827]"
+            className="w-full rounded-[12px] border-none bg-[#EDF0F8] px-3 py-3 text-center text-xl sm:text-2xl font-bold text-[#111827]"
           />
           <div className="text-center text-sm text-[#9CA3AF]">:</div>
           <input
@@ -177,7 +177,7 @@ function ScoreModal({
             min={0}
             value={awayScore}
             onChange={(e) => setAwayScore(Number(e.target.value))}
-            className="w-full rounded-[12px] border-none bg-[#EEF2FF] px-3 py-3 text-center text-2xl font-bold text-[#111827]"
+            className="w-full rounded-[12px] border-none bg-[#EDF0F8] px-3 py-3 text-center text-xl sm:text-2xl font-bold text-[#111827]"
           />
         </div>
 
@@ -185,7 +185,7 @@ function ScoreModal({
         <div className="mb-3">
           <label className="mb-1 block text-xs text-[#6B7280]">상태</label>
           <select
-            className="w-full rounded-[12px] border-none bg-[#EEF2FF] px-3 py-2 text-sm text-[#111827]"
+            className="w-full rounded-[12px] border-none bg-[#EDF0F8] px-3 py-2 text-sm text-[#111827]"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
           >
@@ -200,7 +200,7 @@ function ScoreModal({
         <div className="mb-3">
           <label className="mb-1 block text-xs text-[#6B7280]">승자 팀</label>
           <select
-            className="w-full rounded-[12px] border-none bg-[#EEF2FF] px-3 py-2 text-sm text-[#111827]"
+            className="w-full rounded-[12px] border-none bg-[#EDF0F8] px-3 py-2 text-sm text-[#111827]"
             value={winnerId}
             onChange={(e) => setWinnerId(e.target.value)}
           >
@@ -226,7 +226,7 @@ function ScoreModal({
               type="datetime-local"
               value={scheduledAt}
               onChange={(e) => setScheduledAt(e.target.value)}
-              className="w-full rounded-[12px] border-none bg-[#EEF2FF] px-3 py-2 text-sm text-[#111827]"
+              className="w-full rounded-[12px] border-none bg-[#EDF0F8] px-3 py-2 text-sm text-[#111827]"
             />
           </div>
           <div>
@@ -235,7 +235,7 @@ function ScoreModal({
               value={venueName}
               onChange={(e) => setVenueName(e.target.value)}
               placeholder="경기장명"
-              className="w-full rounded-[12px] border-none bg-[#EEF2FF] px-3 py-2 text-sm text-[#111827] placeholder:text-[#9CA3AF]"
+              className="w-full rounded-[12px] border-none bg-[#EDF0F8] px-3 py-2 text-sm text-[#111827] placeholder:text-[#9CA3AF]"
             />
           </div>
         </div>
@@ -316,7 +316,7 @@ export default function TournamentMatchesPage() {
           <Link href={`/tournament-admin/tournaments/${id}`} className="text-sm text-[#6B7280] hover:text-[#111827]">
             ← 대회 관리
           </Link>
-          <h1 className="mt-1 text-2xl font-bold">경기 관리</h1>
+          <h1 className="mt-1 text-xl sm:text-2xl font-bold">경기 관리</h1>
         </div>
         <div className="flex gap-2">
           {matches.length > 0 ? (
@@ -346,7 +346,7 @@ export default function TournamentMatchesPage() {
           <p className="mb-1 font-medium">경기가 없습니다</p>
           <p className="text-sm">
             승인된 팀이{" "}
-            <span className="text-[#F4A261]">
+            <span className="text-[#E31B23]">
               {teams.filter((t) => t.status === "approved").length}팀
             </span>
             {" "}있습니다. 대진표를 생성하세요.
@@ -370,7 +370,7 @@ export default function TournamentMatchesPage() {
                       className="cursor-pointer"
                       onClick={() => setSelectedMatch(match)}
                     >
-                    <Card className="transition-colors hover:bg-[#EEF2FF]">
+                    <Card className="transition-colors hover:bg-[#EDF0F8]">
                       <div className="flex items-center gap-4">
                         {/* 경기 번호 */}
                         <span className="w-8 text-center text-xs text-[#9CA3AF]">
@@ -379,7 +379,7 @@ export default function TournamentMatchesPage() {
 
                         {/* 홈팀 */}
                         <div className="flex-1 text-right">
-                          <p className={`font-semibold ${match.winner_team_id === match.homeTeamId && match.homeTeamId ? "text-[#F4A261]" : ""}`}>
+                          <p className={`font-semibold ${match.winner_team_id === match.homeTeamId && match.homeTeamId ? "text-[#E31B23]" : ""}`}>
                             {match.homeTeam?.team.name ?? "미정"}
                           </p>
                         </div>
@@ -393,7 +393,7 @@ export default function TournamentMatchesPage() {
 
                         {/* 원정팀 */}
                         <div className="flex-1">
-                          <p className={`font-semibold ${match.winner_team_id === match.awayTeamId && match.awayTeamId ? "text-[#F4A261]" : ""}`}>
+                          <p className={`font-semibold ${match.winner_team_id === match.awayTeamId && match.awayTeamId ? "text-[#E31B23]" : ""}`}>
                             {match.awayTeam?.team.name ?? "미정"}
                           </p>
                         </div>

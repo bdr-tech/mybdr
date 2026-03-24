@@ -26,10 +26,10 @@ const STATUS_LABEL: Record<string, string> = {
 
 const STATUS_COLOR: Record<string, string> = {
   draft: "text-[#6B7280]",
-  registration: "text-[#60A5FA]",
-  active: "text-[#4ADE80]",
+  registration: "text-[#2563EB]",
+  active: "text-[#16A34A]",
   completed: "text-[#6B7280]",
-  cancelled: "text-[#EF4444]",
+  cancelled: "text-[#DC2626]",
 };
 
 export default async function TournamentAdminDetailPage({
@@ -122,7 +122,7 @@ export default async function TournamentAdminDetailPage({
                 ← 대회 목록
               </Link>
             </div>
-            <h1 className="text-2xl font-bold">{tournament.name}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold">{tournament.name}</h1>
             <div className="mt-1 flex flex-wrap items-center gap-3 text-sm">
               <span className={STATUS_COLOR[status] ?? "text-[#6B7280]"}>
                 ● {STATUS_LABEL[status] ?? status}
@@ -133,7 +133,7 @@ export default async function TournamentAdminDetailPage({
                     {tournament.startDate.toLocaleDateString("ko-KR")}
                     {tournament.endDate && ` ~ ${tournament.endDate.toLocaleDateString("ko-KR")}`}
                   </span>
-                  <span className="rounded-full bg-[rgba(244,162,97,0.12)] px-2 py-0.5 text-xs font-semibold text-[#F4A261]">
+                  <span className="rounded-full bg-[rgba(244,162,97,0.12)] px-2 py-0.5 text-xs font-semibold text-[#E31B23]">
                     {getDDay(tournament.startDate)}
                   </span>
                 </>
@@ -156,7 +156,7 @@ export default async function TournamentAdminDetailPage({
           { label: "참가비", value: tournament.entry_fee ? `${Number(tournament.entry_fee).toLocaleString()}원` : "무료" },
         ].map((s) => (
           <Card key={s.label} className="text-center py-4">
-            <p className="text-2xl font-bold text-[#F4A261]">{s.value}</p>
+            <p className="text-xl sm:text-2xl font-bold text-[#E31B23]">{s.value}</p>
             <p className="mt-1 text-xs text-[#6B7280]">{s.label}</p>
           </Card>
         ))}
@@ -166,7 +166,7 @@ export default async function TournamentAdminDetailPage({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {actions.map((a) => (
           <Link key={a.href} href={a.href}>
-            <Card className="cursor-pointer transition-colors hover:bg-[#EEF2FF]">
+            <Card className="cursor-pointer transition-colors hover:bg-[#EDF0F8]">
               <div className="mb-2 text-2xl">{a.icon}</div>
               <h3 className="font-semibold">{a.label}</h3>
               <p className="mt-1 text-sm text-[#6B7280]">{a.desc}</p>

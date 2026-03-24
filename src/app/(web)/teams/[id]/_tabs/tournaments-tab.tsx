@@ -39,7 +39,7 @@ export async function TournamentsTab({ teamId }: TournamentsTabProps) {
           return (
             <div
               key={tt.id.toString()}
-              className="flex items-center justify-between rounded-[12px] bg-[#EEF2FF] px-4 py-3"
+              className="flex items-center justify-between rounded-[12px] bg-[#EDF0F8] px-4 py-3"
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-[#111827]">{t.name}</p>

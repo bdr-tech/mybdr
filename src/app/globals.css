@@ -1,18 +1,18 @@
 @import "tailwindcss";
 
 @theme {
-  /* Light Mode Colors (Toss Blue + Orange Accent) */
-  --color-background: #F5F7FA;
+  /* Light Mode Colors (Navy + BDR Red) */
+  --color-background: #F5F6FA;
   --color-card: #FFFFFF;
-  --color-elevated: #EEF2FF;
+  --color-elevated: #EDF0F8;
   --color-surface: #E8ECF0;
 
-  /* Toss Blue Primary + Orange Accent */
-  --color-primary: #0066FF;
-  --color-primary-hover: #0052CC;
-  --color-primary-light: rgba(0, 102, 255, 0.08);
-  --color-accent: #F4A261;
-  --color-accent-coral: #F4A261;
+  /* Navy Primary + BDR Red Accent */
+  --color-primary: #1B3C87;
+  --color-primary-hover: #142D6B;
+  --color-primary-light: rgba(27, 60, 135, 0.08);
+  --color-accent: #E31B23;
+  --color-accent-hover: #C8101E;
 
   /* Text */
   --color-text-primary: #111827;
@@ -21,10 +21,10 @@
   --color-text-on-primary: #FFFFFF;
 
   /* Status */
-  --color-success: #4ADE80;
-  --color-error: #EF4444;
-  --color-warning: #FBBF24;
-  --color-info: #60A5FA;
+  --color-success: #16A34A;
+  --color-error: #DC2626;
+  --color-warning: #D97706;
+  --color-info: #2563EB;
 
   /* Border */
   --color-border: #E8ECF0;
@@ -41,27 +41,138 @@
 
   /* Font */
   --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-heading: 'Space Grotesk', 'Pretendard', sans-serif;
 }
 
 body {
   background-color: var(--color-background);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ====== Dark Mode ====== */
+html.dark {
+  color-scheme: dark;
+  --color-background: #0F1117;
+  --color-card: #1A1D27;
+  --color-elevated: #2A2D37;
+  --color-surface: #1A1D27;
+  --color-primary: #5B7FD6;
+  --color-accent: #F04E54;
+  --color-text-primary: #F1F3F5;
+  --color-text-secondary: #9CA3AF;
+  --color-text-muted: #6B7280;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-subtle: rgba(255, 255, 255, 0.04);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Dark mode overrides for hardcoded Tailwind classes */
+html.dark [class*="bg-[#FFFFFF]"],
+html.dark [class*="bg-[#FFFFFF]/95"] {
+  background-color: var(--color-card) !important;
+}
+
+html.dark [class*="bg-[#F5F6FA]"] {
+  background-color: var(--color-surface) !important;
+}
+
+html.dark [class*="bg-[#EDF0F8]"] {
+  background-color: var(--color-elevated) !important;
+}
+
+html.dark [class*="bg-[#E8ECF0]"] {
+  background-color: var(--color-surface) !important;
+}
+
+html.dark [class*="border-[#E8ECF0]"] {
+  border-color: var(--color-border) !important;
+}
+
+html.dark [class*="border-[#F1F5F9]"],
+html.dark [class*="border-[#CBD5E1]"] {
+  border-color: var(--color-border-subtle) !important;
+}
+
+html.dark [class*="text-[#111827]"],
+html.dark [class*="text-[#374151]"] {
+  color: var(--color-text-primary) !important;
+}
+
+html.dark [class*="text-[#6B7280]"] {
+  color: #D1D5DB !important;
+}
+
+html.dark [class*="text-[#9CA3AF]"] {
+  color: #D1D5DB !important;
+}
+
+html.dark [class*="shadow-["] {
+  --tw-shadow-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark [class*="backdrop-blur"] {
+  background-color: rgba(26, 29, 39, 0.92) !important;
+}
+
+/* ====== Large Text Mode ====== */
+html.large-text {
+  font-size: 120%;
+}
+
+html.large-text [class*="text-xs"] { font-size: 0.9rem !important; }
+html.large-text [class*="text-sm"] { font-size: 1.05rem !important; }
+html.large-text [class*="text-base"] { font-size: 1.2rem !important; }
+html.large-text [class*="text-lg"] { font-size: 1.35rem !important; }
+html.large-text [class*="text-xl"] { font-size: 1.5rem !important; }
+html.large-text [class*="text-2xl"] { font-size: 1.8rem !important; }
+html.large-text [class*="text-[10px]"],
+html.large-text [class*="text-[9px]"] { font-size: 0.8rem !important; }
+html.large-text [class*="text-[11px]"] { font-size: 0.85rem !important; }
+
+/* ====== Typography ====== */
+h1, h2, h3,
+[class*="text-xl"],
+[class*="text-2xl"],
+[class*="text-3xl"],
+[class*="text-4xl"] {
+  font-family: var(--font-heading);
+  letter-spacing: 0.01em;
+}
+
+/* Material Symbols */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
 /* 모바일 터치 개선 */
 button,
 a,
 [role="button"] {
-  /* 300ms 탭 딜레이 제거, 더블탭 줌 방지 */
   touch-action: manipulation;
-  /* iOS 탭 하이라이트 제거 (시각적 피드백은 active: 클래스로 대체) */
   -webkit-tap-highlight-color: transparent;
 }
 
 /* 스크롤 가능한 컨테이너 터치 개선 */
 .overflow-x-auto {
   -webkit-overflow-scrolling: touch;
+}
+
+/* 스크롤바 숨기기 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* 모바일 하단 내비 영역 확보 (safe area 포함) */

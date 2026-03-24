@@ -22,13 +22,13 @@ export function CommentForm({ postId }: { postId: string }) {
           name="content"
           type="text"
           required
-          className="flex-1 rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/50"
+          className="flex-1 rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
           placeholder="댓글 입력..."
         />
         <button
           type="submit"
           disabled={pending}
-          className="rounded-full bg-[#0066FF] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          className="rounded-full bg-[#1B3C87] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
           {pending ? "..." : "등록"}
         </button>

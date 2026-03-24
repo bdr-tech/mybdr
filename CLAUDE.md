@@ -51,7 +51,6 @@ src/lib/utils/       → snake_case 변환 등
 - 응답: `apiSuccess()` / `apiError()` 헬퍼만 사용 (snake_case 자동 변환)
 - IDOR: 리소스 접근 시 반드시 소유자/권한 검증
 - 멀티테넌트: 서브도메인 쿼리에 tournamentId 조건 필수
-
 ## 코딩 컨벤션
 - DB 컬럼: snake_case (@map으로 매핑)
 - TypeScript 코드: camelCase

@@ -139,7 +139,7 @@ export default function ProfileEditPage() {
   };
 
   const inp =
-    "w-full rounded-[16px] border border-[#E8ECF0] bg-[#FFFFFF] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#0066FF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 text-sm";
+    "w-full rounded-[16px] border border-[#E8ECF0] bg-[#FFFFFF] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#1B3C87] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/20 text-sm";
   const lbl = "mb-1 block text-sm text-[#6B7280]";
   const section = "mb-6 rounded-[20px] border border-[#E8ECF0] bg-[#FFFFFF] p-5";
 
@@ -155,17 +155,17 @@ export default function ProfileEditPage() {
     <div className="mx-auto max-w-lg">
       {/* 헤더 */}
       <div className="mb-6 flex items-center gap-3">
-        <Link href="/profile" className="rounded-full p-2 text-[#6B7280] hover:bg-[#EEF2FF]">
+        <Link href="/profile" className="rounded-full p-2 text-[#6B7280] hover:bg-[#EDF0F8]">
           ←
         </Link>
         <h1 className="text-xl font-bold">프로필 수정</h1>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-[12px] bg-[rgba(239,68,68,0.1)] px-4 py-3 text-sm text-[#EF4444]">{error}</div>
+        <div className="mb-4 rounded-[12px] bg-[rgba(239,68,68,0.1)] px-4 py-3 text-sm text-[#DC2626]">{error}</div>
       )}
       {successMsg && (
-        <div className="mb-4 rounded-[12px] bg-[rgba(0,102,255,0.1)] px-4 py-3 text-sm text-[#0066FF]">{successMsg}</div>
+        <div className="mb-4 rounded-[12px] bg-[rgba(27,60,135,0.1)] px-4 py-3 text-sm text-[#1B3C87]">{successMsg}</div>
       )}
 
       {/* 기본 정보 */}
@@ -250,8 +250,8 @@ export default function ProfileEditPage() {
                   onClick={() => setForm((p) => ({ ...p, position: p.position === pos ? "" : pos }))}
                   className={`flex-1 rounded-full border py-2 text-sm font-medium transition-colors ${
                     form.position === pos
-                      ? "border-[#0066FF] bg-[rgba(0,102,255,0.12)] text-[#0066FF]"
-                      : "border-[#E8ECF0] text-[#6B7280] hover:border-[#0066FF]"
+                      ? "border-[#1B3C87] bg-[rgba(27,60,135,0.12)] text-[#1B3C87]"
+                      : "border-[#E8ECF0] text-[#6B7280] hover:border-[#1B3C87]"
                   }`}
                 >
                   {pos}
@@ -305,12 +305,12 @@ export default function ProfileEditPage() {
         <p className="mb-4 text-xs text-[#9CA3AF]">참가비·게스트비·픽업비 환불 시 사용됩니다</p>
 
         {hasExistingAccount && !bankForm.account_consent && (
-          <div className="mb-4 rounded-[12px] bg-[#EEF2FF] px-4 py-3 text-sm text-[#6B7280]">
+          <div className="mb-4 rounded-[12px] bg-[#EDF0F8] px-4 py-3 text-sm text-[#6B7280]">
             현재 등록된 계좌: <span className="font-medium text-[#111827]">{maskedAccount}</span>
             <button
               type="button"
               onClick={() => setBankForm((p) => ({ ...p, account_consent: true }))}
-              className="ml-2 text-xs text-[#0066FF] underline"
+              className="ml-2 text-xs text-[#1B3C87] underline"
             >
               변경하기
             </button>
@@ -322,10 +322,10 @@ export default function ProfileEditPage() {
             type="checkbox"
             checked={bankForm.account_consent}
             onChange={(e) => setBankForm((p) => ({ ...p, account_consent: e.target.checked }))}
-            className="mt-0.5 h-4 w-4 rounded border-[#E8ECF0] accent-[#0066FF]"
+            className="mt-0.5 h-4 w-4 rounded border-[#E8ECF0] accent-[#1B3C87]"
           />
           <span className="text-sm text-[#374151]">
-            개인정보(계좌번호) 수집·이용에 동의합니다 <span className="text-[#EF4444]">(필수)</span>
+            개인정보(계좌번호) 수집·이용에 동의합니다 <span className="text-[#DC2626]">(필수)</span>
           </span>
         </label>
 
@@ -380,7 +380,7 @@ export default function ProfileEditPage() {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="w-full rounded-full bg-[#0066FF] py-4 text-sm font-semibold text-white hover:bg-[#0052CC] disabled:opacity-60"
+        className="w-full rounded-full bg-[#1B3C87] py-4 text-sm font-semibold text-white hover:bg-[#142D6B] disabled:opacity-60"
       >
         {saving ? "저장 중..." : "저장"}
       </button>

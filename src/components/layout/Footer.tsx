@@ -2,16 +2,16 @@ import Link from "next/link";
 
 export function Footer() {
   return (
-    <footer className="border-t border-[#E8ECF0] bg-[#F5F7FA] py-8">
+    <footer className="border-t border-[#E8ECF0] bg-[#F5F6FA] py-8">
       <div className="mx-auto max-w-7xl px-4">
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-[#F4A261]">BDR</span>
+            <span className="text-lg font-bold text-[#E31B23]">BDR</span>
             <span className="text-xs text-[#6B7280]">© {new Date().getFullYear()-1}</span>
           </div>
 
           <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-[#6B7280]">
-            <Link href="/pricing" className="transition-colors hover:text-[#F4A261]">
+            <Link href="/pricing" className="transition-colors hover:text-[#E31B23]">
               요금제
             </Link>
             <Link href="/terms" className="transition-colors hover:text-[#111827]">

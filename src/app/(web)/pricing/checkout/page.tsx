@@ -81,7 +81,7 @@ function CheckoutContent() {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#0066FF] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#1B3C87] border-t-transparent" />
       </div>
     );
   }
@@ -89,15 +89,15 @@ function CheckoutContent() {
   if (error || !plan) {
     return (
       <div className="py-16 text-center">
-        <p className="mb-4 text-[#EF4444]">{error ?? "요금제를 찾을 수 없습니다."}</p>
-        <a href="/pricing" className="text-sm text-[#F4A261] underline">요금제 목록으로</a>
+        <p className="mb-4 text-[#DC2626]">{error ?? "요금제를 찾을 수 없습니다."}</p>
+        <a href="/pricing" className="text-sm text-[#E31B23] underline">요금제 목록으로</a>
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-md py-10">
-      <h1 className="mb-6 text-2xl font-bold">결제하기</h1>
+      <h1 className="mb-6 text-xl sm:text-2xl font-bold">결제하기</h1>
 
       <div className="mb-6 rounded-[20px] border border-[#E8ECF0] bg-[#FFFFFF] p-6">
         <h2 className="mb-1 text-lg font-semibold">{plan.name}</h2>
@@ -107,7 +107,7 @@ function CheckoutContent() {
         <div className="border-t border-[#E8ECF0] pt-4">
           <div className="flex items-center justify-between">
             <span className="text-sm text-[#6B7280]">결제 금액</span>
-            <span className="text-xl font-bold text-[#F4A261]">{plan.price.toLocaleString()}원</span>
+            <span className="text-xl font-bold text-[#E31B23]">{plan.price.toLocaleString()}원</span>
           </div>
         </div>
       </div>
@@ -121,7 +121,7 @@ function CheckoutContent() {
       <button
         onClick={handlePay}
         disabled={paying}
-        className="w-full rounded-[14px] bg-[#0066FF] py-4 font-semibold text-black transition-colors hover:bg-[#0052CC] disabled:opacity-50"
+        className="w-full rounded-[14px] bg-[#1B3C87] py-4 font-semibold text-black transition-colors hover:bg-[#142D6B] disabled:opacity-50"
       >
         {paying ? "결제 진행 중..." : `${plan.price.toLocaleString()}원 결제하기`}
       </button>
@@ -144,7 +144,7 @@ export default function CheckoutPage() {
     <Suspense
       fallback={
         <div className="flex min-h-[60vh] items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#0066FF] border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#1B3C87] border-t-transparent" />
         </div>
       }
     >

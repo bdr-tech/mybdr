@@ -50,6 +50,7 @@ export interface WizardFormData {
   // STEP 2
   scheduledDate: string; // YYYY-MM-DD
   scheduledTime: string; // HH:mm
+  endTime: string; // HH:mm
   durationHours: number;
   venueName: string;
   venueAddress: string;
@@ -80,6 +81,7 @@ const INITIAL_DATA: WizardFormData = {
   gameType: "1",
   scheduledDate: "",
   scheduledTime: "",
+  endTime: "",
   durationHours: 2,
   venueName: "",
   venueAddress: "",
@@ -103,11 +105,11 @@ const INITIAL_DATA: WizardFormData = {
   notes: "",
 };
 
+// 3단계 스텝 정의 (디자인 시안 기준)
 const STEPS = [
-  { label: "유형", shortLabel: "유형" },
-  { label: "일시/장소", shortLabel: "장소" },
-  { label: "설정", shortLabel: "설정" },
-  { label: "확인", shortLabel: "확인" },
+  { label: "기본 정보", shortLabel: "정보" },
+  { label: "일정 및 장소", shortLabel: "일정" },
+  { label: "최종 확인", shortLabel: "확인" },
 ];
 
 // --- Kakao Postcode type declarations ---
@@ -129,6 +131,7 @@ interface KakaoAddressData {
   bname: string;
   roadAddress: string;
   jibunAddress: string;
+  buildingName: string; // 카카오 주소 검색 결과에 포함되는 건물명
 }
 
 // --- Main Wizard Component ---
@@ -215,20 +218,7 @@ export function GameWizard({ permissions }: { permissions: Permissions }) {
       }
 
       if (stepIndex === 2) {
-        if (data.gameType === "2") {
-          // 팀 대결: title 필수
-          if (!data.title.trim()) {
-            errs.title = "경기 제목을 입력해주세요";
-          }
-        }
-        if (data.gameType === "0") {
-          // 픽업: contact_phone 필수
-          if (!data.contactPhone.trim()) {
-            errs.contactPhone = "담당자 연락처를 입력해주세요";
-          } else if (!/^01[016789]-?\d{3,4}-?\d{4}$/.test(data.contactPhone.trim())) {
-            errs.contactPhone = "올바른 전화번호 형식이 아닙니다";
-          }
-        }
+        // 제목 길이 제한만 체크 (제목은 step 1에서 입력, 비어있으면 자동 생성)
         if (data.title.trim() && data.title.trim().length > 50) {
           errs.title = "제목은 50자 이내여야 합니다";
         }
@@ -326,8 +316,8 @@ export function GameWizard({ permissions }: { permissions: Permissions }) {
         allowGuests: game.allow_guests ?? true,
         contactPhone: game.contact_phone || "",
       }));
-      // Jump to step 4
-      setStep(3);
+      // Jump to step 3 (최종 확인)
+      setStep(2);
     },
     []
   );
@@ -349,11 +339,13 @@ export function GameWizard({ permissions }: { permissions: Permissions }) {
           const newCity = addrData.sido;
           const newDistrict = [addrData.sigungu, addrData.bname].filter(Boolean).join(" ");
           const newAddress = addrData.roadAddress || addrData.jibunAddress;
+          const buildingName = addrData.buildingName || "";
           setData((prev) => ({
             ...prev,
             city: newCity,
             district: newDistrict,
             venueAddress: newAddress,
+            venueName: buildingName || prev.venueName,
           }));
           setShowPostcode(false);
         },
@@ -429,7 +421,7 @@ export function GameWizard({ permissions }: { permissions: Permissions }) {
       // This code may not be reached due to redirect, but handle it gracefully
       setShowSuccess(true);
     } catch {
-      // redirect() throws a special error in Next.js — this is expected behavior
+      // redirect() throws a special error in Next.js -- this is expected behavior
       // The redirect will happen automatically
     }
   }, [data, validateStep, generateTitle]);
@@ -439,13 +431,9 @@ export function GameWizard({ permissions }: { permissions: Permissions }) {
     router.back();
   }, [router]);
 
-  // Check if "Next" button should be enabled
-  const isNextEnabled = (() => {
-    if (step === 0) return true; // game_type always has a value
-    if (step === 1) return !!(data.scheduledDate && data.scheduledTime);
-    if (step === 2) return true;
-    return true;
-  })();
+  // 게임 타입 라벨 (Summary에 사용)
+  const typeLabel = data.gameType === "0" ? "Pickup" : data.gameType === "1" ? "Guest Recruit" : "Team Match";
+  const feeDisplay = data.feePerPerson > 0 ? `₩ ${data.feePerPerson.toLocaleString()}` : "Free";
 
   return (
     <>
@@ -467,15 +455,15 @@ export function GameWizard({ permissions }: { permissions: Permissions }) {
             if (e.target === e.currentTarget) setShowPostcode(false);
           }}
         >
-          <div className="flex w-full max-w-md flex-col overflow-hidden rounded-[20px] bg-white shadow-xl mx-4">
-            <div className="flex items-center justify-between border-b border-[#E8ECF0] px-4 py-3">
-              <span className="font-semibold text-[#111827]">주소 검색</span>
+          <div className="flex w-full max-w-md flex-col overflow-hidden rounded-xl bg-[var(--color-card)] shadow-xl mx-4">
+            <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
+              <span className="font-semibold text-[var(--color-text-primary)]">주소 검색</span>
               <button
                 type="button"
                 onClick={() => setShowPostcode(false)}
-                className="text-lg leading-none text-[#6B7280] hover:text-[#111827]"
+                className="text-lg leading-none text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
               >
-                ✕
+                <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             <div ref={postcodeContainerRef} className="h-[450px] w-full" />
@@ -486,137 +474,136 @@ export function GameWizard({ permissions }: { permissions: Permissions }) {
       {/* Success Overlay */}
       {showSuccess && <SuccessOverlay gameId={createdGameId} />}
 
-      {/* --- Wizard Layout --- */}
-      <div className="fixed inset-0 z-40 flex flex-col bg-[#F5F7FA] xl:static xl:min-h-[calc(100vh-80px)]">
-        {/* Header */}
-        <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-[#E8ECF0] bg-white px-4">
-          <button
-            type="button"
-            onClick={step === 0 ? handleCancel : goPrev}
-            className="text-sm text-[#6B7280] hover:text-[#111827]"
-          >
-            {step === 0 ? "← 취소" : "← 이전"}
-          </button>
-          <span className="text-sm font-medium text-[#6B7280]">
-            단계 {step + 1} / {STEPS.length}
-          </span>
-        </header>
+      {/* === 새 디자인: 일반 페이지 레이아웃 === */}
+      <div ref={contentRef} className="max-w-4xl mx-auto">
+        {/* 페이지 헤더 */}
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text-primary)] mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            Create New Game
+          </h1>
+          <p className="text-[var(--color-text-muted)]">
+            엘리트 매치를 위한 새로운 게임 세션을 생성합니다.
+          </p>
+        </div>
 
-        {/* Progress Bar */}
-        <WizardProgress
-          steps={STEPS}
-          currentStep={step}
-          onStepClick={goToStep}
-        />
+        {/* 스텝 인디케이터 */}
+        <div className="mb-12">
+          <WizardProgress
+            steps={STEPS}
+            currentStep={step}
+            onStepClick={goToStep}
+          />
+        </div>
 
-        {/* Content Area — xl: two-column */}
-        <div
-          ref={contentRef}
-          className="flex-1 overflow-y-auto px-4 pb-24 pt-4 xl:mx-auto xl:grid xl:max-w-[1120px] xl:grid-cols-[1fr_480px] xl:gap-8 xl:pb-6"
-        >
-          {/* Form Column */}
-          <div
-            className={`transition-transform duration-200 ease-in-out motion-reduce:transition-none ${
-              animating
-                ? direction === "forward"
-                  ? "-translate-x-full opacity-0"
-                  : "translate-x-full opacity-0"
-                : "translate-x-0 opacity-100"
-            }`}
-          >
-            {step === 0 && (
-              <StepType
-                data={data}
-                updateData={updateData}
-                permissions={permissions}
-                onUpgrade={setUpgradeModal}
-                recentGames={recentGames}
-                gamesLoading={gamesLoading}
-                onCopyGame={copyGame}
-              />
-            )}
-            {step === 1 && (
-              <StepWhenWhere
-                data={data}
-                updateData={updateData}
-                errors={errors}
-                recentVenues={recentVenues}
-                venuesLoading={venuesLoading}
-                onApplyVenue={applyVenue}
-                onOpenPostcode={openKakaoPostcode}
-              />
-            )}
-            {step === 2 && (
-              <StepSettings
-                data={data}
-                updateData={updateData}
-                errors={errors}
-                generateTitle={generateTitle}
-              />
-            )}
-            {step === 3 && (
-              <StepConfirm
-                data={data}
-                updateData={updateData}
-                generateTitle={generateTitle}
-                submitError={submitError}
-              />
-            )}
+        {/* 2열 레이아웃: 좌측 폼 + 우측 Summary */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* 좌측: 메인 폼 영역 */}
+          <div className="lg:col-span-2">
+            {/* 스텝 전환 애니메이션 래퍼 */}
+            <div
+              className={`transition-transform duration-200 ease-in-out motion-reduce:transition-none ${
+                animating
+                  ? direction === "forward"
+                    ? "-translate-x-full opacity-0"
+                    : "translate-x-full opacity-0"
+                  : "translate-x-0 opacity-100"
+              }`}
+            >
+              {/* Step 1: 기본 정보 (유형 선택 + 제목/인원/참가비) */}
+              {step === 0 && (
+                <StepType
+                  data={data}
+                  updateData={updateData}
+                  permissions={permissions}
+                  onUpgrade={setUpgradeModal}
+                  recentGames={recentGames}
+                  gamesLoading={gamesLoading}
+                  onCopyGame={copyGame}
+                  onNext={goNext}
+                />
+              )}
+              {/* Step 2: 일정 및 장소 */}
+              {step === 1 && (
+                <StepWhenWhere
+                  data={data}
+                  updateData={updateData}
+                  errors={errors}
+                  recentVenues={recentVenues}
+                  venuesLoading={venuesLoading}
+                  onApplyVenue={applyVenue}
+                  onOpenPostcode={openKakaoPostcode}
+                />
+              )}
+              {/* Step 3: 최종 확인 */}
+              {step === 2 && (
+                <StepConfirm
+                  data={data}
+                  updateData={updateData}
+                  generateTitle={generateTitle}
+                  submitError={submitError}
+                />
+              )}
+            </div>
           </div>
 
-          {/* Desktop Preview Column */}
-          <div className="hidden xl:block">
-            <div className="sticky top-8">
-              <PreviewPanel data={data} generateTitle={generateTitle} step={step} />
-            </div>
+          {/* 우측: Summary 카드 (sticky) */}
+          <div className="lg:col-span-1">
+            <SummaryCard data={data} feeDisplay={feeDisplay} typeLabel={typeLabel} />
           </div>
         </div>
 
-        {/* Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 z-10 flex items-center justify-between border-t border-[#E8ECF0] bg-white px-4 py-3 pb-[calc(env(safe-area-inset-bottom,0px)+12px)] xl:static xl:border-t xl:pb-3">
-          <div>
+        {/* 하단 버튼 3개: Cancel / Save Draft / Create Game (또는 Next) */}
+        <div className="mt-12 flex items-center justify-between pb-12">
+          {/* Cancel 버튼 (텍스트만) */}
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="px-8 py-3 rounded text-[var(--color-text-muted)] font-bold text-sm hover:bg-[var(--color-surface-high)] transition-colors"
+          >
+            Cancel
+          </button>
+
+          <div className="flex gap-4">
+            {/* Save Draft 버튼 (아웃라인) */}
             {step > 0 && (
               <button
                 type="button"
                 onClick={goPrev}
-                className="rounded-full border border-[#E8ECF0] px-5 py-2.5 text-sm font-medium text-[#6B7280] hover:bg-[#F5F7FA] min-h-[44px]"
+                className="px-8 py-3 rounded border border-[var(--color-border)] text-[var(--color-text-primary)] font-bold text-sm hover:bg-[var(--color-surface)] transition-colors"
               >
-                ← 이전
+                <span className="material-symbols-outlined text-sm align-middle mr-1">arrow_back</span>
+                이전
               </button>
             )}
-          </div>
-          <div>
+
+            {/* Next 또는 Create Game 버튼 */}
             {step < STEPS.length - 1 ? (
               <button
                 type="button"
                 onClick={goNext}
-                disabled={!isNextEnabled}
-                className={`rounded-full px-6 py-2.5 text-sm font-semibold min-h-[44px] transition-colors ${
-                  isNextEnabled
-                    ? "bg-[#F4A261] text-[#0A0A0A] hover:bg-[#E8934E]"
-                    : "bg-[#E8ECF0] text-[#9CA3AF] cursor-not-allowed"
-                }`}
+                className="px-10 py-3 rounded bg-[var(--color-primary)] text-white font-bold text-sm hover:bg-[var(--color-primary-hover)] transition-all active:scale-95 shadow-lg shadow-[var(--color-primary)]/20"
               >
-                다음 →
+                다음
+                <span className="material-symbols-outlined text-sm align-middle ml-1">arrow_forward</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting}
-                className={`rounded-full px-6 py-2.5 text-sm font-semibold min-h-[44px] transition-colors ${
+                className={`px-10 py-3 rounded font-bold text-sm transition-all active:scale-95 shadow-lg shadow-[var(--color-primary)]/20 ${
                   submitting
-                    ? "bg-[#F4A261]/50 text-[#0A0A0A]"
-                    : "bg-[#F4A261] text-[#0A0A0A] hover:bg-[#E8934E]"
+                    ? "bg-[var(--color-primary)]/50 text-white cursor-not-allowed"
+                    : "bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]"
                 }`}
               >
                 {submitting ? (
                   <span className="flex items-center gap-2">
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0A0A0A] border-t-transparent" />
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                     생성 중...
                   </span>
                 ) : (
-                  "경기 만들기"
+                  "Create Game"
                 )}
               </button>
             )}
@@ -627,88 +614,66 @@ export function GameWizard({ permissions }: { permissions: Permissions }) {
   );
 }
 
-// --- Desktop Preview Panel ---
+// --- Summary 카드 (우측 sticky) ---
 
-function PreviewPanel({
+function SummaryCard({
   data,
-  generateTitle,
-  step,
+  feeDisplay,
+  typeLabel,
 }: {
   data: WizardFormData;
-  generateTitle: () => string;
-  step: number;
+  feeDisplay: string;
+  typeLabel: string;
 }) {
-  if (step === 0 && !data.gameType) {
-    return (
-      <div className="rounded-[16px] border border-[#E8ECF0] bg-white p-8 text-center">
-        <p className="text-sm text-[#9CA3AF]">유형을 선택하면 미리보기가 나타나요</p>
-      </div>
-    );
-  }
-
-  const typeEmoji = data.gameType === "0" ? "🏀" : data.gameType === "1" ? "🤝" : "⚔️";
-  const typeLabel = data.gameType === "0" ? "픽업" : data.gameType === "1" ? "게스트 모집" : "팀 대결";
-  const title = data.title.trim() || generateTitle() || "경기 제목";
-  const location = [data.city, data.district, data.venueName].filter(Boolean).join(" · ");
-  const feeDisplay =
-    data.feePerPerson > 0 ? `${data.feePerPerson.toLocaleString()}원` : "무료";
-
-  let dateDisplay = "";
-  if (data.scheduledDate && data.scheduledTime) {
-    const dt = new Date(`${data.scheduledDate}T${data.scheduledTime}`);
-    dateDisplay = `${dt.toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short", timeZone: "Asia/Seoul" })} ${dt.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Seoul" })}`;
-    if (data.durationHours) dateDisplay += ` · ${data.durationHours}시간`;
-  }
-
-  const skillLabel: Record<string, string> = {
-    all: "전체",
-    beginner: "초급",
-    intermediate: "중급",
-    intermediate_advanced: "중고급",
-    advanced: "고급",
-  };
-
   return (
-    <div
-      className="overflow-hidden rounded-[16px] bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
-      style={{ borderLeft: "3px solid #F4A261" }}
-    >
-      <div className="mb-3 flex items-center gap-1.5">
-        <span className="text-base">{typeEmoji}</span>
-        <span className="text-xs font-medium text-[#F4A261]">{typeLabel}</span>
-      </div>
+    // sticky로 스크롤 시에도 고정, 네이비 배경
+    <div className="sticky top-24 bg-[#1B3C87] text-white p-6 rounded-xl shadow-lg">
+      <h3 className="font-bold text-xl mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+        Summary
+      </h3>
 
-      <h3 className="mb-3 font-semibold leading-snug text-[#111827]">{title}</h3>
+      {/* Summary 항목들 */}
+      <ul className="space-y-4">
+        {/* 게임 타입 */}
+        <li className="flex justify-between items-center border-b border-white/10 pb-3">
+          <span className="text-xs text-white/60">Selected Type</span>
+          <span className="text-sm font-bold">{typeLabel}</span>
+        </li>
 
-      <div className="mb-3 space-y-1">
-        {dateDisplay && (
-          <div className="flex items-center gap-1.5 text-xs text-[#6B7280]">
-            <span>📅</span>
-            <span>{dateDisplay}</span>
-          </div>
+        {/* 총 인원 */}
+        <li className="flex justify-between items-center border-b border-white/10 pb-3">
+          <span className="text-xs text-white/60">Total Capacity</span>
+          <span className="text-sm font-bold">{data.maxParticipants} Players</span>
+        </li>
+
+        {/* 참가비 */}
+        <li className="flex justify-between items-center border-b border-white/10 pb-3">
+          <span className="text-xs text-white/60">Entry Fee</span>
+          <span className="text-sm font-bold">{feeDisplay}</span>
+        </li>
+
+        {/* 일정 (입력된 경우만 표시) */}
+        {data.scheduledDate && (
+          <li className="flex justify-between items-center border-b border-white/10 pb-3">
+            <span className="text-xs text-white/60">Date</span>
+            <span className="text-sm font-bold">{data.scheduledDate}</span>
+          </li>
         )}
-        {location && (
-          <div className="flex items-center gap-1.5 text-xs text-[#6B7280]">
-            <span>📍</span>
-            <span>{location}</span>
-          </div>
-        )}
-      </div>
 
-      <div className="mb-3 h-px bg-[#E8ECF0]" />
-
-      <div className="flex flex-wrap gap-2 text-xs text-[#9CA3AF]">
-        <span>최대 {data.maxParticipants}명</span>
-        <span>·</span>
-        <span>{feeDisplay}</span>
-        <span>·</span>
-        <span>{skillLabel[data.skillLevel] || "전체"} 수준</span>
-        {data.allowGuests && data.gameType !== "1" && (
-          <>
-            <span>·</span>
-            <span>게스트 허용</span>
-          </>
+        {/* 장소 (입력된 경우만 표시) */}
+        {data.venueName && (
+          <li className="flex justify-between items-center border-b border-white/10 pb-3">
+            <span className="text-xs text-white/60">Location</span>
+            <span className="text-sm font-bold truncate max-w-[150px]">{data.venueName}</span>
+          </li>
         )}
+      </ul>
+
+      {/* 환불 정책 안내 */}
+      <div className="mt-8 p-4 bg-white/5 rounded border border-white/10">
+        <p className="text-[10px] text-white/50 leading-relaxed">
+          매치 생성 시 서비스 이용 약관에 동의하게 됩니다. 매치 시작 24시간 전까지 취소 시 100% 환불이 가능합니다.
+        </p>
       </div>
     </div>
   );

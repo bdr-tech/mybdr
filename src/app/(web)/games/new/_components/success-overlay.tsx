@@ -48,14 +48,14 @@ export function SuccessOverlay({ gameId }: SuccessOverlayProps) {
               if (gameId) router.push(`/games/${gameId}`);
               else router.push("/games");
             }}
-            className="rounded-full bg-[#0066FF] px-6 py-3 text-sm font-semibold text-white hover:bg-[#0052CC]"
+            className="rounded-full bg-[#1B3C87] px-6 py-3 text-sm font-semibold text-white hover:bg-[#142D6B]"
           >
             경기 보러 가기
           </button>
           <button
             type="button"
             onClick={() => router.push("/games/new")}
-            className="rounded-full border border-[#E8ECF0] px-6 py-3 text-sm text-[#6B7280] hover:bg-[#F5F7FA]"
+            className="rounded-full border border-[#E8ECF0] px-6 py-3 text-sm text-[#6B7280] hover:bg-[#F5F6FA]"
           >
             또 만들기
           </button>

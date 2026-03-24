@@ -8,7 +8,7 @@ export function Card({
   className?: string;
 }) {
   return (
-    <div className={`rounded-[16px] border border-[#E8ECF0] bg-[#FFFFFF] p-5 shadow-[0_2px_8px_rgba(0,0,0,0.06)] ${className}`}>
+    <div className={`rounded-[16px] border border-[#E8ECF0] bg-[#FFFFFF] p-4 sm:p-5 shadow-[0_2px_8px_rgba(0,0,0,0.06)] ${className}`}>
       {children}
     </div>
   );
@@ -26,7 +26,7 @@ export function StatCard({
   return (
     <Card className="flex items-center gap-4">
       {icon && (
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(0,102,255,0.12)] text-[#0066FF]">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(27,60,135,0.12)] text-[#1B3C87]">
           {icon}
         </div>
       )}

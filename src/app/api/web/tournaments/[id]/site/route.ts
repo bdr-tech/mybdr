@@ -79,7 +79,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
         data: {
           tournamentId: id,
           subdomain: subdomain.trim().toLowerCase(),
-          primaryColor: primaryColor ?? "#F4A261",
+          primaryColor: primaryColor ?? "#E31B23",
           secondaryColor: secondaryColor ?? "#E76F51",
           site_name: site_name ?? null,
           meta_title: meta_title ?? null,

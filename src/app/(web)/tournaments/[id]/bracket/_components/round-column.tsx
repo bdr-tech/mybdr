@@ -28,8 +28,8 @@ export function RoundColumn({
         </h3>
         {round.hasLive && (
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#F4A261] opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#F4A261]" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E31B23] opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#E31B23]" />
           </span>
         )}
       </div>

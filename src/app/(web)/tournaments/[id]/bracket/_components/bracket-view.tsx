@@ -83,17 +83,17 @@ export function BracketView({ rounds, tournamentId }: BracketViewProps) {
               onClick={() => setActiveRound(round.roundNumber)}
               className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 ${
                 activeRound === round.roundNumber
-                  ? "bg-[#F4A261] text-white"
+                  ? "bg-[#E31B23] text-white"
                   : round.hasLive
-                    ? "bg-white border border-[#F4A261] text-[#F4A261]"
+                    ? "bg-white border border-[#E31B23] text-[#E31B23]"
                     : "bg-white border border-[#E8ECF0] text-[#6B7280] hover:bg-[#F9FAFB]"
               }`}
             >
               {round.roundName}
               {round.hasLive && activeRound !== round.roundNumber && (
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#F4A261] opacity-75" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#F4A261]" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E31B23] opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#E31B23]" />
                 </span>
               )}
             </button>
@@ -130,7 +130,7 @@ export function BracketView({ rounds, tournamentId }: BracketViewProps) {
           {activeRound > (rounds[0]?.roundNumber ?? 1) ? (
             <button
               onClick={() => setActiveRound(activeRound - 1)}
-              className="text-[#0066FF] hover:underline"
+              className="text-[#1B3C87] hover:underline"
             >
               ← {rounds.find((r) => r.roundNumber === activeRound - 1)?.roundName}
             </button>
@@ -140,7 +140,7 @@ export function BracketView({ rounds, tournamentId }: BracketViewProps) {
           {activeRound < (rounds[rounds.length - 1]?.roundNumber ?? 1) ? (
             <button
               onClick={() => setActiveRound(activeRound + 1)}
-              className="text-[#0066FF] hover:underline"
+              className="text-[#1B3C87] hover:underline"
             >
               {rounds.find((r) => r.roundNumber === activeRound + 1)?.roundName} →
             </button>
@@ -234,8 +234,8 @@ function DesktopBracketView({
             </span>
             {rh.hasLive && (
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#F4A261] opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#F4A261]" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E31B23] opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#E31B23]" />
               </span>
             )}
           </div>

@@ -27,7 +27,7 @@ export default async function SiteTeamsPage() {
 
   return (
     <div>
-      <h2 className="mb-6 text-2xl font-bold">참가팀 ({teams.length})</h2>
+      <h2 className="mb-6 text-xl sm:text-2xl font-bold">참가팀 ({teams.length})</h2>
       {teams.length === 0 ? (
         <Card className="py-12 text-center text-[#6B7280]">
           <div className="mb-2 text-3xl">🏀</div>
@@ -36,7 +36,7 @@ export default async function SiteTeamsPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {teams.map((t, i) => {
-            const color = t.team.primaryColor ?? "#F4A261";
+            const color = t.team.primaryColor ?? "#E31B23";
             const total = (t.wins ?? 0) + (t.losses ?? 0);
             const winPct = total > 0 ? (((t.wins ?? 0) / total) * 100).toFixed(0) : "0";
 
@@ -59,11 +59,11 @@ export default async function SiteTeamsPage() {
 
                 <div className="mb-3 grid grid-cols-3 gap-2 text-center text-sm">
                   <div>
-                    <p className="font-bold text-[#4ADE80]">{t.wins ?? 0}</p>
+                    <p className="font-bold text-[#16A34A]">{t.wins ?? 0}</p>
                     <p className="text-xs text-[#9CA3AF]">승</p>
                   </div>
                   <div>
-                    <p className="font-bold text-[#EF4444]">{t.losses ?? 0}</p>
+                    <p className="font-bold text-[#DC2626]">{t.losses ?? 0}</p>
                     <p className="text-xs text-[#9CA3AF]">패</p>
                   </div>
                   <div>
@@ -79,7 +79,7 @@ export default async function SiteTeamsPage() {
                       {t.players.map((p) => (
                         <span
                           key={p.id.toString()}
-                          className="rounded-full bg-[#EEF2FF] px-2 py-0.5 text-xs"
+                          className="rounded-full bg-[#EDF0F8] px-2 py-0.5 text-xs"
                         >
                           {p.users?.nickname ?? "선수"}
                           {p.users?.position ? ` (${p.users.position})` : ""}
