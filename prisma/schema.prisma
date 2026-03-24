@@ -106,6 +106,9 @@ model User {
   recorderAssigned                                                          tournament_recorders[]        @relation("TournamentRecorderAssigner")
   match_events_recorded                                                     match_events[]                @relation("MatchEventRecorder")
   match_events_undone                                                       match_events[]                @relation("MatchEventUndoner")
+  // 팔로우 시스템: 나를 팔로우하는 사람들 / 내가 팔로우하는 사람들
+  followers                                                                 follows[]                     @relation("user_followers")
+  following                                                                 follows[]                     @relation("user_following")
 
   @@unique([provider, uid], map: "index_users_on_provider_and_uid")
   @@index([createdAt], map: "index_users_on_created_at")
@@ -763,6 +766,19 @@ model community_post_likes {
 
   @@unique([community_post_id, user_id], map: "index_community_post_likes_on_post_and_user")
   @@index([user_id], map: "index_community_post_likes_on_user_id")
+}
+
+// 팔로우 테이블: follower가 following을 팔로우
+model follows {
+  id           BigInt   @id @default(autoincrement())
+  follower_id  BigInt                              // 팔로우 하는 사람
+  following_id BigInt                              // 팔로우 당하는 사람
+  created_at   DateTime @db.Timestamp(6)
+  follower     User     @relation("user_followers", fields: [follower_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  following    User     @relation("user_following", fields: [following_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([follower_id, following_id], map: "index_follows_on_follower_and_following")
+  @@index([following_id], map: "index_follows_on_following_id")
 }
 
 model content_presets {

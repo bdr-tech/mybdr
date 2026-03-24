@@ -7,6 +7,7 @@ import { UserRecentGames } from "./_components/user-recent-games";
 import { ActionButtons } from "./_components/action-buttons";
 // 내 프로필과 동일한 승률 계산 로직을 재사용
 import { getPlayerStats } from "@/lib/services/user";
+import { getWebSession } from "@/lib/auth/web-session";
 
 /**
  * 타인 프로필 페이지 (/users/[id])
@@ -42,9 +43,13 @@ function getTierBadge(totalGames: number): { label: string; color: string } {
 export default async function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
+  // 로그인 유저 세션 확인 (팔로우 상태 조회용)
+  const session = await getWebSession();
+  const isLoggedIn = !!session;
+
   // 기존 user 쿼리 유지 + matchPlayerStat 집계 추가 (병렬 실행)
   // playerStats: 내 프로필과 동일한 서비스 함수로 승률(winRate) 계산
-  const [user, statAgg, recentGames, playerStats] = await Promise.all([
+  const [user, statAgg, recentGames, playerStats, followRecord] = await Promise.all([
     // 1) 기존 유저 정보 쿼리 (유지)
     prisma.user.findUnique({
       where: { id: BigInt(id) },
@@ -116,7 +121,21 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
 
     // 4) 승률 계산 - 내 프로필과 동일한 서비스 함수 재사용
     getPlayerStats(BigInt(id)).catch(() => null),
+
+    // 5) 팔로우 여부 확인 (로그인 상태일 때만 실제 쿼리)
+    session
+      ? prisma.follows.findUnique({
+          where: {
+            follower_id_following_id: {
+              follower_id: BigInt(session.sub),
+              following_id: BigInt(id),
+            },
+          },
+        }).catch(() => null)
+      : Promise.resolve(null),
   ]);
+
+  const isFollowing = !!followRecord;
 
   if (!user) return notFound();
 
@@ -238,7 +257,11 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
               </div>
 
               {/* CTA 버튼: 메시지 + 팔로우 (클라이언트 컴포넌트로 분리) */}
-              <ActionButtons />
+              <ActionButtons
+                targetUserId={id}
+                initialFollowed={isFollowing}
+                isLoggedIn={isLoggedIn}
+              />
             </div>
 
             {/* 우측: 미니 통계 2x2 그리드 */}

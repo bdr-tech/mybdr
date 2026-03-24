@@ -75,22 +75,36 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
   }).catch(() => null);
   if (!post) return notFound();
 
-  // 현재 로그인 유저 확인 + 좋아요 여부 쿼리
+  // 현재 로그인 유저 확인 + 좋아요/팔로우 여부 쿼리
   const session = await getWebSession();
   let isLiked = false;
+  let isFollowing = false;
   const isLoggedIn = !!session;
+  const currentUserId = session?.sub ?? undefined;
 
   if (session) {
-    // 로그인 상태면 이 유저가 이 게시글을 좋아요했는지 확인
-    const like = await prisma.community_post_likes.findUnique({
-      where: {
-        community_post_id_user_id: {
-          community_post_id: post.id,
-          user_id: BigInt(session.sub),
+    // 로그인 상태면 좋아요 + 팔로우 여부를 병렬 쿼리
+    const [like, follow] = await Promise.all([
+      prisma.community_post_likes.findUnique({
+        where: {
+          community_post_id_user_id: {
+            community_post_id: post.id,
+            user_id: BigInt(session.sub),
+          },
         },
-      },
-    }).catch(() => null);
+      }).catch(() => null),
+      // 게시글 작성자를 팔로우하고 있는지 확인
+      prisma.follows.findUnique({
+        where: {
+          follower_id_following_id: {
+            follower_id: BigInt(session.sub),
+            following_id: post.user_id,
+          },
+        },
+      }).catch(() => null),
+    ]);
     isLiked = !!like;
+    isFollowing = !!follow;
   }
 
   // 댓글 조회: 작성자 프로필 이미지 포함
@@ -340,6 +354,9 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
             authorId={post.user_id}
             authorNickname={post.users?.nickname ?? "익명"}
             authorImage={post.users?.profile_image_url ?? null}
+            isFollowing={isFollowing}
+            isLoggedIn={isLoggedIn}
+            currentUserId={currentUserId}
           />
         </div>
       </div>

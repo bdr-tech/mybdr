@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
+import { FollowButton } from "@/components/follow-button";
 
 // 카테고리 라벨 매핑
 const categoryLabelMap: Record<string, string> = {
@@ -13,9 +14,12 @@ const categoryLabelMap: Record<string, string> = {
 };
 
 interface PostDetailSidebarProps {
-  authorId: bigint;         // 작성자 ID (게시글 수 조회용)
-  authorNickname: string;   // 작성자 닉네임
-  authorImage: string | null; // 작성자 프로필 이미지
+  authorId: bigint;            // 작성자 ID (게시글 수 조회용)
+  authorNickname: string;      // 작성자 닉네임
+  authorImage: string | null;  // 작성자 프로필 이미지
+  isFollowing: boolean;        // 현재 유저가 작성자를 팔로우 중인지
+  isLoggedIn: boolean;         // 로그인 여부
+  currentUserId?: string;      // 현재 로그인 유저 ID (자기 게시글이면 팔로우 버튼 숨김)
 }
 
 /**
@@ -30,7 +34,12 @@ export async function PostDetailSidebar({
   authorId,
   authorNickname,
   authorImage,
+  isFollowing,
+  isLoggedIn,
+  currentUserId,
 }: PostDetailSidebarProps) {
+  // 자기 자신 게시글이면 팔로우 버튼 숨김
+  const isOwnPost = currentUserId ? BigInt(currentUserId) === authorId : false;
   // 작성자의 게시글 수 조회
   const authorPostCount = await prisma.community_posts.count({
     where: { user_id: authorId },
@@ -133,18 +142,15 @@ export async function PostDetailSidebar({
           </div>
         </div>
 
-        {/* 팔로우 버튼 (UI만 배치, 기능 미구현) */}
-        <button
-          className="w-full mt-4 py-2 text-sm font-bold rounded border transition-all"
-          style={{
-            borderColor: "var(--color-primary)",
-            color: "var(--color-primary)",
-            backgroundColor: "transparent",
-          }}
-          title="팔로우 기능은 준비 중입니다"
-        >
-          팔로우
-        </button>
+        {/* 팔로우 버튼: 자기 게시글이 아닐 때만 표시 */}
+        {!isOwnPost && (
+          <FollowButton
+            targetUserId={authorId.toString()}
+            initialFollowed={isFollowing}
+            isLoggedIn={isLoggedIn}
+            variant="outline"
+          />
+        )}
       </div>
 
       {/* 실시간 인기글 */}
