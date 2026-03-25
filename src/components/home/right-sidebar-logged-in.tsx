@@ -13,7 +13,7 @@
  * 4. 커뮤니티 (최신글 + 조회수 높은 글) -- /api/web/community
  * ============================================================ */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 /* ---------- 타입 정의 ---------- */
@@ -79,16 +79,27 @@ export function RightSidebarLoggedIn() {
   const [recentPosts, setRecentPosts] = useState<PostData[]>(FALLBACK_RECENT_POSTS);
   const [popularPosts, setPopularPosts] = useState<PostData[]>(FALLBACK_POPULAR_POSTS);
 
+  const [visible, setVisible] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    // 3개의 API를 병렬로 호출하여 로딩 시간을 최소화
+    const el = sidebarRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect(); } },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
     const fetchAll = async () => {
       const results = await Promise.allSettled([
-        // 1) 나의 통계 (인증 필요 -> 쿠키 자동 전송)
         fetch("/api/web/profile/stats").then((r) => r.json()),
-        // 2) 팀 목록 (이미 wins DESC 정렬, 상위 3개만 사용)
-        fetch("/api/web/teams").then((r) => r.json()),
-        // 3) 커뮤니티 게시글 (created_at DESC 30개 반환)
-        fetch("/api/web/community").then((r) => r.json()),
+        fetch("/api/web/teams?limit=5").then((r) => r.json()),
+        fetch("/api/web/community?limit=5").then((r) => r.json()),
       ]);
 
       // 나의 통계 처리
@@ -138,7 +149,7 @@ export function RightSidebarLoggedIn() {
   };
 
   return (
-    <div className="space-y-8" style={{ fontSize: '120%' }}>
+    <div ref={sidebarRef} className="space-y-8" style={{ fontSize: '120%' }}>
       {/* === 1. 오늘의 주요 경기 (네이비 배경) === */}
       <div className="bg-secondary rounded-xl p-6 relative overflow-hidden group border border-border">
         <div className="relative z-10">

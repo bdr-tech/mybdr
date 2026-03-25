@@ -58,16 +58,25 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // 게시글 목록 조회 (최신순 30개, 작성자 닉네임 + 프로필 이미지 포함)
+    // 게시글 목록 조회 (최신순, 작성자 닉네임 + 프로필 이미지 포함)
+    const limit = Math.min(Number(searchParams.get("limit")) || 20, 50);
     const posts = await prisma.community_posts.findMany({
       where,
       orderBy: { created_at: "desc" },
-      take: 30,
-      include: {
+      take: limit,
+      select: {
+        id: true,
+        public_id: true,
+        title: true,
+        category: true,
+        view_count: true,
+        comments_count: true,
+        created_at: true,
+        content: true,
         users: {
           select: {
             nickname: true,
-            profile_image_url: true,  // 작성자 아바타용 프로필 이미지 추가
+            profile_image_url: true,
           },
         },
       },

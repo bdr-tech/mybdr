@@ -48,7 +48,7 @@ export function NotableTeams() {
 
   useEffect(() => {
     // /api/web/teams는 이미 wins 내림차순으로 정렬된 결과를 반환한다
-    fetch("/api/web/teams")
+    fetch("/api/web/teams?limit=5")
       .then((res) => {
         if (!res.ok) throw new Error("API 응답 실패");
         return res.json();

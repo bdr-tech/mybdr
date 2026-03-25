@@ -15,7 +15,7 @@
  * 6. 커뮤니티 미리보기 -- /api/web/community
  * ============================================================ */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 /* ---------- 타입 정의 ---------- */
@@ -54,14 +54,27 @@ export function RightSidebarGuest() {
   // 커뮤니티 최신글 2개
   const [recentPosts, setRecentPosts] = useState<PostData[]>(FALLBACK_POSTS);
 
+  const [visible, setVisible] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  // 뷰포트 진입 시 API 호출 (지연 로딩)
   useEffect(() => {
-    // 2개의 API를 병렬 호출하여 로딩 시간 최소화
+    const el = sidebarRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect(); } },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
     const fetchAll = async () => {
       const results = await Promise.allSettled([
-        // 1) 팀 목록 (인증 불필요, wins DESC 정렬)
-        fetch("/api/web/teams").then((r) => r.json()),
-        // 2) 커뮤니티 게시글 (인증 불필요, created_at DESC)
-        fetch("/api/web/community").then((r) => r.json()),
+        fetch("/api/web/teams?limit=5").then((r) => r.json()),
+        fetch("/api/web/community?limit=5").then((r) => r.json()),
       ]);
 
       // 팀 랭킹: 상위 3팀만 사용
@@ -90,7 +103,7 @@ export function RightSidebarGuest() {
   };
 
   return (
-    <div className="space-y-8" style={{ fontSize: '120%' }}>
+    <div ref={sidebarRef} className="space-y-8" style={{ fontSize: '120%' }}>
       {/* === 1. 가입 유도 CTA (네이비 배경) === */}
       <div className="bg-secondary rounded-xl p-8 relative overflow-hidden group border border-border">
         <div className="relative z-10">

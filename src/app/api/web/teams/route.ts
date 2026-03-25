@@ -34,12 +34,13 @@ export async function GET(request: NextRequest) {
       where.city = { contains: city, mode: "insensitive" };
     }
 
-    // 팀 목록 + 도시 목록 병렬 조회 (네트워크 요청 1회로 최적화)
+    // 팀 목록 + 도시 목록 병렬 조회
+    const limit = Math.min(Number(searchParams.get("limit")) || 30, 60);
     const [teams, citiesRaw] = await Promise.all([
       prisma.team.findMany({
         where,
         orderBy: [{ wins: "desc" }, { createdAt: "desc" }],
-        take: 60,
+        take: limit,
         select: {
           id: true,
           name: true,
