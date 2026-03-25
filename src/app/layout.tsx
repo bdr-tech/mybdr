@@ -51,14 +51,41 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
+        {/* CDN 사전 연결: DNS+TCP+TLS를 미리 완료해서 폰트 로딩 시간 단축 */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Pretendard: 본문 한글 폰트 (CDN) */}
-        <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" rel="stylesheet" />
-        {/* Material Symbols Outlined: 아이콘 폰트 (lucide-react 대체) */}
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-        {/* Quicksand는 기존 사용처 호환용 유지 */}
-        <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet" />
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
+
+        {/* 폰트 비동기 로딩: media="print" 트릭으로 렌더링 차단 해제
+            - 브라우저는 media="print" CSS를 화면 렌더링에 사용하지 않음 (차단 안 됨)
+            - 로딩 완료 시 onload가 media를 "all"로 바꿔서 적용
+            - React JSX에서 onload 문자열을 쓸 수 없으므로 dangerouslySetInnerHTML 사용
+            - Quicksand: CSS/코드 어디에서도 미사용 확인 → 삭제 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+(function(){
+  var fonts = [
+    'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css',
+    'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap'
+  ];
+  fonts.forEach(function(href){
+    var l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = href;
+    l.media = 'print';
+    l.onload = function(){ this.media = 'all'; };
+    document.head.appendChild(l);
+  });
+})();
+`,
+          }}
+        />
+        {/* JS 비활성화 환경 폴백 */}
+        <noscript>
+          <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+          <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap" />
+        </noscript>
         {/* 테마 초기화: dark/light 클래스를 html에 추가 (FOUC 방지) */}
         <script
           dangerouslySetInnerHTML={{

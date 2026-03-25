@@ -21,10 +21,13 @@ export async function GET() {
   const token = cookieStore.get(WEB_SESSION_COOKIE)?.value;
   const session = token ? await verifyToken(token) : null;
 
-  // --- 비로그인 fallback: 최신 경기 ---
+  // --- 비로그인 fallback: 최신 경기 (캐시 가능) ---
   if (!session) {
     const games = await getLatestGames();
-    return apiSuccess({ userName: null, games });
+    const response = apiSuccess({ userName: null, games });
+    // 비로그인 응답은 개인화 없으므로 CDN/브라우저 캐시 허용 (1분, stale 2분)
+    response.headers.set("Cache-Control", "public, s-maxage=60, max-age=60, stale-while-revalidate=120");
+    return response;
   }
 
   const userId = BigInt(session.sub);
