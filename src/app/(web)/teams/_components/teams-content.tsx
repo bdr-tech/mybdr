@@ -543,21 +543,19 @@ export function TeamsContent({
   return (
     <>
       {/* 헤더 영역: "팀 목록" + 부제 */}
-      <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1
-            className="text-3xl font-bold mb-2"
-            style={{ color: "var(--color-text-primary)" }}
-          >
-            팀 목록
-          </h1>
-          <p style={{ color: "var(--color-text-muted)" }}>
-            BDR 플랫폼에 등록된 역동적인 팀들을 만나보세요.
-          </p>
-        </div>
+      <div className="mb-6">
+        <h1
+          className="text-3xl font-bold mb-2"
+          style={{ color: "var(--color-text-primary)" }}
+        >
+          팀 목록
+        </h1>
+        <p style={{ color: "var(--color-text-muted)" }}>
+          BDR 플랫폼에 등록된 역동적인 팀들을 만나보세요.
+        </p>
       </div>
 
-      {/* 필터 (도시 목록은 API 응답에서 가져옴) + 총 팀 수 전달 */}
+      {/* 필터: 검색 인라인 + 플로팅 필터 트리거 */}
       <TeamsFilterComponent cities={cities} totalCount={teams.length} />
 
       {/* 로딩 중이면 스켈레톤 표시 */}

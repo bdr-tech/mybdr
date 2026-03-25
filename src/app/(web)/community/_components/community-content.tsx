@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePreferFilter } from "@/contexts/prefer-filter-context";
 import { CommunitySidebar } from "./community-sidebar";
+import { FloatingFilterPanel, type FilterConfig } from "@/components/shared/floating-filter-panel";
 
 // API에서 내려오는 게시글 데이터 타입 (apiSuccess가 snake_case로 자동 변환)
 interface PostFromApi {
@@ -228,40 +229,9 @@ export function CommunityContent() {
         커뮤니티
       </h2>
 
-      {/* 카테고리 탭 + 검색: 시안 기준 pill 버튼 가로 배열 */}
-      <div className="mb-6 flex flex-wrap gap-2 items-center">
-        {categoryTabs.map((tab) => {
-          const isActive = category === tab.key;
-          // 선호 카테고리 표시
-          const isPreferred = tab.key ? preferredCategories.includes(tab.key) : false;
-          return (
-            <button
-              key={tab.key ?? "all"}
-              type="button"
-              onClick={() => handleCategoryChange(tab.key)}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${
-                isActive ? "font-bold text-white" : "border"
-              }`}
-              style={
-                isActive
-                  ? { backgroundColor: "var(--color-primary)", color: "#fff" }
-                  : isPreferred
-                    ? { borderColor: "var(--color-primary)", color: "var(--color-primary)", backgroundColor: "var(--color-card)" }
-                    : { borderColor: "var(--color-border)", color: "var(--color-text-secondary)", backgroundColor: "var(--color-card)" }
-              }
-            >
-              {tab.label}
-              {isPreferred && (
-                <span className="ml-1 text-[10px]" style={{ color: "var(--color-primary)" }} title="관심 카테고리">*</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 검색 바: 간소화된 검색 */}
+      {/* 검색바 + 플로팅 필터 트리거 */}
       <form onSubmit={handleSearch} className="mb-6">
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
           <div className="relative flex-1">
             <span
               className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sm"
@@ -283,21 +253,32 @@ export function CommunityContent() {
           </div>
           <button
             type="submit"
-            className="rounded px-4 py-2 text-sm font-semibold text-white"
+            className="rounded px-4 py-2 text-sm font-semibold text-white shrink-0"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
             검색
           </button>
-          {appliedQuery && (
-            <button
-              type="button"
-              onClick={handleClearSearch}
-              className="rounded border px-4 py-2 text-sm"
-              style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
-            >
-              초기화
-            </button>
-          )}
+          {/* 플로팅 필터: 카테고리를 패널 안으로 이동 */}
+          <FloatingFilterPanel
+            filters={[
+              {
+                key: "category",
+                label: "카테고리",
+                type: "tabs" as const,
+                options: categoryTabs.map((tab) => ({
+                  value: tab.key ?? "all",
+                  label: tab.label,
+                })),
+                value: category ?? "all",
+                onChange: (v: string) => handleCategoryChange(v === "all" ? null : v),
+              },
+            ]}
+            onReset={() => {
+              handleCategoryChange(null);
+              handleClearSearch();
+            }}
+            activeCount={category ? 1 : 0}
+          />
         </div>
       </form>
 

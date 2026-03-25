@@ -327,35 +327,36 @@ export function GamesContent({
 
   return (
     <>
-      {/* 헤더 영역 - "Game Finder" + MY/NEW 버튼 */}
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>
-          경기 찾기
-        </h1>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/games/my-games"
-            prefetch={true}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-black transition-colors bg-[var(--color-accent)] text-[var(--color-text-primary)]"
-            title="내 경기"
-          >
-            MY
-          </Link>
-          <Link
-            href="/games/new"
-            prefetch={true}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-white transition-colors bg-[var(--color-primary)]"
-            title="경기 만들기"
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M9 3v12M3 9h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </Link>
+      {/* 헤더 영역 - "경기 찾기" + 필터/검색 + MY/NEW 버튼 */}
+      <div className="mb-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>
+            경기 찾기
+          </h1>
+          <div className="flex items-center gap-2">
+            {/* 필터 트리거 + 검색은 GamesFilterComponent 안에 포함 */}
+            <Link
+              href="/games/my-games"
+              prefetch={true}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-black transition-colors bg-[var(--color-accent)] text-[var(--color-text-primary)]"
+              title="내 경기"
+            >
+              MY
+            </Link>
+            <Link
+              href="/games/new"
+              prefetch={true}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-white transition-colors bg-[var(--color-primary)]"
+              title="경기 만들기"
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M9 3v12M3 9h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </Link>
+          </div>
         </div>
-      </div>
 
-      {/* 필터 바 - 인라인 (검색 + 필터 4종 + Apply 버튼) */}
-      <div className="mb-6">
+        {/* 필터 바 - 검색 인라인 + 플로팅 필터 패널 트리거 */}
         <GamesFilterComponent cities={cities} />
       </div>
 

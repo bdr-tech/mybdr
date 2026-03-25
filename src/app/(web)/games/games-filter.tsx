@@ -2,13 +2,14 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useRef } from "react";
+import { FloatingFilterPanel, type FilterConfig } from "@/components/shared/floating-filter-panel";
 
 // 경기 유형 옵션 (기존 로직 유지)
 const GAME_TYPES = [
-  { value: "all", label: "전체 유형", icon: "sports_basketball" },
-  { value: "0",   label: "픽업",     icon: "sports_basketball" },
-  { value: "1",   label: "게스트",   icon: "group_add" },
-  { value: "2",   label: "연습경기", icon: "fitness_center" },
+  { value: "all", label: "전체 유형" },
+  { value: "0",   label: "픽업" },
+  { value: "1",   label: "게스트" },
+  { value: "2",   label: "연습경기" },
 ];
 
 // 날짜 옵션 (기존 로직 유지)
@@ -19,7 +20,7 @@ const DATE_OPTIONS = [
   { value: "month", label: "이번 달" },
 ];
 
-// 실력 옵션 (새로 추가 - 디자인 시안에 맞춤)
+// 실력 옵션 (기존 로직 유지)
 const SKILL_OPTIONS = [
   { value: "all",                  label: "전체 실력" },
   { value: "beginner",             label: "초급" },
@@ -29,10 +30,13 @@ const SKILL_OPTIONS = [
 ];
 
 /**
- * 인라인 필터 바 - 디자인 시안(bdr_1, bdr_5)에 맞춘 인라인 필터
+ * GamesFilter - 경기 필터 (플로팅 패널 방식으로 교체)
  *
- * 기존 플로팅 패널 방식에서 인라인 필터 바로 변경.
+ * 기존: 인라인 select 4개 + "Apply Filters" 버튼
+ * 변경: FloatingFilterPanel 트리거 버튼만 노출, 클릭 시 패널 열림
+ *
  * URL 쿼리 파라미터 기반 필터링 로직은 100% 유지.
+ * 검색바만 인라인으로 남기고, 나머지 필터는 패널 안으로 이동.
  */
 export function GamesFilter({ cities }: { cities: string[] }) {
   const router = useRouter();
@@ -59,130 +63,91 @@ export function GamesFilter({ cities }: { cities: string[] }) {
     debounceRef.current = setTimeout(() => update({ q: v }), 380);
   };
 
-  // 활성 필터 여부 확인
-  const hasActiveFilters = params.get("q") || params.get("type") || params.get("city") || params.get("date") || params.get("skill");
-
   // 전체 필터 초기화
-  const clearAll = () => {
+  const clearAll = useCallback(() => {
     router.push(pathname);
-  };
+  }, [router, pathname]);
+
+  // 현재 필터 값 읽기 (URL params에서)
+  const currentType = params.get("type") ?? "all";
+  const currentDate = params.get("date") ?? "all";
+  const currentCity = params.get("city") ?? "all";
+  const currentSkill = params.get("skill") ?? "all";
+
+  // 활성 필터 수 계산 (기본값 "all"이 아닌 것의 개수)
+  const activeCount = [currentType, currentDate, currentCity, currentSkill]
+    .filter((v) => v !== "all")
+    .length;
+
+  // 지역 옵션: "전체" + API에서 받은 도시 목록
+  const cityOptions = [
+    { value: "all", label: "전체 지역" },
+    ...cities.map((c) => ({ value: c, label: c })),
+  ];
+
+  // FloatingFilterPanel에 전달할 필터 설정 배열
+  const filterConfigs: FilterConfig[] = [
+    {
+      key: "type",
+      label: "유형",
+      type: "select",
+      options: GAME_TYPES,
+      value: currentType,
+      onChange: (v) => update({ type: v }),
+    },
+    {
+      key: "date",
+      label: "날짜",
+      type: "select",
+      options: DATE_OPTIONS,
+      value: currentDate,
+      onChange: (v) => update({ date: v }),
+    },
+    {
+      key: "city",
+      label: "지역",
+      type: "select",
+      options: cityOptions,
+      value: currentCity,
+      onChange: (v) => update({ city: v }),
+    },
+    {
+      key: "skill",
+      label: "실력",
+      type: "select",
+      options: SKILL_OPTIONS,
+      value: currentSkill,
+      onChange: (v) => update({ skill: v }),
+    },
+  ];
 
   return (
-    <div className="space-y-4">
-      {/* 검색창 - 디자인 시안 상단 우측의 인라인 검색 */}
-      <div className="relative">
-        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-[var(--color-text-muted)]">
+    <div className="flex items-center gap-3">
+      {/* 검색바: 인라인 유지 (패널 밖) */}
+      <div className="relative flex-1">
+        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg" style={{ color: "var(--color-text-muted)" }}>
           search
         </span>
         <input
           type="text"
-          placeholder="Search games..."
+          placeholder="경기 검색..."
           defaultValue={params.get("q") ?? ""}
           onChange={(e) => handleSearch(e.target.value)}
-          className="h-10 w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] pl-10 pr-4 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:ring-1 focus:ring-[var(--color-primary)] focus:outline-none transition-all"
+          className="h-10 w-full rounded border pl-10 pr-4 text-sm focus:ring-1 focus:outline-none transition-all"
+          style={{
+            borderColor: "var(--color-border)",
+            backgroundColor: "var(--color-surface)",
+            color: "var(--color-text-primary)",
+          }}
         />
       </div>
 
-      {/* 필터 바 - 디자인 시안의 인라인 4칸 + Apply Filters 버튼 */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* 종목(Type) 필터 */}
-        <div className="flex items-center gap-2 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 cursor-pointer hover:border-[var(--color-primary)] transition-colors">
-          <span className="material-symbols-outlined text-[var(--color-text-muted)] text-lg">
-            sports_basketball
-          </span>
-          <select
-            value={params.get("type") ?? "all"}
-            onChange={(e) => update({ type: e.target.value })}
-            className="appearance-none bg-transparent text-sm font-medium text-[var(--color-text-primary)] cursor-pointer focus:outline-none pr-1"
-          >
-            {GAME_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
-            ))}
-          </select>
-          <span className="material-symbols-outlined text-[var(--color-text-muted)] text-sm">
-            expand_more
-          </span>
-        </div>
-
-        {/* 날짜(Date) 필터 */}
-        <div className="flex items-center gap-2 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 cursor-pointer hover:border-[var(--color-primary)] transition-colors">
-          <span className="material-symbols-outlined text-[var(--color-text-muted)] text-lg">
-            calendar_today
-          </span>
-          <select
-            value={params.get("date") ?? "all"}
-            onChange={(e) => update({ date: e.target.value })}
-            className="appearance-none bg-transparent text-sm font-medium text-[var(--color-text-primary)] cursor-pointer focus:outline-none pr-1"
-          >
-            {DATE_OPTIONS.map((d) => (
-              <option key={d.value} value={d.value}>{d.label}</option>
-            ))}
-          </select>
-          <span className="material-symbols-outlined text-[var(--color-text-muted)] text-sm">
-            expand_more
-          </span>
-        </div>
-
-        {/* 지역(Region) 필터 */}
-        <div className="flex items-center gap-2 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 cursor-pointer hover:border-[var(--color-primary)] transition-colors">
-          <span className="material-symbols-outlined text-[var(--color-text-muted)] text-lg">
-            location_on
-          </span>
-          <select
-            value={params.get("city") ?? "all"}
-            onChange={(e) => update({ city: e.target.value })}
-            className="appearance-none bg-transparent text-sm font-medium text-[var(--color-text-primary)] cursor-pointer focus:outline-none pr-1"
-          >
-            <option value="all">전체 지역</option>
-            {cities.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-          <span className="material-symbols-outlined text-[var(--color-text-muted)] text-sm">
-            expand_more
-          </span>
-        </div>
-
-        {/* 실력(Skill) 필터 */}
-        <div className="flex items-center gap-2 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 cursor-pointer hover:border-[var(--color-primary)] transition-colors">
-          <span className="material-symbols-outlined text-[var(--color-text-muted)] text-lg">
-            bolt
-          </span>
-          <select
-            value={params.get("skill") ?? "all"}
-            onChange={(e) => update({ skill: e.target.value })}
-            className="appearance-none bg-transparent text-sm font-medium text-[var(--color-text-primary)] cursor-pointer focus:outline-none pr-1"
-          >
-            {SKILL_OPTIONS.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </select>
-          <span className="material-symbols-outlined text-[var(--color-text-muted)] text-sm">
-            expand_more
-          </span>
-        </div>
-
-        {/* Apply Filters / 초기화 버튼 - 우측으로 밀기 */}
-        <div className="ml-auto flex items-center gap-2">
-          {hasActiveFilters && (
-            <button
-              onClick={clearAll}
-              className="px-4 py-2 rounded text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
-            >
-              초기화
-            </button>
-          )}
-          <button
-            onClick={() => {
-              /* 현재 필터는 실시간 적용이므로 시각적 피드백만 제공 */
-              /* 향후 지연 적용(batch) 방식으로 전환 시 여기서 일괄 적용 */
-            }}
-            className="bg-[var(--color-primary)] text-white px-6 py-2 rounded text-sm font-bold hover:bg-[var(--color-primary-hover)] transition-colors"
-          >
-            Apply Filters
-          </button>
-        </div>
-      </div>
+      {/* 플로팅 필터 트리거 버튼 */}
+      <FloatingFilterPanel
+        filters={filterConfigs}
+        onReset={clearAll}
+        activeCount={activeCount}
+      />
     </div>
   );
 }

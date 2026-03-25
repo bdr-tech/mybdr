@@ -493,28 +493,30 @@ export function TournamentsContent({
 
   return (
     <>
-      {/* 헤더 + 필터: 시안의 2행 레이아웃 */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-        {/* 좌측: 제목 + 부제 */}
-        <div>
-          <span
-            className="font-bold text-sm tracking-widest uppercase mb-2 block"
-            style={{ color: "var(--color-primary)" }}
-          >
-            프리미엄 리그
-          </span>
-          <h1
-            className="text-4xl sm:text-5xl font-bold leading-tight"
-            style={{
-              fontFamily: "var(--font-heading)",
-              color: "var(--color-text-primary)",
-            }}
-          >
-            대회 찾기
-          </h1>
+      {/* 헤더: 제목 + 필터 */}
+      <div className="mb-10 space-y-4">
+        <div className="flex items-center justify-between">
+          {/* 좌측: 제목 + 부제 */}
+          <div>
+            <span
+              className="font-bold text-sm tracking-widest uppercase mb-2 block"
+              style={{ color: "var(--color-primary)" }}
+            >
+              프리미엄 리그
+            </span>
+            <h1
+              className="text-4xl sm:text-5xl font-bold leading-tight"
+              style={{
+                fontFamily: "var(--font-heading)",
+                color: "var(--color-text-primary)",
+              }}
+            >
+              대회 찾기
+            </h1>
+          </div>
         </div>
 
-        {/* 우측: 필터 드롭다운들 */}
+        {/* 검색 + 플로팅 필터 트리거 */}
         <TournamentsFilterComponent
           cities={cities}
           onSearchChange={handleSearchChange}
