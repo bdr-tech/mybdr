@@ -34,37 +34,41 @@ export async function GET(request: NextRequest) {
       where.city = { contains: city, mode: "insensitive" };
     }
 
-    // 팀 목록 + 도시 목록 병렬 조회
+    // 팀 목록 조회
     const limit = Math.min(Number(searchParams.get("limit")) || 30, 60);
-    const [teams, citiesRaw] = await Promise.all([
-      prisma.team.findMany({
-        where,
-        orderBy: [{ wins: "desc" }, { createdAt: "desc" }],
-        take: limit,
-        select: {
-          id: true,
-          name: true,
-          primaryColor: true,
-          secondaryColor: true,
-          city: true,
-          district: true,
-          wins: true,
-          losses: true,
-          accepting_members: true,
-          tournaments_count: true,
-          _count: { select: { teamMembers: true } },
-        },
-      }).catch(() => []),
-      prisma.team.groupBy({
-        by: ["city"],
-        where: { city: { not: null }, status: "active", is_public: true },
-        orderBy: { _count: { city: "desc" } },
-        take: 30,
-      }).catch(() => []),
-    ]);
+    const includeCities = searchParams.get("include_cities") === "true";
 
-    // 도시 목록에서 null 제거
-    const cities = citiesRaw.map((r) => r.city!).filter(Boolean);
+    const teamsPromise = prisma.team.findMany({
+      where,
+      orderBy: [{ wins: "desc" }, { createdAt: "desc" }],
+      take: limit,
+      select: {
+        id: true,
+        name: true,
+        primaryColor: true,
+        secondaryColor: true,
+        city: true,
+        district: true,
+        wins: true,
+        losses: true,
+        accepting_members: true,
+        tournaments_count: true,
+        _count: { select: { teamMembers: true } },
+      },
+    }).catch(() => []);
+
+    // 도시 목록은 팀 목록 페이지에서만 필요 (사이드바에서는 불필요)
+    const citiesPromise = includeCities
+      ? prisma.team.groupBy({
+          by: ["city"],
+          where: { city: { not: null }, status: "active", is_public: true },
+          orderBy: { _count: { city: "desc" } },
+          take: 30,
+        }).catch(() => [])
+      : Promise.resolve([]);
+
+    const [teams, citiesRaw] = await Promise.all([teamsPromise, citiesPromise]);
+    const cities = citiesRaw.map((r: { city: string | null }) => r.city!).filter(Boolean);
 
     // BigInt 필드를 string으로 변환 (JSON 직렬화 불가능하므로)
     const serializedTeams = teams.map((t) => ({

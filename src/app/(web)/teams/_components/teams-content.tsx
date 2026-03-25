@@ -505,6 +505,7 @@ export function TeamsContent({
     setLoading(true);
 
     const params = new URLSearchParams(searchParams.toString());
+    params.set("include_cities", "true");
     const url = `/api/web/teams?${params.toString()}`;
 
     fetch(url)
