@@ -99,13 +99,13 @@ export default function TournamentAdminsPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="이메일 주소"
-            className="flex-1 rounded-[16px] border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
+            className="flex-1 rounded-xl border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
             onKeyDown={(e) => e.key === "Enter" && addAdmin()}
           />
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="rounded-[16px] border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
+            className="rounded-xl border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
           >
             <option value="admin">관리자</option>
             <option value="staff">스태프</option>

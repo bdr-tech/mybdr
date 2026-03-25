@@ -20,7 +20,7 @@ export default function NewPostPage() {
         <form action={formAction} className="space-y-4">
           <div>
             <label className="mb-1 block text-sm text-[var(--color-text-muted)]">카테고리</label>
-            <select name="category" className="w-full rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm">
+            <select name="category" className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm">
               <option value="general">자유게시판</option>
               <option value="info">정보게시판</option>
               <option value="review">후기게시판</option>
@@ -29,11 +29,11 @@ export default function NewPostPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm text-[var(--color-text-muted)]">제목 *</label>
-            <input name="title" type="text" required className="w-full rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm" placeholder="제목 입력" />
+            <input name="title" type="text" required className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm" placeholder="제목 입력" />
           </div>
           <div>
             <label className="mb-1 block text-sm text-[var(--color-text-muted)]">내용 *</label>
-            <textarea name="content" rows={10} required className="w-full rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm" placeholder="내용 입력" />
+            <textarea name="content" rows={10} required className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm" placeholder="내용 입력" />
           </div>
           <Button type="submit" className="w-full" disabled={pending}>
             {pending ? "작성 중..." : "작성하기"}

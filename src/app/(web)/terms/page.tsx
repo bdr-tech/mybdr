@@ -210,7 +210,7 @@ export default function TermsPage() {
         </section>
 
         {/* 부칙 */}
-        <section className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+        <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
           <h2 className="mb-2 text-base font-semibold text-[var(--color-text-primary)]">부칙</h2>
           <p>이 약관은 2026년 3월 1일부터 시행합니다.</p>
         </section>

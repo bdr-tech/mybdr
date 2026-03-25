@@ -43,15 +43,15 @@ export default async function TournamentAdminDashboard() {
       <Card>
         <h2 className="mb-4 text-lg font-semibold">빠른 시작</h2>
         <div className="grid gap-3 sm:grid-cols-3">
-          <Link href="/tournament-admin/tournaments/new/wizard" className="rounded-[16px] bg-[var(--color-elevated)] p-4 text-center hover:bg-[var(--color-border)] transition-colors">
+          <Link href="/tournament-admin/tournaments/new/wizard" className="rounded-xl bg-[var(--color-elevated)] p-4 text-center hover:bg-[var(--color-border)] transition-colors">
             <div className="mb-2 text-2xl font-bold text-[var(--color-accent)]">+</div>
             <p className="text-sm font-medium">대회 만들기</p>
           </Link>
-          <Link href="/tournament-admin/tournaments" className="rounded-[16px] bg-[var(--color-elevated)] p-4 text-center hover:bg-[var(--color-border)] transition-colors">
+          <Link href="/tournament-admin/tournaments" className="rounded-xl bg-[var(--color-elevated)] p-4 text-center hover:bg-[var(--color-border)] transition-colors">
             <div className="mb-2 text-2xl font-bold text-[var(--color-accent)]">=</div>
             <p className="text-sm font-medium">내 대회 목록</p>
           </Link>
-          <Link href="/tournament-admin/templates" className="rounded-[16px] bg-[var(--color-elevated)] p-4 text-center hover:bg-[var(--color-border)] transition-colors">
+          <Link href="/tournament-admin/templates" className="rounded-xl bg-[var(--color-elevated)] p-4 text-center hover:bg-[var(--color-border)] transition-colors">
             <div className="mb-2 text-2xl font-bold text-[var(--color-accent)]">T</div>
             <p className="text-sm font-medium">템플릿 둘러보기</p>
           </Link>
@@ -82,7 +82,7 @@ export default async function TournamentAdminDashboard() {
             ))}
             <Link
               href="/tournament-admin/series/new"
-              className="mt-1 block rounded-[16px] border border-dashed border-[var(--color-border)] p-3 text-center text-sm text-[var(--color-text-muted)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+              className="mt-1 block rounded-xl border border-dashed border-[var(--color-border)] p-3 text-center text-sm text-[var(--color-text-muted)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
             >
               + 새 시리즈 만들기
             </Link>

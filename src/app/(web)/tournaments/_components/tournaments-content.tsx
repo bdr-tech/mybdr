@@ -41,7 +41,7 @@ const STATUS_BADGE: Record<string, { label: string; bg: string }> = {
   in_progress:         { label: "LIVE", bg: "var(--color-info)" },
   ongoing:             { label: "LIVE", bg: "var(--color-info)" },
   completed:           { label: "ENDED", bg: "var(--color-text-disabled)" },
-  cancelled:           { label: "CANCELLED", bg: "#EF4444" },
+  cancelled:           { label: "CANCELLED", bg: "#DC2626" },
 };
 
 // -- 대회 형식 한글 라벨 매핑 --

@@ -13,7 +13,7 @@ interface SectionWrapperProps {
 export function SectionWrapper({ title, href, children, emptyText, isEmpty }: SectionWrapperProps) {
   return (
     /* 카드 외형: CSS 변수 (다크모드 자동 대응) */
-    <div className="rounded-[20px] border p-4 sm:p-5" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)', boxShadow: 'var(--shadow-card)' }}>
+    <div className="rounded-2xl border p-4 sm:p-5" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)', boxShadow: 'var(--shadow-card)' }}>
       <div className="mb-3 flex items-center justify-between">
         <h2
           className="text-base font-bold uppercase tracking-wide"

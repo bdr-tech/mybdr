@@ -59,11 +59,11 @@ export default async function SiteTeamsPage() {
 
                 <div className="mb-3 grid grid-cols-3 gap-2 text-center text-sm">
                   <div>
-                    <p className="font-bold text-[#4ADE80]">{t.wins ?? 0}</p>
+                    <p className="font-bold text-[#16A34A]">{t.wins ?? 0}</p>
                     <p className="text-xs text-[var(--color-text-muted)]">승</p>
                   </div>
                   <div>
-                    <p className="font-bold text-[#EF4444]">{t.losses ?? 0}</p>
+                    <p className="font-bold text-[#DC2626]">{t.losses ?? 0}</p>
                     <p className="text-xs text-[var(--color-text-muted)]">패</p>
                   </div>
                   <div>

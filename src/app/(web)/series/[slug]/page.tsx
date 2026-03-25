@@ -74,15 +74,15 @@ export default async function SeriesHubPage({
 
       {/* 통계 */}
       <div className="mb-8 grid grid-cols-3 gap-3">
-        <div className="rounded-[16px] bg-[var(--color-surface-bright)] p-4 text-center">
+        <div className="rounded-xl bg-[var(--color-surface-bright)] p-4 text-center">
           <p className="text-xl font-bold sm:text-2xl text-[var(--color-accent)]">{series.tournaments_count ?? 0}</p>
           <p className="mt-1 text-xs text-[var(--color-text-muted)]">총 회차</p>
         </div>
-        <div className="rounded-[16px] bg-[var(--color-surface-bright)] p-4 text-center">
+        <div className="rounded-xl bg-[var(--color-surface-bright)] p-4 text-center">
           <p className="text-xl font-bold sm:text-2xl text-[var(--color-accent)]">{totalTeams}</p>
           <p className="mt-1 text-xs text-[var(--color-text-muted)]">누적 참가팀</p>
         </div>
-        <div className="rounded-[16px] bg-[var(--color-surface-bright)] p-4 text-center">
+        <div className="rounded-xl bg-[var(--color-surface-bright)] p-4 text-center">
           <p className="text-xl font-bold sm:text-2xl text-[var(--color-primary)]">
             {latestActive ? `${latestActive.edition_number}회` : "-"}
           </p>
@@ -93,7 +93,7 @@ export default async function SeriesHubPage({
       {/* CTA — 모집 중인 회차 강조 */}
       {latestActive && (
         <Link href={`/tournaments/${latestActive.id}`}>
-          <div className="mb-6 rounded-[16px] bg-[var(--color-accent)] px-6 py-4 text-white">
+          <div className="mb-6 rounded-xl bg-[var(--color-accent)] px-6 py-4 text-white">
             <p className="text-xs opacity-80">현재 신청 가능</p>
             <p className="mt-0.5 text-lg font-bold">{latestActive.name}</p>
             {latestActive.startDate && (

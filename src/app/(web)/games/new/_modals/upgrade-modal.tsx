@@ -32,7 +32,7 @@ export function UpgradeModal({ reason, onClose }: UpgradeModalProps) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-sm rounded-[20px] bg-[var(--color-card)] p-6 shadow-xl mx-4">
+      <div className="w-full max-w-sm rounded-2xl bg-[var(--color-card)] p-6 shadow-xl mx-4">
         <div className="mb-4 flex items-start justify-between">
           <div>
             <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{info.title}</h2>
@@ -47,7 +47,7 @@ export function UpgradeModal({ reason, onClose }: UpgradeModalProps) {
           </button>
         </div>
 
-        <div className="mb-5 rounded-[16px] bg-[var(--color-surface-bright)] px-4 py-3">
+        <div className="mb-5 rounded-xl bg-[var(--color-surface-bright)] px-4 py-3">
           <p className="text-sm text-[var(--color-text-primary)]">
             <span className="font-semibold">{info.plan}</span>
             <span className="ml-2 text-[var(--color-primary)]">{info.price}</span>

@@ -71,10 +71,10 @@ export default async function PricingPage() {
             return (
               <div
                 key={plan.id.toString()}
-                className="relative rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] p-6 transition-all hover:border-[var(--color-accent)]/50"
+                className="relative rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 transition-all hover:border-[var(--color-accent)]/50"
               >
                 {isSubscribed && (
-                  <span className="absolute right-4 top-4 rounded-[10px] bg-[rgba(74,222,128,0.15)] px-3 py-0.5 text-xs font-medium text-[#4ADE80]">
+                  <span className="absolute right-4 top-4 rounded-[10px] bg-[rgba(74,222,128,0.15)] px-3 py-0.5 text-xs font-medium text-[#16A34A]">
                     구독 중
                   </span>
                 )}
@@ -98,7 +98,7 @@ export default async function PricingPage() {
                 </div>
 
                 {isSubscribed ? (
-                  <div className="rounded-[12px] bg-[rgba(74,222,128,0.08)] py-3 text-center text-sm text-[#4ADE80]">
+                  <div className="rounded-[12px] bg-[rgba(74,222,128,0.08)] py-3 text-center text-sm text-[#16A34A]">
                     이미 구독 중입니다
                   </div>
                 ) : session ? (
@@ -123,7 +123,7 @@ export default async function PricingPage() {
       )}
 
       {/* 광고 문의 */}
-      <div className="mt-16 rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] p-8 text-center">
+      <div className="mt-16 rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-8 text-center">
         <h3 className="mb-2 text-lg font-bold">광고 문의</h3>
         <p className="mb-4 text-sm text-[var(--color-text-muted)]">
           MyBDR에서 비즈니스를 홍보하고 싶으신가요? 맞춤 광고 패키지를 제공합니다.
@@ -137,7 +137,7 @@ export default async function PricingPage() {
       </div>
 
       {/* FAQ */}
-      <div className="mt-10 rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] p-6">
+      <div className="mt-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-6">
         <h3 className="mb-4 text-base font-bold">자주 묻는 질문</h3>
         <div className="space-y-4 text-sm text-[var(--color-text-muted)]">
           <div>

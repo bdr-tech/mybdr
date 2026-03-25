@@ -38,7 +38,7 @@ export default function BracketLoading() {
           <div className="hidden lg:block">
             <Skeleton className="h-7 w-64 mb-8" />
             <div
-              className="rounded-[16px] p-6"
+              className="rounded-xl p-6"
               style={{
                 border: "1px solid var(--color-border)",
                 backgroundColor: "var(--color-card)",
@@ -77,7 +77,7 @@ export default function BracketLoading() {
             </div>
             <div className="space-y-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={`m-${i}`} className="h-[120px] w-full rounded-[16px]" />
+                <Skeleton key={`m-${i}`} className="h-[120px] w-full rounded-xl" />
               ))}
             </div>
           </div>

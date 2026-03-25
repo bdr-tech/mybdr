@@ -43,7 +43,7 @@ function StatusBadge({ status }: { status: string }) {
     pending: { label: "대기", bg: "rgba(255,255,255,0.08)", color: "#6B7280" },
     completed: { label: "종료", bg: "rgba(74,222,128,0.1)", color: "#22C55E" },
     bye: { label: "부전승", bg: "rgba(255,255,255,0.08)", color: "#6B7280" },
-    cancelled: { label: "취소", bg: "rgba(239,68,68,0.1)", color: "#EF4444" },
+    cancelled: { label: "취소", bg: "rgba(239,68,68,0.1)", color: "#DC2626" },
   };
 
   const c = config[status] ?? config.scheduled;
@@ -191,7 +191,7 @@ export function MobileMatchCard({
 
   return (
     <div
-      className={`rounded-[16px] border overflow-hidden ${
+      className={`rounded-xl border overflow-hidden ${
         isBye
           ? "border-dashed border-[var(--color-border)] bg-[var(--color-surface)] opacity-70"
           : isLive

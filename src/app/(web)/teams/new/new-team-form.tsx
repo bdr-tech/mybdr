@@ -15,7 +15,7 @@ export function NewTeamForm() {
       <h1 className="mb-6 text-2xl font-extrabold uppercase tracking-wide sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>팀 만들기</h1>
 
       {isUpgradeRequired && (
-        <div className="mb-4 rounded-[16px] border border-[var(--color-accent)]/30 bg-[var(--color-surface-bright)] p-4">
+        <div className="mb-4 rounded-xl border border-[var(--color-accent)]/30 bg-[var(--color-surface-bright)] p-4">
           <p className="mb-2 text-sm font-medium text-[var(--color-primary)]">팀 생성은 팀장 이상 계정만 가능합니다.</p>
           <p className="mb-3 text-xs text-[var(--color-text-muted)]">팀장 플랜을 신청하면 최대 2개의 팀을 만들 수 있습니다.</p>
           <Link
@@ -40,7 +40,7 @@ export function NewTeamForm() {
               name="name"
               type="text"
               required
-              className="w-full rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
               placeholder="팀 이름"
             />
           </div>
@@ -49,7 +49,7 @@ export function NewTeamForm() {
             <textarea
               name="description"
               rows={3}
-              className="w-full rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
               placeholder="팀 소개"
             />
           </div>
@@ -60,7 +60,7 @@ export function NewTeamForm() {
                 name="primary_color"
                 type="color"
                 defaultValue="#E31B23"
-                className="h-12 w-full cursor-pointer rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] p-1"
+                className="h-12 w-full cursor-pointer rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-1"
               />
             </div>
             <div>
@@ -69,7 +69,7 @@ export function NewTeamForm() {
                 name="secondary_color"
                 type="color"
                 defaultValue="#E76F51"
-                className="h-12 w-full cursor-pointer rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] p-1"
+                className="h-12 w-full cursor-pointer rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-1"
               />
             </div>
           </div>

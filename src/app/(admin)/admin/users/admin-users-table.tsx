@@ -126,7 +126,7 @@ export function AdminUsersTable({ users, updateUserRoleAction, updateUserStatusA
         const role = ROLE_MAP[u.membershipType] ?? { label: String(u.membershipType), variant: "default" as const };
         return (
           <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
-            <div className="w-full max-w-md max-h-[90vh] overflow-hidden rounded-t-[20px] sm:rounded-[20px] bg-[var(--color-card)] shadow-[0_-8px_40px_rgba(0,0,0,0.2)] sm:shadow-[0_8px_40px_rgba(0,0,0,0.2)] flex flex-col animate-slide-up sm:animate-fade-in">
+            <div className="w-full max-w-md max-h-[90vh] overflow-hidden rounded-t-[20px] sm:rounded-2xl bg-[var(--color-card)] shadow-[0_-8px_40px_rgba(0,0,0,0.2)] sm:shadow-[0_8px_40px_rgba(0,0,0,0.2)] flex flex-col animate-slide-up sm:animate-fade-in">
 
               {/* 프로필 헤더 */}
               <div className="relative bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent-hover)] px-6 pt-5 pb-4">

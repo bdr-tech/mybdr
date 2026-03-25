@@ -178,7 +178,7 @@ export default function ProfileCompletePage() {
 
   /* 입력필드/라벨 공통 스타일 - CSS 변수로 다크모드 자동 대응 */
   const inp =
-    "w-full rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm";
+    "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm";
   const lbl = "mb-1 block text-sm text-[var(--color-text-muted)]";
 
   return (
@@ -197,7 +197,7 @@ export default function ProfileCompletePage() {
       )}
 
       {/* 기본 정보 */}
-      <div className="mb-6 rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-[var(--shadow-card)]">
+      <div className="mb-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-[var(--shadow-card)]">
         <h2 className="mb-4 font-semibold uppercase tracking-wide text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>기본 정보</h2>
         <div className="space-y-4">
           <div>
@@ -217,7 +217,7 @@ export default function ProfileCompletePage() {
               <input
                 type="tel"
                 inputMode="numeric"
-                className={`flex-1 rounded-[16px] border bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm ${
+                className={`flex-1 rounded-xl border bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm ${
                   verifyStep === "verified" ? "border-[var(--color-success,#34d399)]" : "border-[var(--color-border)]"
                 }`}
                 value={form.phone}
@@ -250,7 +250,7 @@ export default function ProfileCompletePage() {
                   type="text"
                   inputMode="numeric"
                   maxLength={6}
-                  className="flex-1 rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm"
+                  className="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm"
                   value={verifyCode}
                   onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, ""))}
                   placeholder="인증번호 6자리"
@@ -277,7 +277,7 @@ export default function ProfileCompletePage() {
       </div>
 
       {/* 경기 정보 */}
-      <div className="mb-6 rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-[var(--shadow-card)]">
+      <div className="mb-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-[var(--shadow-card)]">
         <h2 className="mb-4 font-semibold uppercase tracking-wide text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>경기 정보</h2>
         <div className="space-y-4">
           <div>

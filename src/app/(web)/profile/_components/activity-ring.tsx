@@ -48,7 +48,7 @@ export function ActivityRing({ monthlyGames, totalGames, totalTournaments }: Act
 
   return (
     /* 카드 외형: CSS 변수 적용 */
-    <div className="relative overflow-hidden rounded-[20px] border p-5" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)', boxShadow: 'var(--shadow-card)' }}>
+    <div className="relative overflow-hidden rounded-2xl border p-5" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)', boxShadow: 'var(--shadow-card)' }}>
       {/* 배경 장식: primary/accent 색상 기반 */}
       <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full blur-2xl" style={{ backgroundColor: 'rgba(27, 60, 135, 0.05)' }} />
       <div className="pointer-events-none absolute -bottom-6 -left-6 h-24 w-24 rounded-full blur-2xl" style={{ backgroundColor: 'rgba(244, 162, 97, 0.05)' }} />

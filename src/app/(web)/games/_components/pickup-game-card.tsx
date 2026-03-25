@@ -37,7 +37,7 @@ const SKILL_LABEL: Record<string, string> = {
 
 function ParticipantBar({ current, max }: { current: number; max: number }) {
   const pct = max > 0 ? Math.min((current / max) * 100, 100) : 0;
-  const color = pct >= 100 ? "#EF4444" : pct >= 80 ? "#FBBF24" : "#4ADE80";
+  const color = pct >= 100 ? "#DC2626" : pct >= 80 ? "#D97706" : "#16A34A";
   return (
     <div className="flex items-center gap-2">
       <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--color-border)]">
@@ -66,7 +66,7 @@ export function PickupGameCard({ game }: { game: GameCardData }) {
   return (
     <Link href={href}>
       <div
-        className="group relative overflow-hidden rounded-[16px] bg-[var(--color-card)] p-5 transition-all hover:bg-[#FFF8F0] hover:-translate-y-0.5 hover:shadow-lg"
+        className="group relative overflow-hidden rounded-xl bg-[var(--color-card)] p-5 transition-all hover:bg-[#FFF8F0] hover:-translate-y-0.5 hover:shadow-lg"
         style={{ borderLeft: "3px solid #E31B23" }}
       >
         <div className="mb-3 flex items-center justify-between">

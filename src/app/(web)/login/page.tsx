@@ -37,7 +37,7 @@ export default function LoginPage() {
       </div>
 
       {/* 로그인 카드 */}
-      <div className="w-full max-w-sm rounded-[20px] border border-[#E8ECF0] bg-[#FFFFFF] px-8 py-8 shadow-[0_4px_24px_rgba(0,0,0,0.07)]">
+      <div className="w-full max-w-sm rounded-2xl border border-[#E8ECF0] bg-[#FFFFFF] px-8 py-8 shadow-[0_4px_24px_rgba(0,0,0,0.07)]">
         <Suspense>
           <ErrorBanner />
         </Suspense>

@@ -19,7 +19,7 @@ const STATUS_LABEL: Record<number, { text: string; color: string }> = {
   1: { text: "모집중", color: "#16A34A" },
   2: { text: "확정",   color: "#2563EB" },
   3: { text: "완료",   color: "#6B7280" },
-  4: { text: "취소",   color: "#EF4444" },
+  4: { text: "취소",   color: "#DC2626" },
 };
 
 const SKILL_BADGE: Record<string, { label: string; color: string; bg: string }> = {
@@ -37,7 +37,7 @@ export function GameCardCompact({ game }: { game: GameCardData }) {
   const cur = game.current_participants ?? 0;
   const max = game.max_participants ?? 0;
   const pct = max > 0 ? Math.min((cur / max) * 100, 100) : 0;
-  const barColor = pct >= 100 ? "#EF4444" : pct >= 80 ? "#D97706" : "#1B3C87";
+  const barColor = pct >= 100 ? "#DC2626" : pct >= 80 ? "#D97706" : "#1B3C87";
   const location = game.venue_name ?? game.city ?? "";
   const fee = game.fee_per_person && Number(game.fee_per_person) > 0
     ? `₩${Number(game.fee_per_person).toLocaleString()}`
@@ -49,7 +49,7 @@ export function GameCardCompact({ game }: { game: GameCardData }) {
 
   return (
     <Link href={href}>
-      <div className="group flex h-full flex-col rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[var(--color-accent)]/30">
+      <div className="group flex h-full flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[var(--color-accent)]/30">
         {/* 상단 컬러 바 */}
         <div className="h-1" style={{ backgroundColor: badge.bg }} />
 

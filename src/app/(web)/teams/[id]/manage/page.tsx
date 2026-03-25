@@ -91,11 +91,11 @@ export default function TeamManagePage({ params }: { params: { id: string } }) {
       )}
 
       {!loading && error && (
-        <div className="rounded-[16px] bg-red-50 px-5 py-4 text-sm text-red-600">{error}</div>
+        <div className="rounded-xl bg-red-50 px-5 py-4 text-sm text-red-600">{error}</div>
       )}
 
       {!loading && !error && requests.length === 0 && (
-        <div className="rounded-[16px] bg-[var(--color-card)] py-16 text-center">
+        <div className="rounded-xl bg-[var(--color-card)] py-16 text-center">
           <div className="mb-2 text-4xl">🏀</div>
           <p className="text-sm text-[var(--color-text-secondary)]">대기 중인 가입 신청이 없습니다.</p>
         </div>
@@ -111,7 +111,7 @@ export default function TeamManagePage({ params }: { params: { id: string } }) {
             return (
               <div
                 key={req.id}
-                className="rounded-[16px] bg-[var(--color-card)] p-5"
+                className="rounded-xl bg-[var(--color-card)] p-5"
               >
                 <div className="flex items-start gap-4">
                   <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-bright)] text-lg font-bold text-[var(--color-accent)]">

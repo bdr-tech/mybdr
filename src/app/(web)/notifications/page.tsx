@@ -33,7 +33,7 @@ export default async function NotificationsPage() {
           {notifications.map((n) => (
             <Card
               key={n.id.toString()}
-              className={`rounded-[16px] border border-[var(--color-border)] overflow-hidden transition-colors ${n.status === "unread" ? "border-l-2 border-l-[var(--color-accent)]" : "opacity-70"}`}
+              className={`rounded-xl border border-[var(--color-border)] overflow-hidden transition-colors ${n.status === "unread" ? "border-l-2 border-l-[var(--color-accent)]" : "opacity-70"}`}
             >
               {n.action_url ? (
                 <Link href={n.action_url} className="block">

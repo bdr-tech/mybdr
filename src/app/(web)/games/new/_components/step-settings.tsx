@@ -55,7 +55,7 @@ export function StepSettings({ data, updateData, errors, generateTitle }: StepSe
           onChange={(e) => updateData("title", e.target.value)}
           placeholder={suggestedTitle || "경기 제목"}
           maxLength={50}
-          className={`w-full rounded-[16px] border bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50 ${
+          className={`w-full rounded-xl border bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50 ${
             errors.title ? "border-red-400" : "border-[var(--color-border)]"
           }`}
         />
@@ -78,7 +78,7 @@ export function StepSettings({ data, updateData, errors, generateTitle }: StepSe
         {/* Participant Stepper */}
         <div>
           <label className="mb-1 block text-sm font-medium text-[var(--color-text-muted)]">최대 인원</label>
-          <div className="flex items-center gap-2 rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2">
+          <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2">
             <button
               type="button"
               onClick={() => updateData("maxParticipants", Math.max(2, data.maxParticipants - 1))}
@@ -109,7 +109,7 @@ export function StepSettings({ data, updateData, errors, generateTitle }: StepSe
           <select
             value={data.skillLevel}
             onChange={(e) => updateData("skillLevel", e.target.value)}
-            className="w-full rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
+            className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
           >
             {SKILL_LEVELS.map((s) => (
               <option key={s.value} value={s.value}>{s.label}</option>
@@ -159,7 +159,7 @@ export function StepSettings({ data, updateData, errors, generateTitle }: StepSe
             min={0}
             step={1000}
             placeholder="금액 입력"
-            className="w-full rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
+            className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
             autoFocus
           />
         )}
@@ -167,7 +167,7 @@ export function StepSettings({ data, updateData, errors, generateTitle }: StepSe
 
       {/* Guest toggle (hide for 게스트 모집 — always true) */}
       {data.gameType !== "1" && (
-        <div className="mb-5 flex items-center justify-between rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3">
+        <div className="mb-5 flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3">
           <div>
             <p className="text-sm font-medium text-[var(--color-text-primary)]">게스트 허용</p>
             <p className="text-xs text-[var(--color-text-secondary)]">팀 없이 개인 참가 가능</p>
@@ -201,7 +201,7 @@ export function StepSettings({ data, updateData, errors, generateTitle }: StepSe
             value={data.contactPhone}
             onChange={(e) => updateData("contactPhone", e.target.value)}
             placeholder="010-1234-5678"
-            className={`w-full rounded-[16px] border bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50 ${
+            className={`w-full rounded-xl border bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50 ${
               errors.contactPhone ? "border-red-400" : "border-[var(--color-border)]"
             }`}
           />
@@ -241,7 +241,7 @@ function TeamMatchSettings({
           onChange={(e) => updateData("title", e.target.value)}
           placeholder="예: 우리팀 vs 도전자 모집"
           maxLength={50}
-          className={`w-full rounded-[16px] border bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50 ${
+          className={`w-full rounded-xl border bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50 ${
             errors.title ? "border-red-400" : "border-[var(--color-border)]"
           }`}
         />
@@ -253,7 +253,7 @@ function TeamMatchSettings({
       {/* Max Participants (per team) */}
       <div className="mb-5">
         <label className="mb-1 block text-sm font-medium text-[var(--color-text-muted)]">최대 인원 (팀당)</label>
-        <div className="flex items-center gap-2 rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 max-w-[200px]">
+        <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 max-w-[200px]">
           <button
             type="button"
             onClick={() => updateData("maxParticipants", Math.max(2, data.maxParticipants - 1))}
@@ -287,7 +287,7 @@ function TeamMatchSettings({
             <select
               value={data.uniformHomeColor}
               onChange={(e) => updateData("uniformHomeColor", e.target.value)}
-              className="w-full rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
             >
               {UNIFORM_COLORS.map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
@@ -299,7 +299,7 @@ function TeamMatchSettings({
             <select
               value={data.uniformAwayColor}
               onChange={(e) => updateData("uniformAwayColor", e.target.value)}
-              className="w-full rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
             >
               {UNIFORM_COLORS.map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>

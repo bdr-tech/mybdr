@@ -99,7 +99,7 @@ function CheckoutContent() {
     <div className="mx-auto max-w-md py-10">
       <h1 className="mb-6 text-xl font-bold sm:text-2xl">결제하기</h1>
 
-      <div className="mb-6 rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] p-6">
+      <div className="mb-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-6">
         <h2 className="mb-1 text-lg font-semibold">{plan.name}</h2>
         <p className="mb-4 text-sm text-[var(--color-text-muted)]">
           {plan.plan_type === "monthly" ? "월 구독 (30일)" : "1회 구매"}

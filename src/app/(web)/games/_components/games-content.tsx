@@ -39,7 +39,7 @@ const STATUS_LABEL: Record<number, { text: string; color: string }> = {
   1: { text: "모집중", color: "#16A34A" },
   2: { text: "확정",   color: "#2563EB" },
   3: { text: "완료",   color: "#6B7280" },
-  4: { text: "취소",   color: "#EF4444" },
+  4: { text: "취소",   color: "#DC2626" },
 };
 
 // -- 실력 뱃지 매핑 (기존 유지) --

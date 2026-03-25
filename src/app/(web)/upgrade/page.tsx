@@ -40,12 +40,12 @@ export default async function UpgradePage({
 
   return (
     <div className="mx-auto max-w-md py-12">
-      <div className="rounded-[20px] bg-white p-8 text-center shadow-sm">
+      <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
         <div className="mb-4 text-5xl">🔒</div>
         <h1 className="mb-2 text-xl font-bold text-[var(--color-text-primary)]">{info.title}</h1>
         <p className="mb-6 text-sm text-[var(--color-text-muted)]">{info.description}</p>
 
-        <div className="mb-6 rounded-[16px] bg-[var(--color-elevated)] p-5 text-left">
+        <div className="mb-6 rounded-xl bg-[var(--color-elevated)] p-5 text-left">
           <div className="mb-3 flex items-center justify-between">
             <span className="font-semibold text-[var(--color-text-primary)]">{MEMBERSHIP_LABELS[mt as MembershipType]}</span>
             <span className="text-lg font-bold text-[var(--color-accent)]">{MEMBERSHIP_PRICES[mt as MembershipType]}</span>

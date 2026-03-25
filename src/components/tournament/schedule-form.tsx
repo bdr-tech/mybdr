@@ -1,7 +1,7 @@
 "use client";
 
 const inputCls =
-  "w-full rounded-[16px] border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50";
+  "w-full rounded-xl border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50";
 const labelCls = "mb-1 block text-sm text-[var(--color-text-muted)]";
 
 export interface ScheduleFormData {

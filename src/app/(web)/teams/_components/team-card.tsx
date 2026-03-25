@@ -32,7 +32,7 @@ export function TeamCard({ team }: { team: TeamCardData }) {
   return (
     <Link href={`/teams/${team.id}`}>
       {/* 카드 외형: CSS 변수, WHOOP 스타일 호버 */}
-      <div className="group flex flex-col gap-3 rounded-[16px] border overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)' }}>
+      <div className="group flex flex-col gap-3 rounded-xl border overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)' }}>
         {/* 상단 컬러 바: 팀 고유색 유지 */}
         <div className="h-1" style={{ backgroundColor: accent }} />
 

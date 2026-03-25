@@ -201,7 +201,7 @@ export default function TournamentWizardPage() {
   };
 
   const inputCls =
-    "w-full rounded-[16px] border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50";
+    "w-full rounded-xl border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50";
   const labelCls = "mb-1 block text-sm text-[var(--color-text-muted)]";
 
   if (loading)
@@ -444,7 +444,7 @@ export default function TournamentWizardPage() {
             </div>
             {/* 미리보기 */}
             <div
-              className="mt-4 rounded-[16px] p-6 text-center"
+              className="mt-4 rounded-xl p-6 text-center"
               style={{ background: `linear-gradient(135deg, ${data.primary_color}, ${data.secondary_color})` }}
             >
               <p className="font-bold text-[var(--color-text-primary)] drop-shadow">{data.name || "대회 이름"}</p>

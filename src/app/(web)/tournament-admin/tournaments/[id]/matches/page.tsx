@@ -124,7 +124,7 @@ function ScoreModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-md rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] p-6"
+        className="w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="mb-4 text-lg font-semibold">
