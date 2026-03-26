@@ -66,13 +66,13 @@ export function TournamentSidebar({
 
   return (
     /* sticky: 헤더(64px) + 여유 = top-20 */
-    <div className="sticky top-20 space-y-4">
+    <div className="sticky top-20 space-y-3">
       {/* ====== 참가비 카드 ====== */}
       <div
         className="overflow-hidden rounded-xl border"
         style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
       >
-        <div className="p-5">
+        <div className="p-4">
           {/* 얼리버드 안내: 접수 중 + 참가비 있을 때만 */}
           {isRegistrationOpen && hasFee && (
             <div
@@ -88,9 +88,9 @@ export function TournamentSidebar({
           )}
 
           {/* 참가비 금액 (큰 표시) + 원가 취소선 */}
-          <div className="mb-4 text-center">
+          <div className="mb-3 text-center">
             <p
-              className="text-3xl font-extrabold"
+              className="text-2xl font-extrabold"
               style={{ fontFamily: "var(--font-heading)" }}
             >
               {feeDisplay}
@@ -107,10 +107,10 @@ export function TournamentSidebar({
           </div>
 
           {/* 구분선 */}
-          <div className="mb-4 border-t" style={{ borderColor: "var(--color-border)" }} />
+          <div className="mb-3 border-t" style={{ borderColor: "var(--color-border)" }} />
 
           {/* 상세 정보 행 */}
-          <div className="space-y-3 text-sm">
+          <div className="space-y-2.5 text-xs">
             {/* 참가비 (1인당) */}
             {hasFee && (
               <div className="flex items-center justify-between">
@@ -151,13 +151,13 @@ export function TournamentSidebar({
           </div>
 
           {/* 구분선 */}
-          <div className="my-4 border-t" style={{ borderColor: "var(--color-border)" }} />
+          <div className="my-3 border-t" style={{ borderColor: "var(--color-border)" }} />
 
           {/* CTA: 대회 참가 신청하기 (빨간 버튼) */}
           {isRegistrationOpen && (
             <Link
               href={`/tournaments/${tournamentId}/join`}
-              className="mb-2 flex w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-bold text-white transition-all hover:opacity-90 active:scale-[0.97]"
+              className="mb-2 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold text-white transition-all hover:opacity-90 active:scale-[0.97]"
               style={{ backgroundColor: "var(--color-primary)" }}
             >
               <span className="material-symbols-outlined text-base">edit_square</span>
@@ -168,7 +168,7 @@ export function TournamentSidebar({
           {/* 접수 예정 */}
           {isRegistrationSoon && (
             <div
-              className="mb-2 flex w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-bold"
+              className="mb-2 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold"
               style={{ backgroundColor: "var(--color-elevated)", color: "var(--color-text-secondary)" }}
             >
               <span className="material-symbols-outlined text-base">schedule</span>
@@ -181,8 +181,8 @@ export function TournamentSidebar({
             href={calendarUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 px-5 py-3 text-sm font-bold transition-colors hover:opacity-80"
-            style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors hover:opacity-80"
+            style={{ borderColor: "var(--color-border)", color: "var(--color-text)" }}
           >
             <span className="material-symbols-outlined text-base">share</span>
             대회 공유하기
@@ -203,19 +203,19 @@ export function TournamentSidebar({
 
       {/* ====== 도움이 필요하신가요? 카드 ====== */}
       <div
-        className="rounded-xl border p-5"
+        className="rounded-xl border p-4"
         style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
       >
-        <h3 className="mb-3 text-sm font-bold">도움이 필요하신가요?</h3>
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 text-sm">
-            <span className="material-symbols-outlined text-lg" style={{ color: "var(--color-primary)" }}>
+        <h3 className="mb-2.5 text-xs font-bold">도움이 필요하신가요?</h3>
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-2.5 text-xs">
+            <span className="material-symbols-outlined text-base" style={{ color: "var(--color-primary)" }}>
               chat_bubble
             </span>
             <span style={{ color: "var(--color-text-secondary)" }}>1:1 실시간 문의</span>
           </div>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="material-symbols-outlined text-lg" style={{ color: "var(--color-primary)" }}>
+          <div className="flex items-center gap-2.5 text-xs">
+            <span className="material-symbols-outlined text-base" style={{ color: "var(--color-primary)" }}>
               mail
             </span>
             <span style={{ color: "var(--color-text-secondary)" }}>support@bdrsports.com</span>

@@ -689,10 +689,10 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         maxTeams={tournament.maxTeams}
       />
 
-      {/* 2열 레이아웃: 좌측 콘텐츠(~65%) + 우측 사이드바(340px) */}
+      {/* 2열 레이아웃: 좌측 콘텐츠 + 우측 사이드바(280px, 80% 축소) */}
       {/* 모바일에서는 1열, 사이드바가 하단에 표시 */}
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_340px]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
           {/* 좌측: 탭 네비게이션 + 탭별 콘텐츠 */}
           <div className="min-w-0">
             <TournamentTabs
