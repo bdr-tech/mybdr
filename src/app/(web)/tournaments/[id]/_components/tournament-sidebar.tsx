@@ -77,30 +77,31 @@ export function TournamentSidebar({
   const progressPct = maxTeams ? Math.min((teamCount / maxTeams) * 100, 100) : null;
 
   return (
-    <div className="sticky top-6 space-y-6">
+    // sticky top-20: 헤더(64px) + 여유(16px) = 80px, 헤더 아래로 겹치지 않도록
+    <div className="sticky top-20 space-y-4">
       {/* 메인 참가 카드 */}
       <div
         className="overflow-hidden rounded-radius-card border shadow-shadow-card"
         style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
       >
-        {/* 상단 참가비 영역: 컴팩트한 인라인 표시 (기존 대형 블록에서 축소) */}
+        {/* 상단 참가비 영역: 컴팩트한 인라인 표시 (축소 버전) */}
         {hasFee && (
           <div
-            className="flex items-center justify-between px-5 py-3"
+            className="flex items-center justify-between px-4 py-2.5"
             style={{ borderBottom: "1px solid var(--color-border)" }}
           >
             <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--color-text-secondary)" }}>
               참가비
             </span>
-            <span className="text-lg font-extrabold" style={{ color: "var(--color-primary)", fontFamily: "var(--font-heading)" }}>
-              {entryFee!.toLocaleString()}<span className="text-sm font-bold">원</span>
+            <span className="text-base font-extrabold" style={{ color: "var(--color-primary)", fontFamily: "var(--font-heading)" }}>
+              {entryFee!.toLocaleString()}<span className="text-xs font-bold">원</span>
             </span>
           </div>
         )}
 
-        <div className="p-6">
+        <div className="p-4">
           {/* 참가 현황 요약 */}
-          <div className="mb-6 space-y-3">
+          <div className="mb-4 space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span style={{ color: "var(--color-text-secondary)" }}>참가팀 현황</span>
               <div>
@@ -123,14 +124,14 @@ export function TournamentSidebar({
 
           {/* 디비전별 정원 현황 (있을 경우) */}
           {divisions.length > 0 && (
-            <div className="mb-6 space-y-2">
+            <div className="mb-4 space-y-1.5">
               {divisions.map((div) => {
                 const remaining = div.cap ? div.cap - div.count : null;
                 const isFull = remaining !== null && remaining <= 0;
                 return (
                   <div
                     key={`${div.category}-${div.division}`}
-                    className="rounded-lg border p-3"
+                    className="rounded-lg border p-2.5"
                     style={{ borderColor: "var(--color-border)" }}
                   >
                     <div className="flex items-center justify-between">
@@ -173,36 +174,36 @@ export function TournamentSidebar({
             </div>
           )}
 
-          {/* 참가신청 CTA 버튼 */}
+          {/* 참가신청 CTA 버튼 (축소: py-3, text-sm) */}
           {isRegistrationOpen && (
             <Link
               href={`/tournaments/${tournamentId}/join`}
-              className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg px-6 py-4 text-base font-bold text-white transition-all active:scale-[0.97]"
+              className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-lg px-4 py-3 text-sm font-bold text-white transition-all active:scale-[0.97]"
               style={{ backgroundColor: "var(--color-primary)" }}
             >
-              <span className="material-symbols-outlined text-lg">edit_square</span>
-              대회 참가 신청하기
+              <span className="material-symbols-outlined text-base">edit_square</span>
+              참가 신청하기
             </Link>
           )}
           {isRegistrationSoon && (
             <div
-              className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg px-6 py-4 text-base font-bold"
+              className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-lg px-4 py-3 text-sm font-bold"
               style={{ backgroundColor: "var(--color-elevated)", color: "var(--color-text-secondary)" }}
             >
-              <span className="material-symbols-outlined text-lg">schedule</span>
+              <span className="material-symbols-outlined text-base">schedule</span>
               접수 예정
             </div>
           )}
 
-          {/* ADD TO CALENDAR 버튼 */}
+          {/* ADD TO CALENDAR 버튼 (축소: py-2.5, text-xs) */}
           <a
             href={calendarUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 px-6 py-4 text-sm font-bold transition-colors"
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border-2 px-4 py-2.5 text-xs font-bold transition-colors"
             style={{ borderColor: "var(--color-primary)", color: "var(--color-primary)" }}
           >
-            <span className="material-symbols-outlined text-lg">calendar_add_on</span>
+            <span className="material-symbols-outlined text-base">calendar_add_on</span>
             캘린더에 추가
           </a>
 
@@ -218,13 +219,13 @@ export function TournamentSidebar({
         </div>
       </div>
 
-      {/* 입금 정보 (있을 경우) */}
+      {/* 입금 정보 (있을 경우, 축소) */}
       {bankName && bankAccount && (
         <div
-          className="rounded-radius-card border p-5"
+          className="rounded-radius-card border p-4"
           style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-elevated)" }}
         >
-          <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: "var(--color-text-secondary)" }}>
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: "var(--color-text-secondary)" }}>
             입금 정보
           </p>
           <div className="space-y-2 text-sm">

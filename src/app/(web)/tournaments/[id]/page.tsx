@@ -612,10 +612,10 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         maxTeams={tournament.maxTeams}
       />
 
-      {/* 2열 레이아웃: 좌측 본문(col-span-8) + 우측 사이드카드(col-span-4) */}
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:grid lg:grid-cols-12 lg:gap-10 lg:px-8">
+      {/* 2열 레이아웃: 좌측 본문(col-span-9) + 우측 사이드카드(col-span-3) — 사이드바 60% 축소 */}
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:grid lg:grid-cols-12 lg:gap-8 lg:px-8">
         {/* 좌측 메인 콘텐츠: 탭 전환 컴포넌트 */}
-        <div className="lg:col-span-8">
+        <div className="lg:col-span-9">
           <TournamentTabs
             overviewContent={overviewContent}
             scheduleContent={scheduleContent}
@@ -625,8 +625,8 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           />
         </div>
 
-        {/* 우측 사이드바: 참가비 + CTA + 캘린더 */}
-        <div className="mt-8 lg:col-span-4 lg:mt-0">
+        {/* 우측 사이드바: 참가비 + CTA + 캘린더 (축소된 3컬럼) */}
+        <div className="mt-8 lg:col-span-3 lg:mt-0">
           <TournamentSidebar
             tournamentId={id}
             entryFee={tournament.entry_fee ? Number(tournament.entry_fee) : null}
