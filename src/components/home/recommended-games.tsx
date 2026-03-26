@@ -166,7 +166,8 @@ export function RecommendedGames({ session, fallbackData }: RecommendedGamesProp
           <GameCard
             key={game.id}
             game={game}
-            photoUrl={photoMap?.[game.venue_name ?? game.city ?? ""] ?? null}
+            // photoMap undefined = 로딩 중 -> shimmer, 있으면 URL 또는 null
+            photoUrl={photoMap === undefined ? undefined : (photoMap[game.venue_name ?? game.city ?? ""] ?? null)}
           />
         ))}
       </div>
@@ -175,7 +176,7 @@ export function RecommendedGames({ session, fallbackData }: RecommendedGamesProp
 }
 
 /* ---- 개별 경기 카드 컴포넌트 (games-content.tsx GameCard와 동일 구조) ---- */
-// photoUrl을 부모에서 batch로 가져와서 prop으로 전달 (개별 API 호출 제거)
+// photoUrl: undefined = 로딩 중 (shimmer), null = 사진 없음 (그라디언트+아이콘), string = 사진 있음
 function GameCard({ game, photoUrl }: { game: RecommendedGame; photoUrl?: string | null }) {
   // game_type은 문자열("0","1","2")로 오므로 숫자로 변환
   const typeNum = Number(game.game_type ?? "0");
@@ -193,16 +194,17 @@ function GameCard({ game, photoUrl }: { game: RecommendedGame; photoUrl?: string
   return (
     <Link href={href} className="min-w-[240px] md:min-w-0 block">
       <div className="group rounded-xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-card)] hover:shadow-lg transition-all h-full">
-        {/* 이미지 영역: Google Places 사진 → 유형별 그라디언트+아이콘 fallback */}
+        {/* 이미지 영역: Google Places 사진 -> 유형별 그라디언트+아이콘 fallback */}
+        {/* undefined: 로딩 중 (shimmer) / null: 사진 없음 / string: 사진 있음 */}
         <div
-          className="relative h-20 lg:h-28 flex items-center justify-center bg-cover bg-center"
+          className={`relative h-20 lg:h-28 flex items-center justify-center bg-cover bg-center ${photoUrl === undefined ? "animate-pulse" : ""}`}
           style={photoUrl
             ? { backgroundImage: `url(${photoUrl})` }
             : { background: badge.gradient }
           }
         >
-          {/* 사진 없을 때: 유형별 아이콘 (반투명 배경 장식) */}
-          {!photoUrl && (
+          {/* 사진이 없고 로딩도 아닐 때: 유형별 아이콘 */}
+          {photoUrl === null && (
             <span className="material-symbols-outlined text-5xl text-white/20">{badge.icon}</span>
           )}
 

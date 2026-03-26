@@ -128,6 +128,7 @@ function TournamentGridSkeleton() {
 
 // -- 대회 카드: 경기 카드와 동일한 컴팩트 스타일 --
 // photoUrl을 부모에서 batch로 가져와서 prop으로 전달 (개별 API 호출 제거)
+// photoUrl: undefined = 로딩 중 (shimmer), null = 사진 없음 (그라디언트+아이콘), string = 사진 있음
 function TournamentCard({ tournament: t, photoUrl }: { tournament: TournamentFromApi; photoUrl?: string | null }) {
   const st = t.status ?? "draft";
   const badge = STATUS_BADGE[st] ?? { label: st.toUpperCase(), bg: "var(--color-text-disabled)" };
@@ -144,15 +145,16 @@ function TournamentCard({ tournament: t, photoUrl }: { tournament: TournamentFro
     <Link href={`/tournaments/${t.id}`} prefetch={true}>
       <div className={`group rounded-xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-card)] hover:shadow-lg transition-all h-full ${isFull ? "opacity-70 grayscale" : ""}`}>
         {/* 이미지 영역: 장소 사진 -> 유형별 그라디언트+아이콘 fallback */}
+        {/* undefined: 로딩 중 (shimmer) / null: 사진 없음 / string: 사진 있음 */}
         <div
-          className="relative h-20 lg:h-28 flex items-center justify-center bg-cover bg-center"
+          className={`relative h-20 lg:h-28 flex items-center justify-center bg-cover bg-center ${photoUrl === undefined ? "animate-pulse" : ""}`}
           style={photoUrl
             ? { backgroundImage: `url(${photoUrl})` }
             : { background: formatStyle.gradient }
           }
         >
-          {/* 사진이 없을 때만: 반투명 대형 아이콘 (배경 장식) */}
-          {!photoUrl && (
+          {/* 사진이 없고 로딩도 아닐 때: 반투명 대형 아이콘 */}
+          {photoUrl === null && (
             <span className="material-symbols-outlined text-5xl text-white/20">
               {formatStyle.icon}
             </span>
@@ -509,7 +511,8 @@ export function TournamentsContent({
               <TournamentCard
                 key={t.id}
                 tournament={t}
-                photoUrl={photoMap?.[t.venue_name ?? t.city ?? ""] ?? null}
+                // photoMap undefined = 로딩 중 -> shimmer, 있으면 URL 또는 null
+                photoUrl={photoMap === undefined ? undefined : (photoMap[t.venue_name ?? t.city ?? ""] ?? null)}
               />
             ))}
 

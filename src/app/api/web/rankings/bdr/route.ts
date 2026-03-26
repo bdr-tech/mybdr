@@ -39,9 +39,12 @@ const GITHUB_URLS: Record<string, string> = {
     "https://raw.githubusercontent.com/cobby8/BDR-ranking-u/main/divisionU_rank.xlsx",
 };
 
-// --- 인메모리 캐시 (10분 = 600,000ms) ---
-const CACHE_TTL = 10 * 60 * 1000;
+// --- 인메모리 캐시 (1시간 = 3,600,000ms) ---
+// 랭킹 데이터는 자주 변경되지 않으므로 10분 -> 1시간으로 확대
+const CACHE_TTL = 60 * 60 * 1000;
 const cache = new Map<string, CacheEntry>();
+// 백그라운드 갱신 중복 방지 플래그
+const refreshing = new Set<string>();
 
 /**
  * 엑셀 헤더를 표준 필드명으로 매핑하는 함수
@@ -117,32 +120,71 @@ function parseXlsx(buffer: ArrayBuffer): BdrRankingItem[] {
 }
 
 /**
- * GitHub에서 xlsx 파일을 가져와 파싱 (캐시 적용)
+ * 백그라운드에서 GitHub xlsx를 다시 가져와 캐시를 갱신하는 함수
+ * stale-while-revalidate 패턴: 사용자에게는 기존 캐시를 즉시 반환하고,
+ * 뒤에서 새 데이터를 가져와 캐시만 교체한다.
+ */
+function refreshCacheInBackground(division: string): void {
+  // 이미 갱신 중이면 중복 실행 방지
+  if (refreshing.has(division)) return;
+  refreshing.add(division);
+
+  const url = GITHUB_URLS[division];
+  if (!url) { refreshing.delete(division); return; }
+
+  fetch(url, { next: { revalidate: 3600 } })
+    .then(async (response) => {
+      if (!response.ok) return;
+      const buffer = await response.arrayBuffer();
+      const data = parseXlsx(buffer);
+      // 새 데이터로 캐시 교체
+      cache.set(division, { data, fetchedAt: Date.now() });
+    })
+    .catch((err) => {
+      console.error(`[BDR Rankings] 백그라운드 갱신 실패:`, err);
+    })
+    .finally(() => {
+      refreshing.delete(division);
+    });
+}
+
+/**
+ * GitHub에서 xlsx 파일을 가져와 파싱 (stale-while-revalidate 캐시)
+ *
+ * 1. 캐시 유효(TTL 이내) -> 즉시 반환
+ * 2. 캐시 만료 + 기존 데이터 있음 -> 기존 데이터 즉시 반환 + 백그라운드 갱신
+ * 3. 캐시 없음(최초 요청) -> 동기적으로 fetch 후 반환
  */
 async function fetchBdrRankings(
   division: string
 ): Promise<BdrRankingItem[]> {
-  // 캐시 확인: TTL 이내면 캐시 데이터 반환
   const cached = cache.get(division);
+
+  // 1. 캐시 유효: TTL 이내면 그대로 반환
   if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
     return cached.data;
   }
 
+  // 2. 캐시 만료됐지만 기존 데이터가 있으면 즉시 반환 + 백그라운드 갱신
+  if (cached) {
+    refreshCacheInBackground(division);
+    return cached.data;
+  }
+
+  // 3. 캐시 없음 (최초 요청): 동기적으로 fetch
   const url = GITHUB_URLS[division];
   if (!url) return [];
 
-  // GitHub raw URL에서 xlsx 파일을 바이너리로 fetch
   const response = await fetch(url, {
-    // Next.js fetch 캐시도 10분 설정 (인메모리 캐시와 이중 안전장치)
-    next: { revalidate: 600 },
+    // Next.js fetch 캐시도 1시간 설정
+    next: { revalidate: 3600 },
   });
 
   if (!response.ok) {
     console.error(
       `[BDR Rankings] GitHub fetch 실패: ${response.status} ${response.statusText}`
     );
-    // 이전 캐시가 있으면 만료되어도 반환 (GitHub 일시 장애 대비)
-    return cached?.data ?? [];
+    return [];
   }
 
   const buffer = await response.arrayBuffer();
@@ -186,10 +228,10 @@ export async function GET(request: NextRequest) {
         : new Date().toISOString(),
     });
 
-    // 10분 브라우저/CDN 캐시
+    // 1시간 브라우저/CDN 캐시 (랭킹 데이터는 자주 변경되지 않음)
     res.headers.set(
       "Cache-Control",
-      "public, s-maxage=600, max-age=600"
+      "public, s-maxage=3600, max-age=3600"
     );
     return res;
   } catch (error) {

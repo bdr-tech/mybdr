@@ -106,6 +106,7 @@ function GamesGridSkeleton() {
 
 // -- 경기 카드: 디자인 시안(bdr_1, bdr_5)에 맞춘 이미지 카드 --
 // photoUrl을 부모에서 batch로 가져와서 prop으로 전달 (개별 API 호출 제거)
+// photoUrl: undefined = 로딩 중 (shimmer), null = 사진 없음 (그라디언트+아이콘), string = 사진 있음
 function GameCard({ game, photoUrl }: { game: GameFromApi; photoUrl?: string | null }) {
   const href = `/games/${game.uuid?.slice(0, 8) ?? game.id}`;
   const badge = TYPE_BADGE[game.game_type] ?? TYPE_BADGE[0];
@@ -130,16 +131,19 @@ function GameCard({ game, photoUrl }: { game: GameFromApi; photoUrl?: string | n
   return (
     <Link href={href}>
       <div className={`group rounded-xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-card)] hover:shadow-lg transition-all h-full ${isFullyBooked ? "opacity-70 grayscale" : ""}`}>
-        {/* 이미지 영역: 장소 사진 → 유형별 그라디언트+아이콘 fallback */}
+        {/* 이미지 영역: 장소 사진 -> 유형별 그라디언트+아이콘 fallback */}
+        {/* photoUrl === undefined: 로딩 중 (animate-pulse shimmer) */}
+        {/* photoUrl === null: 사진 없음 (그라디언트 + 아이콘) */}
+        {/* photoUrl === string: 사진 표시 */}
         <div
-          className="relative h-20 lg:h-28 flex items-center justify-center bg-cover bg-center"
+          className={`relative h-20 lg:h-28 flex items-center justify-center bg-cover bg-center ${photoUrl === undefined ? "animate-pulse" : ""}`}
           style={photoUrl
             ? { backgroundImage: `url(${photoUrl})` }
             : { background: badge.gradient }
           }
         >
-          {/* 사진이 없을 때: 유형별 아이콘 (반투명) */}
-          {!photoUrl && (
+          {/* 사진이 없고 로딩도 아닐 때: 유형별 아이콘 (반투명) */}
+          {photoUrl === null && (
             <span className="material-symbols-outlined text-5xl text-white/20">{badge.icon}</span>
           )}
 
@@ -336,7 +340,9 @@ export function GamesContent({
               <GameCard
                 key={g.id}
                 game={g}
-                photoUrl={photoMap?.[g.venue_name ?? g.city ?? ""] ?? null}
+                // photoMap 자체가 undefined면 로딩 중 -> photoUrl도 undefined (shimmer 표시)
+                // photoMap이 있으면 해당 장소의 URL 또는 null (사진 없음)
+                photoUrl={photoMap === undefined ? undefined : (photoMap[g.venue_name ?? g.city ?? ""] ?? null)}
               />
             ))}
 
