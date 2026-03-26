@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db/prisma";
 import { requireTournamentAdmin } from "@/lib/auth/tournament-auth";
 import { parseBigIntParam } from "@/lib/utils/parse-bigint";
 import { apiSuccess, apiError } from "@/lib/api/response";
+import { createNotification } from "@/lib/notifications/create";
+import { NOTIFICATION_TYPES } from "@/lib/notifications/types";
 
 type Ctx = { params: Promise<{ id: string; teamId: string }> };
 
@@ -67,6 +69,41 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 
     return u;
   });
+
+  // 승인/거절 알림 발송 (트랜잭션 밖에서 — 알림 실패가 승인을 롤백하면 안 됨)
+  if (tt.registered_by_id && status) {
+    const tournament = await prisma.tournament.findUnique({
+      where: { id },
+      select: { name: true, entry_fee: true, bank_name: true, bank_account: true, bank_holder: true },
+    });
+
+    if (!wasApproved && nowApproved) {
+      // 참가비 계좌정보 포함
+      const feeInfo = tournament?.entry_fee && Number(tournament.entry_fee) > 0
+        ? `\n참가비: ${Number(tournament.entry_fee).toLocaleString()}원 / ${tournament.bank_name ?? ""} ${tournament.bank_account ?? ""} / 예금주: ${tournament.bank_holder ?? ""}`
+        : "";
+
+      createNotification({
+        userId: tt.registered_by_id,
+        notificationType: NOTIFICATION_TYPES.TOURNAMENT_JOIN_SUBMITTED,
+        title: `[${tournament?.name}] 참가 승인`,
+        content: `대회 참가가 승인되었습니다.${feeInfo}`,
+        actionUrl: `/tournaments/${id}`,
+        notifiableType: "Tournament",
+        notifiableId: BigInt(teamBigInt),
+      }).catch(() => {});
+    } else if (nowRejected) {
+      createNotification({
+        userId: tt.registered_by_id,
+        notificationType: NOTIFICATION_TYPES.TOURNAMENT_JOIN_SUBMITTED,
+        title: `[${tournament?.name}] 참가 거절`,
+        content: "대회 참가 신청이 거절되었습니다.",
+        actionUrl: `/tournaments/${id}`,
+        notifiableType: "Tournament",
+        notifiableId: BigInt(teamBigInt),
+      }).catch(() => {});
+    }
+  }
 
   return apiSuccess(updated);
 }
