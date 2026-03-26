@@ -3,12 +3,13 @@ import { Suspense } from "react";
 import { prisma } from "@/lib/db/prisma";
 import { notFound } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 import { buildRoundGroups } from "@/lib/tournaments/bracket-builder";
 
-// 기존 디자인 컴포넌트 (히어로 + 사이드바 + About 섹션)
+// 기존 디자인 컴포넌트 (히어로 + About 섹션)
+// 사이드바 제거: 참가비/신청/캘린더를 히어로에 통합했으므로 더 이상 불필요
 import { TournamentHero } from "./_components/tournament-hero";
-import { TournamentSidebar } from "./_components/tournament-sidebar";
 import { TournamentAbout } from "./_components/tournament-about";
 
 // 새 탭 전환 컴포넌트 (클라이언트)
@@ -458,6 +459,113 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         </div>
       </div>
 
+      {/* 입금 정보: 기존 사이드바에서 개요 탭으로 이동 (참가비가 있을 때만 표시) */}
+      {tournament.bank_name && tournament.bank_account && (
+        <div
+          className="mt-8 rounded-[var(--radius-card)] border p-5 sm:p-6"
+          style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-elevated)" }}
+        >
+          <h3
+            className="mb-4 flex items-center gap-2 font-bold"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
+            <span
+              className="material-symbols-outlined text-lg"
+              style={{ color: "var(--color-primary)" }}
+            >
+              account_balance
+            </span>
+            입금 정보
+          </h3>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div>
+              <p className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>은행</p>
+              <p className="text-sm font-medium">{tournament.bank_name}</p>
+            </div>
+            <div>
+              <p className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>계좌번호</p>
+              <p className="text-sm font-medium">{tournament.bank_account}</p>
+            </div>
+            {tournament.bank_holder && (
+              <div>
+                <p className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>예금주</p>
+                <p className="text-sm font-medium">{tournament.bank_holder}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 디비전별 현황: 기존 사이드바에서 개요 탭으로 이동 (디비전 정보가 있을 때만) */}
+      {divisions.length > 0 && (
+        <div
+          className="mt-6 rounded-[var(--radius-card)] border p-5 sm:p-6"
+          style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
+        >
+          <h3
+            className="mb-4 flex items-center gap-2 font-bold"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
+            <span
+              className="material-symbols-outlined text-lg"
+              style={{ color: "var(--color-primary)" }}
+            >
+              category
+            </span>
+            디비전별 현황
+          </h3>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {divisions.map((div) => {
+              const remaining = div.cap ? div.cap - div.count : null;
+              const isFull = remaining !== null && remaining <= 0;
+              const progressPct = div.cap ? Math.min((div.count / div.cap) * 100, 100) : null;
+              return (
+                <div
+                  key={`${div.category}-${div.division}`}
+                  className="rounded-lg border p-3"
+                  style={{ borderColor: "var(--color-border)" }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <span className="text-xs" style={{ color: "var(--color-text-secondary)" }}>{div.category}</span>
+                      <p className="text-sm font-bold">{div.division}</p>
+                    </div>
+                    <div className="text-right">
+                      {div.cap && (
+                        <span className="text-xs" style={{ color: "var(--color-text-secondary)" }}>
+                          {div.count}/{div.cap}팀
+                        </span>
+                      )}
+                      {isFull && (
+                        <Badge variant={tournament.allow_waiting_list ? "warning" : "error"}>
+                          {tournament.allow_waiting_list ? "대기" : "마감"}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  {progressPct !== null && (
+                    <div className="h-1.5 overflow-hidden rounded-full" style={{ backgroundColor: "var(--color-surface)" }}>
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${progressPct}%`,
+                          backgroundColor: isFull ? "var(--color-error)" : "var(--color-primary)",
+                        }}
+                      />
+                    </div>
+                  )}
+                  {div.fee !== null && div.fee > 0 && (
+                    <p className="mt-1.5 text-xs" style={{ color: "var(--color-text-secondary)" }}>
+                      {div.fee.toLocaleString()}원
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* 최근 경기 + 순위 미리보기: Suspense로 스트리밍 */}
       <div className="mt-8">
         <Suspense fallback={<MatchesStandingsSkeleton />}>
@@ -599,7 +707,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
   return (
     <div>
-      {/* 히어로 섹션: 그라디언트 배경 + 배지 + 대회명 + 메타 */}
+      {/* 히어로 섹션: 그라디언트 배경 + 배지 + 대회명 + 메타 + 참가 CTA 통합 */}
       <TournamentHero
         name={tournament.name}
         format={tournament.format}
@@ -610,42 +718,23 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         venueName={tournament.venue_name}
         teamCount={tournament._count.tournamentTeams}
         maxTeams={tournament.maxTeams}
+        tournamentId={id}
+        entryFee={tournament.entry_fee ? Number(tournament.entry_fee) : null}
+        isRegistrationOpen={isRegistrationOpen}
+        isRegistrationSoon={isRegistrationSoon ?? false}
+        regClose={regClose}
+        venue={[tournament.city, tournament.venue_name].filter(Boolean).join(" ")}
       />
 
-      {/* 2열 레이아웃: 좌측 본문(col-span-9) + 우측 사이드카드(col-span-3) — 사이드바 60% 축소 */}
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:grid lg:grid-cols-12 lg:gap-8 lg:px-8">
-        {/* 좌측 메인 콘텐츠: 탭 전환 컴포넌트 */}
-        <div className="lg:col-span-9">
-          <TournamentTabs
-            overviewContent={overviewContent}
-            scheduleContent={scheduleContent}
-            standingsContent={standingsContent}
-            bracketContent={bracketContent}
-            teamsContent={teamsContent}
-          />
-        </div>
-
-        {/* 우측 사이드바: 참가비 + CTA + 캘린더 (축소된 3컬럼) */}
-        <div className="mt-8 lg:col-span-3 lg:mt-0">
-          <TournamentSidebar
-            tournamentId={id}
-            entryFee={tournament.entry_fee ? Number(tournament.entry_fee) : null}
-            isRegistrationOpen={isRegistrationOpen}
-            isRegistrationSoon={isRegistrationSoon ?? false}
-            regClose={regClose}
-            name={tournament.name}
-            startDate={tournament.startDate}
-            endDate={tournament.endDate}
-            venue={[tournament.city, tournament.venue_name].filter(Boolean).join(" ")}
-            teamCount={tournament._count.tournamentTeams}
-            maxTeams={tournament.maxTeams}
-            divisions={divisions}
-            allowWaitingList={tournament.allow_waiting_list}
-            bankName={tournament.bank_name}
-            bankAccount={tournament.bank_account}
-            bankHolder={tournament.bank_holder}
-          />
-        </div>
+      {/* 1열 레이아웃: 사이드바 제거하고 본문만 풀와이드 */}
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <TournamentTabs
+          overviewContent={overviewContent}
+          scheduleContent={scheduleContent}
+          standingsContent={standingsContent}
+          bracketContent={bracketContent}
+          teamsContent={teamsContent}
+        />
       </div>
     </div>
   );
