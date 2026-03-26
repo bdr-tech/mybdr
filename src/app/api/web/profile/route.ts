@@ -2,6 +2,7 @@ import { withWebAuth, type WebAuthContext } from "@/lib/auth/web-session";
 import { encryptAccount, maskAccount } from "@/lib/security/account-crypto";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { getProfile, updateProfile } from "@/lib/services/user";
+import { checkProfileCompletion } from "@/lib/profile/completion";
 
 export const GET = withWebAuth(async (ctx: WebAuthContext) => {
   try {
@@ -70,7 +71,7 @@ export const PATCH = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
       }
     }
 
-    const updated = await updateProfile(ctx.userId, {
+    const updateData: Record<string, unknown> = {
       ...(nickname !== undefined && { nickname: nickname as string || null }),
       ...(position !== undefined && { position: position as string || null }),
       ...(height !== undefined && { height: height ? Number(height) : null }),
@@ -82,7 +83,22 @@ export const PATCH = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
       ...(district !== undefined && { district: district as string || null }),
       ...(weight !== undefined && { weight: weight ? Number(weight) : null }),
       ...bankUpdate,
+    };
+
+    // 프로필 저장 후 완성도 자동 체크 → DB profile_completed 동기화
+    const updated = await updateProfile(ctx.userId, updateData);
+
+    const isComplete = checkProfileCompletion({
+      name: (name as string) ?? updated.name ?? null,
+      nickname: (nickname as string) ?? updated.nickname ?? null,
+      phone: (phone as string) ?? null,
+      position: (position as string) ?? updated.position ?? null,
+      city: (city as string) ?? updated.city ?? null,
     });
+
+    if (isComplete) {
+      await updateProfile(ctx.userId, { profile_completed: true });
+    }
 
     return apiSuccess(updated);
   } catch {
