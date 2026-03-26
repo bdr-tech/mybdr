@@ -15,8 +15,8 @@
  * 6. 커뮤니티 미리보기 -- /api/web/community
  * ============================================================ */
 
-import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import useSWR from "swr";
 
 /* ---------- 타입 정의 ---------- */
 
@@ -27,13 +27,13 @@ interface TeamData {
   wins: number;
 }
 
-// /api/web/community 응답의 게시글 하나
+// /api/web/community 응답의 게시글 하나 (apiSuccess가 snake_case로 변환)
 interface PostData {
   id: string;
-  publicId: string | null;
+  public_id: string | null;
   title: string;
-  viewCount: number;
-  createdAt: string | null;
+  view_count: number;
+  created_at: string | null;
 }
 
 /* ---------- Fallback 데이터 (API 실패 시 표시) ---------- */
@@ -44,66 +44,65 @@ const FALLBACK_TEAMS: TeamData[] = [
 ];
 
 const FALLBACK_POSTS: PostData[] = [
-  { id: "1", publicId: null, title: "이번 윈터 챌린지 룰 변경사항 있나요?", viewCount: 120, createdAt: null },
-  { id: "2", publicId: null, title: "Storm FC 팀원 모집합니다 (수비수)", viewCount: 90, createdAt: null },
+  { id: "1", public_id: null, title: "이번 윈터 챌린지 룰 변경사항 있나요?", view_count: 120, created_at: null },
+  { id: "2", public_id: null, title: "Storm FC 팀원 모집합니다 (수비수)", view_count: 90, created_at: null },
 ];
 
-export function RightSidebarGuest() {
-  // 실시간 랭킹 상위 3팀
-  const [topTeams, setTopTeams] = useState<TeamData[]>(FALLBACK_TEAMS);
-  // 커뮤니티 최신글 2개
-  const [recentPosts, setRecentPosts] = useState<PostData[]>(FALLBACK_POSTS);
+// 플랫폼 통계 타입 (/api/web/stats 응답)
+interface StatsData {
+  teamCount: number;
+  matchCount: number;
+  userCount: number;
+}
 
-  const [visible, setVisible] = useState(false);
-  const sidebarRef = useRef<HTMLDivElement>(null);
+/* 서버에서 미리 가져온 데이터를 받을 수 있는 props (없으면 기존처럼 SWR이 API 호출) */
+interface RightSidebarGuestProps {
+  fallbackTeams?: { teams: TeamData[] };
+  fallbackCommunity?: { posts: PostData[] };
+  fallbackStats?: { team_count: number; match_count: number; user_count: number };
+}
 
-  // 뷰포트 진입 시 API 호출 (지연 로딩)
-  useEffect(() => {
-    const el = sidebarRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect(); } },
-      { rootMargin: "200px" }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+export function RightSidebarGuest({ fallbackTeams, fallbackCommunity, fallbackStats }: RightSidebarGuestProps = {}) {
+  // 3개의 독립 API를 각각 useSWR로 호출
+  // fallbackData가 있으면 로딩 없이 즉시 표시, SWR이 뒤에서 최신 데이터 갱신
+  const { data: teamsData } = useSWR<{ teams: TeamData[] }>("/api/web/teams", null, { fallbackData: fallbackTeams });
+  const { data: communityData } = useSWR<{ posts: PostData[] }>("/api/web/community", null, { fallbackData: fallbackCommunity });
+  const { data: statsData } = useSWR<{ team_count: number; match_count: number; user_count: number }>("/api/web/stats", null, { fallbackData: fallbackStats });
 
-  useEffect(() => {
-    if (!visible) return;
-    const fetchAll = async () => {
-      const results = await Promise.allSettled([
-        fetch("/api/web/teams?limit=5").then((r) => r.json()),
-        fetch("/api/web/community?limit=5").then((r) => r.json()),
-      ]);
+  // 팀 랭킹: 상위 3팀 (API 데이터 없으면 fallback)
+  const topTeams: TeamData[] = (() => {
+    const teams = teamsData?.teams;
+    return teams && teams.length > 0 ? teams.slice(0, 3) : FALLBACK_TEAMS;
+  })();
 
-      // 팀 랭킹: 상위 3팀만 사용
-      if (results[0].status === "fulfilled" && results[0].value?.data?.teams) {
-        const teams = results[0].value.data.teams as TeamData[];
-        if (teams.length > 0) {
-          setTopTeams(teams.slice(0, 3));
-        }
+  // 커뮤니티: 최신글 2개 (API 데이터 없으면 fallback)
+  const recentPosts: PostData[] = (() => {
+    const posts = communityData?.posts;
+    return posts && posts.length > 0 ? posts.slice(0, 2) : FALLBACK_POSTS;
+  })();
+
+  // 플랫폼 통계 (snake_case -> camelCase 변환)
+  const stats: StatsData | null = statsData?.team_count !== undefined
+    ? {
+        teamCount: statsData.team_count ?? 0,
+        matchCount: statsData.match_count ?? 0,
+        userCount: statsData.user_count ?? 0,
       }
+    : null;
 
-      // 커뮤니티: 최신글 2개만 사용
-      if (results[1].status === "fulfilled" && results[1].value?.data?.posts) {
-        const posts = results[1].value.data.posts as PostData[];
-        if (posts.length > 0) {
-          setRecentPosts(posts.slice(0, 2));
-        }
-      }
-    };
+  // 숫자를 읽기 쉽게 포맷 (예: 1234 -> "1,234", 12500 -> "12.5k+")
+  const formatNumber = (n: number): string => {
+    if (n >= 10000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "k+";
+    return n.toLocaleString("ko-KR");
+  };
 
-    fetchAll();
-  }, []);
-
-  // 게시글 상세 링크 생성
+  // 게시글 상세 링크 생성 (API 응답이 snake_case이므로 public_id로 접근)
   const getPostLink = (post: PostData): string => {
-    return `/community/${post.publicId || post.id}`;
+    return `/community/${post.public_id || post.id}`;
   };
 
   return (
-    <div ref={sidebarRef} className="space-y-8" style={{ fontSize: '120%' }}>
+    <div className="space-y-8" style={{ fontSize: '120%' }}>
       {/* === 1. 가입 유도 CTA (네이비 배경) === */}
       <div className="bg-secondary rounded-xl p-8 relative overflow-hidden group border border-border">
         <div className="relative z-10">
@@ -160,8 +159,7 @@ export function RightSidebarGuest() {
       </div>
 
       {/* === 4. BDR과 함께 성장하세요 (통계 + 가입) === */}
-      {/* TODO: "4,200개 팀", "12.5k+ 매치", "85.2k+ 선수"는 하드코딩 유지
-          새 API(/api/web/stats)로 실제 count를 가져오는 작업은 별도 진행 예정 */}
+      {/* /api/web/stats API에서 실제 팀/매치/유저 수를 가져와 표시 */}
       <div className="bg-surface rounded-xl p-8 border border-border flex flex-col items-center text-center">
         {/* 아이콘 */}
         <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mb-4">
@@ -171,19 +169,24 @@ export function RightSidebarGuest() {
           BDR과 함께 성장하세요
         </h4>
         <p className="text-text-muted text-sm mb-6">
-          현재까지 4,200개 이상의 팀이
+          {/* stats가 로드되면 실제 팀 수 표시, 아니면 "-" */}
+          현재까지 {stats ? `${formatNumber(stats.teamCount)}개` : "-"}의 팀이
           <br />
           BDR에서 실력을 증명하고 있습니다.
         </p>
-        {/* 통계 2열 -- 하드코딩 유지 (TODO: /api/web/stats 연결) */}
+        {/* 통계 2열 -- /api/web/stats 연동 완료 */}
         <div className="grid grid-cols-2 gap-4 w-full mb-6">
           <div className="bg-card p-3 rounded-lg border border-border">
-            <div className="text-[10px] text-text-muted uppercase mb-1">등록 매치</div>
-            <div className="text-lg font-bold text-text-primary">12.5k+</div>
+            <div className="text-xs text-text-muted uppercase mb-1">등록 매치</div>
+            <div className="text-lg font-bold text-text-primary">
+              {stats ? formatNumber(stats.matchCount) : "-"}
+            </div>
           </div>
           <div className="bg-card p-3 rounded-lg border border-border">
-            <div className="text-[10px] text-text-muted uppercase mb-1">활동 선수</div>
-            <div className="text-lg font-bold text-text-primary">85.2k+</div>
+            <div className="text-xs text-text-muted uppercase mb-1">활동 선수</div>
+            <div className="text-lg font-bold text-text-primary">
+              {stats ? formatNumber(stats.userCount) : "-"}
+            </div>
           </div>
         </div>
         {/* 가입 버튼 */}
@@ -219,7 +222,7 @@ export function RightSidebarGuest() {
                 </span>
               </div>
               {/* 승수 표시 */}
-              <span className="text-[10px] text-text-muted">{team.wins}W</span>
+              <span className="text-xs text-text-muted">{team.wins}W</span>
             </Link>
           ))}
         </div>

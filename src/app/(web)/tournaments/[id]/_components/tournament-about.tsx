@@ -127,12 +127,15 @@ export function TournamentAbout({
   const sections = parseDescription(description);
   const hasCategories = Object.keys(categories).length > 0;
 
-  // 포맷 라벨
+  // 포맷 라벨 -- DB에 저장된 영어 포맷값을 한글로 변환
   const FORMAT_LABEL: Record<string, string> = {
     single_elimination: "싱글 엘리미네이션",
     double_elimination: "더블 엘리미네이션",
     round_robin: "리그전",
     hybrid: "혼합",
+    group_stage_knockout: "조별리그+토너먼트",
+    GROUP_STAGE_KNOCKOUT: "조별리그+토너먼트",
+    swiss: "스위스 라운드",
   };
 
   return (
@@ -140,19 +143,19 @@ export function TournamentAbout({
       {/* 종목/카테고리 카드 (시안의 3열 아이콘 카드) */}
       {hasCategories && (
         <div
-          className="rounded-radius-card border p-6 sm:p-8"
+          className="rounded-[var(--radius-card)] border p-6 sm:p-8"
           style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
         >
           <SectionTitle>대회 소개</SectionTitle>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            {/* 포맷 카드 */}
+            {/* 포맷 카드 (아이콘: 파랑 — 정보성 카테고리 아이콘) */}
             <div
               className="rounded-lg p-4 text-center"
               style={{ backgroundColor: "var(--color-elevated)" }}
             >
               <span
                 className="material-symbols-outlined mb-2 block text-3xl"
-                style={{ color: "var(--color-primary)" }}
+                style={{ color: "var(--color-info)" }}
               >
                 emoji_events
               </span>
@@ -168,7 +171,7 @@ export function TournamentAbout({
               >
                 <span
                   className="material-symbols-outlined mb-2 block text-3xl"
-                  style={{ color: "var(--color-primary)" }}
+                  style={{ color: "var(--color-info)" }}
                 >
                   sports_basketball
                 </span>
@@ -187,7 +190,7 @@ export function TournamentAbout({
           return (
             <div
               key={i}
-              className="rounded-radius-card border p-6 sm:p-8"
+              className="rounded-[var(--radius-card)] border p-6 sm:p-8"
               style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
             >
               <SectionTitle>경기 정보</SectionTitle>
@@ -208,7 +211,7 @@ export function TournamentAbout({
           return (
             <div
               key={i}
-              className="rounded-radius-card border p-6 sm:p-8"
+              className="rounded-[var(--radius-card)] border p-6 sm:p-8"
               style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
             >
               <SectionTitle>{sec.title}</SectionTitle>
@@ -235,7 +238,7 @@ export function TournamentAbout({
           return (
             <div
               key={i}
-              className="rounded-radius-card border p-6 sm:p-8"
+              className="rounded-[var(--radius-card)] border p-6 sm:p-8"
               style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
             >
               <SectionTitle>{sec.title}</SectionTitle>
@@ -261,7 +264,7 @@ export function TournamentAbout({
           return (
             <div
               key={i}
-              className="rounded-radius-card border p-6 sm:p-8"
+              className="rounded-[var(--radius-card)] border p-6 sm:p-8"
               style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
             >
               <SectionTitle>
@@ -305,7 +308,7 @@ export function TournamentAbout({
           return (
             <div
               key={i}
-              className="rounded-radius-card border p-6 sm:p-8"
+              className="rounded-[var(--radius-card)] border p-6 sm:p-8"
               style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
             >
               <div className="space-y-2">
@@ -352,7 +355,7 @@ export function TournamentAbout({
           return (
             <div
               key={i}
-              className="rounded-radius-card border p-6 sm:p-8"
+              className="rounded-[var(--radius-card)] border p-6 sm:p-8"
               style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
             >
               <SectionTitle>공식 후원사</SectionTitle>

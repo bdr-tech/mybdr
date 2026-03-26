@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-// lucide-react 제거 → Material Symbols Outlined 사용
 
 interface BellIconProps {
   unreadCount: number;

@@ -1,6 +1,33 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { Redis } from "@upstash/redis";
 import { getWebSession } from "@/lib/auth/web-session";
 import { prisma } from "@/lib/db/prisma";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { getClientIp } from "@/lib/security/get-client-ip";
+
+// --- Redis 캐시 설정 ---
+// Upstash Redis: 서버리스 인스턴스 간 캐시 공유용
+// 환경변수 미설정 시 null -> 기존 인메모리 캐시로 fallback
+const hasRedisConfig =
+  !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN;
+
+let redisClient: Redis | null = null;
+function getRedis(): Redis | null {
+  if (!hasRedisConfig) return null;
+  if (!redisClient) {
+    redisClient = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    });
+  }
+  return redisClient;
+}
+
+// Redis 캐시 키
+const REDIS_CACHE_KEY = "mybdr:youtube:enriched";
+// Redis TTL: 기본 30분(1800초), 라이브 있으면 5분(300초)
+const REDIS_TTL_DEFAULT = 1800;
+const REDIS_TTL_LIVE = 300;
 
 // BDR 채널 업로드 재생목록 ID
 // channelId UC... → uploads playlist "UU" + channelId.slice(2)
@@ -157,13 +184,34 @@ async function fetchVideoDetails(
 }
 
 // playlistItems + videos API 결과를 합쳐서 EnrichedVideo 배열 생성
+// 캐시 우선순위: Redis(서버리스 공유) > 인메모리(같은 인스턴스) > YouTube API 직접 호출
 async function fetchEnrichedVideos(apiKey: string): Promise<EnrichedVideo[]> {
+  // 1) 인메모리 캐시 확인 (같은 인스턴스 내에서 가장 빠름)
   const cacheAge = Date.now() - cacheTimestamp;
-  // 캐시가 유효하면 재사용 (단, 최대 1시간 초과 시 강제 갱신)
   if (cachedResult.length > 0 && cacheAge < cacheTTL && cacheAge < CACHE_MAX_AGE) {
     return cachedResult;
   }
 
+  // 2) Redis 캐시 확인 (서버리스 인스턴스 간 공유, cold start 시에도 캐시 히트)
+  const redis = getRedis();
+  if (redis) {
+    try {
+      const cached = await redis.get<EnrichedVideo[]>(REDIS_CACHE_KEY);
+      if (cached && Array.isArray(cached) && cached.length > 0) {
+        // Redis에서 가져온 데이터를 인메모리에도 저장 (다음 요청은 더 빠르게)
+        cachedResult = cached;
+        cacheTimestamp = Date.now();
+        const hasLive = cached.some((v) => v.liveBroadcastContent === "live");
+        cacheTTL = hasLive ? 5 * 60 * 1000 : 30 * 60 * 1000;
+        return cached;
+      }
+    } catch (err) {
+      // Redis 장애 시 무시하고 YouTube API로 진행 (graceful degradation)
+      console.error("[youtube] Redis get failed, proceeding with API:", err);
+    }
+  }
+
+  // 3) YouTube API 직접 호출 (캐시 미적중 시)
   // 1단계: 재생목록에서 영상 기본 정보 가져오기
   const items = await fetchPlaylistItems(apiKey);
   if (items.length === 0) return [];
@@ -212,8 +260,19 @@ async function fetchEnrichedVideos(apiKey: string): Promise<EnrichedVideo[]> {
   const hasLive = enriched.some((v) => v.liveBroadcastContent === "live");
   cacheTTL = hasLive ? 5 * 60 * 1000 : 30 * 60 * 1000;
 
+  // 인메모리 캐시 저장
   cachedResult = enriched;
   cacheTimestamp = Date.now();
+
+  // Redis에도 저장 (다른 서버리스 인스턴스가 재사용할 수 있도록)
+  if (redis && enriched.length > 0) {
+    const redisTTL = hasLive ? REDIS_TTL_LIVE : REDIS_TTL_DEFAULT;
+    // Redis 저장은 fire-and-forget (응답 지연 방지)
+    redis.set(REDIS_CACHE_KEY, enriched, { ex: redisTTL }).catch((err) => {
+      console.error("[youtube] Redis set failed:", err);
+    });
+  }
+
   return enriched;
 }
 
@@ -324,7 +383,17 @@ function scoreVideos(
 
 // --- API 핸들러 ---
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // 공개 API — IP 기반 rate limit (분당 100회)
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit(`web-youtube:${ip}`, RATE_LIMITS.api);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
+      { status: 429 }
+    );
+  }
+
   const youtubeKey = process.env.YOUTUBE_API_KEY;
 
   if (!youtubeKey) {
@@ -392,11 +461,19 @@ export async function GET() {
     }));
 
     // 하위 호환: videos 필드에 전체 합산, live_videos/popular_videos 필드 추가
-    return NextResponse.json({
-      videos: [...topLive, ...topNonLive],
-      live_videos: topLive,
-      popular_videos: topNonLive,
-    });
+    // 10분 캐시: YouTube 데이터는 서버 인메모리 캐시(30분)도 있으므로 브라우저/CDN에서도 캐시
+    return NextResponse.json(
+      {
+        videos: [...topLive, ...topNonLive],
+        live_videos: topLive,
+        popular_videos: topNonLive,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=600, max-age=600",
+        },
+      }
+    );
   } catch (err) {
     console.error("[youtube] Error:", err);
     return NextResponse.json(

@@ -27,7 +27,7 @@ export function ParticipantsGrid({ participants, maxParticipants }: Participants
     <section className="bg-[var(--color-card)] p-6 rounded-xl border border-[var(--color-border)] shadow-sm">
       {/* 제목 + 현재/최대 인원 */}
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-[#1B3C87] dark:text-[#4A90E2] font-bold text-xl">
+        <h3 className="text-[var(--color-accent)] dark:text-[var(--color-game-guest)] font-bold text-xl">
           참여자 명단 (Participants)
         </h3>
         <span className="text-sm text-[var(--color-text-muted)]">
@@ -41,7 +41,7 @@ export function ParticipantsGrid({ participants, maxParticipants }: Participants
         {participants.map((p) => (
           <div key={p.id} className="group relative">
             {/* 이니셜 아바타 (DB에 프로필 이미지 없으므로) */}
-            <div className="w-12 h-12 rounded-full bg-[var(--color-surface)] border-2 border-[var(--color-border)] shadow-sm ring-2 ring-transparent group-hover:ring-[#E31B23] transition-all flex items-center justify-center text-sm font-bold text-[var(--color-text-primary)]">
+            <div className="w-12 h-12 rounded-full bg-[var(--color-surface)] border-2 border-[var(--color-border)] shadow-sm ring-2 ring-transparent group-hover:ring-[var(--color-primary)] transition-all flex items-center justify-center text-sm font-bold text-[var(--color-text-primary)]">
               {getInitial(p.nickname, p.name)}
             </div>
             {/* 온라인 표시 (첫 번째 참가자만 데모용) */}

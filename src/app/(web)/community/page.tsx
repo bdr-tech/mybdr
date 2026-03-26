@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { CommunityContent } from "./_components/community-content";
 import CommunityLoading from "./loading";
+
+// SEO: 커뮤니티 페이지 메타데이터
+export const metadata: Metadata = {
+  title: "커뮤니티 | MyBDR",
+  description: "농구 이야기를 나누고, 팀원을 모집하고, 정보를 공유하세요.",
+};
 
 /**
  * /community 페이지

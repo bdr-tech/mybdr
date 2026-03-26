@@ -3,6 +3,8 @@ import { withWebAuth, type WebAuthContext, getWebSession } from "@/lib/auth/web-
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { createTournament, hasCreatePermission, listTournaments } from "@/lib/services/tournament";
 import { prisma } from "@/lib/db/prisma";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { getClientIp } from "@/lib/security/get-client-ip";
 
 /**
  * GET /api/web/tournaments
@@ -13,6 +15,13 @@ import { prisma } from "@/lib/db/prisma";
  * - Date/Decimal 필드를 JSON 직렬화 가능한 형태로 변환
  */
 export async function GET(request: NextRequest) {
+  // 공개 API(GET) — IP 기반 rate limit (분당 100회, POST는 withWebAuth가 보호)
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit(`web-tournaments:${ip}`, RATE_LIMITS.api);
+  if (!rl.allowed) {
+    return apiError("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.", 429);
+  }
+
   try {
     const { searchParams } = request.nextUrl;
 
@@ -66,7 +75,10 @@ export async function GET(request: NextRequest) {
       teamCount: t._count.tournamentTeams,              // 참가팀 수
     }));
 
-    return apiSuccess({ tournaments });
+    // 60초 캐시: 대회 목록은 비교적 정적이므로 중간 캐시 적용
+    const response = apiSuccess({ tournaments });
+    response.headers.set("Cache-Control", "public, s-maxage=60, max-age=60");
+    return response;
   } catch (error) {
     console.error("[GET /api/web/tournaments] Error:", error);
     return apiError("대회 목록을 불러올 수 없습니다.", 500, "INTERNAL_ERROR");

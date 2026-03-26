@@ -11,8 +11,8 @@
  * - 경기 카드: 유형별 아이콘/그라디언트 + 뱃지 + 제목 + 일시/장소 + "예약하기" 버튼
  * ============================================================ */
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
+import useSWR from "swr";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /* 세션 정보: 서버에서 getWebSession()으로 받은 JwtPayload를 전달받는다 */
@@ -44,6 +44,8 @@ interface RecommendedData {
 
 interface RecommendedGamesProps {
   session: UserSession | null;
+  /* 서버에서 미리 가져온 데이터 (있으면 로딩 없이 즉시 표시, 없으면 기존처럼 SWR이 API 호출) */
+  fallbackData?: RecommendedData;
 }
 
 /* ---- 경기 유형별 뱃지/그라디언트 매핑 ---- */
@@ -108,17 +110,15 @@ const FALLBACK_GAMES: RecommendedGame[] = [
   },
 ];
 
-export function RecommendedGames({ session }: RecommendedGamesProps) {
-  const [data, setData] = useState<RecommendedData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/web/recommended-games", { credentials: "include" })
-      .then(async (r) => (r.ok ? r.json() : null))
-      .then(setData)
-      .catch(() => null)
-      .finally(() => setLoading(false));
-  }, []);
+export function RecommendedGames({ session, fallbackData }: RecommendedGamesProps) {
+  // useSWR로 추천 경기 API 호출
+  // fallbackData가 있으면 초기값으로 사용 → 로딩 스켈레톤 없이 즉시 렌더링
+  // SWR이 백그라운드에서 API를 다시 호출하여 최신 데이터로 갱신
+  const { data, isLoading: loading } = useSWR<RecommendedData>(
+    "/api/web/recommended-games",
+    null,
+    { fallbackData }
+  );
 
   /* 로그인 시 "~님을 위한 추천", 비로그인 시 "인기 경기 및 토너먼트" */
   const userName = data?.user_name ?? session?.name;
@@ -204,13 +204,13 @@ function GameCard({ game }: { game: RecommendedGame }) {
         </span>
 
         {/* 유형 뱃지 (좌상단) */}
-        <div className="absolute top-3 left-3 bg-primary text-on-primary text-[10px] font-bold px-2 py-1 rounded">
+        <div className="absolute top-3 left-3 bg-primary text-on-primary text-xs font-bold px-2 py-1 rounded">
           {typeConfig.label}
         </div>
 
         {/* 추천 이유 뱃지 (우상단) - match_reason이 있을 때만 표시 */}
         {game.match_reason.length > 0 && (
-          <div className="absolute top-3 right-3 bg-surface/90 text-primary text-[10px] font-bold px-2 py-1 rounded">
+          <div className="absolute top-3 right-3 bg-surface/90 text-primary text-xs font-bold px-2 py-1 rounded">
             {game.match_reason[0]}
           </div>
         )}
@@ -227,18 +227,18 @@ function GameCard({ game }: { game: RecommendedGame }) {
         <div className="flex items-center gap-4 text-xs text-text-muted mb-4">
           {/* 날짜 */}
           <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-sm">calendar_today</span>
+            <span className="material-symbols-outlined text-base">calendar_today</span>
             {formatDate(game.scheduled_at)}
           </span>
           {/* 시간 */}
           <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-sm">schedule</span>
+            <span className="material-symbols-outlined text-base">schedule</span>
             {formatTime(game.scheduled_at)}
           </span>
           {/* 장소 (있을 때만) */}
           {location && (
             <span className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-sm">location_on</span>
+              <span className="material-symbols-outlined text-base">location_on</span>
               <span className="truncate max-w-[100px]">{location}</span>
             </span>
           )}

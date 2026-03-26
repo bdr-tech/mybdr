@@ -14,7 +14,7 @@ const menuItems = [
   { href: "/games", label: "경기찾기", icon: "sports_basketball" },
   { href: "/tournaments", label: "대회", icon: "emoji_events" },
   { href: "/teams", label: "팀", icon: "groups" },
-  { href: "#", label: "랭킹", icon: "leaderboard" },
+  { href: "/rankings", label: "랭킹", icon: "leaderboard" },
   { href: "/community", label: "커뮤니티", icon: "forum" },
 ];
 
@@ -90,7 +90,7 @@ export function SlideMenu({
                   onClick={onClose}
                   className="block w-full rounded bg-[var(--color-primary)] py-2 text-center text-sm font-bold text-white transition-colors hover:bg-[var(--color-primary-hover)]"
                 >
-                  Upgrade Pro
+                  프로 업그레이드
                 </Link>
               </div>
             </>
@@ -158,7 +158,7 @@ export function SlideMenu({
             className="flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
           >
             <span className="material-symbols-outlined text-lg">settings</span>
-            <span>Settings</span>
+            <span>설정</span>
           </Link>
           {isLoggedIn && (
             <button
@@ -166,7 +166,7 @@ export function SlideMenu({
               className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-primary)]"
             >
               <span className="material-symbols-outlined text-lg">logout</span>
-              <span>Logout</span>
+              <span>로그아웃</span>
             </button>
           )}
         </div>

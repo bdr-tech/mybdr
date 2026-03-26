@@ -13,6 +13,7 @@ export function ShareButton() {
     <button
       className="p-2 transition-colors"
       style={{ color: "var(--color-text-muted)" }}
+      aria-label="링크 복사"
       title="링크 복사"
       onClick={handleShare}
     >

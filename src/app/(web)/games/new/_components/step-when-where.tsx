@@ -12,14 +12,15 @@ import type { WizardFormData, RecentVenue } from "./game-wizard";
  * + 기존 프리셋 저장/불러오기, 최근 장소, 실력/모집인원 등은 유지
  */
 
+// 실력 수준별 색상 -- CSS 변수 참조
 const SKILL_LEVELS = [
-  { value: "lowest",                label: "최하", color: "#9CA3AF" },
-  { value: "beginner",              label: "하",   color: "#16A34A" },
-  { value: "intermediate_low",      label: "중하", color: "#059669" },
-  { value: "intermediate",          label: "중",   color: "#2563EB" },
-  { value: "intermediate_advanced", label: "중상", color: "#D97706" },
-  { value: "advanced",              label: "상",   color: "#DC2626" },
-  { value: "highest",               label: "최상", color: "#7C3AED" },
+  { value: "lowest",                label: "최하", color: "var(--color-badge-gray)" },
+  { value: "beginner",              label: "하",   color: "var(--color-badge-green)" },
+  { value: "intermediate_low",      label: "중하", color: "var(--color-success)" },
+  { value: "intermediate",          label: "중",   color: "var(--color-badge-blue)" },
+  { value: "intermediate_advanced", label: "중상", color: "var(--color-badge-amber)" },
+  { value: "advanced",              label: "상",   color: "var(--color-badge-red)" },
+  { value: "highest",               label: "최상", color: "var(--color-ai-purple)" },
 ];
 
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 1);

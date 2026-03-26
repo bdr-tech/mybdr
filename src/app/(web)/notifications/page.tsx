@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/db/prisma";
 import { getWebSession } from "@/lib/auth/web-session";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+
+// SEO: 알림 페이지 메타데이터
+export const metadata: Metadata = {
+  title: "알림 | MyBDR",
+  description: "경기 초대, 팀 소식, 대회 알림을 확인하세요.",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +40,7 @@ export default async function NotificationsPage() {
           {notifications.map((n) => (
             <Card
               key={n.id.toString()}
-              className={`rounded-xl border border-[var(--color-border)] overflow-hidden transition-colors ${n.status === "unread" ? "border-l-2 border-l-[var(--color-accent)]" : "opacity-70"}`}
+              className={`rounded-[16px] border border-[var(--color-border)] overflow-hidden transition-colors ${n.status === "unread" ? "border-l-2 border-l-[var(--color-accent)]" : "opacity-70"}`}
             >
               {n.action_url ? (
                 <Link href={n.action_url} className="block">

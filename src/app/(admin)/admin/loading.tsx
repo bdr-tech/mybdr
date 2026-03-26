@@ -7,14 +7,14 @@ export default function AdminLoading() {
       {/* 통계 */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-[var(--color-border)] bg-white p-5 space-y-2">
+          <div key={i} className="rounded-[16px] border border-[var(--color-border)] bg-white p-5 space-y-2">
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-7 w-16" />
           </div>
         ))}
       </div>
       {/* 테이블 */}
-      <div className="rounded-xl border border-[var(--color-border)] bg-white overflow-hidden">
+      <div className="rounded-[16px] border border-[var(--color-border)] bg-white overflow-hidden">
         <div className="p-4 border-b border-[var(--color-border)]">
           <Skeleton className="h-5 w-24" />
         </div>

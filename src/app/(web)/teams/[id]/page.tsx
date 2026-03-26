@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { prisma } from "@/lib/db/prisma";
 import { notFound } from "next/navigation";
@@ -9,6 +10,21 @@ import { GamesTab } from "./_tabs/games-tab";
 import { TournamentsTab } from "./_tabs/tournaments-tab";
 
 export const revalidate = 60;
+
+// SEO: 팀 상세 동적 메타데이터 — 팀명을 DB에서 조회하여 title에 반영
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const team = await prisma.team.findUnique({
+    where: { id: BigInt(id) },
+    select: { name: true, city: true },
+  }).catch(() => null);
+  if (!team) return { title: "팀 상세 | MyBDR" };
+  const location = team.city ? ` (${team.city})` : "";
+  return {
+    title: `${team.name}${location} | MyBDR`,
+    description: `${team.name} 팀의 로스터, 전적, 대회 이력을 확인하세요.`,
+  };
+}
 
 // 팀 고유색에서 유효한 accent 색상을 추출하는 함수 (흰색/없음이면 기본 네이비)
 function resolveAccent(primary: string | null, secondary: string | null): string {
@@ -108,7 +124,7 @@ export default async function TeamDetailPage({
                 {/* 디비전 배지 — 아이콘 우하단 */}
                 {division && (
                   <div
-                    className="absolute -bottom-2 -right-2 rounded bg-[var(--color-primary)] px-1.5 py-0.5 text-[10px] font-bold text-white"
+                    className="absolute -bottom-2 -right-2 rounded bg-[var(--color-primary)] px-1.5 py-0.5 text-xs font-bold text-white"
                   >
                     {division.label}
                   </div>

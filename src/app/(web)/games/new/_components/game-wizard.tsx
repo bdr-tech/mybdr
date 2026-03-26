@@ -627,7 +627,7 @@ function SummaryCard({
 }) {
   return (
     // sticky로 스크롤 시에도 고정, 네이비 배경
-    <div className="sticky top-24 bg-[#1B3C87] text-white p-6 rounded-xl shadow-lg">
+    <div className="sticky top-24 bg-[var(--color-accent)] text-white p-6 rounded-xl shadow-lg">
       <h3 className="font-bold text-xl mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
         Summary
       </h3>
@@ -671,7 +671,7 @@ function SummaryCard({
 
       {/* 환불 정책 안내 */}
       <div className="mt-8 p-4 bg-white/5 rounded border border-white/10">
-        <p className="text-[10px] text-white/50 leading-relaxed">
+        <p className="text-xs text-white/50 leading-relaxed">
           매치 생성 시 서비스 이용 약관에 동의하게 됩니다. 매치 시작 24시간 전까지 취소 시 100% 환불이 가능합니다.
         </p>
       </div>

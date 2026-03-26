@@ -31,7 +31,7 @@ const FORMAT_OPTIONS = [
 ];
 
 const inputCls =
-  "w-full rounded-xl border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50";
+  "w-full rounded-[16px] border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50";
 
 type AuthStatus = "loading" | "unauthenticated" | "unauthorized" | "authorized";
 
@@ -261,7 +261,7 @@ export default function NewTournamentWizardPage() {
                 <div
                   key={t}
                   onClick={() => setTemplate(t)}
-                  className={`cursor-pointer rounded-xl border p-6 text-center transition-colors ${
+                  className={`cursor-pointer rounded-[16px] border p-6 text-center transition-colors ${
                     template === t
                       ? "border-[var(--color-accent)] bg-[rgba(27,60,135,0.08)]"
                       : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
@@ -374,7 +374,7 @@ export default function NewTournamentWizardPage() {
 
             {/* 미리보기 */}
             <div
-              className="rounded-xl p-6 text-center"
+              className="rounded-[16px] p-6 text-center"
               style={{
                 background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
               }}
@@ -408,7 +408,7 @@ export default function NewTournamentWizardPage() {
             <div className="mb-2 text-center text-4xl">🎉</div>
             <h2 className="text-center text-lg font-semibold">대회 생성 미리보기</h2>
 
-            <div className="space-y-3 rounded-xl bg-[var(--color-elevated)] p-4 text-sm">
+            <div className="space-y-3 rounded-[16px] bg-[var(--color-elevated)] p-4 text-sm">
               <Row label="대회명" value={name || "미입력"} />
               <Row label="형식" value={format} />
               <Row

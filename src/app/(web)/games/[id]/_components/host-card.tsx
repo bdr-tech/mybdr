@@ -1,5 +1,5 @@
 // 호스트 정보 카드: 프로필 이미지 + 호스트명 + Contact Host 버튼
-// 디자인 시안 - 네이비 배경(#1B3C87)으로 고정 (브랜드 색상이므로 CSS 변수 불필요)
+// 디자인 시안 - 네이비 배경 (CSS 변수 --color-accent 사용)
 
 interface HostCardProps {
   organizerName: string | null;
@@ -7,7 +7,7 @@ interface HostCardProps {
 
 export function HostCard({ organizerName }: HostCardProps) {
   return (
-    <div className="bg-[#1B3C87] p-6 rounded-xl text-white">
+    <div className="bg-[var(--color-accent)] p-6 rounded-xl text-white">
       <div className="flex items-center gap-4 mb-4">
         {/* 호스트 아바타 placeholder (DB에 이미지 없으므로 이니셜 표시) */}
         <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/20 flex items-center justify-center text-white font-bold text-lg">

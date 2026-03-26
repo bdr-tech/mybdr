@@ -20,8 +20,8 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    // 사이드바: 프론트와 동일한 bg-[#111111], w-64, border-[#222222]
-    <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 flex-col border-r border-[#222222] bg-[#111111] p-4 lg:flex">
+    // 사이드바: CSS 변수 기반 배경/보더 (다크모드 자동 전환)
+    <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] p-4 lg:flex">
       {/* 로고: "BDR SPORTS" + ADMIN 빨간 배지 */}
       <Link href="/admin" className="mb-8 flex items-center gap-2 px-3">
         <span
@@ -66,7 +66,7 @@ export function AdminSidebar() {
       </nav>
 
       {/* 하단: 사이트로 돌아가기 */}
-      <div className="border-t border-[#222222] pt-4">
+      <div className="border-t border-[var(--color-border)] pt-4">
         <Link
           href="/"
           className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-[var(--color-text-muted)] transition-all duration-200 hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]"

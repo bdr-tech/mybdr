@@ -55,10 +55,10 @@ export function CommentForm({ postId }: { postId: string }) {
           >
             {/* 이미지/이모지 아이콘 (UI만, 기능 미구현) */}
             <div className="flex gap-2" style={{ color: "var(--color-text-muted)" }}>
-              <button type="button" title="이미지 첨부 (준비 중)" disabled>
+              <button type="button" aria-label="이미지 첨부 (준비 중)" title="이미지 첨부 (준비 중)" disabled>
                 <span className="material-symbols-outlined text-xl">image</span>
               </button>
-              <button type="button" title="이모지 (준비 중)" disabled>
+              <button type="button" aria-label="이모지 (준비 중)" title="이모지 (준비 중)" disabled>
                 <span className="material-symbols-outlined text-xl">mood</span>
               </button>
             </div>

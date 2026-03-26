@@ -44,10 +44,16 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
       status: true,
       registration_start_at: true,
       registration_end_at: true,
+      categories: true,
+      div_caps: true,
+      div_fees: true,
+      allow_waiting_list: true,
+      waiting_list_cap: true,
       entry_fee: true,
       bank_name: true,
       bank_account: true,
       bank_holder: true,
+      fee_notes: true,
       roster_min: true,
       roster_max: true,
       auto_approve_teams: true,
@@ -151,6 +157,10 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       status: true,
       registration_start_at: true,
       registration_end_at: true,
+      categories: true,
+      div_caps: true,
+      allow_waiting_list: true,
+      waiting_list_cap: true,
       roster_min: true,
       roster_max: true,
       auto_approve_teams: true,
@@ -225,8 +235,43 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   let isWaiting = false;
   let waitingNumber: number | null = null;
 
-  // 디비전별 정원 체크 (categories/div_caps 스키마 추가 후 활성화 예정)
-  // 현재는 정원 체크 없이 바로 신청 가능
+  if (data.division) {
+    const divCaps = (tournament.div_caps as Record<string, number>) ?? {};
+    const cap = divCaps[data.division];
+
+    if (cap) {
+      const currentCount = await prisma.tournamentTeam.count({
+        where: {
+          tournamentId: id,
+          division: data.division,
+          status: { in: ["pending", "approved"] },
+        },
+      });
+
+      if (currentCount >= cap) {
+        if (!tournament.allow_waiting_list) {
+          return apiError(`${data.division} 디비전의 정원이 마감되었습니다.`, 400);
+        }
+
+        // 대기접수
+        isWaiting = true;
+        const maxWaiting = await prisma.tournamentTeam.count({
+          where: {
+            tournamentId: id,
+            division: data.division,
+            waiting_number: { not: null },
+          },
+        });
+
+        const waitingCap = tournament.waiting_list_cap;
+        if (waitingCap && maxWaiting >= waitingCap) {
+          return apiError("대기접수도 마감되었습니다.", 400);
+        }
+
+        waitingNumber = maxWaiting + 1;
+      }
+    }
+  }
 
   // 트랜잭션: TournamentTeam + TournamentTeamPlayers 생성
   const result = await prisma.$transaction(async (tx) => {
@@ -236,8 +281,15 @@ export async function POST(req: NextRequest, { params }: Ctx) {
         teamId,
         status: isWaiting ? "waiting" : (tournament.auto_approve_teams ? "approved" : "pending"),
         registered_by_id: user.userId,
+        category: data.category ?? null,
         division: data.division ?? null,
-        registration_note: [data.managerName, data.managerPhone].filter(Boolean).join(" / ") || null,
+        uniform_home: data.uniformHome ?? null,
+        uniform_away: data.uniformAway ?? null,
+        manager_name: data.managerName,
+        manager_phone: data.managerPhone,
+        waiting_number: waitingNumber,
+        applied_at: now,
+        ...(tournament.auto_approve_teams && !isWaiting ? { approved_at: now } : {}),
       },
     });
 
@@ -316,7 +368,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   return apiSuccess({
     id: result.id,
     status: result.status,
-    waitingNumber: null,
+    waitingNumber: result.waiting_number,
     message: isWaiting
       ? `대기접수 완료 (대기 ${waitingNumber}번)`
       : tournament.auto_approve_teams

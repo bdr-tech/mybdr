@@ -1,9 +1,24 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { Card } from "@/components/ui/card";
 
 export const revalidate = 300;
+
+// SEO: 코트 상세 동적 메타데이터 — 코트명을 DB에서 조회하여 title에 반영
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const court = await prisma.court_infos.findUnique({
+    where: { id: BigInt(id) },
+    select: { name: true, address: true },
+  }).catch(() => null);
+  if (!court) return { title: "코트 상세 | MyBDR" };
+  return {
+    title: `${court.name} | MyBDR`,
+    description: court.address ? `${court.name} — ${court.address}` : `${court.name} 코트 정보와 리뷰를 확인하세요.`,
+  };
+}
 
 type Params = { id: string };
 

@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { TournamentsFilter } from "./tournaments-filter";
 import { TournamentsContent } from "./_components/tournaments-content";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// SEO: 대회 목록 페이지 메타데이터
+export const metadata: Metadata = {
+  title: "대회 찾기 | MyBDR",
+  description: "참가 가능한 농구 대회를 찾고 팀을 등록하세요.",
+};
 
 // 페이지 전체 스켈레톤 (Suspense fallback용) - 새 디자인에 맞춤
 function PageSkeleton() {

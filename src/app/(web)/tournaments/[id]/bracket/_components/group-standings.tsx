@@ -196,10 +196,10 @@ export function GroupStandings({
                         {/* 조 통과 배지 */}
                         {isAdvanced && (
                           <span
-                            className="px-2 py-0.5 text-[10px] font-bold rounded"
+                            className="px-2 py-0.5 text-xs font-bold rounded"
                             style={{
                               backgroundColor: "rgba(34, 197, 94, 0.1)",
-                              color: "#22C55E",
+                              color: "var(--color-success)",
                             }}
                           >
                             ADVANCED

@@ -31,7 +31,7 @@ export function CurrentTeamCard({ teams }: CurrentTeamCardProps) {
       }}
     >
       <div
-        className="text-[11px] font-bold tracking-widest uppercase mb-5"
+        className="text-xs font-bold tracking-widest uppercase mb-5"
         style={{ color: "var(--color-text-muted)" }}
       >
         Current Team

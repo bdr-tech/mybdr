@@ -45,71 +45,71 @@ export function GuestDetail({ game }: GuestDetailProps) {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* 시설 안내 (Amenities) */}
       <section className="md:col-span-2 bg-[var(--color-card)] p-6 rounded-xl border border-[var(--color-border)] shadow-sm">
-        <h3 className="text-[#1B3C87] dark:text-[#4A90E2] font-bold text-xl mb-6 flex items-center gap-2">
+        <h3 className="text-[var(--color-accent)] dark:text-[var(--color-game-guest)] font-bold text-xl mb-6 flex items-center gap-2">
           <span className="material-symbols-outlined">info</span>
           시설 안내 (Amenities)
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {location && (
-            <div className="flex flex-col items-center p-4 bg-[var(--color-surface)] rounded-lg border border-transparent hover:border-[#E31B23] transition-all">
-              <span className="material-symbols-outlined text-[#E31B23] text-3xl mb-2">location_on</span>
+            <div className="flex flex-col items-center p-4 bg-[var(--color-surface)] rounded-lg border border-transparent hover:border-[var(--color-primary)] transition-all">
+              <span className="material-symbols-outlined text-[var(--color-primary)] text-3xl mb-2">location_on</span>
               <span className="text-sm font-medium text-[var(--color-text-primary)] text-center">{location}</span>
-              <span className="text-[10px] text-[var(--color-text-muted)]">Location</span>
+              <span className="text-xs text-[var(--color-text-muted)]">Location</span>
             </div>
           )}
 
           {game.venue_address && (
-            <div className="flex flex-col items-center p-4 bg-[var(--color-surface)] rounded-lg border border-transparent hover:border-[#E31B23] transition-all">
-              <span className="material-symbols-outlined text-[#E31B23] text-3xl mb-2">map</span>
+            <div className="flex flex-col items-center p-4 bg-[var(--color-surface)] rounded-lg border border-transparent hover:border-[var(--color-primary)] transition-all">
+              <span className="material-symbols-outlined text-[var(--color-primary)] text-3xl mb-2">map</span>
               <span className="text-sm font-medium text-[var(--color-text-primary)] text-center">{game.venue_address}</span>
-              <span className="text-[10px] text-[var(--color-text-muted)]">Address</span>
+              <span className="text-xs text-[var(--color-text-muted)]">Address</span>
             </div>
           )}
 
           {game.duration_hours && (
-            <div className="flex flex-col items-center p-4 bg-[var(--color-surface)] rounded-lg border border-transparent hover:border-[#E31B23] transition-all">
-              <span className="material-symbols-outlined text-[#E31B23] text-3xl mb-2">timer</span>
+            <div className="flex flex-col items-center p-4 bg-[var(--color-surface)] rounded-lg border border-transparent hover:border-[var(--color-primary)] transition-all">
+              <span className="material-symbols-outlined text-[var(--color-primary)] text-3xl mb-2">timer</span>
               <span className="text-sm font-medium text-[var(--color-text-primary)]">{game.duration_hours}시간</span>
-              <span className="text-[10px] text-[var(--color-text-muted)]">Duration</span>
+              <span className="text-xs text-[var(--color-text-muted)]">Duration</span>
             </div>
           )}
 
           {game.skill_level && (
-            <div className="flex flex-col items-center p-4 bg-[var(--color-surface)] rounded-lg border border-transparent hover:border-[#E31B23] transition-all">
-              <span className="material-symbols-outlined text-[#E31B23] text-3xl mb-2">fitness_center</span>
+            <div className="flex flex-col items-center p-4 bg-[var(--color-surface)] rounded-lg border border-transparent hover:border-[var(--color-primary)] transition-all">
+              <span className="material-symbols-outlined text-[var(--color-primary)] text-3xl mb-2">fitness_center</span>
               <span className="text-sm font-medium text-[var(--color-text-primary)]">
                 {SKILL_LABEL[game.skill_level] ?? game.skill_level}
               </span>
-              <span className="text-[10px] text-[var(--color-text-muted)]">Skill Level</span>
+              <span className="text-xs text-[var(--color-text-muted)]">Skill Level</span>
             </div>
           )}
 
           {/* 게스트 허용 여부 - 게스트 모집 특화 정보 */}
-          <div className="flex flex-col items-center p-4 bg-[var(--color-surface)] rounded-lg border border-transparent hover:border-[#E31B23] transition-all">
-            <span className="material-symbols-outlined text-[#E31B23] text-3xl mb-2">
+          <div className="flex flex-col items-center p-4 bg-[var(--color-surface)] rounded-lg border border-transparent hover:border-[var(--color-primary)] transition-all">
+            <span className="material-symbols-outlined text-[var(--color-primary)] text-3xl mb-2">
               {game.allow_guests ? "person_add" : "person_off"}
             </span>
             <span className="text-sm font-medium text-[var(--color-text-primary)]">
               {game.allow_guests ? "게스트 허용" : "게스트 불가"}
             </span>
-            <span className="text-[10px] text-[var(--color-text-muted)]">Guest Policy</span>
+            <span className="text-xs text-[var(--color-text-muted)]">Guest Policy</span>
           </div>
         </div>
       </section>
 
       {/* 경기 규칙 (Rules) */}
       <section className="bg-[var(--color-card)] p-6 rounded-xl border border-[var(--color-border)] shadow-sm">
-        <h3 className="text-[#1B3C87] dark:text-[#4A90E2] font-bold text-lg mb-4">
+        <h3 className="text-[var(--color-accent)] dark:text-[var(--color-game-guest)] font-bold text-lg mb-4">
           경기 규칙 (Rules)
         </h3>
         <ul className="space-y-3">
           <li className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
-            <span className="material-symbols-outlined text-[#E31B23] text-sm mt-1">check_circle</span>
+            <span className="material-symbols-outlined text-[var(--color-primary)] text-sm mt-1">check_circle</span>
             {game.min_participants ?? 1}~{game.max_participants ?? 0}명 모집 (현재 {game.current_participants ?? 0}명)
           </li>
 
           <li className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
-            <span className="material-symbols-outlined text-[#E31B23] text-sm mt-1">check_circle</span>
+            <span className="material-symbols-outlined text-[var(--color-primary)] text-sm mt-1">check_circle</span>
             참가비: {game.fee_per_person && Number(game.fee_per_person) > 0
               ? `${Number(game.fee_per_person).toLocaleString()}원`
               : "무료"}
@@ -117,21 +117,21 @@ export function GuestDetail({ game }: GuestDetailProps) {
 
           {rules.map((rule, i) => (
             <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
-              <span className="material-symbols-outlined text-[#E31B23] text-sm mt-1">check_circle</span>
+              <span className="material-symbols-outlined text-[var(--color-primary)] text-sm mt-1">check_circle</span>
               {rule.trim()}
             </li>
           ))}
 
           {game.notes && (
             <li className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
-              <span className="material-symbols-outlined text-[#E31B23] text-sm mt-1">check_circle</span>
+              <span className="material-symbols-outlined text-[var(--color-primary)] text-sm mt-1">check_circle</span>
               {game.notes}
             </li>
           )}
 
           {rules.length === 0 && !game.notes && (
             <li className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
-              <span className="material-symbols-outlined text-[#E31B23] text-sm mt-1">check_circle</span>
+              <span className="material-symbols-outlined text-[var(--color-primary)] text-sm mt-1">check_circle</span>
               모든 레벨 환영
             </li>
           )}

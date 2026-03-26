@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-// lucide-react 제거 → Material Symbols Outlined 사용
 import { SlideMenu } from "./slide-menu";
 import { UserDropdown } from "./user-dropdown";
 import { BellIcon } from "./bell-icon";
@@ -88,11 +88,13 @@ export function Header() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
           {/* Logo -- Kinetic Pulse: Electric Red + Space Grotesk italic bold */}
           <Link href="/" prefetch={true} className="flex items-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src="/images/logo.png"
               alt="BDR"
-              className="h-[55px] w-auto" /* 로고 크기 130% 확대 (42px → 55px) */
+              width={110}
+              height={55}
+              className="h-[55px] w-auto"
+              priority /* 헤더 로고는 LCP 후보이므로 즉시 로딩 */
             />
           </Link>
 
@@ -125,6 +127,7 @@ export function Header() {
               <button
                 onClick={togglePreferFilter}
                 className="flex h-9 w-9 items-center justify-center rounded-full transition-colors"
+                aria-label={preferFilter ? "전체 보기" : "맞춤 보기"}
                 title={preferFilter ? "전체 보기" : "맞춤 보기"}
                 style={{
                   color: preferFilter ? 'var(--color-primary)' : 'var(--color-text-muted)',
@@ -173,7 +176,7 @@ export function Header() {
                 key={item.href}
                 href={item.href}
                 prefetch={true}
-                className="relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 text-[11px] transition-colors active:opacity-70"
+                className="relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 text-xs transition-colors active:opacity-70"
                 style={{ color: active ? 'var(--color-primary)' : 'var(--color-text-muted)', fontWeight: active ? 600 : 400 }}
               >
                 {active && (
@@ -190,7 +193,8 @@ export function Header() {
           })}
           <button
             onClick={() => setMenuOpen(true)}
-            className="relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 text-[11px] active:opacity-70"
+            aria-label="전체 메뉴 열기"
+            className="relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 text-xs active:opacity-70"
             style={{ color: menuOpen ? 'var(--color-primary)' : 'var(--color-text-muted)', fontWeight: menuOpen ? 600 : 400 }}
           >
             {menuOpen && (

@@ -6,12 +6,12 @@ export default function WebLoading() {
       <Skeleton className="h-48 rounded-[24px]" />
       <div className="grid gap-3 sm:grid-cols-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 rounded-xl" />
+          <Skeleton key={i} className="h-24 rounded-[16px]" />
         ))}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-20 rounded-xl" />
+          <Skeleton key={i} className="h-20 rounded-[16px]" />
         ))}
       </div>
     </div>

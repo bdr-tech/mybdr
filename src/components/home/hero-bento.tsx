@@ -14,6 +14,7 @@
  * ============================================================ */
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import useSWR from "swr";
 
 // API 응답의 영상 타입 정의
 interface RecommendVideo {
@@ -39,14 +40,24 @@ const AUTO_SLIDE_INTERVAL = 5000;
 const MANUAL_PAUSE_DURATION = 10000;
 
 export function HeroBento() {
-  // 영상 목록 상태
-  const [videos, setVideos] = useState<RecommendVideo[]>([]);
+  // SWR로 YouTube 추천 API 호출 (글로벌 fetcher + dedupingInterval 적용)
+  // recommended-videos.tsx와 같은 URL이므로 SWR이 자동으로 중복 제거
+  const { data: apiData, isLoading, error: swrError } = useSWR<RecommendResponse>(
+    "/api/web/youtube/recommend"
+  );
+
+  // API 응답에서 라이브(최대2) + 인기(최대2) 조합하여 최대 4개 영상 생성
+  const videos: RecommendVideo[] = (() => {
+    if (!apiData) return [];
+    const liveVideos = (apiData.live_videos ?? []).slice(0, 2);
+    const popularVideos = (apiData.popular_videos ?? []).slice(0, 2);
+    return [...liveVideos, ...popularVideos];
+  })();
+
+  const hasError = !!swrError || (!isLoading && videos.length === 0);
+
   // 현재 보여주는 슬라이드 인덱스
   const [currentIndex, setCurrentIndex] = useState(0);
-  // 로딩 상태 (API 호출 중)
-  const [isLoading, setIsLoading] = useState(true);
-  // 에러 상태
-  const [hasError, setHasError] = useState(false);
   // 수동 조작 후 자동 슬라이드 일시 정지 여부
   const [isPaused, setIsPaused] = useState(false);
   // 영상 재생 중 여부 (YouTube Player API로 감지)
@@ -94,32 +105,7 @@ export function HeroBento() {
   // 슬라이드 영역에 마우스가 올라가면 정지, 떠나면 재개
   const [isHovering, setIsHovering] = useState(false);
 
-  // --- API에서 영상 목록 가져오기 ---
-  // 라이브(최대 2개) + 조회수 상위(최대 2개)를 조합하여 최대 4개 표시
-  useEffect(() => {
-    async function fetchVideos() {
-      try {
-        const res = await fetch("/api/web/youtube/recommend");
-        if (!res.ok) throw new Error("API 응답 실패");
-        const data = (await res.json()) as RecommendResponse;
-
-        // API가 이미 라이브(최대2) + 인기(최대2)를 분리해서 보내줌
-        const liveVideos = (data.live_videos ?? []).slice(0, 2);
-        const popularVideos = (data.popular_videos ?? []).slice(0, 2);
-
-        // 라이브를 앞에 배치, 뒤에 인기 영상 배치
-        const combined = [...liveVideos, ...popularVideos];
-
-        setVideos(combined);
-      } catch {
-        console.error("[HeroBento] 영상 목록 가져오기 실패");
-        setHasError(true);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchVideos();
-  }, []);
+  // 기존 fetch useEffect는 useSWR로 대체됨 (상단 참조)
 
   // --- 자동 슬라이드 타이머 ---
   // 영상이 2개 이상이고, 일시정지/재생중/호버 중이 아닐 때만 자동 전환
@@ -212,7 +198,7 @@ export function HeroBento() {
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
           <div className="absolute bottom-0 left-0 p-8 w-full pointer-events-none">
-            <span className="inline-block px-3 py-1 bg-primary text-on-primary text-[10px] font-bold tracking-widest uppercase rounded mb-4">
+            <span className="inline-block px-3 py-1 bg-primary text-on-primary text-xs font-bold tracking-widest uppercase rounded mb-4">
               BDR
             </span>
             <h2 className="text-4xl font-heading font-bold text-white mb-2 leading-tight">
@@ -271,7 +257,7 @@ export function HeroBento() {
         {currentVideo.is_live && (
           <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded shadow-lg animate-pulse">
             <span className="w-2 h-2 bg-white rounded-full" />
-            LIVE NOW
+            실시간
           </div>
         )}
 
@@ -283,7 +269,7 @@ export function HeroBento() {
               .map((badge) => (
                 <span
                   key={badge}
-                  className={`px-2 py-1 text-[10px] font-bold rounded ${
+                  className={`px-2 py-1 text-xs font-bold rounded ${
                     badge === "HOT"
                       ? "bg-orange-500 text-white"
                       : "bg-white/20 text-white backdrop-blur-sm"

@@ -72,7 +72,7 @@ export function RecentGamesSection({ games }: { games: Game[] }) {
               >
                 {/* 날짜 */}
                 <div className="w-12 text-center flex-shrink-0">
-                  <div className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
+                  <div className="text-xs" style={{ color: "var(--color-text-muted)" }}>
                     {dateStr}
                   </div>
                 </div>

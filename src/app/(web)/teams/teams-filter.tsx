@@ -2,19 +2,22 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
+import { FloatingFilterPanel, type FilterConfig } from "@/components/shared/floating-filter-panel";
 
-// -- 정렬 옵션 --
+// 정렬 옵션 (기존 유지)
 const SORT_OPTIONS = [
   { value: "wins", label: "랭킹순" },
   { value: "newest", label: "최신순" },
   { value: "winrate", label: "승률순" },
-] as const;
+];
 
 /**
- * TeamsFilter - 팀 목록 필터 (리디자인)
+ * TeamsFilter - 팀 필터 (플로팅 패널 방식으로 교체)
  *
- * 기존 검색/도시 필터 로직은 100% 유지.
- * UI를 시안(bdr_3/bdr_4)에 맞춰 탭형 필터 + 검색바 + 정렬로 교체.
+ * 기존: 지역 탭 그룹 + 검색바 + 정렬 + "상세 필터" 버튼(미구현)
+ * 변경: 검색바 인라인 + FloatingFilterPanel (지역 + 정렬)
+ *
+ * URL 쿼리 파라미터 기반 필터링 로직은 100% 유지.
  */
 export function TeamsFilter({
   cities,
@@ -28,7 +31,7 @@ export function TeamsFilter({
   const params = useSearchParams();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
 
-  // 정렬 상태 (로컬, API에 sort 파라미터가 없으므로 UI만 표시)
+  // 정렬 상태 (로컬)
   const [sortBy, setSortBy] = useState("wins");
 
   // URL 파라미터 업데이트 (기존 로직 그대로)
@@ -53,130 +56,86 @@ export function TeamsFilter({
   // 현재 선택된 도시
   const currentCity = params.get("city") ?? "all";
 
-  // 지역 그룹 생성: 전체 + 도시별 버튼
-  // 시안에서는 서울/경기, 충청/강원, 경상/전라 같은 그룹이지만
-  // 실제 데이터는 API에서 cities 배열로 내려오므로 그대로 사용
+  // 전체 초기화
+  const handleReset = useCallback(() => {
+    router.push(pathname);
+    setSortBy("wins");
+  }, [router, pathname]);
+
+  // 지역 옵션
+  const cityOptions = [
+    { value: "all", label: "전체" },
+    ...cities.map((c) => ({ value: c, label: c })),
+  ];
+
+  // 활성 필터 수 계산
+  const activeCount = [
+    currentCity !== "all" ? 1 : 0,
+    sortBy !== "wins" ? 1 : 0,
+  ].reduce((a, b) => a + b, 0);
+
+  // FloatingFilterPanel에 전달할 필터 설정
+  const filterConfigs: FilterConfig[] = [
+    {
+      key: "city",
+      label: "지역",
+      type: "select",
+      options: cityOptions,
+      value: currentCity,
+      onChange: (v) => update({ city: v }),
+    },
+    {
+      key: "sort",
+      label: "정렬",
+      type: "select",
+      options: SORT_OPTIONS,
+      value: sortBy,
+      onChange: (v) => setSortBy(v),
+    },
+  ];
+
   return (
-    <div className="mb-8 flex flex-col gap-4">
-      {/* 상단: 필터 탭 + 상세 필터 버튼 */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* 지역 필터 탭 그룹 */}
-        <div
-          className="flex items-center p-1 rounded"
-          style={{
-            backgroundColor: "var(--color-surface)",
-            border: "1px solid var(--color-border-subtle)",
-          }}
+    <div className="mb-8 flex items-center gap-3">
+      {/* 검색바: 인라인 유지 */}
+      <div
+        className="relative flex items-center rounded px-4 py-2 border flex-1 focus-within:ring-1"
+        style={{
+          backgroundColor: "var(--color-surface)",
+          borderColor: "var(--color-border)",
+        }}
+      >
+        <span
+          className="material-symbols-outlined text-xl mr-2"
+          style={{ color: "var(--color-text-muted)" }}
         >
-          {/* "전체" 버튼 */}
-          <button
-            onClick={() => update({ city: "all" })}
-            className="px-4 py-1.5 text-xs font-medium rounded transition-colors"
-            style={
-              currentCity === "all"
-                ? {
-                    backgroundColor: "var(--color-primary)",
-                    color: "var(--color-on-primary)",
-                    fontWeight: 700,
-                  }
-                : {
-                    color: "var(--color-text-secondary)",
-                  }
-            }
-          >
-            전체
-          </button>
-          {/* 도시별 버튼 */}
-          {cities.map((city) => (
-            <button
-              key={city}
-              onClick={() => update({ city })}
-              className="px-4 py-1.5 text-xs font-medium rounded transition-colors"
-              style={
-                currentCity === city
-                  ? {
-                      backgroundColor: "var(--color-primary)",
-                      color: "var(--color-on-primary)",
-                      fontWeight: 700,
-                    }
-                  : {
-                      color: "var(--color-text-secondary)",
-                    }
-              }
-            >
-              {city}
-            </button>
-          ))}
-        </div>
-
-        {/* 상세 필터 버튼 */}
-        <button
-          className="flex items-center gap-2 px-4 py-2 rounded border text-sm font-medium transition-colors"
+          search
+        </span>
+        <input
+          type="text"
+          placeholder="팀 이름 검색..."
+          defaultValue={params.get("q") ?? ""}
+          onChange={(e) => handleSearch(e.target.value)}
+          className="bg-transparent border-none focus:ring-0 focus:outline-none text-sm flex-1"
           style={{
-            backgroundColor: "var(--color-elevated)",
-            borderColor: "var(--color-border)",
-            color: "var(--color-text-secondary)",
+            color: "var(--color-text-primary)",
           }}
-        >
-          <span className="material-symbols-outlined text-sm">filter_list</span>
-          상세 필터
-        </button>
+        />
       </div>
 
-      {/* 하단: 검색바 + 총 팀 수 + 정렬 */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {/* 검색바 */}
-        <div
-          className="relative flex items-center rounded px-4 py-2 border focus-within:ring-1"
-          style={{
-            backgroundColor: "var(--color-surface)",
-            borderColor: "var(--color-border)",
-          }}
-        >
-          <span
-            className="material-symbols-outlined text-xl mr-2"
-            style={{ color: "var(--color-text-muted)" }}
-          >
-            search
-          </span>
-          <input
-            type="text"
-            placeholder="팀 이름 검색..."
-            defaultValue={params.get("q") ?? ""}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="bg-transparent border-none focus:ring-0 focus:outline-none text-sm w-48"
-            style={{
-              color: "var(--color-text-primary)",
-            }}
-          />
-        </div>
+      {/* 총 팀 수 표시 */}
+      <span
+        className="text-sm font-medium shrink-0 hidden sm:block"
+        style={{ color: "var(--color-text-muted)" }}
+      >
+        총 {totalCount}개 팀
+      </span>
 
-        {/* 우측: 총 팀 수 + 정렬 */}
-        <div className="flex items-center gap-3">
-          <span
-            className="text-sm font-medium"
-            style={{ color: "var(--color-text-muted)" }}
-          >
-            총 {totalCount}개 팀
-          </span>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="border rounded px-3 py-1.5 text-sm focus:outline-none cursor-pointer"
-            style={{
-              backgroundColor: "var(--color-card)",
-              borderColor: "var(--color-border)",
-              color: "var(--color-text-primary)",
-            }}
-          >
-            {SORT_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      {/* 플로팅 필터 트리거 버튼 */}
+      <FloatingFilterPanel
+        filters={filterConfigs}
+        onReset={handleReset}
+        activeCount={activeCount}
+      />
     </div>
   );
 }

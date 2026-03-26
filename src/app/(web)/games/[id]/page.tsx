@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getGame, listGameApplications } from "@/lib/services/game";
 import { getUserGameProfile } from "@/lib/services/user";
@@ -18,6 +19,17 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export const revalidate = 30;
+
+// SEO: 경기 상세 동적 메타데이터 — 경기 제목을 DB에서 조회하여 title에 반영
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const game = await getGame(id);
+  if (!game) return { title: "경기 상세 | MyBDR" };
+  return {
+    title: `${game.title || "경기 상세"} | MyBDR`,
+    description: game.description?.slice(0, 100) || "경기 상세 정보를 확인하고 참가 신청하세요.",
+  };
+}
 
 // 경기 상태 라벨 매핑 (기존 유지)
 const STATUS_LABEL: Record<number, string> = {

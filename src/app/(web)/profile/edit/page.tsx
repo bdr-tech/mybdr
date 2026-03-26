@@ -175,9 +175,9 @@ export default function ProfileEditPage() {
 
   /* 입력필드/라벨/섹션 공통 스타일 - CSS 변수로 다크모드 자동 대응 */
   const inp =
-    "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm";
+    "w-full rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 text-sm";
   const lbl = "mb-1 block text-sm text-[var(--color-text-muted)]";
-  const section = "mb-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-5";
+  const section = "mb-6 rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] p-5";
 
   if (loading) {
     return (
@@ -198,7 +198,7 @@ export default function ProfileEditPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-[12px] bg-[rgba(239,68,68,0.1)] px-4 py-3 text-sm text-[var(--color-error,#DC2626)]">{error}</div>
+        <div className="mb-4 rounded-[12px] bg-[rgba(239,68,68,0.1)] px-4 py-3 text-sm text-[var(--color-error,#EF4444)]">{error}</div>
       )}
       {successMsg && (
         <div className="mb-4 rounded-[12px] bg-[rgba(0,102,255,0.1)] px-4 py-3 text-sm text-[var(--color-accent)]">{successMsg}</div>

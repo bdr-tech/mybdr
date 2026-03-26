@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { getWebSession } from "@/lib/auth/web-session";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { getClientIp } from "@/lib/security/get-client-ip";
 
 /**
  * GET /api/web/community
@@ -13,6 +15,13 @@ import { getWebSession } from "@/lib/auth/web-session";
  * - BigInt/Date 필드를 JSON 직렬화 가능한 형태로 변환
  */
 export async function GET(request: NextRequest) {
+  // 공개 API — IP 기반 rate limit (분당 100회)
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit(`web-community:${ip}`, RATE_LIMITS.api);
+  if (!rl.allowed) {
+    return apiError("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.", 429);
+  }
+
   try {
     const { searchParams } = request.nextUrl;
 
@@ -58,25 +67,16 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // 게시글 목록 조회 (최신순, 작성자 닉네임 + 프로필 이미지 포함)
-    const limit = Math.min(Number(searchParams.get("limit")) || 20, 50);
+    // 게시글 목록 조회 (최신순 30개, 작성자 닉네임 + 프로필 이미지 포함)
     const posts = await prisma.community_posts.findMany({
       where,
       orderBy: { created_at: "desc" },
-      take: limit,
-      select: {
-        id: true,
-        public_id: true,
-        title: true,
-        category: true,
-        view_count: true,
-        comments_count: true,
-        created_at: true,
-        content: true,
+      take: 30,
+      include: {
         users: {
           select: {
             nickname: true,
-            profile_image_url: true,
+            profile_image_url: true,  // 작성자 아바타용 프로필 이미지 추가
           },
         },
       },
@@ -90,6 +90,7 @@ export async function GET(request: NextRequest) {
       category: p.category,
       viewCount: p.view_count ?? 0,
       commentsCount: p.comments_count ?? 0,
+      likesCount: p.likes_count ?? 0,
       createdAt: p.created_at?.toISOString() ?? null,          // Date -> ISO string
       authorNickname: p.users?.nickname ?? "익명",              // 작성자 닉네임 추출
       authorProfileImage: p.users?.profile_image_url ?? null,  // 작성자 프로필 이미지 URL
@@ -97,10 +98,13 @@ export async function GET(request: NextRequest) {
     }));
 
     // 선호 카테고리 목록도 함께 반환 (프론트엔드에서 하이라이트 표시용)
-    return apiSuccess({
+    const response = apiSuccess({
       posts: serializedPosts,
       preferred_categories: preferredCategories ?? [],
     });
+    // 30초 캐시: 게시글은 자주 변경되므로 짧은 캐시 적용
+    response.headers.set("Cache-Control", "public, s-maxage=30, max-age=30");
+    return response;
   } catch (error) {
     console.error("[GET /api/web/community] Error:", error);
     return apiError("게시글 목록을 불러올 수 없습니다.", 500, "INTERNAL_ERROR");

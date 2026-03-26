@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { GamesFilter } from "./games-filter";
 import { GamesContent } from "./_components/games-content";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// SEO: 경기 목록 페이지 메타데이터
+export const metadata: Metadata = {
+  title: "경기 찾기 | MyBDR",
+  description: "내 주변 픽업 게임, 게스트 모집, 팀 대결을 찾아보세요.",
+};
 
 // 페이지 전체 스켈레톤 - 새 디자인(이미지 카드 3열)에 맞춘 로딩 상태
 function PageSkeleton() {

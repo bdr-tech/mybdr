@@ -178,7 +178,7 @@ export default function PrivacyPage() {
         {/* 제9조 */}
         <section>
           <h2 className="mb-3 text-base font-semibold text-[var(--color-text-primary)]">제9조 (개인정보 보호책임자)</h2>
-          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+          <div className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
             <p className="font-medium text-[var(--color-text-primary)]">개인정보 보호책임자</p>
             <ul className="mt-2 space-y-1 text-[var(--color-text-muted)]">
               <li>성명: BDR 운영팀</li>
@@ -208,7 +208,7 @@ export default function PrivacyPage() {
         </section>
 
         {/* 부칙 */}
-        <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+        <section className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
           <h2 className="mb-2 text-base font-semibold text-[var(--color-text-primary)]">부칙</h2>
           <p>이 방침은 2026년 3월 1일부터 시행합니다.</p>
         </section>

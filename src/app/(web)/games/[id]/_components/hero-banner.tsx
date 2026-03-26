@@ -17,8 +17,8 @@ interface HeroBannerProps {
 
 // 경기 상태에 따른 배지 텍스트 매핑
 const STATUS_BADGE: Record<number, { text: string; color: string }> = {
-  1: { text: "MATCH DAY", color: "bg-[#E31B23]" },       // 모집중
-  3: { text: "LIVE NOW", color: "bg-[#E31B23]" },         // 진행중
+  1: { text: "MATCH DAY", color: "bg-[var(--color-primary)]" },       // 모집중
+  3: { text: "LIVE NOW", color: "bg-[var(--color-primary)]" },         // 진행중
   2: { text: "CLOSED", color: "bg-gray-500" },            // 마감
   4: { text: "COMPLETED", color: "bg-gray-500" },         // 완료
   5: { text: "CANCELLED", color: "bg-gray-500" },         // 취소
@@ -33,7 +33,7 @@ export function HeroBanner({ game }: HeroBannerProps) {
   return (
     <section className="relative h-64 md:h-[400px] rounded-xl overflow-hidden shadow-lg group">
       {/* 경기장 placeholder 이미지 - DB에 이미지 필드가 없으므로 그라디언트 배경 사용 */}
-      <div className="w-full h-full bg-gradient-to-br from-[#1B3C87] to-[#0a1628] transition-transform duration-700 group-hover:scale-105" />
+      <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-surface-lowest)] transition-transform duration-700 group-hover:scale-105" />
 
       {/* 그라디언트 오버레이: 하단에서 어두워지는 효과 */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-6 md:p-10">

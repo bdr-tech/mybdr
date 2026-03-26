@@ -39,9 +39,9 @@ const POSITION_FULL: Record<string, string> = {
  */
 function getTierBadge(totalGames: number): { label: string; color: string } {
   if (totalGames >= 100) return { label: "PLATINUM", color: "var(--color-tertiary)" };
-  if (totalGames >= 60) return { label: "GOLD", color: "#F59E0B" };
-  if (totalGames >= 30) return { label: "SILVER", color: "#9CA3AF" };
-  if (totalGames >= 10) return { label: "BRONZE", color: "#CD7F32" };
+  if (totalGames >= 60) return { label: "GOLD", color: "var(--color-tier-gold)" };
+  if (totalGames >= 30) return { label: "SILVER", color: "var(--color-tier-silver)" };
+  if (totalGames >= 10) return { label: "BRONZE", color: "var(--color-tier-bronze)" };
   return { label: "ROOKIE", color: "var(--color-text-muted)" };
 }
 
@@ -90,7 +90,7 @@ export function ProfileHeader({
         </div>
         {/* 티어 배지: 우하단 오버레이 */}
         <div
-          className="absolute -bottom-2 -right-2 text-white text-[11px] font-bold px-3 py-1 rounded shadow-lg"
+          className="absolute -bottom-2 -right-2 text-white text-xs font-bold px-3 py-1 rounded shadow-lg"
           style={{ backgroundColor: tier.color }}
         >
           {tier.label}
@@ -179,7 +179,7 @@ export function ProfileHeader({
           >
             {totalGames}
           </div>
-          <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>
+          <div className="text-xs uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>
             Total Games
           </div>
         </div>
@@ -197,7 +197,7 @@ export function ProfileHeader({
           >
             {winRate != null ? `${winRate}%` : "-%"}
           </div>
-          <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>
+          <div className="text-xs uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>
             Win Rate
           </div>
         </div>

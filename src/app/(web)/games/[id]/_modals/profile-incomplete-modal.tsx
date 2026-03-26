@@ -18,7 +18,7 @@ export function ProfileIncompleteModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-sm rounded-2xl bg-[var(--color-card)] p-6 shadow-xl">
+      <div className="w-full max-w-sm rounded-[20px] bg-[var(--color-card)] p-6 shadow-xl">
         <div className="mb-4 text-center text-3xl">👤</div>
         <h3 className="mb-2 text-center text-lg font-bold text-[var(--color-text-primary)]">
           프로필을 완성해주세요

@@ -231,7 +231,7 @@ function DesktopBracketView({
   const padding = 16;
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-6" style={{ boxShadow: 'var(--shadow-card)' }}>
+    <div className="overflow-x-auto rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] p-6" style={{ boxShadow: 'var(--shadow-card)' }}>
       <div
         className="relative"
         style={{
@@ -251,7 +251,7 @@ function DesktopBracketView({
             }}
           >
             <span
-              className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap"
+              className="text-xs font-bold uppercase tracking-widest whitespace-nowrap"
               style={{ color: "var(--color-text-muted)" }}
             >
               {rh.roundName}

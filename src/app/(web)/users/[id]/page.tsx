@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/db/prisma";
 import { notFound } from "next/navigation";
 import Image from "next/image";
@@ -5,6 +6,9 @@ import { UserRadarSection } from "./_components/user-radar-section";
 import { UserStatsSection } from "./_components/user-stats-section";
 import { UserRecentGames } from "./_components/user-recent-games";
 import { ActionButtons } from "./_components/action-buttons";
+// 내 프로필과 동일한 승률 계산 로직을 재사용
+import { getPlayerStats } from "@/lib/services/user";
+import { getWebSession } from "@/lib/auth/web-session";
 
 /**
  * 타인 프로필 페이지 (/users/[id])
@@ -20,6 +24,20 @@ import { ActionButtons } from "./_components/action-buttons";
 
 export const revalidate = 60;
 
+// SEO: 유저 프로필 동적 메타데이터 — 닉네임을 DB에서 조회하여 title에 반영
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const user = await prisma.user.findUnique({
+    where: { id: BigInt(id) },
+    select: { nickname: true, position: true },
+  }).catch(() => null);
+  if (!user) return { title: "선수 프로필 | MyBDR" };
+  return {
+    title: `${user.nickname || "선수"} 프로필 | MyBDR`,
+    description: `${user.nickname || "선수"}의 경기 기록과 능력치를 확인하세요.`,
+  };
+}
+
 const POSITION_LABEL: Record<string, string> = {
   PG: "포인트가드",
   SG: "슈팅가드",
@@ -31,17 +49,22 @@ const POSITION_LABEL: Record<string, string> = {
 /** 티어 배지 계산 - 총 경기수 기반 */
 function getTierBadge(totalGames: number): { label: string; color: string } {
   if (totalGames >= 100) return { label: "PLATINUM", color: "var(--color-tertiary)" };
-  if (totalGames >= 60) return { label: "GOLD", color: "#F59E0B" };
-  if (totalGames >= 30) return { label: "SILVER", color: "#9CA3AF" };
-  if (totalGames >= 10) return { label: "BRONZE", color: "#CD7F32" };
+  if (totalGames >= 60) return { label: "GOLD", color: "var(--color-tier-gold)" };
+  if (totalGames >= 30) return { label: "SILVER", color: "var(--color-tier-silver)" };
+  if (totalGames >= 10) return { label: "BRONZE", color: "var(--color-tier-bronze)" };
   return { label: "ROOKIE", color: "var(--color-text-muted)" };
 }
 
 export default async function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
+  // 로그인 유저 세션 확인 (팔로우 상태 조회용)
+  const session = await getWebSession();
+  const isLoggedIn = !!session;
+
   // 기존 user 쿼리 유지 + matchPlayerStat 집계 추가 (병렬 실행)
-  const [user, statAgg, recentGames] = await Promise.all([
+  // playerStats: 내 프로필과 동일한 서비스 함수로 승률(winRate) 계산
+  const [user, statAgg, recentGames, playerStats, followRecord] = await Promise.all([
     // 1) 기존 유저 정보 쿼리 (유지)
     prisma.user.findUnique({
       where: { id: BigInt(id) },
@@ -110,7 +133,24 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
       orderBy: { createdAt: "desc" },
       take: 5,
     }).catch(() => []),
+
+    // 4) 승률 계산 - 내 프로필과 동일한 서비스 함수 재사용
+    getPlayerStats(BigInt(id)).catch(() => null),
+
+    // 5) 팔로우 여부 확인 (로그인 상태일 때만 실제 쿼리)
+    session
+      ? prisma.follows.findUnique({
+          where: {
+            follower_id_following_id: {
+              follower_id: BigInt(session.sub),
+              following_id: BigInt(id),
+            },
+          },
+        }).catch(() => null)
+      : Promise.resolve(null),
   ]);
+
+  const isFollowing = !!followRecord;
 
   if (!user) return notFound();
 
@@ -232,7 +272,11 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
               </div>
 
               {/* CTA 버튼: 메시지 + 팔로우 (클라이언트 컴포넌트로 분리) */}
-              <ActionButtons />
+              <ActionButtons
+                targetUserId={id}
+                initialFollowed={isFollowing}
+                isLoggedIn={isLoggedIn}
+              />
             </div>
 
             {/* 우측: 미니 통계 2x2 그리드 */}
@@ -259,9 +303,11 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
                 className="p-3 rounded-lg text-center min-w-[90px]"
                 style={{ backgroundColor: "var(--color-card)" }}
               >
-                {/* 승률: DB에 없으므로 placeholder */}
+                {/* 승률: getPlayerStats 서비스로 계산 (내 프로필과 동일 로직) */}
                 <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>승률</p>
-                <p className="text-xl font-bold" style={{ color: "var(--color-primary)" }}>-%</p>
+                <p className="text-xl font-bold" style={{ color: "var(--color-primary)" }}>
+                  {playerStats?.winRate != null ? `${playerStats.winRate}%` : "-%"}
+                </p>
               </div>
               <div
                 className="p-3 rounded-lg text-center min-w-[90px]"

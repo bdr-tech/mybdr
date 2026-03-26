@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/db/prisma";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
+
+// SEO: 시리즈 목록 페이지 메타데이터
+export const metadata: Metadata = {
+  title: "대회 시리즈 | MyBDR",
+  description: "정기 대회 시리즈를 확인하고 참가하세요.",
+};
 
 export const revalidate = 300;
 

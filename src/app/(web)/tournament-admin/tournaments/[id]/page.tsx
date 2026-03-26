@@ -26,8 +26,8 @@ const STATUS_LABEL: Record<string, string> = {
 
 const STATUS_COLOR: Record<string, string> = {
   draft: "text-[var(--color-text-muted)]",
-  registration: "text-[#2563EB]",
-  active: "text-[#16A34A]",
+  registration: "text-[#60A5FA]",
+  active: "text-[#4ADE80]",
   completed: "text-[var(--color-text-muted)]",
   cancelled: "text-[var(--color-error)]",
 };

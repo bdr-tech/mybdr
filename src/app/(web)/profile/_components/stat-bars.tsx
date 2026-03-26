@@ -53,7 +53,7 @@ function StatCard({
       {/* 상단: 라벨 + 아이콘 */}
       <div className="flex justify-between items-start mb-3">
         <span
-          className="text-[11px] font-bold tracking-widest uppercase"
+          className="text-xs font-bold tracking-widest uppercase"
           style={{ color: labelColor }}
         >
           {label}

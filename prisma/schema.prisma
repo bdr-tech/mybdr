@@ -55,6 +55,8 @@ model User {
   preferred_divisions                                                       Json                         @default("[]")
   preferred_board_categories                                                Json                         @default("[]")
   preferred_game_types                                                      Json                         @default("[]")
+  // 맞춤 보기 토글 ON/OFF 상태를 DB에 저장 (기본 false)
+  // SQL: ALTER TABLE users ADD COLUMN prefer_filter_enabled BOOLEAN NOT NULL DEFAULT false;
   prefer_filter_enabled                                                     Boolean                      @default(false)
   onboarding_step                                                           Int                          @default(0)
   profile_completed                                                         Boolean                      @default(false)
@@ -63,6 +65,7 @@ model User {
   board_favorites                                                           board_favorites[]
   comments                                                                  comments[]
   community_posts                                                           community_posts[]
+  community_post_likes                                                      community_post_likes[]
   court_checkins                                                            court_checkins[]
   court_infos                                                               court_infos[]
   court_reviews                                                             court_reviews[]
@@ -103,6 +106,9 @@ model User {
   recorderAssigned                                                          tournament_recorders[]        @relation("TournamentRecorderAssigner")
   match_events_recorded                                                     match_events[]                @relation("MatchEventRecorder")
   match_events_undone                                                       match_events[]                @relation("MatchEventUndoner")
+  // 팔로우 시스템: 나를 팔로우하는 사람들 / 내가 팔로우하는 사람들
+  followers                                                                 follows[]                     @relation("user_followers")
+  following                                                                 follows[]                     @relation("user_following")
 
   @@unique([provider, uid], map: "index_users_on_provider_and_uid")
   @@index([createdAt], map: "index_users_on_created_at")
@@ -153,15 +159,15 @@ model Tournament {
   mvp_player_id                          BigInt?
   divisions                              Json                    @default("[]")
   division_tiers                         Json                    @default("[]")
-  bank_name                              String?                 @db.VarChar
-  bank_account                           String?                 @db.VarChar
-  bank_holder                            String?                 @db.VarChar
-  categories                             Json?                   @default("{}")  @db.JsonB
-  div_caps                               Json?                   @default("{}")  @db.JsonB
-  div_fees                               Json?                   @default("{}")  @db.JsonB
+  categories                             Json?                   @default("{}")
+  div_caps                               Json?                   @default("{}")
+  div_fees                               Json?                   @default("{}")
   allow_waiting_list                     Boolean?                @default(false)
   waiting_list_cap                       Int?
   fee_notes                              String?
+  bank_name                              String?                 @db.VarChar
+  bank_account                           String?                 @db.VarChar
+  bank_holder                            String?                 @db.VarChar
   createdAt                              DateTime                @map("created_at") @db.Timestamp(6) @default(now())
   updatedAt                              DateTime                @updatedAt @map("updated_at") @db.Timestamp(6)
   primary_color                          String?                 @db.VarChar
@@ -191,6 +197,7 @@ model Tournament {
   @@index([status], map: "index_tournaments_on_status")
   @@index([status, startDate], map: "index_tournaments_on_status_and_start_date")
   @@index([venue_id], map: "index_tournaments_on_venue_id")
+  @@index([city], map: "index_tournaments_on_city")
   @@map("tournaments")
 }
 
@@ -297,6 +304,13 @@ model TournamentTeam {
   paid_at                                                                DateTime?              @db.Timestamp(6)
   payment_status                                                         String?                @default("unpaid") @db.VarChar
   registration_note                                                      String?
+  category                                                               String?                @db.VarChar
+  uniform_home                                                           String?                @db.VarChar
+  uniform_away                                                           String?                @db.VarChar
+  manager_name                                                           String?                @db.VarChar
+  manager_phone                                                          String?                @db.VarChar
+  waiting_number                                                         Int?
+  applied_at                                                             DateTime?              @db.Timestamp(6)
   wins                                                                   Int?                   @default(0)
   losses                                                                 Int?                   @default(0)
   draws                                                                  Int?                   @default(0)
@@ -339,6 +353,9 @@ model TournamentTeamPlayer {
   position         String?           @db.VarChar
   auto_registered  Boolean?          @default(false)
   is_active        Boolean?          @default(true)
+  birth_date       String?           @db.VarChar
+  is_elite         Boolean?          @default(false)
+  player_name      String?           @db.VarChar
   isStarter        Boolean?          @default(false) @map("is_starter")
   games_played     Int?              @default(0)
   total_points     Int?              @default(0)
@@ -349,7 +366,6 @@ model TournamentTeamPlayer {
   avg_points       Decimal?          @default(0.0) @db.Decimal(5, 1)
   avg_rebounds     Decimal?          @default(0.0) @db.Decimal(5, 1)
   avg_assists      Decimal?          @default(0.0) @db.Decimal(5, 1)
-  is_elite         Boolean           @default(false)
   createdAt        DateTime          @map("created_at") @db.Timestamp(6) @default(now())
   updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamp(6)
   playerStats      MatchPlayerStat[]
@@ -726,8 +742,10 @@ model community_posts {
   negotiable       Boolean? @default(false)
   share_contact    Boolean? @default(false)
   trade_status     String?  @default("available") @db.VarChar
+  likes_count      Int      @default(0)
   users            User     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_0b2d1de074")
   teams            Team?    @relation(fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_e4a581c07d")
+  community_post_likes community_post_likes[]
 
   @@index([category], map: "index_community_posts_on_category")
   @@index([category, created_at], map: "index_community_posts_on_category_and_created")
@@ -735,6 +753,32 @@ model community_posts {
   @@index([status], map: "index_community_posts_on_status")
   @@index([team_id], map: "index_community_posts_on_team_id")
   @@index([user_id], map: "index_community_posts_on_user_id")
+}
+
+// 커뮤니티 게시글 좋아요 테이블 (유저당 게시글 1회만 좋아요 가능)
+model community_post_likes {
+  id                BigInt           @id @default(autoincrement())
+  community_post_id BigInt
+  user_id           BigInt
+  created_at        DateTime         @db.Timestamp(6)
+  community_posts   community_posts  @relation(fields: [community_post_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users             User             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([community_post_id, user_id], map: "index_community_post_likes_on_post_and_user")
+  @@index([user_id], map: "index_community_post_likes_on_user_id")
+}
+
+// 팔로우 테이블: follower가 following을 팔로우
+model follows {
+  id           BigInt   @id @default(autoincrement())
+  follower_id  BigInt                              // 팔로우 하는 사람
+  following_id BigInt                              // 팔로우 당하는 사람
+  created_at   DateTime @db.Timestamp(6)
+  follower     User     @relation("user_followers", fields: [follower_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  following    User     @relation("user_following", fields: [following_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([follower_id, following_id], map: "index_follows_on_follower_and_following")
+  @@index([following_id], map: "index_follows_on_following_id")
 }
 
 model content_presets {

@@ -14,7 +14,7 @@ export function PlayerInfoSection({ position, height, city, bio }: PlayerInfoPro
 
   return (
     /* 카드 외형: CSS 변수 */
-    <div className="rounded-2xl border p-4 sm:p-5" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)', boxShadow: 'var(--shadow-card)' }}>
+    <div className="rounded-[20px] border p-4 sm:p-5" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)', boxShadow: 'var(--shadow-card)' }}>
       <h2
         className="mb-3 text-base font-bold uppercase tracking-wide"
         style={{ fontFamily: "var(--font-heading)", color: 'var(--color-text-primary)' }}

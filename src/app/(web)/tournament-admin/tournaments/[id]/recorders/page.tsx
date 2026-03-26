@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -131,10 +132,13 @@ export default function TournamentRecordersPage() {
               >
                 <div className="flex items-center gap-3">
                   {r.recorder.profile_image_url ? (
-                    <img
+                    <Image
                       src={r.recorder.profile_image_url}
                       alt=""
+                      width={32}
+                      height={32}
                       className="w-8 h-8 rounded-full object-cover"
+                      unoptimized /* 외부 프로필 이미지 URL — 도메인이 다양 */
                     />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold">

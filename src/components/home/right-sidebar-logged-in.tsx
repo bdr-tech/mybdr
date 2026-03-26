@@ -13,17 +13,10 @@
  * 4. 커뮤니티 (최신글 + 조회수 높은 글) -- /api/web/community
  * ============================================================ */
 
-import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import useSWR from "swr";
 
 /* ---------- 타입 정의 ---------- */
-
-// /api/web/profile/stats 응답에서 사용하는 필드
-interface ProfileStats {
-  careerAverages: {
-    gamesPlayed: number;
-  } | null;
-}
 
 // /api/web/teams 응답의 팀 하나
 interface TeamData {
@@ -32,13 +25,13 @@ interface TeamData {
   wins: number;
 }
 
-// /api/web/community 응답의 게시글 하나
+// /api/web/community 응답의 게시글 하나 (apiSuccess가 snake_case로 변환)
 interface PostData {
   id: string;
-  publicId: string | null;
+  public_id: string | null;
   title: string;
-  viewCount: number;
-  createdAt: string | null;
+  view_count: number;
+  created_at: string | null;
 }
 
 /* ---------- 경기수 기반 티어 계산 ---------- */
@@ -46,10 +39,10 @@ interface PostData {
 // DB에 별도 랭크 시스템이 없으므로 총 경기수로 임시 티어 부여
 function getTier(gamesPlayed: number): { label: string; color: string } {
   if (gamesPlayed >= 200) return { label: "Diamond", color: "var(--color-primary)" };
-  if (gamesPlayed >= 100) return { label: "Platinum", color: "#A78BFA" };
-  if (gamesPlayed >= 50) return { label: "Gold", color: "#F59E0B" };
-  if (gamesPlayed >= 20) return { label: "Silver", color: "#94A3B8" };
-  return { label: "Bronze", color: "#CD7F32" };
+  if (gamesPlayed >= 100) return { label: "Platinum", color: "var(--color-tier-platinum)" };
+  if (gamesPlayed >= 50) return { label: "Gold", color: "var(--color-tier-gold)" };
+  if (gamesPlayed >= 20) return { label: "Silver", color: "var(--color-tier-silver)" };
+  return { label: "Bronze", color: "var(--color-tier-bronze)" };
 }
 
 /* ---------- Fallback 데이터 (API 실패 시 표시) ---------- */
@@ -60,79 +53,54 @@ const FALLBACK_TEAMS: TeamData[] = [
 ];
 
 const FALLBACK_RECENT_POSTS: PostData[] = [
-  { id: "1", publicId: null, title: "이번 윈터 챌린지 룰 변경사항 있나요?", viewCount: 120, createdAt: null },
-  { id: "2", publicId: null, title: "Storm FC 팀원 모집합니다 (수비수)", viewCount: 90, createdAt: null },
-  { id: "3", publicId: null, title: "신규 업데이트 패치노트 요약", viewCount: 80, createdAt: null },
+  { id: "1", public_id: null, title: "이번 윈터 챌린지 룰 변경사항 있나요?", view_count: 120, created_at: null },
+  { id: "2", public_id: null, title: "Storm FC 팀원 모집합니다 (수비수)", view_count: 90, created_at: null },
+  { id: "3", public_id: null, title: "신규 업데이트 패치노트 요약", view_count: 80, created_at: null },
 ];
 
 const FALLBACK_POPULAR_POSTS: PostData[] = [
-  { id: "4", publicId: null, title: "11월 랭킹 보상 공지 확인하세요", viewCount: 1200, createdAt: null },
-  { id: "5", publicId: null, title: "초보자를 위한 경기 운영 팁 5가지", viewCount: 850, createdAt: null },
+  { id: "4", public_id: null, title: "11월 랭킹 보상 공지 확인하세요", view_count: 1200, created_at: null },
+  { id: "5", public_id: null, title: "초보자를 위한 경기 운영 팁 5가지", view_count: 850, created_at: null },
 ];
 
-export function RightSidebarLoggedIn() {
-  // 나의 통계
-  const [gamesPlayed, setGamesPlayed] = useState<number>(0);
-  // 실시간 랭킹 상위 3팀
-  const [topTeams, setTopTeams] = useState<TeamData[]>(FALLBACK_TEAMS);
+/* 서버에서 미리 가져온 데이터를 받을 수 있는 props (없으면 기존처럼 SWR이 API 호출) */
+interface RightSidebarLoggedInProps {
+  fallbackTeams?: { teams: TeamData[] };
+  fallbackCommunity?: { posts: PostData[] };
+}
+
+export function RightSidebarLoggedIn({ fallbackTeams, fallbackCommunity }: RightSidebarLoggedInProps = {}) {
+  // 3개의 독립 API를 각각 useSWR로 호출
+  // fallbackData가 있으면 로딩 없이 즉시 표시, SWR이 뒤에서 최신 데이터 갱신
+  // profile/stats는 개인 데이터라 프리페치 안 함 (기존 SWR 유지)
+  const { data: profileData } = useSWR<{ career_averages: { games_played: number } | null }>(
+    "/api/web/profile/stats"
+  );
+  const { data: teamsData } = useSWR<{ teams: TeamData[] }>("/api/web/teams", null, { fallbackData: fallbackTeams });
+  const { data: communityData } = useSWR<{ posts: PostData[] }>("/api/web/community", null, { fallbackData: fallbackCommunity });
+
+  // 나의 통계: career_averages.games_played (snake_case API 응답)
+  const gamesPlayed = profileData?.career_averages?.games_played ?? 0;
+
+  // 팀 랭킹: 상위 3팀 (API 데이터 없으면 fallback)
+  const topTeams: TeamData[] = (() => {
+    const teams = teamsData?.teams;
+    return teams && teams.length > 0 ? teams.slice(0, 3) : FALLBACK_TEAMS;
+  })();
+
   // 커뮤니티: 최신글 3개 + 조회수 높은 글 2개
-  const [recentPosts, setRecentPosts] = useState<PostData[]>(FALLBACK_RECENT_POSTS);
-  const [popularPosts, setPopularPosts] = useState<PostData[]>(FALLBACK_POPULAR_POSTS);
+  const recentPosts: PostData[] = (() => {
+    const posts = communityData?.posts;
+    return posts && posts.length > 0 ? posts.slice(0, 3) : FALLBACK_RECENT_POSTS;
+  })();
 
-  const [visible, setVisible] = useState(false);
-  const sidebarRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = sidebarRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect(); } },
-      { rootMargin: "200px" }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!visible) return;
-    const fetchAll = async () => {
-      const results = await Promise.allSettled([
-        fetch("/api/web/profile/stats").then((r) => r.json()),
-        fetch("/api/web/teams?limit=5").then((r) => r.json()),
-        fetch("/api/web/community?limit=5").then((r) => r.json()),
-      ]);
-
-      // 나의 통계 처리
-      if (results[0].status === "fulfilled" && results[0].value?.data) {
-        const stats = results[0].value.data as ProfileStats;
-        if (stats.careerAverages) {
-          setGamesPlayed(stats.careerAverages.gamesPlayed);
-        }
-      }
-
-      // 팀 랭킹 처리 (상위 3팀만 slice)
-      if (results[1].status === "fulfilled" && results[1].value?.data?.teams) {
-        const teams = results[1].value.data.teams as TeamData[];
-        if (teams.length > 0) {
-          setTopTeams(teams.slice(0, 3));
-        }
-      }
-
-      // 커뮤니티 처리: 최신글 3개 + 조회수 높은 글 2개
-      if (results[2].status === "fulfilled" && results[2].value?.data?.posts) {
-        const posts = results[2].value.data.posts as PostData[];
-        if (posts.length > 0) {
-          // 최신글: API가 이미 created_at DESC로 반환하므로 앞 3개
-          setRecentPosts(posts.slice(0, 3));
-          // 조회수 높은 글: 전체를 viewCount 내림차순 정렬 후 상위 2개
-          const byViews = [...posts].sort((a, b) => b.viewCount - a.viewCount);
-          setPopularPosts(byViews.slice(0, 2));
-        }
-      }
-    };
-
-    fetchAll();
-  }, []);
+  const popularPosts: PostData[] = (() => {
+    const posts = communityData?.posts;
+    if (!posts || posts.length === 0) return FALLBACK_POPULAR_POSTS;
+    // 조회수 내림차순 정렬 후 상위 2개
+    const byViews = [...posts].sort((a, b) => b.view_count - a.view_count);
+    return byViews.slice(0, 2);
+  })();
 
   // 경기수 기반 티어 계산
   const tier = getTier(gamesPlayed);
@@ -143,13 +111,13 @@ export function RightSidebarLoggedIn() {
     return count.toString();
   };
 
-  // 게시글 상세 링크 생성
+  // 게시글 상세 링크 생성 (API 응답이 snake_case이므로 public_id로 접근)
   const getPostLink = (post: PostData): string => {
-    return `/community/${post.publicId || post.id}`;
+    return `/community/${post.public_id || post.id}`;
   };
 
   return (
-    <div ref={sidebarRef} className="space-y-8" style={{ fontSize: '120%' }}>
+    <div className="space-y-8" style={{ fontSize: '120%' }}>
       {/* === 1. 오늘의 주요 경기 (네이비 배경) === */}
       <div className="bg-secondary rounded-xl p-6 relative overflow-hidden group border border-border">
         <div className="relative z-10">
@@ -176,12 +144,12 @@ export function RightSidebarLoggedIn() {
         <div className="grid grid-cols-2 gap-4">
           {/* 총 경기수를 Wins 자리에 표시 */}
           <div className="bg-card p-5 rounded-lg border border-border">
-            <div className="text-[10px] text-text-muted uppercase mb-1 font-bold">Games</div>
+            <div className="text-xs text-text-muted uppercase mb-1 font-bold">Games</div>
             <div className="text-2xl font-bold text-text-primary">{gamesPlayed}</div>
           </div>
           {/* 경기수 기반 임시 티어를 Rank 자리에 표시 */}
           <div className="bg-card p-5 rounded-lg border border-border">
-            <div className="text-[10px] text-text-muted uppercase mb-1 font-bold">Rank</div>
+            <div className="text-xs text-text-muted uppercase mb-1 font-bold">Rank</div>
             <div className="text-2xl font-bold" style={{ color: tier.color }}>{tier.label}</div>
           </div>
         </div>
@@ -214,7 +182,7 @@ export function RightSidebarLoggedIn() {
                 </span>
               </div>
               {/* 승수 표시 */}
-              <span className="text-[10px] text-text-muted">{team.wins}W</span>
+              <span className="text-xs text-text-muted">{team.wins}W</span>
             </Link>
           ))}
         </div>
@@ -263,7 +231,7 @@ export function RightSidebarLoggedIn() {
                     <p className="text-sm text-text-secondary group-hover:text-text-primary line-clamp-1">
                       {post.title}
                     </p>
-                    <span className="text-xs text-text-muted">{formatViews(post.viewCount)} views</span>
+                    <span className="text-xs text-text-muted">{formatViews(post.view_count)} views</span>
                   </Link>
                 </li>
               ))}

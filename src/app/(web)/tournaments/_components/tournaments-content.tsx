@@ -32,16 +32,16 @@ const TOURNAMENTS_PER_PAGE = 9;
 
 // -- 상태별 배지 색상 (상단 이미지 배너에 표시) --
 const STATUS_BADGE: Record<string, { label: string; bg: string }> = {
-  draft:               { label: "DRAFT", bg: "var(--color-text-disabled)" },
-  active:              { label: "ACTIVE", bg: "var(--color-primary)" },
-  published:           { label: "OPEN", bg: "var(--color-primary)" },
-  registration:        { label: "OPENING SOON", bg: "var(--color-primary)" },
-  registration_open:   { label: "OPENING SOON", bg: "var(--color-primary)" },
-  registration_closed: { label: "CLOSED", bg: "#D97706" },
-  in_progress:         { label: "LIVE", bg: "var(--color-info)" },
-  ongoing:             { label: "LIVE", bg: "var(--color-info)" },
-  completed:           { label: "ENDED", bg: "var(--color-text-disabled)" },
-  cancelled:           { label: "CANCELLED", bg: "#DC2626" },
+  draft:               { label: "준비중", bg: "var(--color-text-disabled)" },
+  active:              { label: "진행중", bg: "var(--color-primary)" },
+  published:           { label: "모집중", bg: "var(--color-primary)" },
+  registration:        { label: "곧 모집", bg: "var(--color-primary)" },
+  registration_open:   { label: "곧 모집", bg: "var(--color-primary)" },
+  registration_closed: { label: "마감", bg: "#D97706" },
+  in_progress:         { label: "라이브", bg: "var(--color-info)" },
+  ongoing:             { label: "라이브", bg: "var(--color-info)" },
+  completed:           { label: "종료", bg: "var(--color-text-disabled)" },
+  cancelled:           { label: "취소됨", bg: "#EF4444" },
 };
 
 // -- 대회 형식 한글 라벨 매핑 --
@@ -56,7 +56,7 @@ const FORMAT_LABEL: Record<string, string> = {
 function formatDate(isoStr: string | null): string {
   if (!isoStr) return "";
   const d = new Date(isoStr);
-  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const days = ["일", "월", "화", "수", "목", "금", "토"];
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
@@ -95,7 +95,8 @@ function TournamentGridSkeleton() {
           }}
         >
           {/* 이미지 배너 스켈레톤 */}
-          <Skeleton className="h-48 w-full" />
+          {/* 이미지 배너 스켈레톤 -- 모바일 가독성 위해 h-36으로 축소 */}
+          <Skeleton className="h-36 w-full" />
           <div className="p-6 space-y-3">
             <div className="flex justify-between">
               <Skeleton className="h-5 w-3/5" />
@@ -136,7 +137,7 @@ function TournamentCard({ tournament: t }: { tournament: TournamentFromApi }) {
       >
         {/* 상단 이미지 배너: DB에 이미지가 없으므로 그라디언트 배경 + 대회 이니셜 */}
         <div
-          className="relative h-48 overflow-hidden flex items-center justify-center"
+          className="relative h-36 overflow-hidden flex items-center justify-center"
           style={{ background: getGradient(t.name) }}
         >
           {/* 대회명 이니셜 (배경 장식) */}
@@ -155,7 +156,7 @@ function TournamentCard({ tournament: t }: { tournament: TournamentFromApi }) {
           </span>
           {/* 상태 배지 */}
           <div
-            className="absolute top-4 left-4 text-white text-[10px] font-bold px-2 py-1 rounded tracking-wider"
+            className="absolute top-4 left-4 text-white text-xs font-bold px-2 py-1 rounded tracking-wider"
             style={{ backgroundColor: badge.bg }}
           >
             {badge.label}
@@ -163,7 +164,7 @@ function TournamentCard({ tournament: t }: { tournament: TournamentFromApi }) {
           {/* 형식 배지 (우측 상단) */}
           {t.format && (
             <div
-              className="absolute top-4 right-4 text-[10px] font-bold px-2 py-1 rounded tracking-wider"
+              className="absolute top-4 right-4 text-xs font-bold px-2 py-1 rounded tracking-wider"
               style={{
                 backgroundColor: "rgba(255,255,255,0.15)",
                 backdropFilter: "blur(4px)",
@@ -228,13 +229,13 @@ function TournamentCard({ tournament: t }: { tournament: TournamentFromApi }) {
                     className="text-xs font-medium"
                     style={{ color: "var(--color-text-secondary)" }}
                   >
-                    Recruitment: {Math.round(pct)}%
+                    모집현황: {Math.round(pct)}%
                   </span>
                   <span
                     className="text-xs font-bold"
                     style={{ color: "var(--color-text-primary)" }}
                   >
-                    {t.team_count}/{maxTeams} Teams
+                    {t.team_count}/{maxTeams} 팀
                   </span>
                 </div>
                 <div
@@ -257,7 +258,7 @@ function TournamentCard({ tournament: t }: { tournament: TournamentFromApi }) {
               className="w-full font-bold py-3 rounded text-sm uppercase tracking-tight transition-colors text-white"
               style={{ backgroundColor: "var(--color-primary)" }}
             >
-              Join Tournament
+              대회 참여
             </button>
           </div>
         </div>
@@ -493,28 +494,30 @@ export function TournamentsContent({
 
   return (
     <>
-      {/* 헤더 + 필터: 시안의 2행 레이아웃 */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-        {/* 좌측: 제목 + 부제 */}
-        <div>
-          <span
-            className="font-bold text-sm tracking-widest uppercase mb-2 block"
-            style={{ color: "var(--color-primary)" }}
-          >
-            Premium League
-          </span>
-          <h1
-            className="text-4xl sm:text-5xl font-bold leading-tight"
-            style={{
-              fontFamily: "var(--font-heading)",
-              color: "var(--color-text-primary)",
-            }}
-          >
-            TOURNAMENT DIRECTORY
-          </h1>
+      {/* 헤더: 제목 + 필터 */}
+      <div className="mb-10 space-y-4">
+        <div className="flex items-center justify-between">
+          {/* 좌측: 제목 + 부제 */}
+          <div>
+            <span
+              className="font-bold text-sm tracking-widest uppercase mb-2 block"
+              style={{ color: "var(--color-primary)" }}
+            >
+              프리미엄 리그
+            </span>
+            <h1
+              className="text-4xl sm:text-5xl font-bold leading-tight"
+              style={{
+                fontFamily: "var(--font-heading)",
+                color: "var(--color-text-primary)",
+              }}
+            >
+              대회 찾기
+            </h1>
+          </div>
         </div>
 
-        {/* 우측: 필터 드롭다운들 */}
+        {/* 검색 + 플로팅 필터 트리거 */}
         <TournamentsFilterComponent
           cities={cities}
           onSearchChange={handleSearchChange}

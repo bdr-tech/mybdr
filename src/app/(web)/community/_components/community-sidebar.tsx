@@ -99,7 +99,7 @@ export function CommunitySidebar({ posts }: CommunitySidebarProps) {
                 >
                   {post.title}
                 </p>
-                <span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
+                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
                   조회수 {post.view_count.toLocaleString()}
                 </span>
               </div>
@@ -156,7 +156,7 @@ export function CommunitySidebar({ posts }: CommunitySidebarProps) {
       >
         <div className="relative z-10 text-center p-4">
           <span
-            className="text-[10px] px-2 py-0.5 rounded mb-2 inline-block border"
+            className="text-xs px-2 py-0.5 rounded mb-2 inline-block border"
             style={{
               backgroundColor: "var(--color-elevated)",
               borderColor: "var(--color-border)",

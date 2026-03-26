@@ -70,15 +70,15 @@ export default async function SeriesDashboardPage({
 
       {/* 통계 */}
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <div className="rounded-xl bg-[var(--color-elevated)] p-4 text-center">
+        <div className="rounded-[16px] bg-[var(--color-elevated)] p-4 text-center">
           <p className="text-xl font-bold sm:text-2xl text-[var(--color-accent)]">{series.tournaments_count ?? 0}</p>
           <p className="mt-1 text-xs text-[var(--color-text-muted)]">총 회차</p>
         </div>
-        <div className="rounded-xl bg-[var(--color-elevated)] p-4 text-center">
+        <div className="rounded-[16px] bg-[var(--color-elevated)] p-4 text-center">
           <p className="text-xl font-bold sm:text-2xl text-[var(--color-accent)]">{totalTeams}</p>
           <p className="mt-1 text-xs text-[var(--color-text-muted)]">누적 참가팀</p>
         </div>
-        <div className="hidden rounded-xl bg-[var(--color-elevated)] p-4 text-center sm:block">
+        <div className="hidden rounded-[16px] bg-[var(--color-elevated)] p-4 text-center sm:block">
           <p className="text-xl font-bold sm:text-2xl text-[var(--color-primary)]">{nextEdition}회</p>
           <p className="mt-1 text-xs text-[var(--color-text-muted)]">다음 회차</p>
         </div>

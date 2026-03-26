@@ -13,14 +13,14 @@ import { TextSizeToggle } from "@/components/shared/text-size-toggle";
 
 /* ============================================================
  * 사이드바 네비게이션 항목 정의
- * Material Symbols 아이콘명 사용 (lucide-react 대체)
+ * Material Symbols 아이콘명 사용
  * ============================================================ */
 const sideNavItems = [
   { href: "/", label: "홈", icon: "home" },
   { href: "/games", label: "경기찾기", icon: "sports_basketball" },
   { href: "/tournaments", label: "대회", icon: "emoji_events" },
   { href: "/teams", label: "팀", icon: "groups" },
-  { href: "#", label: "랭킹", icon: "leaderboard" },
+  { href: "/rankings", label: "랭킹", icon: "leaderboard" },
   { href: "/community", label: "커뮤니티", icon: "forum" },
 ];
 
@@ -62,18 +62,29 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
     });
   }, [setLoggedIn]);
 
-  /* 페이지 이동 시 알림 카운트만 갱신 */
+  /* 알림 카운트 30초 간격 폴링 (페이지 이동마다 호출하지 않고 주기적으로만) */
   useEffect(() => {
     if (!user) return;
-    fetch("/api/web/notifications", { credentials: "include" })
-      .then(async (r) => {
-        if (r.ok) {
-          const data = (await r.json()) as { unreadCount: number };
-          setUnreadCount(data.unreadCount ?? 0);
-        }
-      })
-      .catch(() => {});
-  }, [user, pathname]);
+
+    // 폴링 함수: 알림 API를 호출하여 미읽 수 갱신
+    const pollNotifications = () => {
+      fetch("/api/web/notifications", { credentials: "include" })
+        .then(async (r) => {
+          if (r.ok) {
+            const data = (await r.json()) as { unreadCount: number };
+            setUnreadCount(data.unreadCount ?? 0);
+          }
+        })
+        .catch(() => {});
+    };
+
+    // 마운트 시 즉시 1회 호출 + 30초 간격 반복
+    pollNotifications();
+    const intervalId = setInterval(pollNotifications, 30000);
+
+    // 언마운트 시 타이머 정리 (메모리 누수 방지)
+    return () => clearInterval(intervalId);
+  }, [user]);
 
   /* 현재 경로가 활성 메뉴인지 판별 */
   const isActive = (href: string) =>
@@ -103,14 +114,14 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
             <Image
               src="/images/logo.png"
               alt="BDR"
-              width={236}
-              height={71}
-              className="w-[236px] h-auto"
+              width={165}
+              height={50}
+              className="w-[165px] h-auto"
               priority
             />
           </Link>
           {/* 서브텍스트: 브랜드 슬로건 */}
-          <span className="mt-1 text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">
+          <span className="mt-1 text-xs uppercase tracking-wider text-[var(--color-text-muted)]">
             Elite Athletics
           </span>
         </div>
@@ -157,7 +168,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
                   </div>
                   <div>
                     <p className="text-sm font-bold text-[var(--color-text-primary)]">{user.name || "사용자"}</p>
-                    <p className="text-[10px] text-[var(--color-text-muted)]">Level 1</p>
+                    <p className="text-xs text-[var(--color-text-muted)]">Level 1</p>
                   </div>
                 </div>
                 {/* 알림 벨 아이콘 (빨간 점 표시) */}
@@ -257,7 +268,11 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
        * 사이드바 너비(left-64) 오른쪽 영역, 배경 투명
        * pointer-events-none으로 클릭 통과, 내부 요소만 클릭 가능
        * ======================================== */}
-      <div className="pointer-events-none fixed right-0 top-0 z-50 hidden items-center justify-end gap-3 p-6 lg:flex" style={{ left: "16rem" }}>
+      {/* 데스크탑 상단 헤더바: 배경+blur로 콘텐츠와 구분, sticky 효과 */}
+      <div
+        className="pointer-events-none fixed right-0 top-0 z-40 hidden items-center justify-end gap-3 border-b border-[var(--color-border)] px-6 py-2 backdrop-blur-xl lg:flex"
+        style={{ left: "16rem", backgroundColor: "color-mix(in srgb, var(--color-background) 80%, transparent)" }}
+      >
         {/* 다크/라이트 모드 토글 */}
         <div className="pointer-events-auto"><ThemeToggle /></div>
         {/* 글씨 크기 조절 토글 */}
@@ -296,8 +311,8 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
        * pt-16 (모바일 헤더) / lg:pt-20 (데스크탑 여유)
        * pb-20 (모바일 하단 네비) / lg:pb-8 (데스크탑)
        * ======================================== */}
-      <main className="min-h-screen flex-1 pb-20 pt-16 lg:ml-64 lg:pb-12 lg:pt-6">
-        <div className="mx-auto max-w-7xl p-6 lg:p-10">
+      <main className="min-h-screen flex-1 pb-20 pt-16 lg:ml-64 lg:pb-12 lg:pt-12">
+        <div className="mx-auto p-4 lg:px-6 lg:py-4">
           {children}
         </div>
       </main>
@@ -331,7 +346,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
                 className="flex flex-col items-center justify-center text-[var(--color-text-muted)] transition-all"
               >
                 <span className="material-symbols-outlined text-2xl">menu</span>
-                <span className="mt-0.5 text-[10px] font-medium">{item.label}</span>
+                <span className="mt-0.5 text-xs font-medium">{item.label}</span>
               </button>
             );
           }
@@ -354,7 +369,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
               >
                 {item.icon}
               </span>
-              <span className="mt-0.5 text-[10px] font-medium">{item.label}</span>
+              <span className="mt-0.5 text-xs font-medium">{item.label}</span>
             </Link>
           );
         })}

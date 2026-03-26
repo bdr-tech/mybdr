@@ -78,7 +78,7 @@ export async function GamesTab({ teamId, accent }: GamesTabProps) {
                 </div>
               </div>
               <span
-                className={`ml-3 flex-shrink-0 rounded px-2 py-0.5 text-[10px] font-bold ${statusColor}`}
+                className={`ml-3 flex-shrink-0 rounded px-2 py-0.5 text-xs font-bold ${statusColor}`}
                 style={statusNum === 1 ? { backgroundColor: `${accent}22`, color: accent } : undefined}
               >
                 {STATUS_LABEL[g.status] ?? String(g.status)}

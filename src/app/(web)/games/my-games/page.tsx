@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/db/prisma";
 import { getWebSession } from "@/lib/auth/web-session";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+
+// SEO: 내 경기 페이지 메타데이터
+export const metadata: Metadata = {
+  title: "내 경기 | MyBDR",
+  description: "내가 참여한 경기와 주최한 경기를 확인하세요.",
+};
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +49,7 @@ export default async function MyGamesPage() {
           <div className="space-y-2">
             {hostedGames.map((g) => (
               <Link key={g.id.toString()} href={`/games/${g.uuid?.slice(0, 8) ?? g.id}`}>
-                <Card className="flex items-center justify-between rounded-xl border border-[var(--color-border)] overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg">
+                <Card className="flex items-center justify-between rounded-[16px] border border-[var(--color-border)] overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg">
                   <div>
                     <p className="font-medium">{g.title ?? "제목 없음"}</p>
                     <p className="text-xs text-[var(--color-text-muted)]">{g.scheduled_at?.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} · {g.venue_name ?? g.city ?? "-"}</p>
@@ -68,7 +75,7 @@ export default async function MyGamesPage() {
           <div className="space-y-2">
             {applications.map((a) => (
               <Link key={a.id.toString()} href={`/games/${a.games?.uuid?.slice(0, 8) ?? a.game_id}`}>
-                <Card className="flex items-center justify-between rounded-xl border border-[var(--color-border)] overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg">
+                <Card className="flex items-center justify-between rounded-[16px] border border-[var(--color-border)] overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg">
                   <div>
                     <p className="font-medium">{a.games?.title ?? "경기"}</p>
                     <p className="text-xs text-[var(--color-text-muted)]">{a.games?.scheduled_at?.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} · {a.games?.venue_name ?? "-"}</p>

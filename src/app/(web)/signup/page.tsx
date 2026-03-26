@@ -15,7 +15,7 @@ export default function SignupPage() {
         {/* Google 회원가입 */}
         <a
           href="/api/auth/google"
-          className="flex w-full items-center justify-center gap-3 rounded-xl border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-medium text-[var(--color-text-secondary)] transition-opacity hover:opacity-90 active:opacity-80"
+          className="flex w-full items-center justify-center gap-3 rounded-[16px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-medium text-[var(--color-text-secondary)] transition-opacity hover:opacity-90 active:opacity-80"
         >
           <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
             <path

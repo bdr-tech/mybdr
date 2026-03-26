@@ -3,6 +3,7 @@
  *
  * Service 함수는 순수 데이터만 반환한다 (NextResponse 사용 금지).
  */
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 
 // ---------------------------------------------------------------------------
@@ -171,42 +172,38 @@ export async function getPlayerStats(userId: bigint) {
     }),
   ]);
 
-  // --- 승률(Win Rate) 계산 ---
-  // 선수가 참여한 경기(MatchPlayerStat)에서 경기 결과(winner_team_id)와
-  // 선수가 속한 팀(tournamentTeamId)을 비교하여 승/패를 판별
+  // --- 승률(Win Rate) 계산 (DB에서 직접 집계) ---
+  // 기존: findMany로 N개 레코드 로딩 후 JS filter/count → 느림
+  // 개선: SQL로 DB에서 바로 승수/전체 경기수를 count → 데이터 1행만 전송
   let winRate: number | null = null;
 
   if (aggregate._count.id > 0) {
-    // 선수의 모든 경기 기록을 가져온다 (경기의 승리팀 + 선수의 소속팀 포함)
-    const matchRecords = await prisma.matchPlayerStat.findMany({
-      where: { tournamentTeamPlayerId: { in: playerIds } },
-      select: {
-        // 경기의 승리팀 ID
-        tournamentMatch: {
-          select: { winner_team_id: true },
-        },
-        // 선수의 소속팀 ID
-        tournamentTeamPlayer: {
-          select: { tournamentTeamId: true },
-        },
-      },
-    });
+    // raw SQL로 승률을 DB에서 직접 계산
+    // - 결과 확정 경기(winner_team_id IS NOT NULL)만 대상
+    // - winner_team_id = 선수 소속팀 ID이면 승리
+    const winRateResult = await prisma.$queryRaw<
+      Array<{ total: bigint; wins: bigint }>
+    >`
+      SELECT
+        COUNT(*) AS total,
+        COUNT(*) FILTER (
+          WHERE tm.winner_team_id = ttp.tournament_team_id
+        ) AS wins
+      FROM match_player_stats mps
+      JOIN tournament_matches tm ON tm.id = mps.tournament_match_id
+      JOIN tournament_team_players ttp ON ttp.id = mps.tournament_team_player_id
+      WHERE mps.tournament_team_player_id IN (${Prisma.join(playerIds)})
+        AND tm.winner_team_id IS NOT NULL
+    `;
 
-    // 결과가 확정된 경기(winner_team_id가 있는 경기)만 필터링
-    const finishedMatches = matchRecords.filter(
-      (r) => r.tournamentMatch.winner_team_id != null
-    );
+    const { total, wins } = winRateResult[0];
+    // bigint -> number 변환 후 승률 계산
+    const totalNum = Number(total);
+    const winsNum = Number(wins);
 
-    if (finishedMatches.length > 0) {
-      // 내 팀이 승리한 경기 수 계산
-      const wins = finishedMatches.filter(
-        (r) =>
-          r.tournamentMatch.winner_team_id ===
-          r.tournamentTeamPlayer.tournamentTeamId
-      ).length;
-
-      // 승률 = (승리 / 결과확정 경기) * 100, 소수점 1자리
-      winRate = Number(((wins / finishedMatches.length) * 100).toFixed(1));
+    if (totalNum > 0) {
+      // 승률 = (승리수 / 전체 확정 경기수) * 100, 소수점 1자리
+      winRate = Number(((winsNum / totalNum) * 100).toFixed(1));
     }
   }
 

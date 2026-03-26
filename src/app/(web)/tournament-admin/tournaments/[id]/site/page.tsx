@@ -36,11 +36,11 @@ const TEMPLATES = [
 
 const COLOR_PRESETS = [
   { hex: "#1B3C87", name: "토스 블루" },
-  { hex: "#DC2626", name: "레드" },
+  { hex: "#EF4444", name: "레드" },
   { hex: "#E31B23", name: "오렌지" },
   { hex: "#22C55E", name: "그린" },
   { hex: "#8B5CF6", name: "퍼플" },
-  { hex: "#D97706", name: "골드" },
+  { hex: "#FBBF24", name: "골드" },
   { hex: "#0EA5E9", name: "스카이" },
   { hex: "#1F2937", name: "다크" },
 ];

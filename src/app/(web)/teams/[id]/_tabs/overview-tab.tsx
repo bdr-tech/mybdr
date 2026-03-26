@@ -19,14 +19,16 @@ interface OverviewTabProps {
 }
 
 export async function OverviewTab({ teamId, accent, team }: OverviewTabProps) {
-  // 최근 경기 — 팀 멤버들이 주최한 일반 경기 (기존 쿼리 유지)
+  // 먼저 멤버 ID 목록 조회 (recentGames의 선행 조건)
   const memberIds = await prisma.teamMember.findMany({
     where: { teamId, status: "active" },
     select: { userId: true },
   });
   const userIds = memberIds.map((m) => m.userId);
 
-  const recentGames = await prisma.games.findMany({
+  // recentGames와 topMembers는 서로 독립적이므로 Promise.all로 병렬 실행
+  // (기존: recentGames 완료 후 topMembers 순차 실행 → 불필요한 대기 제거)
+  const fetchRecentGames = () => prisma.games.findMany({
     where: { organizer_id: { in: userIds } },
     orderBy: { scheduled_at: "desc" },
     take: 5,
@@ -38,15 +40,20 @@ export async function OverviewTab({ teamId, accent, team }: OverviewTabProps) {
       status: true,
       game_type: true,
     },
-  }).catch(() => []);
-
-  // 멤버 목록 — 주요 스쿼드 표시용 (3명)
-  const topMembers = await prisma.teamMember.findMany({
+  });
+  const fetchTopMembers = () => prisma.teamMember.findMany({
     where: { teamId, status: "active" },
     include: { user: { select: { id: true, nickname: true, name: true, position: true } } },
     orderBy: [{ role: "asc" }, { createdAt: "asc" }],
     take: 6,
-  }).catch(() => []);
+  });
+  type RecentGames = Awaited<ReturnType<typeof fetchRecentGames>>;
+  type TopMembers = Awaited<ReturnType<typeof fetchTopMembers>>;
+
+  const [recentGames, topMembers] = await Promise.all([
+    fetchRecentGames().catch(() => [] as RecentGames),
+    fetchTopMembers().catch(() => [] as TopMembers),
+  ]);
 
   // 경기 결과 라벨/스타일
   const STATUS_LABEL: Record<number, string> = { 0: "임시", 1: "모집중", 2: "확정", 3: "완료", 4: "취소" };
@@ -78,7 +85,7 @@ export async function OverviewTab({ teamId, accent, team }: OverviewTabProps) {
                 <p className="text-xs font-bold text-[var(--color-text-primary)]">
                   {team.wins}승 {team.draws > 0 ? `${team.draws}무 ` : ""}{team.losses}패
                 </p>
-                <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
+                <p className="text-xs text-[var(--color-text-muted)] mt-1">
                   총 {total}경기
                 </p>
               </div>
@@ -175,7 +182,7 @@ export async function OverviewTab({ teamId, accent, team }: OverviewTabProps) {
                       <div>
                         <p className="text-sm font-bold text-[var(--color-text-primary)]">{g.title}</p>
                         {g.scheduled_at && (
-                          <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">
+                          <p className="text-xs text-[var(--color-text-muted)] uppercase font-bold">
                             {g.scheduled_at.toLocaleDateString("ko-KR", {
                               year: "numeric",
                               month: "long",
@@ -186,7 +193,7 @@ export async function OverviewTab({ teamId, accent, team }: OverviewTabProps) {
                         )}
                       </div>
                     </div>
-                    <span className={`rounded px-2 py-0.5 text-[10px] font-bold ${statusColor}`}>
+                    <span className={`rounded px-2 py-0.5 text-xs font-bold ${statusColor}`}>
                       {STATUS_LABEL[statusNum] ?? String(statusNum)}
                     </span>
                   </Link>
@@ -237,13 +244,13 @@ export async function OverviewTab({ teamId, accent, team }: OverviewTabProps) {
                       <p className="text-xs font-bold text-[var(--color-text-primary)]">
                         {displayName} {isCaptain ? "(C)" : ""}
                       </p>
-                      <p className="text-[10px] text-[var(--color-text-muted)]">
+                      <p className="text-xs text-[var(--color-text-muted)]">
                         {position}
                       </p>
                     </div>
                     {/* 역할 배지 */}
                     {isCaptain && (
-                      <span className="text-[10px] font-bold text-[var(--color-primary)]">
+                      <span className="text-xs font-bold text-[var(--color-primary)]">
                         CAPTAIN
                       </span>
                     )}

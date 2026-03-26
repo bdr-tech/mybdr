@@ -15,6 +15,7 @@ interface PostFromApi {
   category: string | null;
   view_count: number;
   comments_count: number;
+  likes_count: number;
   created_at: string | null;
   author_nickname: string;
   author_profile_image: string | null;   // 작성자 프로필 이미지 URL (신규)
@@ -227,40 +228,9 @@ export function CommunityContent() {
         커뮤니티
       </h2>
 
-      {/* 카테고리 탭 + 검색: 시안 기준 pill 버튼 가로 배열 */}
-      <div className="mb-6 flex flex-wrap gap-2 items-center">
-        {categoryTabs.map((tab) => {
-          const isActive = category === tab.key;
-          // 선호 카테고리 표시
-          const isPreferred = tab.key ? preferredCategories.includes(tab.key) : false;
-          return (
-            <button
-              key={tab.key ?? "all"}
-              type="button"
-              onClick={() => handleCategoryChange(tab.key)}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${
-                isActive ? "font-bold text-white" : "border"
-              }`}
-              style={
-                isActive
-                  ? { backgroundColor: "var(--color-primary)", color: "#fff" }
-                  : isPreferred
-                    ? { borderColor: "var(--color-primary)", color: "var(--color-primary)", backgroundColor: "var(--color-card)" }
-                    : { borderColor: "var(--color-border)", color: "var(--color-text-secondary)", backgroundColor: "var(--color-card)" }
-              }
-            >
-              {tab.label}
-              {isPreferred && (
-                <span className="ml-1 text-[10px]" style={{ color: "var(--color-primary)" }} title="관심 카테고리">*</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 검색 바: 간소화된 검색 */}
-      <form onSubmit={handleSearch} className="mb-6">
-        <div className="flex gap-2">
+      {/* 검색바 + 글쓰기 버튼 */}
+      <form onSubmit={handleSearch} className="mb-4">
+        <div className="flex items-center gap-3">
           <div className="relative flex-1">
             <span
               className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sm"
@@ -282,23 +252,56 @@ export function CommunityContent() {
           </div>
           <button
             type="submit"
-            className="rounded px-4 py-2 text-sm font-semibold text-white"
+            className="rounded px-4 py-2 text-sm font-semibold text-white shrink-0"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
             검색
           </button>
-          {appliedQuery && (
-            <button
-              type="button"
-              onClick={handleClearSearch}
-              className="rounded border px-4 py-2 text-sm"
-              style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
-            >
-              초기화
-            </button>
-          )}
         </div>
       </form>
+
+      {/* 카테고리 인라인 탭 (가로 스크롤, 밑줄 스타일) */}
+      <div
+        className="mb-6 overflow-x-auto"
+        style={{
+          /* 스크롤바 숨김 */
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+        }}
+      >
+        <div
+          className="flex gap-1 border-b min-w-max"
+          style={{ borderColor: "var(--color-border)" }}
+        >
+          {categoryTabs.map((tab) => {
+            // 현재 선택된 탭인지 확인
+            const isActive = category === tab.key;
+            return (
+              <button
+                key={tab.key ?? "all"}
+                type="button"
+                onClick={() => handleCategoryChange(tab.key)}
+                className="px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors relative"
+                style={{
+                  color: isActive
+                    ? "var(--color-primary)"
+                    : "var(--color-text-muted)",
+                  fontWeight: isActive ? 700 : 500,
+                }}
+              >
+                {tab.label}
+                {/* 선택된 탭 하단 밑줄 (빨간색 2px) */}
+                {isActive && (
+                  <span
+                    className="absolute bottom-0 left-0 right-0 h-0.5"
+                    style={{ backgroundColor: "var(--color-primary)" }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* 검색 결과 안내 */}
       {hasFilters && !loading && (
@@ -373,7 +376,7 @@ export function CommunityContent() {
                     className="w-10 h-10 flex items-center justify-center rounded font-bold text-sm transition-colors"
                     style={
                       page === currentPage
-                        ? { backgroundColor: "var(--color-primary)", color: "#fff" }
+                        ? { backgroundColor: "var(--color-primary)", color: "var(--color-on-primary)" }
                         : {
                             border: "1px solid var(--color-border)",
                             backgroundColor: "var(--color-card)",
@@ -437,7 +440,7 @@ function PostCard({ post }: { post: PostFromApi }) {
             />
           ) : (
             <div
-              className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+              className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
               style={{ backgroundColor: "var(--color-primary)" }}
             >
               {post.author_nickname.charAt(0)}
@@ -449,7 +452,7 @@ function PostCard({ post }: { post: PostFromApi }) {
           >
             {post.author_nickname}
           </span>
-          <span className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+          <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
             {formatRelativeTime(post.created_at)}
           </span>
         </div>
@@ -476,24 +479,28 @@ function PostCard({ post }: { post: PostFromApi }) {
         <div className="flex items-center justify-between">
           {/* 카테고리 배지 */}
           <span
-            className="text-[10px] px-2 py-0.5 rounded font-bold uppercase"
+            className="text-xs px-2 py-0.5 rounded font-bold uppercase"
             style={{
               backgroundColor: "var(--color-primary)",
-              color: "#fff",
+              color: "var(--color-on-primary)",
               opacity: 0.9,
             }}
           >
             {categoryLabel}
           </span>
 
-          {/* 메타 수치 */}
+          {/* 메타 수치: 조회수 + 좋아요 + 댓글 */}
           <div className="flex items-center gap-4 text-xs" style={{ color: "var(--color-text-muted)" }}>
             <span className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-sm">visibility</span>
+              <span className="material-symbols-outlined text-base">visibility</span>
               {post.view_count.toLocaleString()}
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-sm">chat_bubble</span>
+              <span className="material-symbols-outlined text-base">thumb_up</span>
+              {post.likes_count}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-base">chat_bubble</span>
               {post.comments_count}
             </span>
           </div>

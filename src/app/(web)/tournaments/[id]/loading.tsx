@@ -42,7 +42,7 @@ export default function TournamentDetailLoading() {
 
           {/* 대회 소개 카드 스켈레톤 */}
           <div
-            className="mb-8 rounded-radius-card border p-6"
+            className="mb-8 rounded-[var(--radius-card)] border p-6"
             style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
           >
             <Skeleton className="mb-4 h-6 w-32" />
@@ -58,7 +58,7 @@ export default function TournamentDetailLoading() {
 
           {/* 경기 정보 카드 스켈레톤 */}
           <div
-            className="rounded-radius-card border p-6"
+            className="rounded-[var(--radius-card)] border p-6"
             style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
           >
             <Skeleton className="mb-4 h-6 w-24" />
@@ -76,7 +76,7 @@ export default function TournamentDetailLoading() {
         {/* 우측 사이드바 스켈레톤 */}
         <div className="mt-8 lg:col-span-4 lg:mt-0">
           <div
-            className="overflow-hidden rounded-radius-card border"
+            className="overflow-hidden rounded-[var(--radius-card)] border"
             style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
           >
             {/* 참가비 헤더 */}

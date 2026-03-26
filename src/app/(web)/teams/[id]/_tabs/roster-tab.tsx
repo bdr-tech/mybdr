@@ -73,7 +73,7 @@ export async function RosterTab({ teamId, accent }: RosterTabProps) {
           </div>
           {/* 주장 배지 */}
           {isCaptain && (
-            <span className="absolute -bottom-1 -right-1 rounded bg-[var(--color-primary)] px-1.5 py-0.5 text-[10px] font-black text-white">
+            <span className="absolute -bottom-1 -right-1 rounded bg-[var(--color-primary)] px-1.5 py-0.5 text-xs font-black text-white">
               CP
             </span>
           )}
@@ -84,7 +84,7 @@ export async function RosterTab({ teamId, accent }: RosterTabProps) {
         {/* 역할 배지 */}
         <div className="mt-2">
           <span
-            className="rounded px-2 py-0.5 text-[10px] font-medium"
+            className="rounded px-2 py-0.5 text-xs font-medium"
             style={
               isCaptain
                 ? { backgroundColor: `${accent}22`, color: accent }

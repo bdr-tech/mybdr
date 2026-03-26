@@ -1,5 +1,4 @@
 import Link from "next/link";
-// lucide-react 제거 → Material Symbols Outlined 사용
 import { TOURNAMENT_STATUS_LABEL } from "@/lib/constants/tournament-status";
 import { SectionWrapper } from "./section-wrapper";
 

@@ -12,7 +12,7 @@
  * - 비디오 카드: aspect-video 썸네일 + play_circle 호버 + 재생시간 + 제목 + 조회수
  * ============================================================ */
 
-import { useState, useEffect } from "react";
+import useSWR from "swr";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface VideoItem {
@@ -61,16 +61,11 @@ const DUMMY_VIDEOS = [
 ];
 
 export function RecommendedVideos() {
-  const [videos, setVideos] = useState<VideoItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/web/youtube/recommend", { credentials: "include" })
-      .then(async (r) => (r.ok ? r.json() : null))
-      .then((data) => setVideos(data?.videos ?? []))
-      .catch(() => null)
-      .finally(() => setLoading(false));
-  }, []);
+  // useSWR로 YouTube 추천 API 호출 (hero-bento와 같은 URL → SWR이 자동 중복 제거)
+  const { data: apiData, isLoading: loading } = useSWR<{ videos: VideoItem[] }>(
+    "/api/web/youtube/recommend"
+  );
+  const videos = apiData?.videos ?? [];
 
   if (loading) {
     return (
@@ -130,19 +125,19 @@ export function RecommendedVideos() {
                   </div>
                   {/* LIVE 뱃지 */}
                   {v.is_live && (
-                    <span className="absolute top-2 left-2 bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold flex items-center gap-1">
+                    <span className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded font-bold flex items-center gap-1">
                       <span className="relative flex h-1.5 w-1.5">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
                         <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
                       </span>
-                      LIVE
+                      라이브
                     </span>
                   )}
                 </div>
                 <h4 className="text-sm font-bold text-text-primary mb-1 line-clamp-1 group-hover:text-primary transition-colors">
                   {v.title}
                 </h4>
-                <p className="text-[11px] text-text-muted">{formatDate(v.published_at)}</p>
+                <p className="text-xs text-text-muted">{formatDate(v.published_at)}</p>
               </a>
             ))
           : /* 더미 데이터 기반 카드 */
@@ -159,14 +154,14 @@ export function RecommendedVideos() {
                     <span className="material-symbols-outlined text-white text-5xl">play_circle</span>
                   </div>
                   {/* 재생시간 뱃지 */}
-                  <span className="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] px-2 py-1 rounded font-bold">
+                  <span className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded font-bold">
                     {v.duration}
                   </span>
                 </div>
                 <h4 className="text-sm font-bold text-text-primary mb-1 line-clamp-1 group-hover:text-primary transition-colors">
                   {v.title}
                 </h4>
-                <p className="text-[11px] text-text-muted">
+                <p className="text-xs text-text-muted">
                   조회수 {v.views} &bull; {v.date}
                 </p>
               </div>

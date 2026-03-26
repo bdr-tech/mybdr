@@ -65,7 +65,7 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
         </h2>
 
         {/* 미리보기 카드 (네이비 배경) */}
-        <div className="bg-[#1B3C87] text-white p-6 rounded-xl mb-6">
+        <div className="bg-[var(--color-accent)] text-white p-6 rounded-xl mb-6">
           {/* 타입 배지 */}
           <div className="mb-3">
             <span className="inline-block px-3 py-1 bg-white/10 rounded-full text-xs font-medium">

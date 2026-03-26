@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
+import useSWR from "swr";
 
 /* ============================================================
  * NotableTeams — 주목할만한 팀 섹션
@@ -18,54 +18,46 @@ import Link from "next/link";
  * API 실패 시 FALLBACK_TEAMS 상수로 graceful degradation.
  * ============================================================ */
 
-/* API 응답의 팀 데이터 타입 */
+/* API 응답의 팀 데이터 타입 (apiSuccess가 snake_case로 자동 변환) */
 interface TeamData {
   id: string;
   name: string;
-  primaryColor: string | null;
-  secondaryColor: string | null;
+  primary_color: string | null;
+  secondary_color: string | null;
   city: string | null;
   district: string | null;
   wins: number;
   losses: number;
-  acceptingMembers: boolean;
-  tournamentsCount: number;
-  memberCount: number;
+  accepting_members: boolean;
+  tournaments_count: number;
+  member_count: number;
 }
 
 /* API 실패 시 표시할 fallback 데이터 */
 const FALLBACK_TEAMS: TeamData[] = [
-  { id: "0", name: "Storm FC", primaryColor: "#3B82F6", secondaryColor: null, city: null, district: null, wins: 0, losses: 0, acceptingMembers: true, tournamentsCount: 0, memberCount: 0 },
-  { id: "0", name: "Red Eagles", primaryColor: "#EF4444", secondaryColor: null, city: null, district: null, wins: 0, losses: 0, acceptingMembers: true, tournamentsCount: 0, memberCount: 0 },
-  { id: "0", name: "Ace One", primaryColor: "#F4A261", secondaryColor: null, city: null, district: null, wins: 0, losses: 0, acceptingMembers: true, tournamentsCount: 0, memberCount: 0 },
-  { id: "0", name: "Neon Pulse", primaryColor: "#8B5CF6", secondaryColor: null, city: null, district: null, wins: 0, losses: 0, acceptingMembers: true, tournamentsCount: 0, memberCount: 0 },
+  { id: "0", name: "Storm FC", primary_color: "#3B82F6", secondary_color: null, city: null, district: null, wins: 0, losses: 0, accepting_members: true, tournaments_count: 0, member_count: 0 },
+  { id: "0", name: "Red Eagles", primary_color: "#EF4444", secondary_color: null, city: null, district: null, wins: 0, losses: 0, accepting_members: true, tournaments_count: 0, member_count: 0 },
+  { id: "0", name: "Ace One", primary_color: "#F4A261", secondary_color: null, city: null, district: null, wins: 0, losses: 0, accepting_members: true, tournaments_count: 0, member_count: 0 },
+  { id: "0", name: "Neon Pulse", primary_color: "#8B5CF6", secondary_color: null, city: null, district: null, wins: 0, losses: 0, accepting_members: true, tournaments_count: 0, member_count: 0 },
 ];
 
-export function NotableTeams() {
-  // API에서 가져온 팀 목록 (상위 4팀만 사용)
-  const [teams, setTeams] = useState<TeamData[]>(FALLBACK_TEAMS);
-  const [isLoading, setIsLoading] = useState(true);
+/* 서버에서 미리 가져온 데이터를 받을 수 있는 props */
+interface NotableTeamsProps {
+  fallbackData?: { teams: TeamData[] };
+}
 
-  useEffect(() => {
-    // /api/web/teams는 이미 wins 내림차순으로 정렬된 결과를 반환한다
-    fetch("/api/web/teams?limit=5")
-      .then((res) => {
-        if (!res.ok) throw new Error("API 응답 실패");
-        return res.json();
-      })
-      .then((json) => {
-        const apiTeams: TeamData[] = json.data?.teams ?? [];
-        // 상위 4팀만 선택 (API가 이미 wins 내림차순이므로 slice만 하면 됨)
-        if (apiTeams.length > 0) {
-          setTeams(apiTeams.slice(0, 4));
-        }
-        // apiTeams가 비어있으면 fallback 유지
-      })
-      .catch(() => {
-        // API 실패 시 fallback 유지 (이미 초기값으로 설정됨)
-      })
-      .finally(() => setIsLoading(false));
-  }, []);
+export function NotableTeams({ fallbackData }: NotableTeamsProps = {}) {
+  // useSWR로 팀 API 호출 (right-sidebar와 같은 URL이므로 SWR이 자동 중복 제거)
+  // fallbackData가 있으면 로딩 없이 즉시 렌더링, SWR이 뒤에서 최신 데이터 갱신
+  const { data: json, isLoading } = useSWR<{ teams: TeamData[] }>(
+    "/api/web/teams",
+    null,
+    { fallbackData }
+  );
+
+  // API 응답에서 상위 4팀 추출, 데이터 없으면 fallback 사용
+  const apiTeams: TeamData[] = json?.teams ?? [];
+  const teams = apiTeams.length > 0 ? apiTeams.slice(0, 4) : FALLBACK_TEAMS;
 
   return (
     <section>
@@ -93,7 +85,7 @@ export function NotableTeams() {
             <div className="w-16 h-16 bg-card rounded-lg mx-auto mb-4 flex items-center justify-center border border-border">
               <span
                 className="material-symbols-outlined text-3xl"
-                style={team.primaryColor ? { color: team.primaryColor } : undefined}
+                style={team.primary_color ? { color: team.primary_color } : undefined}
               >
                 shield
               </span>
@@ -110,12 +102,12 @@ export function NotableTeams() {
             </div>
 
             {/* 승수 + 멤버수 표시 (API 데이터가 있을 때만) */}
-            <div className="text-[10px] text-text-muted">
+            <div className="text-xs text-text-muted">
               {isLoading ? (
                 <span className="inline-block w-16 h-3 bg-elevated rounded animate-pulse" />
               ) : team.id !== "0" ? (
                 // 실제 API 데이터: 승수와 멤버수 표시
-                <>{team.wins}W · {team.memberCount}명</>
+                <>{team.wins}W · {team.member_count}명</>
               ) : (
                 // fallback 데이터: 포인트 없이 팀명만 표시
                 <>-</>

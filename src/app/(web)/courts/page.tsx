@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { Card } from "@/components/ui/card";
+
+// SEO: 코트 찾기 페이지 메타데이터
+export const metadata: Metadata = {
+  title: "코트 찾기 | MyBDR",
+  description: "내 주변 농구 코트를 찾고 시설 정보와 리뷰를 확인하세요.",
+};
 
 export const revalidate = 300; // 5분 캐시 (코트 정보는 자주 바뀌지 않음)
 

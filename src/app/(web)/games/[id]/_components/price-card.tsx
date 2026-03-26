@@ -80,18 +80,18 @@ export function PriceCard({ game, children }: PriceCardProps) {
       <div className="space-y-4 mb-8">
         {/* 날짜 */}
         <div className="flex items-center gap-3 p-3 bg-[var(--color-surface)] rounded-lg">
-          <span className="material-symbols-outlined text-[#1B3C87]">calendar_today</span>
+          <span className="material-symbols-outlined text-[var(--color-accent)]">calendar_today</span>
           <div>
-            <div className="text-[10px] text-[var(--color-text-muted)]">DATE</div>
+            <div className="text-xs text-[var(--color-text-muted)]">DATE</div>
             <div className="text-sm font-bold text-[var(--color-text-primary)]">{dateStr}</div>
           </div>
         </div>
 
         {/* 시간 */}
         <div className="flex items-center gap-3 p-3 bg-[var(--color-surface)] rounded-lg">
-          <span className="material-symbols-outlined text-[#1B3C87]">schedule</span>
+          <span className="material-symbols-outlined text-[var(--color-accent)]">schedule</span>
           <div>
-            <div className="text-[10px] text-[var(--color-text-muted)]">TIME</div>
+            <div className="text-xs text-[var(--color-text-muted)]">TIME</div>
             <div className="text-sm font-bold text-[var(--color-text-primary)]">
               {timeStr} {durationStr}
             </div>
@@ -102,17 +102,17 @@ export function PriceCard({ game, children }: PriceCardProps) {
         {spotsLeft !== null && (
           <div className={`flex items-center gap-3 p-3 rounded-lg ${
             isUrgent
-              ? "bg-red-50 dark:bg-red-900/20 border border-[#E31B23]/10 dark:border-[#E31B23]/30"
+              ? "bg-red-50 dark:bg-red-900/20 border border-[var(--color-primary)]/10 dark:border-[var(--color-primary)]/30"
               : "bg-[var(--color-surface)]"
           }`}>
-            <span className={`material-symbols-outlined ${isUrgent ? "text-[#E31B23]" : "text-[#1B3C87]"}`}>
+            <span className={`material-symbols-outlined ${isUrgent ? "text-[var(--color-primary)]" : "text-[var(--color-accent)]"}`}>
               {isUrgent ? "error" : "group"}
             </span>
             <div>
-              <div className={`text-[10px] font-bold ${isUrgent ? "text-[#E31B23]" : "text-[var(--color-text-muted)]"}`}>
+              <div className={`text-xs font-bold ${isUrgent ? "text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"}`}>
                 AVAILABILITY
               </div>
-              <div className={`text-sm font-bold ${isUrgent ? "text-[#E31B23]" : "text-[var(--color-text-primary)]"}`}>
+              <div className={`text-sm font-bold ${isUrgent ? "text-[var(--color-primary)]" : "text-[var(--color-text-primary)]"}`}>
                 {spotsLeft <= 0
                   ? "마감 (Full)"
                   : `${spotsLeft} spots left!`}
@@ -126,7 +126,7 @@ export function PriceCard({ game, children }: PriceCardProps) {
       {children}
 
       {/* 약관 동의 안내 */}
-      <p className="mt-4 text-[10px] text-center text-[var(--color-text-muted)]">
+      <p className="mt-4 text-xs text-center text-[var(--color-text-muted)]">
         By applying, you agree to the BDR Sport code of conduct.
       </p>
     </div>
