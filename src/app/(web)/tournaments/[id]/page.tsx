@@ -2,17 +2,32 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { prisma } from "@/lib/db/prisma";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
+import { buildRoundGroups } from "@/lib/tournaments/bracket-builder";
 
-// 새 디자인 컴포넌트 (히어로 + 사이드바 + About 섹션)
+// 기존 디자인 컴포넌트 (히어로 + 사이드바 + About 섹션)
 import { TournamentHero } from "./_components/tournament-hero";
 import { TournamentSidebar } from "./_components/tournament-sidebar";
 import { TournamentAbout } from "./_components/tournament-about";
 
+// 새 탭 전환 컴포넌트 (클라이언트)
+import { TournamentTabs } from "./_components/tournament-tabs";
+
+// 일정 탭 컴포넌트 (클라이언트)
+import { ScheduleTimeline } from "./_components/schedule-timeline";
+import type { ScheduleMatch, ScheduleTeam } from "./_components/schedule-timeline";
+
+// 대진표 컴포넌트들 (클라이언트)
+import { BracketView } from "./bracket/_components/bracket-view";
+import { BracketEmpty } from "./bracket/_components/bracket-empty";
+import { TournamentDashboardHeader } from "./bracket/_components/tournament-dashboard-header";
+import { GroupStandings, type GroupTeam } from "./bracket/_components/group-standings";
+import { FinalsSidebar } from "./bracket/_components/finals-sidebar";
+
 export const revalidate = 30;
 
-// SEO: 대회 상세 동적 메타데이터 — 대회명을 DB에서 조회하여 title에 반영
+// SEO: 대회 상세 동적 메타데이터 -- 대회명을 DB에서 조회하여 title에 반영
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const tournament = await prisma.tournament.findUnique({
@@ -26,7 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-// -- Skeleton for matches + standings (기존 유지) --
+// -- Skeleton for matches + standings (개요 탭 내부 Suspense용) --
 function MatchesStandingsSkeleton() {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -46,9 +61,8 @@ function MatchesStandingsSkeleton() {
   );
 }
 
-// -- Async component: matches + standings (기존 prisma 쿼리 100% 유지) --
+// -- Async component: 개요 탭의 최근 경기 + 순위 미리보기 (기존 prisma 쿼리 100% 유지) --
 async function MatchesAndStandings({ tournamentId }: { tournamentId: string }) {
-  // 병렬 fetch: 경기 + 팀 순위를 동시에
   const [matches, teams] = await Promise.all([
     prisma.tournamentMatch.findMany({
       where: { tournamentId },
@@ -74,7 +88,6 @@ async function MatchesAndStandings({ tournamentId }: { tournamentId: string }) {
     }),
   ]);
 
-  // 경기나 팀이 없으면 렌더링하지 않음
   if (matches.length === 0 && teams.length === 0) return null;
 
   return (
@@ -151,7 +164,7 @@ async function MatchesAndStandings({ tournamentId }: { tournamentId: string }) {
   );
 }
 
-// -- 메인 페이지 --
+// -- 메인 페이지: 모든 탭 데이터를 병렬 조회 후 TournamentTabs에 전달 --
 export default async function TournamentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
@@ -160,7 +173,9 @@ export default async function TournamentDetailPage({ params }: { params: Promise
     return notFound();
   }
 
-  // 기존 prisma 쿼리 100% 유지: 대회 정보 조회
+  // ========================================
+  // 1) 대회 기본 정보 조회 (기존 쿼리 100% 유지)
+  // ========================================
   const tournament = await prisma.tournament.findUnique({
     where: { id },
     select: {
@@ -189,7 +204,87 @@ export default async function TournamentDetailPage({ params }: { params: Promise
   });
   if (!tournament) return notFound();
 
-  // 접수 상태 판단 (기존 로직 유지)
+  // ========================================
+  // 2) 모든 탭에 필요한 데이터를 병렬 조회
+  //    Promise.all로 한번에 -- 페이지 로드 속도 최적화
+  // ========================================
+  const [
+    scheduleRawMatches,
+    scheduleRawTeams,
+    standingsTeams,
+    bracketMatches,
+    bracketTournamentTeams,
+    teamsWithPlayers,
+  ] = await Promise.all([
+    // 일정 탭: 경기 목록
+    prisma.tournamentMatch.findMany({
+      where: { tournamentId: id },
+      orderBy: { scheduledAt: "asc" },
+      include: {
+        homeTeam: { include: { team: { select: { name: true } } } },
+        awayTeam: { include: { team: { select: { name: true } } } },
+      },
+    }),
+    // 일정 탭: 참가팀 목록 (팀 필터용)
+    prisma.tournamentTeam.findMany({
+      where: { tournamentId: id },
+      select: {
+        id: true,
+        team: { select: { name: true } },
+      },
+      orderBy: { team: { name: "asc" } },
+    }),
+    // 순위 탭: 팀 순위 목록
+    prisma.tournamentTeam.findMany({
+      where: { tournamentId: id },
+      include: { team: { select: { name: true } } },
+      orderBy: [{ wins: "desc" }, { losses: "asc" }],
+    }),
+    // 대진표 탭: 매치 데이터
+    prisma.tournamentMatch.findMany({
+      where: { tournamentId: id },
+      orderBy: [{ round_number: "asc" }, { bracket_position: "asc" }],
+      include: {
+        homeTeam: {
+          include: {
+            team: { select: { name: true, primaryColor: true } },
+          },
+        },
+        awayTeam: {
+          include: {
+            team: { select: { name: true, primaryColor: true } },
+          },
+        },
+      },
+    }),
+    // 대진표 탭: 참가팀 (조별리그 순위표 + 통계용)
+    prisma.tournamentTeam.findMany({
+      where: { tournamentId: id },
+      include: {
+        team: { select: { name: true } },
+      },
+      orderBy: [{ wins: "desc" }, { losses: "asc" }],
+    }),
+    // 참가팀 탭: 팀 + 선수 목록
+    prisma.tournamentTeam.findMany({
+      where: { tournamentId: id },
+      include: {
+        team: { select: { name: true, primaryColor: true } },
+        players: {
+          select: {
+            id: true,
+            jerseyNumber: true,
+            position: true,
+            users: { select: { nickname: true } },
+          },
+        },
+      },
+    }),
+  ]);
+
+  // ========================================
+  // 3) 접수 상태 + 디비전 가공 (기존 로직 100% 유지)
+  // ========================================
   const now = new Date();
   const regStatuses = ["registration", "registration_open", "active", "published"];
   const isRegStatus = regStatuses.includes(tournament.status ?? "");
@@ -198,7 +293,6 @@ export default async function TournamentDetailPage({ params }: { params: Promise
   const isRegistrationOpen = isRegStatus && (!regOpen || regOpen <= now) && (!regClose || regClose >= now);
   const isRegistrationSoon = isRegStatus && regOpen && regOpen > now;
 
-  // 디비전별 등록 현황 (기존 로직 유지)
   const categories = (tournament.categories ?? {}) as Record<string, string[]>;
   const divCaps = (tournament.div_caps ?? {}) as Record<string, number>;
   const divFees = (tournament.div_fees ?? {}) as Record<string, number>;
@@ -214,7 +308,6 @@ export default async function TournamentDetailPage({ params }: { params: Promise
     divisionCounts = grouped;
   }
 
-  // 사이드바에 전달할 디비전 정보 가공
   const divisions = hasCategories
     ? Object.entries(categories).flatMap(([cat, divs]) =>
         divs.map((div) => ({
@@ -227,14 +320,267 @@ export default async function TournamentDetailPage({ params }: { params: Promise
       )
     : [];
 
-  // 탭 목록 (기존 유지, 스타일만 밑줄 형식으로 변경)
-  const tabs = [
-    { href: `/tournaments/${id}`, label: "개요" },
-    { href: `/tournaments/${id}/schedule`, label: "일정" },
-    { href: `/tournaments/${id}/standings`, label: "순위" },
-    { href: `/tournaments/${id}/bracket`, label: "대진표" },
-    { href: `/tournaments/${id}/teams`, label: "참가팀" },
-  ];
+  // ========================================
+  // 4) 일정 탭 데이터 직렬화 (BigInt -> string, Date -> ISO string)
+  // ========================================
+  const scheduleMatches: ScheduleMatch[] = scheduleRawMatches.map((m) => ({
+    id: m.id.toString(),
+    homeTeamName: m.homeTeam?.team.name ?? null,
+    awayTeamName: m.awayTeam?.team.name ?? null,
+    homeScore: m.homeScore,
+    awayScore: m.awayScore,
+    status: m.status,
+    roundName: m.roundName,
+    scheduledAt: m.scheduledAt?.toISOString() ?? null,
+    courtNumber: m.court_number,
+  }));
+
+  const scheduleTeams: ScheduleTeam[] = scheduleRawTeams.map((t) => ({
+    id: t.id.toString(),
+    name: t.team.name,
+  }));
+
+  // ========================================
+  // 5) 대진표 탭 데이터 가공
+  // ========================================
+  const liveMatchCount = bracketMatches.filter((m) => m.status === "in_progress").length;
+
+  // 대진표용 매치만 필터 (round_number + bracket_position이 있는 것)
+  const bracketOnlyMatches = bracketMatches.filter(
+    (m) => m.round_number != null && m.bracket_position != null
+  );
+
+  // 결승전 예정일 계산
+  const finalsDate = bracketOnlyMatches.length > 0
+    ? (() => {
+        const maxRound = Math.max(...bracketOnlyMatches.map((m) => m.round_number!));
+        const finalMatch = bracketOnlyMatches.find((m) => m.round_number === maxRound);
+        return finalMatch?.scheduledAt?.toISOString() ?? null;
+      })()
+    : null;
+
+  // 조별리그 순위표 데이터 (groupName이 있는 팀만)
+  const groupTeams: GroupTeam[] = bracketTournamentTeams
+    .filter((t) => t.groupName != null)
+    .map((t) => ({
+      id: t.id.toString(),
+      teamName: t.team.name,
+      groupName: t.groupName,
+      wins: t.wins ?? 0,
+      losses: t.losses ?? 0,
+      draws: t.draws ?? 0,
+      pointsFor: t.points_for ?? 0,
+      pointsAgainst: t.points_against ?? 0,
+      pointDifference: t.point_difference ?? 0,
+    }));
+
+  // 대진표 라운드 구조 변환 (bracket-builder 유틸 사용)
+  const rounds = bracketOnlyMatches.length > 0 ? buildRoundGroups(bracketOnlyMatches) : [];
+
+  // ========================================
+  // 6) 각 탭 콘텐츠 조립
+  // ========================================
+
+  // -- 개요 탭 콘텐츠 --
+  const overviewContent = (
+    <>
+      {/* 대회 정보 (구조화된 설명) */}
+      {tournament.description && (
+        <TournamentAbout
+          description={tournament.description}
+          categories={categories}
+          format={tournament.format}
+        />
+      )}
+
+      {/* 장소/안내 요약 카드: 모바일에서 사이드바가 하단에 밀리므로 인라인 요약 제공 */}
+      <div
+        className="mt-8 rounded-radius-card border p-5 sm:p-6 lg:hidden"
+        style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
+      >
+        <h3
+          className="mb-4 flex items-center gap-2 font-bold"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          <span
+            className="h-6 w-1.5 flex-shrink-0 rounded-full"
+            style={{ backgroundColor: "var(--color-primary)" }}
+          />
+          대회 안내
+        </h3>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {(tournament.city || tournament.venue_name) && (
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined mt-0.5 flex-shrink-0 text-lg" style={{ color: "var(--color-primary)" }}>location_on</span>
+              <div>
+                <p className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>장소</p>
+                <p className="text-sm font-medium">{[tournament.city, tournament.venue_name].filter(Boolean).join(" ")}</p>
+              </div>
+            </div>
+          )}
+          {tournament.startDate && (
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined mt-0.5 flex-shrink-0 text-lg" style={{ color: "var(--color-primary)" }}>event</span>
+              <div>
+                <p className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>일시</p>
+                <p className="text-sm font-medium">
+                  {tournament.startDate.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+                  {tournament.endDate && tournament.endDate.getTime() !== tournament.startDate.getTime() && (
+                    <> ~ {tournament.endDate.toLocaleDateString("ko-KR", { month: "long", day: "numeric" })}</>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
+          {tournament.entry_fee && Number(tournament.entry_fee) > 0 && (
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined mt-0.5 flex-shrink-0 text-lg" style={{ color: "var(--color-primary)" }}>payments</span>
+              <div>
+                <p className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>참가비</p>
+                <p className="text-sm font-medium">{Number(tournament.entry_fee).toLocaleString()}원</p>
+              </div>
+            </div>
+          )}
+          <div className="flex items-start gap-3">
+            <span className="material-symbols-outlined mt-0.5 flex-shrink-0 text-lg" style={{ color: "var(--color-primary)" }}>groups</span>
+            <div>
+              <p className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>참가팀</p>
+              <p className="text-sm font-medium">
+                {tournament._count.tournamentTeams}팀
+                {tournament.maxTeams && <span style={{ color: "var(--color-text-secondary)" }}> / {tournament.maxTeams}팀</span>}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 최근 경기 + 순위 미리보기: Suspense로 스트리밍 */}
+      <div className="mt-8">
+        <Suspense fallback={<MatchesStandingsSkeleton />}>
+          <MatchesAndStandings tournamentId={id} />
+        </Suspense>
+      </div>
+    </>
+  );
+
+  // -- 일정 탭 콘텐츠 --
+  const scheduleContent = (
+    <div>
+      <h2 className="mb-6 text-xl font-bold sm:text-2xl">일정</h2>
+      <ScheduleTimeline matches={scheduleMatches} teams={scheduleTeams} />
+    </div>
+  );
+
+  // -- 순위 탭 콘텐츠 --
+  const standingsContent = (
+    <div>
+      <h2 className="mb-6 text-xl font-bold sm:text-2xl">순위표</h2>
+      <Card className="overflow-hidden p-0">
+        <table className="w-full text-sm">
+          <thead className="border-b border-[var(--color-border)] text-[var(--color-text-muted)]">
+            <tr>
+              <th className="px-5 py-3">#</th>
+              <th className="px-5 py-3 text-left">팀</th>
+              <th className="px-5 py-3">승</th>
+              <th className="px-5 py-3">패</th>
+              <th className="px-5 py-3">승률</th>
+            </tr>
+          </thead>
+          <tbody>
+            {standingsTeams.map((t, i) => {
+              const total = (t.wins ?? 0) + (t.losses ?? 0);
+              const pct = total > 0 ? ((t.wins ?? 0) / total).toFixed(3) : ".000";
+              return (
+                <tr key={t.id.toString()} className="border-b border-[var(--color-border)]">
+                  <td className="px-5 py-3 text-center font-bold text-[var(--color-primary)]">{i + 1}</td>
+                  <td className="px-5 py-3 font-medium">{t.team.name}</td>
+                  <td className="px-5 py-3 text-center">{t.wins ?? 0}</td>
+                  <td className="px-5 py-3 text-center">{t.losses ?? 0}</td>
+                  <td className="px-5 py-3 text-center">{pct}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+
+  // -- 대진표 탭 콘텐츠 --
+  const bracketContent = (
+    <div>
+      {/* 대시보드 헤더: 통계 4칸 */}
+      <TournamentDashboardHeader
+        tournamentName={tournament.name}
+        totalTeams={bracketTournamentTeams.length}
+        liveMatchCount={liveMatchCount}
+        finalsDate={finalsDate}
+      />
+
+      {/* 조별리그 순위표 (데이터가 있을 때만) */}
+      {groupTeams.length > 0 && <GroupStandings teams={groupTeams} />}
+
+      {/* 대진표 트리 또는 빈 상태 */}
+      {rounds.length > 0 ? (
+        <div className="grid grid-cols-12 gap-8">
+          <div className="col-span-12 lg:col-span-8">
+            <BracketView rounds={rounds} tournamentId={id} />
+          </div>
+          <div className="col-span-12 lg:col-span-4">
+            <FinalsSidebar
+              finalsDate={finalsDate}
+              venueName={tournament.venue_name}
+              city={tournament.city}
+              entryFee={tournament.entry_fee ? Number(tournament.entry_fee) : null}
+            />
+          </div>
+        </div>
+      ) : (
+        <BracketEmpty tournamentId={id} />
+      )}
+    </div>
+  );
+
+  // -- 참가팀 탭 콘텐츠 --
+  const teamsContent = (
+    <div>
+      <h2 className="mb-6 text-xl font-bold sm:text-2xl">참가팀</h2>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {teamsWithPlayers.map((t) => (
+          <Card key={t.id.toString()}>
+            <div className="mb-3 flex items-center gap-3">
+              {/* 팀 아이콘: primaryColor가 없으면 CSS 변수 사용 */}
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold"
+                style={{
+                  backgroundColor: t.team.primaryColor
+                    ? `${t.team.primaryColor}20`
+                    : "color-mix(in srgb, var(--color-primary) 12%, transparent)",
+                  color: t.team.primaryColor ?? "var(--color-primary)",
+                }}
+              >
+                {t.team.name.charAt(0)}
+              </div>
+              <div>
+                <h3 className="font-semibold">{t.team.name}</h3>
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  {t.groupName && `${t.groupName} · `}{t.players.length}명
+                </p>
+              </div>
+            </div>
+            <div className="space-y-1">
+              {t.players.map((p) => (
+                <div key={p.id.toString()} className="flex justify-between text-sm">
+                  <span className="text-[var(--color-text-muted)]">#{p.jerseyNumber ?? "-"} {p.users?.nickname ?? "선수"}</span>
+                  <span className="text-xs text-[var(--color-text-secondary)]">{p.position ?? ""}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div>
@@ -253,140 +599,15 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
       {/* 2열 레이아웃: 좌측 본문(col-span-8) + 우측 사이드카드(col-span-4) */}
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:grid lg:grid-cols-12 lg:gap-10 lg:px-8">
-        {/* 좌측 메인 콘텐츠 */}
+        {/* 좌측 메인 콘텐츠: 탭 전환 컴포넌트 */}
         <div className="lg:col-span-8">
-          {/* 밑줄 탭 네비게이션 (시안: 밑줄 활성 스타일) */}
-          <div
-            className="mb-8 flex gap-8 overflow-x-auto border-b"
-            style={{ borderColor: "var(--color-border)" }}
-          >
-            {tabs.map((t) => {
-              const isActiveTab = t.href === `/tournaments/${id}`;
-              return (
-                <Link
-                  key={t.href}
-                  href={t.href}
-                  prefetch={true}
-                  className="whitespace-nowrap pb-4 text-base font-medium transition-colors"
-                  style={
-                    isActiveTab
-                      ? {
-                          color: "var(--color-primary)",
-                          fontWeight: 700,
-                          borderBottom: "2px solid var(--color-primary)",
-                          marginBottom: "-1px",
-                        }
-                      : { color: "var(--color-text-secondary)" }
-                  }
-                >
-                  {t.label}
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* 대회 정보 (구조화된 설명) -- parseDescription 로직 100% 유지 */}
-          {tournament.description && (
-            <TournamentAbout
-              description={tournament.description}
-              categories={categories}
-              format={tournament.format}
-            />
-          )}
-
-          {/* 장소/안내 요약 카드: 모바일에서 사이드바가 하단에 밀리므로 인라인 요약 제공 */}
-          <div
-            className="mt-8 rounded-radius-card border p-5 sm:p-6 lg:hidden"
-            style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
-          >
-            <h3
-              className="mb-4 flex items-center gap-2 font-bold"
-              style={{ fontFamily: "var(--font-heading)" }}
-            >
-              <span
-                className="h-6 w-1.5 flex-shrink-0 rounded-full"
-                style={{ backgroundColor: "var(--color-primary)" }}
-              />
-              대회 안내
-            </h3>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {/* 장소 */}
-              {(tournament.city || tournament.venue_name) && (
-                <div className="flex items-start gap-3">
-                  <span
-                    className="material-symbols-outlined mt-0.5 flex-shrink-0 text-lg"
-                    style={{ color: "var(--color-primary)" }}
-                  >
-                    location_on
-                  </span>
-                  <div>
-                    <p className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>장소</p>
-                    <p className="text-sm font-medium">
-                      {[tournament.city, tournament.venue_name].filter(Boolean).join(" ")}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {/* 일시 */}
-              {tournament.startDate && (
-                <div className="flex items-start gap-3">
-                  <span
-                    className="material-symbols-outlined mt-0.5 flex-shrink-0 text-lg"
-                    style={{ color: "var(--color-primary)" }}
-                  >
-                    event
-                  </span>
-                  <div>
-                    <p className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>일시</p>
-                    <p className="text-sm font-medium">
-                      {tournament.startDate.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
-                      {tournament.endDate && tournament.endDate.getTime() !== tournament.startDate.getTime() && (
-                        <> ~ {tournament.endDate.toLocaleDateString("ko-KR", { month: "long", day: "numeric" })}</>
-                      )}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {/* 참가비 */}
-              {tournament.entry_fee && Number(tournament.entry_fee) > 0 && (
-                <div className="flex items-start gap-3">
-                  <span
-                    className="material-symbols-outlined mt-0.5 flex-shrink-0 text-lg"
-                    style={{ color: "var(--color-primary)" }}
-                  >
-                    payments
-                  </span>
-                  <div>
-                    <p className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>참가비</p>
-                    <p className="text-sm font-medium">{Number(tournament.entry_fee).toLocaleString()}원</p>
-                  </div>
-                </div>
-              )}
-              {/* 참가팀 현황 */}
-              <div className="flex items-start gap-3">
-                <span
-                  className="material-symbols-outlined mt-0.5 flex-shrink-0 text-lg"
-                  style={{ color: "var(--color-primary)" }}
-                >
-                  groups
-                </span>
-                <div>
-                  <p className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>참가팀</p>
-                  <p className="text-sm font-medium">
-                    {tournament._count.tournamentTeams}팀
-                    {tournament.maxTeams && <span style={{ color: "var(--color-text-secondary)" }}> / {tournament.maxTeams}팀</span>}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 최근 경기 + 순위: Suspense로 스트리밍 (기존 유지) */}
-          <div className="mt-8">
-            <Suspense fallback={<MatchesStandingsSkeleton />}>
-              <MatchesAndStandings tournamentId={id} />
-            </Suspense>
-          </div>
+          <TournamentTabs
+            overviewContent={overviewContent}
+            scheduleContent={scheduleContent}
+            standingsContent={standingsContent}
+            bracketContent={bracketContent}
+            teamsContent={teamsContent}
+          />
         </div>
 
         {/* 우측 사이드바: 참가비 + CTA + 캘린더 */}
