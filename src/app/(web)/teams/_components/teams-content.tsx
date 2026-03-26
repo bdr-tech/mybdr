@@ -130,7 +130,7 @@ function getInitials(name: string): string {
 // -- 스켈레톤 UI: 컴팩트 카드 디자인 기준 --
 function TeamsGridSkeleton() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {Array.from({ length: 8 }).map((_, i) => (
         <div
           key={i}
@@ -449,7 +449,7 @@ export function TeamsContent({
       ) : (
         <>
           {/* 팀 카드 그리드: 4열 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {paginatedTeams.map((team) => (
               <TeamCardRedesigned
                 key={team.id}
