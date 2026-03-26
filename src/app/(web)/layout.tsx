@@ -268,7 +268,11 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
        * 사이드바 너비(left-64) 오른쪽 영역, 배경 투명
        * pointer-events-none으로 클릭 통과, 내부 요소만 클릭 가능
        * ======================================== */}
-      <div className="pointer-events-none fixed right-0 top-0 z-50 hidden items-center justify-end gap-3 p-6 lg:flex" style={{ left: "16rem" }}>
+      {/* 데스크탑 상단 헤더바: 배경+blur로 콘텐츠와 구분, sticky 효과 */}
+      <div
+        className="pointer-events-none fixed right-0 top-0 z-40 hidden items-center justify-end gap-3 border-b border-[var(--color-border)] px-6 py-4 backdrop-blur-xl lg:flex"
+        style={{ left: "16rem", backgroundColor: "color-mix(in srgb, var(--color-background) 80%, transparent)" }}
+      >
         {/* 다크/라이트 모드 토글 */}
         <div className="pointer-events-auto"><ThemeToggle /></div>
         {/* 글씨 크기 조절 토글 */}

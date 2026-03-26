@@ -71,8 +71,8 @@ export function TournamentHero({
   const teamsStr = maxTeams ? `${teamCount}/${maxTeams}팀` : `${teamCount}팀`;
 
   return (
-    /* 히어로: 높이 약 280px, 다크 그라디언트 배경 */
-    <section className="relative w-full overflow-hidden" style={{ minHeight: "280px" }}>
+    /* 히어로: 배너 이미지 없으면 컴팩트 높이(auto), 패딩으로만 간격 조절 */
+    <section className="relative w-full overflow-hidden">
       {/* 배경 그라디언트: 어두운 톤 + primary 살짝 비침 */}
       <div
         className="absolute inset-0"
@@ -93,10 +93,10 @@ export function TournamentHero({
         style={{ background: "radial-gradient(circle, var(--color-primary) 0%, transparent 70%)" }}
       />
 
-      {/* 콘텐츠: 좌측 하단 정렬 */}
-      <div className="relative flex h-full flex-col justify-end px-4 pb-6 sm:px-10 sm:pb-10" style={{ minHeight: "280px" }}>
+      {/* 콘텐츠: 좌측 하단 정렬, 컴팩트 패딩 */}
+      <div className="relative flex flex-col justify-end px-4 py-6 sm:px-10 sm:py-8">
         {/* 배지 그룹: PREMIUM + 상태 */}
-        <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="mb-2 flex flex-wrap items-center gap-2">
           {/* PREMIUM 배지: 빨간 배경 + 흰 텍스트 (시안) */}
           <span
             className="rounded-sm px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white sm:text-xs"
@@ -110,7 +110,7 @@ export function TournamentHero({
 
         {/* 대회명: 큰 흰색 볼드 */}
         <h1
-          className="mb-3 text-2xl font-extrabold uppercase leading-tight tracking-tight sm:text-4xl lg:text-5xl"
+          className="mb-2 text-2xl font-extrabold uppercase leading-tight tracking-tight sm:text-4xl lg:text-5xl"
           style={{ fontFamily: "var(--font-heading)", color: "var(--color-text-primary)" }}
         >
           {name}
