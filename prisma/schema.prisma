@@ -59,6 +59,7 @@ model User {
   // SQL: ALTER TABLE users ADD COLUMN prefer_filter_enabled BOOLEAN NOT NULL DEFAULT false;
   prefer_filter_enabled                                                     Boolean                      @default(false)
   onboarding_step                                                           Int                          @default(0)
+  push_subscription                                                         Json?
   profile_completed                                                         Boolean                      @default(false)
   profileReminderShownAt                                                    DateTime?                    @map("profile_reminder_shown_at") @db.Timestamp(6)
   admin_logs                                                                admin_logs[]

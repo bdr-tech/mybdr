@@ -10,6 +10,7 @@ import { BellIcon } from "./bell-icon";
 import { ThemeToggle } from "./theme-toggle";
 import { TextSizeToggle } from "./text-size-toggle";
 import { usePreferFilter } from "@/contexts/prefer-filter-context";
+import { PushToggle } from "./push-toggle";
 
 // 모바일 하단 내비 아이템 — Material Symbols 아이콘 이름으로 변경
 const navItems = [
@@ -140,6 +141,7 @@ export function Header() {
             <TextSizeToggle />
             <ThemeToggle />
             {/* 비로그인 시 알림 벨 아이콘 숨김 -- 로그인 유저에게만 표시 */}
+            {user && <PushToggle />}
             {user && <BellIcon unreadCount={unreadCount} />}
             {user ? (
               <UserDropdown name={user.name} role={user.role} profileImage={user.profile_image} />

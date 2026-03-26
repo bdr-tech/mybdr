@@ -53,3 +53,39 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// Web Push 수신 핸들러
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+self.addEventListener("push", (event: any) => {
+  const data = event.data?.json() ?? {};
+  const title = data.title || "MyBDR";
+  const options: NotificationOptions = {
+    body: data.body || "",
+    icon: data.icon || "/icons/icon-192x192.png",
+    badge: "/icons/icon-192x192.png",
+    data: { url: data.url || "/notifications" },
+    tag: `mybdr-${Date.now()}`,
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// 알림 클릭 핸들러
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+self.addEventListener("notificationclick", (event: any) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/";
+
+  event.waitUntil(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients: any[]) => {
+      for (const client of clients) {
+        if (client.url.includes(self.location.origin) && "focus" in client) {
+          client.navigate(url);
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});

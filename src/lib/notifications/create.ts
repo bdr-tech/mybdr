@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import type { NotificationType } from "./types";
 import { Prisma } from "@prisma/client";
+import { sendPushToUser, sendPushBulk } from "./push";
 
 interface CreateNotificationInput {
   userId: bigint;
@@ -33,6 +34,13 @@ export async function createNotification(
       updated_at: new Date(),
     },
   });
+
+  // PWA 푸시 자동 발송 (DB 저장 후, fire-and-forget)
+  sendPushToUser(input.userId, {
+    title: input.title,
+    body: input.content,
+    url: input.actionUrl,
+  }).catch(() => {});
 }
 
 export async function createNotificationBulk(
@@ -56,4 +64,12 @@ export async function createNotificationBulk(
     })),
     skipDuplicates: true,
   });
+
+  // PWA 푸시 벌크 발송
+  const userIds = [...new Set(inputs.map((i) => i.userId))];
+  sendPushBulk(userIds, {
+    title: inputs[0].title,
+    body: inputs[0].content,
+    url: inputs[0].actionUrl,
+  }).catch(() => {});
 }
