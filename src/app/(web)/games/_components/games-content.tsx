@@ -121,8 +121,8 @@ function GameCard({ game }: { game: GameFromApi }) {
     <Link href={href}>
       {/* 디자인 시안: 이미지 카드 + 호버 시 그림자 */}
       <div className={`group flex flex-col rounded-xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-card)] hover:shadow-lg transition-all h-full ${isFullyBooked ? "opacity-70 grayscale" : ""}`}>
-        {/* 이미지 영역 -- h-36: 모바일에서 카드가 더 많이 보이도록 축소 */}
-        <div className="relative h-36">
+        {/* 이미지 영역 -- h-24: 모바일 컴팩트, lg:h-32 데스크탑 */}
+        <div className="relative h-24 lg:h-32">
           {/* placeholder 이미지: 경기장 타입별 기본 이미지 */}
           <div className="w-full h-full bg-[var(--color-surface)] flex items-center justify-center">
             <span className="material-symbols-outlined text-5xl text-[var(--color-text-muted)] opacity-40">
@@ -132,8 +132,8 @@ function GameCard({ game }: { game: GameFromApi }) {
 
           {/* 상태 배지 오버레이 (좌상단) */}
           {statusBadge && (
-            <div className="absolute top-4 left-4 flex gap-2">
-              <span className={`text-xs font-bold px-2 py-1 rounded flex items-center gap-1 ${statusBadge.className}`}>
+            <div className="absolute top-2 left-2 lg:top-3 lg:left-3 flex gap-2">
+              <span className={`text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1 ${statusBadge.className}`}>
                 {/* LIVE일 때 깜빡이는 점 */}
                 {statusBadge.text === "라이브" && (
                   <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
@@ -154,7 +154,7 @@ function GameCard({ game }: { game: GameFromApi }) {
 
           {/* 유형 뱃지 (우상단) */}
           <span
-            className="absolute top-4 right-4 rounded px-2 py-0.5 text-xs font-bold uppercase tracking-wider"
+            className="absolute top-2 right-2 lg:top-3 lg:right-3 rounded px-2 py-0.5 text-xs font-bold uppercase tracking-wider"
             style={{ backgroundColor: badge.bg, color: badge.color }}
           >
             {badge.label}
@@ -162,19 +162,19 @@ function GameCard({ game }: { game: GameFromApi }) {
         </div>
 
         {/* 정보 영역 */}
-        <div className="p-5 flex-1 flex flex-col">
+        <div className="p-3 lg:p-4 flex-1 flex flex-col">
           {/* 종목 라벨 */}
-          <p className="text-xs text-[var(--color-primary)] font-bold uppercase tracking-wider mb-1">
+          <p className="text-xs text-[var(--color-primary)] font-bold uppercase tracking-wider mb-0.5">
             {badge.label}
           </p>
 
           {/* 경기 제목 */}
-          <h3 className="text-lg font-bold mb-3 line-clamp-1 text-[var(--color-text-primary)]">
+          <h3 className="text-base font-bold mb-2 line-clamp-1 text-[var(--color-text-primary)]">
             {game.title}
           </h3>
 
           {/* 장소 + 실력 정보 */}
-          <div className="space-y-2 mb-4">
+          <div className="space-y-1.5 mb-2">
             {location && (
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[var(--color-text-muted)] text-base">
@@ -209,8 +209,8 @@ function GameCard({ game }: { game: GameFromApi }) {
 
           {/* 참가 프로그레스 (인원 있을 때만) */}
           {max > 0 && (
-            <div className="mb-3">
-              <div className="flex items-center justify-between mb-1">
+            <div className="mb-2">
+              <div className="flex items-center justify-between mb-0.5">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-[var(--color-primary)]">{cur}/{max}</span>
                   <span className="text-xs text-[var(--color-text-muted)]">모집중</span>
@@ -226,22 +226,22 @@ function GameCard({ game }: { game: GameFromApi }) {
           )}
 
           {/* 가격 + JOIN 버튼 */}
-          <div className="mt-auto pt-3 border-t border-[var(--color-border)] flex items-center justify-between">
+          <div className="mt-auto pt-2 border-t border-[var(--color-border)] flex items-center justify-between">
             <div>
               {fee && <p className="text-xs text-[var(--color-text-muted)]">참가비</p>}
-              <span className="text-lg font-bold text-[var(--color-text-primary)]">
+              <span className="text-sm font-bold text-[var(--color-text-primary)]">
                 {fee ?? <span className="text-sm text-[var(--color-text-muted)]">무료</span>}
               </span>
             </div>
             {isFullyBooked ? (
               <button
-                className="bg-[var(--color-border)] text-[var(--color-text-muted)] font-bold py-2 px-6 rounded text-sm cursor-not-allowed"
+                className="bg-[var(--color-border)] text-[var(--color-text-muted)] font-bold py-1.5 px-4 rounded text-sm cursor-not-allowed"
                 disabled
               >
                 마감
               </button>
             ) : (
-              <button className="bg-[var(--color-primary)] text-white font-bold py-2 px-6 rounded text-sm hover:bg-[var(--color-primary-hover)] transition-all">
+              <button className="bg-[var(--color-primary)] text-white font-bold py-1.5 px-4 rounded text-sm hover:bg-[var(--color-primary-hover)] transition-all">
                 참여
               </button>
             )}
