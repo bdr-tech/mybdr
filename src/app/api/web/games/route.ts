@@ -3,6 +3,8 @@ import { listGames, listGameCities } from "@/lib/services/game";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { getWebSession } from "@/lib/auth/web-session";
 import { prisma } from "@/lib/db/prisma";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { getClientIp } from "@/lib/security/get-client-ip";
 
 /**
  * GET /api/web/games
@@ -14,6 +16,13 @@ import { prisma } from "@/lib/db/prisma";
  * - BigInt/Date/Decimal 필드를 JSON 직렬화 가능한 형태로 변환
  */
 export async function GET(request: NextRequest) {
+  // 공개 API — IP 기반 rate limit (분당 100회)
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit(`web-games:${ip}`, RATE_LIMITS.api);
+  if (!rl.allowed) {
+    return apiError("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.", 429);
+  }
+
   try {
     const { searchParams } = request.nextUrl;
 

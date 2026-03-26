@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 import { getWebSession } from "@/lib/auth/web-session";
 import { prisma } from "@/lib/db/prisma";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { getClientIp } from "@/lib/security/get-client-ip";
 
 // --- Redis 캐시 설정 ---
 // Upstash Redis: 서버리스 인스턴스 간 캐시 공유용
@@ -381,7 +383,17 @@ function scoreVideos(
 
 // --- API 핸들러 ---
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // 공개 API — IP 기반 rate limit (분당 100회)
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit(`web-youtube:${ip}`, RATE_LIMITS.api);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
+      { status: 429 }
+    );
+  }
+
   const youtubeKey = process.env.YOUTUBE_API_KEY;
 
   if (!youtubeKey) {

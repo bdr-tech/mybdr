@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { apiSuccess, apiError } from "@/lib/api/response";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { getClientIp } from "@/lib/security/get-client-ip";
 
 /**
  * GET /api/web/rankings?type=team|player
@@ -10,6 +12,13 @@ import { apiSuccess, apiError } from "@/lib/api/response";
  * - type=player: 개인 랭킹 (유저별 스탯 합산, 총득점 기준 내림차순)
  */
 export async function GET(request: NextRequest) {
+  // 공개 API — IP 기반 rate limit (분당 100회)
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit(`web-rankings:${ip}`, RATE_LIMITS.api);
+  if (!rl.allowed) {
+    return apiError("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.", 429);
+  }
+
   try {
     const { searchParams } = request.nextUrl;
     // type 파라미터: "team" 또는 "player" (기본값 "team")

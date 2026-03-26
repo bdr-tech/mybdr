@@ -1,8 +1,11 @@
+import { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth/jwt";
 import { WEB_SESSION_COOKIE } from "@/lib/auth/web-session";
-import { apiSuccess } from "@/lib/api/response";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { prisma } from "@/lib/db/prisma";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { getClientIp } from "@/lib/security/get-client-ip";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +19,14 @@ export const dynamic = "force-dynamic";
  *
  * 비로그인: 최신 경기 목록
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // 공개 API — IP 기반 rate limit (분당 100회)
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit(`web-recommended:${ip}`, RATE_LIMITS.api);
+  if (!rl.allowed) {
+    return apiError("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.", 429);
+  }
+
   const cookieStore = await cookies();
   const token = cookieStore.get(WEB_SESSION_COOKIE)?.value;
   const session = token ? await verifyToken(token) : null;
