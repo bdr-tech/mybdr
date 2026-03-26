@@ -8,7 +8,7 @@ const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: true,
   sameSite: "lax" as const,
-  maxAge: 60 * 60 * 24 * 30, // 30일
+  maxAge: 60 * 60 * 24 * 7, // 7일 (JWT 만료와 통일)
   path: "/",
 };
 

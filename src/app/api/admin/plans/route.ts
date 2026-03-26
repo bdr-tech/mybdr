@@ -3,6 +3,7 @@ import { getWebSession } from "@/lib/auth/web-session";
 import { prisma } from "@/lib/db/prisma";
 import { adminLog } from "@/lib/admin/log";
 import { apiSuccess, apiError } from "@/lib/api/response";
+import { z } from "zod";
 
 async function requireAdmin() {
   const session = await getWebSession();
@@ -37,21 +38,27 @@ export async function POST(req: NextRequest) {
   const session = await requireAdmin();
   if (!session) return apiError("Unauthorized", 401);
 
-  const body = await req.json();
-  const { name, description, plan_type, feature_key, price, max_uses } = body;
-
-  if (!name?.trim() || !feature_key?.trim() || !price) {
-    return apiError("name, feature_key, price는 필수입니다.", 400);
-  }
+  const raw = await req.json();
+  const schema = z.object({
+    name: z.string().min(1).max(100),
+    description: z.string().max(500).optional(),
+    plan_type: z.enum(["monthly", "yearly", "one_time"]).default("monthly"),
+    feature_key: z.string().min(1).max(50),
+    price: z.number().int().min(0),
+    max_uses: z.number().int().min(1).nullish(),
+  });
+  const parsed = schema.safeParse(raw);
+  if (!parsed.success) return apiError("입력값이 올바르지 않습니다.", 400);
+  const { name, description, plan_type, feature_key, price, max_uses } = parsed.data;
 
   const plan = await prisma.plans.create({
     data: {
       name: name.trim(),
       description: description?.trim() || null,
-      plan_type: plan_type || "monthly",
+      plan_type,
       feature_key: feature_key.trim(),
-      price: parseInt(price),
-      max_uses: max_uses ? parseInt(max_uses) : null,
+      price,
+      max_uses: max_uses ?? null,
     },
   });
 

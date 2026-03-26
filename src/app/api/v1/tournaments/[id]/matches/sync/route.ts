@@ -277,7 +277,7 @@ async function handler(req: NextRequest, ctx: AuthContext, tournamentId: string)
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     console.error(`[match-sync] Match ${match.server_id} failed:`, errMsg, err);
-    return apiError(`Sync failed: ${errMsg}`, 500);
+    return apiError("동기화 처리 중 오류가 발생했습니다.", 500);
   }
 }
 

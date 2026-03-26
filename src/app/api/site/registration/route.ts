@@ -1,6 +1,9 @@
+import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { apiSuccess, apiError } from "@/lib/api/response";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { getClientIp } from "@/lib/security/get-client-ip";
 
 const registrationSchema = z.object({
   subdomain:    z.string().min(1).max(50),
@@ -13,7 +16,10 @@ const registrationSchema = z.object({
 });
 
 // POST /api/site/registration - 서브도메인 대회 사이트에서 참가 신청 (비인증)
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const rl = await checkRateLimit(`site-reg:${ip}`, RATE_LIMITS.api);
+  if (!rl.allowed) return apiError("요청이 너무 많습니다.", 429);
   try {
     let body: unknown;
     try {

@@ -3,6 +3,28 @@ import { encryptAccount, maskAccount } from "@/lib/security/account-crypto";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { getProfile, updateProfile } from "@/lib/services/user";
 import { checkProfileCompletion } from "@/lib/profile/completion";
+import { prisma } from "@/lib/db/prisma";
+import { z } from "zod";
+
+// BUG-001 수정: Zod 스키마로 허용 필드만 통과
+const profilePatchSchema = z.object({
+  nickname: z.string().max(30).nullish(),
+  position: z.string().max(20).nullish(),
+  height: z.number().min(100).max(250).nullish(),
+  city: z.string().max(50).nullish(),
+  bio: z.string().max(500).nullish(),
+  name: z.string().max(50).nullish(),
+  phone: z.string().max(20).nullish(),
+  birth_date: z.string().nullish(),
+  district: z.string().max(50).nullish(),
+  weight: z.number().min(30).max(200).nullish(),
+  bank_name: z.string().max(30).nullish(),
+  bank_code: z.string().max(10).nullish(),
+  account_number: z.string().max(50).nullish(),
+  account_holder: z.string().max(30).nullish(),
+  account_consent: z.boolean().optional(),
+  profile_completed: z.boolean().optional(),
+}).strict();
 
 export const GET = withWebAuth(async (ctx: WebAuthContext) => {
   try {
@@ -10,7 +32,6 @@ export const GET = withWebAuth(async (ctx: WebAuthContext) => {
 
     if (!user) return apiError("User not found", 404);
 
-    // account_number는 마스킹 처리 후 전송
     const { account_number, createdAt, ...userRest } = user;
     const account_number_masked = account_number
       ? maskAccount(account_number.startsWith("enc:") ? account_number : account_number)
@@ -20,7 +41,6 @@ export const GET = withWebAuth(async (ctx: WebAuthContext) => {
       user: {
         ...userRest,
         birth_date: user.birth_date?.toISOString().slice(0, 10) ?? null,
-        // 가입일을 ISO 문자열로 변환하여 전달 (profile-header에서 표시)
         created_at: createdAt?.toISOString() ?? null,
         account_number_masked,
         has_account: !!account_number,
@@ -49,56 +69,59 @@ export const GET = withWebAuth(async (ctx: WebAuthContext) => {
 
 export const PATCH = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
   try {
-    const body = await req.json() as Record<string, unknown>;
+    const raw = await req.json();
+    const parsed = profilePatchSchema.safeParse(raw);
+    if (!parsed.success) {
+      return apiError("입력값이 올바르지 않습니다.", 400);
+    }
 
-    const {
-      // 기존 필드
-      nickname, position, height, city, bio,
-      // 신규 필드
-      name, phone, birth_date, district, weight,
-      // 계좌 필드 (account_consent 필수)
-      bank_name, bank_code, account_number, account_holder, account_consent,
-    } = body;
+    const body = parsed.data;
 
     // 계좌 필드: account_consent가 true일 때만 업데이트
     const bankUpdate: Record<string, unknown> = {};
-    if (account_consent === true) {
-      if (bank_name !== undefined) bankUpdate.bank_name = bank_name || null;
-      if (bank_code !== undefined) bankUpdate.bank_code = bank_code || null;
-      if (account_holder !== undefined) bankUpdate.account_holder = account_holder || null;
-      if (account_number && typeof account_number === "string" && account_number.trim()) {
-        bankUpdate.account_number = encryptAccount(account_number.trim());
+    if (body.account_consent === true) {
+      if (body.bank_name !== undefined) bankUpdate.bank_name = body.bank_name || null;
+      if (body.bank_code !== undefined) bankUpdate.bank_code = body.bank_code || null;
+      if (body.account_holder !== undefined) bankUpdate.account_holder = body.account_holder || null;
+      if (body.account_number && body.account_number.trim()) {
+        bankUpdate.account_number = encryptAccount(body.account_number.trim());
       }
     }
 
-    const updateData: Record<string, unknown> = {
-      ...(nickname !== undefined && { nickname: nickname as string || null }),
-      ...(position !== undefined && { position: position as string || null }),
-      ...(height !== undefined && { height: height ? Number(height) : null }),
-      ...(city !== undefined && { city: city as string || null }),
-      ...(bio !== undefined && { bio: bio as string || null }),
-      ...(name !== undefined && { name: name as string || null }),
-      ...(phone !== undefined && { phone: phone as string || null }),
-      ...(birth_date !== undefined && { birth_date: birth_date ? new Date(birth_date as string) : null }),
-      ...(district !== undefined && { district: district as string || null }),
-      ...(weight !== undefined && { weight: weight ? Number(weight) : null }),
-      ...bankUpdate,
-    };
-
-    // 프로필 저장 후 완성도 자동 체크 → DB profile_completed 동기화
-    const updated = await updateProfile(ctx.userId, updateData);
-
-    const isComplete = checkProfileCompletion({
-      name: (name as string) ?? updated.name ?? null,
-      nickname: (nickname as string) ?? updated.nickname ?? null,
-      phone: (phone as string) ?? null,
-      position: (position as string) ?? updated.position ?? null,
-      city: (city as string) ?? updated.city ?? null,
+    // BUG-005 수정: phone을 DB에서 읽어와 completion 체크에 사용
+    const currentUser = await prisma.user.findUnique({
+      where: { id: ctx.userId },
+      select: { name: true, nickname: true, phone: true, position: true, city: true },
     });
 
-    if (isComplete) {
-      await updateProfile(ctx.userId, { profile_completed: true });
-    }
+    // profile_completed 자동 동기화 (단일 쓰기)
+    const mergedForCheck = {
+      name: body.name ?? currentUser?.name ?? null,
+      nickname: body.nickname ?? currentUser?.nickname ?? null,
+      phone: body.phone ?? currentUser?.phone ?? null,
+      position: body.position ?? currentUser?.position ?? null,
+      city: body.city ?? currentUser?.city ?? null,
+    };
+    const isComplete = checkProfileCompletion(mergedForCheck);
+
+    const updateData: Record<string, unknown> = {
+      ...(body.nickname !== undefined && { nickname: body.nickname || null }),
+      ...(body.position !== undefined && { position: body.position || null }),
+      ...(body.height !== undefined && { height: body.height ?? null }),
+      ...(body.city !== undefined && { city: body.city || null }),
+      ...(body.bio !== undefined && { bio: body.bio || null }),
+      ...(body.name !== undefined && { name: body.name || null }),
+      ...(body.phone !== undefined && { phone: body.phone || null }),
+      ...(body.birth_date !== undefined && { birth_date: body.birth_date ? new Date(body.birth_date) : null }),
+      ...(body.district !== undefined && { district: body.district || null }),
+      ...(body.weight !== undefined && { weight: body.weight ?? null }),
+      ...(body.profile_completed !== undefined && { profile_completed: body.profile_completed }),
+      ...bankUpdate,
+      // 자동 동기화: 체크 결과 반영 (이미 true면 그대로, false→true만)
+      ...(isComplete && { profile_completed: true }),
+    };
+
+    const updated = await updateProfile(ctx.userId, updateData);
 
     return apiSuccess(updated);
   } catch {

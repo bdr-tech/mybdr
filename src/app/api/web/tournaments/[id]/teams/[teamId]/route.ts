@@ -48,26 +48,36 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   const nowApproved = status === "approved";
   const nowRejected = status === "rejected";
 
-  // TC-NEW-007: 팀 업데이트 + teams_count 동기화를 원자적 트랜잭션으로 처리
+  // BUG-003 수정: updateMany + WHERE status 조건으로 race condition 방지
   const updated = await prisma.$transaction(async (tx) => {
-    const u = await tx.tournamentTeam.update({
-      where: { id: teamBigInt },
-      data: {
-        ...(status !== undefined && { status: String(status) }),
-        ...(seedNumber !== undefined && { seedNumber: seedNumber ? Number(seedNumber) : null }),
-        ...(groupName !== undefined && { groupName: groupName ? String(groupName) : null }),
-        ...(division !== undefined && { division: division ? String(division) : null }),
-        ...(!wasApproved && nowApproved && { approved_at: new Date() }),
-      },
-    });
-
-    if (!wasApproved && nowApproved) {
+    // 상태 변경이 있을 경우, 현재 상태를 조건에 포함하여 동시 요청 방지
+    if (status !== undefined && !wasApproved && nowApproved) {
+      const result = await tx.tournamentTeam.updateMany({
+        where: { id: teamBigInt, status: "pending" },
+        data: { status: "approved", approved_at: new Date() },
+      });
+      if (result.count === 0) {
+        // 이미 다른 요청이 처리한 경우
+        return tx.tournamentTeam.findUnique({ where: { id: teamBigInt } });
+      }
       await tx.tournament.update({ where: { id }, data: { teams_count: { increment: 1 } } });
-    } else if (wasApproved && (nowRejected || status === "withdrawn")) {
-      await tx.tournament.update({ where: { id }, data: { teams_count: { decrement: 1 } } });
+    } else {
+      await tx.tournamentTeam.update({
+        where: { id: teamBigInt },
+        data: {
+          ...(status !== undefined && { status: String(status) }),
+          ...(seedNumber !== undefined && { seedNumber: seedNumber ? Number(seedNumber) : null }),
+          ...(groupName !== undefined && { groupName: groupName ? String(groupName) : null }),
+          ...(division !== undefined && { division: division ? String(division) : null }),
+        },
+      });
+
+      if (wasApproved && (nowRejected || status === "withdrawn")) {
+        await tx.tournament.update({ where: { id }, data: { teams_count: { decrement: 1 } } });
+      }
     }
 
-    return u;
+    return tx.tournamentTeam.findUnique({ where: { id: teamBigInt } });
   });
 
   // 승인/거절 알림 발송 (트랜잭션 밖에서 — 알림 실패가 승인을 롤백하면 안 됨)
@@ -85,7 +95,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 
       createNotification({
         userId: tt.registered_by_id,
-        notificationType: NOTIFICATION_TYPES.TOURNAMENT_JOIN_SUBMITTED,
+        notificationType: NOTIFICATION_TYPES.TOURNAMENT_JOIN_APPROVED,
         title: `[${tournament?.name}] 참가 승인`,
         content: `대회 참가가 승인되었습니다.${feeInfo}`,
         actionUrl: `/tournaments/${id}`,
@@ -95,7 +105,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     } else if (nowRejected) {
       createNotification({
         userId: tt.registered_by_id,
-        notificationType: NOTIFICATION_TYPES.TOURNAMENT_JOIN_SUBMITTED,
+        notificationType: NOTIFICATION_TYPES.TOURNAMENT_JOIN_REJECTED,
         title: `[${tournament?.name}] 참가 거절`,
         content: "대회 참가 신청이 거절되었습니다.",
         actionUrl: `/tournaments/${id}`,

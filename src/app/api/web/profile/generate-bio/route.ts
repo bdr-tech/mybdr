@@ -146,6 +146,6 @@ ${lines}`;
   } catch (err) {
     console.error("[generate-bio] Error:", err);
     const msg = err instanceof Error ? err.message : "unknown";
-    return apiError(`AI 자기소개 생성 중 오류: ${msg}`, 500);
+    return apiError("자기소개 생성에 실패했습니다. 잠시 후 다시 시도해주세요.", 500);
   }
 });
