@@ -1,19 +1,19 @@
 "use client";
 
-import Link from "next/link";
-import useSWR from "swr";
-
 /* ============================================================
- * NotableTeams -- 주목할만한 팀 섹션
+ * NotableTeams -- 주목할만한 팀 섹션 (토스 스타일)
  *
- * 2026-03-27: 컴팩트 카드 스타일 적용
- * - h-20 lg:h-28 이미지 영역 (팀 색상 그라디언트 + 이니셜)
- * - p-3 정보 영역 (팀명 + 멤버수/전적)
- * - 경기/대회 카드와 동일한 rounded-xl + border 패턴
+ * 토스 스타일 변경:
+ * - TossSectionHeader로 "주목할 팀" + "전체보기 >" 헤더
+ * - TossListItem으로 팀 리스트 표시 (원형 아이콘 + 팀명/지역 + 전적)
+ * - 기존 가로 스크롤 4열 그리드 → 세로 리스트
  *
- * 데이터: /api/web/teams API에서 승수(wins) 기준 상위 4팀
- * API 실패 시 FALLBACK_TEAMS로 graceful degradation
+ * API/데이터 패칭 로직은 기존과 100% 동일하게 유지.
  * ============================================================ */
+
+import useSWR from "swr";
+import { TossSectionHeader } from "@/components/toss/toss-section-header";
+import { TossListItem } from "@/components/toss/toss-list-item";
 
 /* API 응답의 팀 데이터 타입 (apiSuccess가 snake_case로 자동 변환) */
 interface TeamData {
@@ -43,30 +43,9 @@ interface NotableTeamsProps {
   fallbackData?: { teams: TeamData[] };
 }
 
-/**
- * 팀 색상을 기반으로 그라디언트 생성
- * primary_color가 있으면 해당 색상 기반, 없으면 기본 회색 그라디언트
- */
-function getTeamGradient(color: string | null): string {
-  if (!color) return "linear-gradient(135deg, #374151 0%, #1f2937 100%)";
-  // 팀 색상에서 어두운 변형을 만들어 그라디언트 생성
-  return `linear-gradient(135deg, ${color}33 0%, ${color} 50%, ${color}cc 100%)`;
-}
-
-/**
- * 팀명에서 이니셜 추출 (한글이면 첫 글자, 영문이면 각 단어 첫 글자)
- */
-function getInitials(name: string): string {
-  // 한글로 시작하면 첫 2글자
-  if (/^[가-힣]/.test(name)) return name.slice(0, 2);
-  // 영문이면 각 단어 첫 글자 (최대 2글자)
-  return name.split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2);
-}
-
 export function NotableTeams({ fallbackData }: NotableTeamsProps = {}) {
-  // useSWR로 팀 API 호출 (SWR이 자동 중복 제거)
-  // fallbackData가 있으면 마운트 시 재요청 안 함 (서버에서 이미 가져온 데이터 재활용)
-  const { data: json, isLoading } = useSWR<{ teams: TeamData[] }>(
+  // useSWR로 팀 API 호출 (기존 로직 100% 유지)
+  const { data: json } = useSWR<{ teams: TeamData[] }>(
     "/api/web/teams",
     null,
     { fallbackData, revalidateOnMount: !fallbackData }
@@ -78,101 +57,38 @@ export function NotableTeams({ fallbackData }: NotableTeamsProps = {}) {
 
   return (
     <section>
-      {/* 섹션 헤더: 파란 세로 막대 + 제목 + 필터 버튼 */}
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-2xl font-bold font-heading tracking-tight text-text-primary flex items-center gap-3">
-          <span className="w-1.5 h-6 bg-tertiary" />
-          주목할만한 팀
-        </h3>
-        <button className="bg-card hover:bg-elevated text-text-primary p-2 rounded transition-colors">
-          <span className="material-symbols-outlined">filter_list</span>
-        </button>
-      </div>
+      {/* 토스 스타일 섹션 헤더: "주목할 팀" + "전체보기 >" */}
+      <TossSectionHeader title="주목할 팀" actionHref="/teams" />
 
-      {/* 반응형 레이아웃: 모바일 가로 스크롤 / 데스크탑 4열 그리드 */}
-      <div className="flex flex-row overflow-x-auto gap-4 no-scrollbar -mx-6 px-6 md:grid md:grid-cols-4 md:overflow-visible md:mx-0 md:px-0">
-        {teams.map((team) => (
-          <TeamCard key={team.id + team.name} team={team} isLoading={isLoading} />
-        ))}
+      {/* 팀 리스트: TossListItem으로 통일 (토스 앱 계좌 목록 패턴) */}
+      <div>
+        {teams.map((team) => {
+          const isFallback = team.id === "0";
+          /* 팀 색상을 아이콘 배경으로 사용 (없으면 기본 회색) */
+          const iconBg = team.primary_color ?? "var(--color-text-muted)";
+          /* 지역 정보: city + district 조합 */
+          const location = [team.city, team.district].filter(Boolean).join(" ");
+          /* 부제: 지역 + 멤버수 */
+          const subtitle = [
+            location,
+            !isFallback && team.member_count > 0 ? `${team.member_count}명` : null,
+          ].filter(Boolean).join(" · ");
+
+          return (
+            <TossListItem
+              key={team.id + team.name}
+              icon="shield"
+              iconBg={iconBg}
+              title={team.name}
+              subtitle={subtitle || undefined}
+              rightText={!isFallback ? `${team.wins}W ${team.losses}L` : undefined}
+              rightSub={team.accepting_members && !isFallback ? "모집중" : undefined}
+              href={!isFallback ? `/teams/${team.id}` : undefined}
+              showArrow={!isFallback}
+            />
+          );
+        })}
       </div>
     </section>
-  );
-}
-
-/* ---- 개별 팀 카드 컴포넌트 (컴팩트 스타일) ---- */
-function TeamCard({ team, isLoading }: { team: TeamData; isLoading: boolean }) {
-  const href = team.id !== "0" ? `/teams/${team.id}` : "#";
-  const isFallback = team.id === "0";
-
-  return (
-    <Link href={href} className="min-w-[160px] md:min-w-0 block">
-      <div className="group rounded-xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-card)] hover:shadow-lg transition-all h-full">
-        {/* 이미지 영역: 팀 색상 기반 그라디언트 + 이니셜 */}
-        <div
-          className="relative h-20 lg:h-28 flex items-center justify-center"
-          style={{ background: getTeamGradient(team.primary_color) }}
-        >
-          {/* 팀 이니셜 (큰 반투명 텍스트로 배경 장식) */}
-          <span className="text-4xl lg:text-5xl font-black text-white/30 select-none">
-            {getInitials(team.name)}
-          </span>
-
-          {/* 팀 아이콘 뱃지 (좌상단) */}
-          <span className="absolute top-2 left-2 flex items-center justify-center w-8 h-8 rounded bg-black/30 backdrop-blur-sm">
-            <span
-              className="material-symbols-outlined text-xl text-white"
-              style={team.primary_color ? { color: team.primary_color } : undefined}
-            >
-              shield
-            </span>
-          </span>
-
-          {/* 멤버 모집중 뱃지 (우상단) */}
-          {team.accepting_members && !isFallback && (
-            <span className="absolute top-2 right-2 rounded bg-[var(--color-primary)] px-1.5 py-0.5 text-xs font-bold text-white">
-              모집중
-            </span>
-          )}
-        </div>
-
-        {/* 정보 영역 (p-3 컴팩트) */}
-        <div className="p-3">
-          {/* 팀명 */}
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <h4 className="text-sm font-bold line-clamp-1 text-[var(--color-text-primary)] flex-1">
-              {isLoading ? (
-                <span className="inline-block w-20 h-4 bg-[var(--color-elevated)] rounded animate-pulse" />
-              ) : (
-                team.name
-              )}
-            </h4>
-          </div>
-
-          {/* 전적 + 멤버수 */}
-          <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-            {isLoading ? (
-              <span className="inline-block w-24 h-3 bg-[var(--color-elevated)] rounded animate-pulse" />
-            ) : !isFallback ? (
-              <>
-                {/* 전적 */}
-                <span className="flex items-center gap-0.5">
-                  <span className="font-bold text-[var(--color-text-secondary)]">{team.wins}W</span>
-                  <span>/</span>
-                  <span>{team.losses}L</span>
-                </span>
-                <span className="text-[var(--color-border)]">|</span>
-                {/* 멤버수 */}
-                <span className="flex items-center gap-0.5">
-                  <span className="material-symbols-outlined text-xs">group</span>
-                  {team.member_count}명
-                </span>
-              </>
-            ) : (
-              <span>-</span>
-            )}
-          </div>
-        </div>
-      </div>
-    </Link>
   );
 }

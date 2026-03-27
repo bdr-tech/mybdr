@@ -1,19 +1,19 @@
 "use client";
 
 /* ============================================================
- * RecommendedVideos — BDR 추천 영상 섹션 (리디자인)
+ * RecommendedVideos — BDR 추천 영상 섹션 (토스 스타일)
  *
- * 왜 리디자인했는가: 기존 가로 스크롤 전용에서
- * 모바일 가로 스크롤 + 데스크탑 4열 그리드로 변경.
- * 빨간 세로 막대 헤더 스타일로 통일.
+ * 토스 스타일 변경:
+ * - TossSectionHeader로 "인기 영상" + "더보기 >" 헤더
+ * - TossCard 스타일 카드 (둥근 모서리, 가벼운 그림자)
+ * - 가로 스크롤 캐러셀 유지
  *
- * 구조:
- * - 빨간 세로 막대 + "BDR 추천 영상" + "더보기" 링크
- * - 비디오 카드: aspect-video 썸네일 + play_circle 호버 + 재생시간 + 제목 + 조회수
+ * API/데이터 패칭 로직은 기존과 100% 동일.
  * ============================================================ */
 
 import useSWR from "swr";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TossSectionHeader } from "@/components/toss/toss-section-header";
 
 interface VideoItem {
   video_id: string;
@@ -24,7 +24,7 @@ interface VideoItem {
   is_live: boolean;
 }
 
-/* 더미 데이터: API 로딩 실패 시 또는 개발 중 표시용 */
+/* 더미 데이터: API 로딩 실패 시 표시용 */
 const DUMMY_VIDEOS = [
   {
     video_id: "dummy1",
@@ -61,7 +61,7 @@ const DUMMY_VIDEOS = [
 ];
 
 export function RecommendedVideos() {
-  // useSWR로 YouTube 추천 API 호출 (hero-bento와 같은 URL → SWR이 자동 중복 제거)
+  // useSWR로 YouTube 추천 API 호출 (기존과 동일)
   const { data: apiData, isLoading: loading } = useSWR<{ videos: VideoItem[] }>(
     "/api/web/youtube/recommend"
   );
@@ -69,101 +69,105 @@ export function RecommendedVideos() {
 
   if (loading) {
     return (
-      <section className="mt-16">
-        <Skeleton className="h-8 w-48 mb-8" />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="aspect-video rounded-xl" />
+      <section>
+        <Skeleton className="h-6 w-32 mb-4" />
+        <div className="flex gap-4 overflow-hidden">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="aspect-video w-56 rounded-2xl shrink-0" />
           ))}
         </div>
       </section>
     );
   }
 
-  /* API 데이터가 있으면 사용, 없으면 더미 데이터 */
   const hasApiData = videos.length > 0;
 
   return (
-    <section className="mt-16">
-      {/* 섹션 헤더: 빨간 세로 막대 + 제목 + 더보기 */}
-      <div className="flex items-center justify-between mb-8">
-        <h3 className="text-2xl font-bold font-heading tracking-tight text-text-primary flex items-center gap-3">
-          <span className="w-1.5 h-6 bg-primary" />
-          BDR 추천 영상
-        </h3>
-        <a
-          href="https://www.youtube.com/@BDRBASKET"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm text-text-muted hover:text-primary transition-colors"
-        >
-          더보기
-        </a>
-      </div>
+    <section>
+      {/* 토스 스타일 섹션 헤더 */}
+      <TossSectionHeader
+        title="인기 영상"
+        actionLabel="더보기"
+        actionHref="https://www.youtube.com/@BDRBASKET"
+      />
 
-      {/* 반응형 레이아웃: 모바일 가로 스크롤 / 데스크탑 4열 그리드 */}
-      <div className="flex flex-row overflow-x-auto gap-6 no-scrollbar -mx-6 px-6 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:mx-0 md:px-0">
+      {/* 가로 스크롤 캐러셀: 토스 카드 스타일 */}
+      <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-5 px-5 pb-2">
         {hasApiData
-          ? /* API 데이터 기반 카드 */
-            videos.slice(0, 4).map((v) => (
+          ? /* API 영상 카드 */
+            videos.slice(0, 6).map((v) => (
               <a
                 key={v.video_id}
                 href={`https://www.youtube.com/watch?v=${v.video_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="min-w-[260px] md:min-w-0 group cursor-pointer"
+                className="block shrink-0 w-56"
               >
-                <div className="aspect-video bg-surface rounded-xl overflow-hidden mb-3 relative border border-border">
-                  <img
-                    alt={v.title}
-                    className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
-                    src={v.thumbnail}
-                  />
-                  {/* play_circle 호버 오버레이 */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-                    <span className="material-symbols-outlined text-white text-5xl">play_circle</span>
-                  </div>
-                  {/* LIVE 뱃지 */}
-                  {v.is_live && (
-                    <span className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded font-bold flex items-center gap-1">
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
-                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+                <div
+                  className="group rounded-2xl overflow-hidden bg-[var(--color-card)] transition-all duration-200 hover:scale-[1.02] hover:shadow-[var(--shadow-elevated)]"
+                  style={{ boxShadow: "var(--shadow-card)" }}
+                >
+                  {/* 썸네일 */}
+                  <div className="aspect-video relative overflow-hidden">
+                    <img
+                      alt={v.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      src={v.thumbnail}
+                    />
+                    {/* 재생 아이콘 호버 오버레이 */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
+                      <span className="material-symbols-outlined text-white text-4xl">play_circle</span>
+                    </div>
+                    {/* LIVE 뱃지 */}
+                    {v.is_live && (
+                      <span className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
+                        <span className="relative flex h-1.5 w-1.5">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+                        </span>
+                        라이브
                       </span>
-                      라이브
-                    </span>
-                  )}
+                    )}
+                  </div>
+                  {/* 제목 + 날짜 */}
+                  <div className="p-3">
+                    <h4 className="text-sm font-bold text-[var(--color-text-primary)] line-clamp-1 mb-1">
+                      {v.title}
+                    </h4>
+                    <p className="text-xs text-[var(--color-text-muted)]">{formatDate(v.published_at)}</p>
+                  </div>
                 </div>
-                <h4 className="text-sm font-bold text-text-primary mb-1 line-clamp-1 group-hover:text-primary transition-colors">
-                  {v.title}
-                </h4>
-                <p className="text-xs text-text-muted">{formatDate(v.published_at)}</p>
               </a>
             ))
-          : /* 더미 데이터 기반 카드 */
+          : /* 더미 영상 카드 */
             DUMMY_VIDEOS.map((v) => (
-              <div key={v.video_id} className="min-w-[260px] md:min-w-0 group cursor-pointer">
-                <div className="aspect-video bg-surface rounded-xl overflow-hidden mb-3 relative border border-border">
-                  <img
-                    alt={v.title}
-                    className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
-                    src={v.thumbnail}
-                  />
-                  {/* play_circle 호버 오버레이 */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-                    <span className="material-symbols-outlined text-white text-5xl">play_circle</span>
+              <div key={v.video_id} className="shrink-0 w-56">
+                <div
+                  className="group rounded-2xl overflow-hidden bg-[var(--color-card)] transition-all duration-200 hover:scale-[1.02] hover:shadow-[var(--shadow-elevated)]"
+                  style={{ boxShadow: "var(--shadow-card)" }}
+                >
+                  <div className="aspect-video relative overflow-hidden">
+                    <img
+                      alt={v.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      src={v.thumbnail}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
+                      <span className="material-symbols-outlined text-white text-4xl">play_circle</span>
+                    </div>
+                    <span className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-0.5 rounded-md font-bold">
+                      {v.duration}
+                    </span>
                   </div>
-                  {/* 재생시간 뱃지 */}
-                  <span className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded font-bold">
-                    {v.duration}
-                  </span>
+                  <div className="p-3">
+                    <h4 className="text-sm font-bold text-[var(--color-text-primary)] line-clamp-1 mb-1">
+                      {v.title}
+                    </h4>
+                    <p className="text-xs text-[var(--color-text-muted)]">
+                      {v.views} · {v.date}
+                    </p>
+                  </div>
                 </div>
-                <h4 className="text-sm font-bold text-text-primary mb-1 line-clamp-1 group-hover:text-primary transition-colors">
-                  {v.title}
-                </h4>
-                <p className="text-xs text-text-muted">
-                  조회수 {v.views} &bull; {v.date}
-                </p>
               </div>
             ))}
       </div>

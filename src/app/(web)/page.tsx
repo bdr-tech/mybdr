@@ -9,7 +9,7 @@ import { HeroBento } from "@/components/home/hero-bento";
 import { RecommendedGames } from "@/components/home/recommended-games";
 import { NotableTeams } from "@/components/home/notable-teams";
 import { RecommendedVideos } from "@/components/home/recommended-videos";
-import { HomeSidebar } from "@/components/home/home-sidebar";
+import { HomeCommunity } from "@/components/home/home-community";
 import {
   prefetchTeams,
   prefetchStats,
@@ -23,74 +23,57 @@ import {
 export const revalidate = 60;
 
 /* ============================================================
- * 홈페이지 — 3열 그리드 레이아웃 + 서버 프리페치
+ * 홈페이지 — 토스 스타일 1열 세로 스택 레이아웃
  *
- * 서버 프리페치란:
- * 서버에서 미리 DB 데이터를 가져와 클라이언트 컴포넌트에 초기값으로 전달.
- * 이러면 화면이 로딩 없이 즉시 표시되고, SWR이 백그라운드에서 최신 데이터를 갱신.
+ * 변경: 기존 3열 그리드(메인+사이드바) → 1열 세로 스택
+ * 토스 앱처럼 "모바일 퍼스트, 한 화면에 하나의 메시지" 구조.
  *
- * ISR 활성화를 위해 getWebSession() 제거:
- * - 세션(cookies()) 호출이 있으면 Next.js가 매 요청마다 SSR → ISR 불가
- * - 비로그인 공통 데이터만 프리페치하고, 로그인 개인화는 클라이언트에서 처리
+ * 섹션 순서:
+ * 1. 인사말 (로그인 시 개인화, 클라이언트에서 처리)
+ * 2. 히어로 영상 슬라이드
+ * 3. 추천 경기 (가로 스크롤)
+ * 4. 주목할 팀 (리스트)
+ * 5. 커뮤니티 (최근 게시글)
+ * 6. 인기 영상
  *
- * 프리페치 대상 (내부 DB만, 빠르게 조회 가능):
- * 1. teams — 주목 팀 + 사이드바 랭킹
- * 2. stats — 플랫폼 통계 (비로그인 사이드바)
- * 3. community — 최근 게시글 (사이드바)
- * 4. recommended-games — 추천 경기 (비로그인 버전)
- *
- * 프리페치 제외 (기존 SWR 유지):
- * - YouTube (외부 API라 서버 응답 느려짐)
- * - profile/stats (로그인 시에만, 복잡도 대비 효과 작음)
+ * API/데이터 패칭 로직은 기존과 100% 동일하게 유지.
+ * 사이드바(HomeSidebar) import만 제거, 데이터는 다른 섹션에서 활용.
  * ============================================================ */
 export default async function HomePage() {
   /* 4개 데이터를 서버에서 병렬 프리페치
-   * Promise.allSettled를 사용하여 일부 실패해도 나머지는 정상 전달
-   * (하나의 DB 쿼리 실패가 페이지 전체를 깨뜨리면 안 되므로)
-   * 비로그인 버전만 프리페치 (userId 없이 호출) */
+   * Promise.allSettled를 사용하여 일부 실패해도 나머지는 정상 전달 */
   const [teamsResult, statsResult, communityResult, gamesResult] =
     await Promise.allSettled([
       prefetchTeams(),
       prefetchStats(),
       prefetchCommunity(),
-      prefetchRecommendedGames(), // userId 없이 → 비로그인 공통 데이터
+      prefetchRecommendedGames(),
     ]);
 
-  /* 성공한 결과만 추출, 실패하면 undefined (컴포넌트가 기존처럼 SWR로 직접 요청) */
+  /* 성공한 결과만 추출, 실패하면 undefined */
   const teamsData = teamsResult.status === "fulfilled" ? teamsResult.value : undefined;
-  const statsData = statsResult.status === "fulfilled" ? statsResult.value : undefined;
+  const _statsData = statsResult.status === "fulfilled" ? statsResult.value : undefined;
   const communityData = communityResult.status === "fulfilled" ? communityResult.value : undefined;
   const gamesData = gamesResult.status === "fulfilled" ? gamesResult.value : undefined;
 
   return (
-    <div className="space-y-0">
-      {/* === 3열 그리드: 메인 + 사이드바 === */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* 좌측 메인 콘텐츠: 화면의 2/3 차지 */}
-        <div className="lg:col-span-2 space-y-10">
-          {/* 히어로 벤토 그리드: LIVE NOW 배너 + 보조 카드 (YouTube — 프리페치 안 함) */}
-          <HeroBento />
+    /* 1열 세로 스택: 각 섹션 사이 넉넉한 간격 (mb-10 = 40px)
+     * 토스 앱처럼 섹션별로 구분감 있게 배치 */
+    <div className="space-y-10">
 
-          {/* 추천/인기 경기: fallbackData로 즉시 렌더링, SWR이 뒤에서 갱신
-           * 로그인 개인화는 클라이언트에서 /api/web/recommended-games 재호출로 처리 */}
-          <RecommendedGames fallbackData={gamesData} />
+      {/* [섹션 1] 히어로 영상 슬라이드 (YouTube — 프리페치 안 함) */}
+      <HeroBento />
 
-          {/* 주목할만한 팀: fallbackData로 즉시 렌더링 */}
-          <NotableTeams fallbackData={teamsData} />
-        </div>
+      {/* [섹션 2] 추천/인기 경기: TossSectionHeader + TossCard 가로 스크롤 */}
+      <RecommendedGames fallbackData={gamesData} />
 
-        {/* 우측 사이드바: 클라이언트에서 로그인 확인 후 분기
-         * (서버에서 session을 안 읽으므로 ISR 캐시 유지) */}
-        <aside className="space-y-8">
-          <HomeSidebar
-            fallbackTeams={teamsData}
-            fallbackCommunity={communityData}
-            fallbackStats={statsData}
-          />
-        </aside>
-      </div>
+      {/* [섹션 3] 주목할만한 팀: TossListItem으로 리스트 표시 */}
+      <NotableTeams fallbackData={teamsData} />
 
-      {/* === 전체 너비: 추천 영상 (YouTube — 프리페치 안 함) === */}
+      {/* [섹션 4] 커뮤니티: 최근 게시글 TossListItem */}
+      <HomeCommunity fallbackData={communityData} />
+
+      {/* [섹션 5] 인기 영상 (YouTube — 프리페치 안 함) */}
       <RecommendedVideos />
     </div>
   );
