@@ -11,6 +11,7 @@ export const TOURNAMENT_STATUS_LABEL: Record<string, string> = {
   registration_closed: "접수마감",
   in_progress: "진행중",
   ongoing: "진행중",
+  group_stage: "조별리그",  // 조별리그 단계 진행중
   completed: "완료",
   cancelled: "취소",
 };
@@ -27,6 +28,7 @@ export const TOURNAMENT_STATUS_BADGE: Record<string, "default" | "success" | "er
   registration_closed: "warning",
   in_progress: "success",
   ongoing: "success",
+  group_stage: "success",  // 조별리그 진행중 = 녹색
   completed: "info",
   cancelled: "error",
 };
@@ -39,7 +41,23 @@ export const TOURNAMENT_FORMAT_LABEL: Record<string, string> = {
   double_elimination: "더블 엘리미네이션",
   round_robin: "리그전",
   group_stage: "조별리그",
+  group_stage_knockout: "조별리그+토너먼트",
+  GROUP_STAGE_KNOCKOUT: "조별리그+토너먼트",  // DB에 대문자로 저장된 레코드 대응
+  swiss: "스위스 라운드",
+  hybrid: "혼합",
+};
+
+/**
+ * 대회 형식 약어 레이블 (카드 UI처럼 공간이 좁은 곳에서 사용).
+ */
+export const TOURNAMENT_FORMAT_LABEL_SHORT: Record<string, string> = {
+  single_elimination: "싱글 엘리미",
+  double_elimination: "더블 엘리미",
+  round_robin: "리그전",
+  group_stage: "조별리그",
   group_stage_knockout: "조별+토너먼트",
+  GROUP_STAGE_KNOCKOUT: "조별+토너먼트",
+  swiss: "스위스",
   hybrid: "혼합",
 };
 
@@ -55,6 +73,7 @@ export const TOURNAMENT_STATUS_TRANSITIONS: Record<string, string[]> = {
   registration_closed: ["ongoing", "in_progress", "cancelled"],
   in_progress: ["completed", "cancelled"],
   ongoing: ["completed", "cancelled"],
+  group_stage: ["completed", "cancelled"],  // 조별리그 → 완료/취소
   completed: [],
   cancelled: ["draft"],
 };

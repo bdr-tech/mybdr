@@ -8,30 +8,11 @@
 
 import { Badge } from "@/components/ui/badge";
 import { formatDateRange } from "@/lib/utils/format-date";
-
-// 대회 포맷 한글 매핑
-const FORMAT_LABEL: Record<string, string> = {
-  single_elimination: "싱글 엘리미네이션",
-  double_elimination: "더블 엘리미네이션",
-  round_robin: "리그전",
-  hybrid: "혼합",
-  group_stage_knockout: "조별리그+토너먼트",
-  GROUP_STAGE_KNOCKOUT: "조별리그+토너먼트",
-  swiss: "스위스 라운드",
-};
-
-// 대회 상태 배지 매핑
-const STATUS_LABEL: Record<string, { label: string; variant: "default" | "success" | "error" | "warning" | "info" }> = {
-  draft:              { label: "준비중",  variant: "default" },
-  active:             { label: "모집중",  variant: "info" },
-  published:          { label: "모집중",  variant: "info" },
-  registration:       { label: "참가접수", variant: "info" },
-  registration_open:  { label: "참가접수", variant: "info" },
-  registration_closed:{ label: "접수마감", variant: "warning" },
-  ongoing:            { label: "진행중",  variant: "success" },
-  completed:          { label: "완료",   variant: "default" },
-  cancelled:          { label: "취소",   variant: "error" },
-};
+import {
+  TOURNAMENT_FORMAT_LABEL,
+  TOURNAMENT_STATUS_LABEL,
+  TOURNAMENT_STATUS_BADGE,
+} from "@/lib/constants/tournament-status";
 
 interface TournamentHeroProps {
   name: string;
@@ -56,9 +37,11 @@ export function TournamentHero({
   teamCount,
   maxTeams,
 }: TournamentHeroProps) {
-  const statusInfo = STATUS_LABEL[status ?? "draft"] ?? { label: status ?? "draft", variant: "default" as const };
-  // 포맷 한글 변환
-  const formatLabel = FORMAT_LABEL[format ?? ""] ?? FORMAT_LABEL[(format ?? "").toLowerCase()] ?? format ?? "";
+  // 공통 상수에서 상태 라벨과 뱃지 variant를 가져옴
+  const statusLabel = TOURNAMENT_STATUS_LABEL[status ?? "draft"] ?? (status ?? "draft");
+  const statusVariant = TOURNAMENT_STATUS_BADGE[status ?? "draft"] ?? ("default" as const);
+  // 포맷 한글 변환: 대문자 키 대응을 위해 원본 → 소문자 순서로 검색
+  const formatLabel = TOURNAMENT_FORMAT_LABEL[format ?? ""] ?? TOURNAMENT_FORMAT_LABEL[(format ?? "").toLowerCase()] ?? format ?? "";
 
   // 날짜 포맷: "3/22(토) ~ 3/24(월)" 간결 표시
   const dateStr = formatDateRange(startDate, endDate) || null;
@@ -104,7 +87,7 @@ export function TournamentHero({
             PREMIUM
           </span>
           {/* 상태 배지: 파란 배경 + 흰 텍스트 */}
-          <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+          <Badge variant={statusVariant}>{statusLabel}</Badge>
         </div>
 
         {/* 대회명: 큰 흰색 볼드 */}

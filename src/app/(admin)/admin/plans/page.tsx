@@ -259,7 +259,7 @@ export default function AdminPlansPage() {
             <h2 className="mb-4 text-lg font-bold">{editTarget ? "요금제 수정" : "요금제 추가"}</h2>
 
             {error && (
-              <div className="mb-4 rounded-[12px] bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
+              <div className="mb-4 rounded-[12px] px-4 py-3 text-sm" style={{ backgroundColor: "var(--color-error-light)", color: "var(--color-error)" }}>{error}</div>
             )}
 
             <div className="space-y-3">

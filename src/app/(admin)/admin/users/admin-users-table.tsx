@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { MEMBERSHIP_LABELS, type MembershipType } from "@/lib/auth/roles";
 
 interface SerializedUser {
   id: string;
@@ -31,12 +32,21 @@ interface SerializedUser {
   updatedAt: string;
 }
 
-const ROLE_MAP: Record<number, { label: string; variant: "default" | "success" | "error" | "info" | "warning" }> = {
-  0: { label: "일반유저", variant: "default" },
-  1: { label: "픽업호스트", variant: "info" },
-  2: { label: "팀장", variant: "warning" },
-  3: { label: "대회관리자", variant: "info" },
+// 역할 라벨은 공통 상수(roles.ts)에서, 뱃지 색상은 UI 전용 매핑
+const ROLE_VARIANT: Record<number, "default" | "success" | "error" | "info" | "warning"> = {
+  0: "default",
+  1: "info",
+  2: "warning",
+  3: "info",
 };
+
+// 공통 라벨 + UI variant를 합쳐서 반환하는 헬퍼
+function getRoleInfo(mt: number) {
+  return {
+    label: MEMBERSHIP_LABELS[mt as MembershipType] ?? String(mt),
+    variant: ROLE_VARIANT[mt] ?? ("default" as const),
+  };
+}
 
 interface Props {
   users: SerializedUser[];
@@ -95,7 +105,7 @@ export function AdminUsersTable({ users, updateUserRoleAction, updateUserStatusA
             </thead>
             <tbody>
               {users.map((user) => {
-                const role = ROLE_MAP[user.membershipType] ?? { label: String(user.membershipType), variant: "default" as const };
+                const role = getRoleInfo(user.membershipType);
                 return (
                   <tr
                     key={user.id}
@@ -123,7 +133,7 @@ export function AdminUsersTable({ users, updateUserRoleAction, updateUserStatusA
       {/* 상세 모달 */}
       {selectedUser && (() => {
         const u = selectedUser;
-        const role = ROLE_MAP[u.membershipType] ?? { label: String(u.membershipType), variant: "default" as const };
+        const role = getRoleInfo(u.membershipType);
         return (
           <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
             <div className="w-full max-w-md max-h-[90vh] overflow-hidden rounded-t-[20px] sm:rounded-[20px] bg-[var(--color-card)] shadow-[0_-8px_40px_rgba(0,0,0,0.2)] sm:shadow-[0_8px_40px_rgba(0,0,0,0.2)] flex flex-col animate-slide-up sm:animate-fade-in">

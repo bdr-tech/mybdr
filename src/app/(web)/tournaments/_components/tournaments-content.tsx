@@ -47,27 +47,24 @@ interface TournamentsApiResponse {
 // -- 페이지당 대회 수: 3x3 그리드 = 9개 --
 const TOURNAMENTS_PER_PAGE = 9;
 
-// -- 상태별 배지 색상 (상단 이미지 배너에 표시) --
-const STATUS_BADGE: Record<string, { label: string; bg: string }> = {
-  draft:               { label: "준비중", bg: "var(--color-text-disabled)" },
-  active:              { label: "진행중", bg: "var(--color-primary)" },
-  published:           { label: "모집중", bg: "var(--color-primary)" },
-  registration:        { label: "곧 모집", bg: "var(--color-primary)" },
-  registration_open:   { label: "곧 모집", bg: "var(--color-primary)" },
-  registration_closed: { label: "마감", bg: "#D97706" },
-  in_progress:         { label: "진행중", bg: "var(--color-primary)" },
-  ongoing:             { label: "진행중", bg: "var(--color-primary)" },
-  completed:           { label: "종료", bg: "var(--color-text-disabled)" },
-  cancelled:           { label: "취소됨", bg: "#EF4444" },
+// -- 상태별 배지 배경색 매핑 (카드 이미지 배너 위 오버레이용, UI 전용) --
+// label은 공통 상수 TOURNAMENT_STATUS_LABEL에서 가져옴
+const STATUS_BG: Record<string, string> = {
+  draft:               "var(--color-text-disabled)",
+  active:              "var(--color-primary)",
+  published:           "var(--color-primary)",
+  registration:        "var(--color-primary)",
+  registration_open:   "var(--color-primary)",
+  registration_closed: "#D97706",
+  in_progress:         "var(--color-primary)",
+  ongoing:             "var(--color-primary)",
+  group_stage:         "var(--color-primary)",
+  completed:           "var(--color-text-disabled)",
+  cancelled:           "#EF4444",
 };
 
-// -- 대회 형식 한글 라벨 매핑 --
-const FORMAT_LABEL: Record<string, string> = {
-  single_elimination: "싱글 엘리미",
-  double_elimination: "더블 엘리미",
-  round_robin: "리그전",
-  hybrid: "혼합",
-};
+// 대회 형식 라벨: 공통 상수에서 약어 버전 사용 (카드 UI 공간 절약)
+// TOURNAMENT_FORMAT_LABEL_SHORT는 상단 import에서 가져옴
 
 // -- 날짜 포맷: 공통 유틸 사용 (format-date.ts의 formatShortDate) --
 
@@ -134,7 +131,9 @@ function TournamentGridSkeleton() {
 // photoUrl: undefined = 로딩 중 (shimmer), null = 사진 없음 (그라디언트+아이콘), string = 사진 있음
 function TournamentCard({ tournament: t, photoUrl }: { tournament: TournamentFromApi; photoUrl?: string | null }) {
   const st = t.status ?? "draft";
-  const badge = STATUS_BADGE[st] ?? { label: st.toUpperCase(), bg: "var(--color-text-disabled)" };
+  // 라벨은 공통 상수, 배경색은 UI 전용 매핑에서 가져옴
+  const badgeLabel = TOURNAMENT_STATUS_LABEL[st] ?? st.toUpperCase();
+  const badgeBg = STATUS_BG[st] ?? "var(--color-text-disabled)";
   const maxTeams = t.max_teams ?? 0;
   const location = t.venue_name ?? t.city ?? "";
   const hasFee = t.entry_fee && Number(t.entry_fee) > 0;
@@ -180,9 +179,9 @@ function TournamentCard({ tournament: t, photoUrl }: { tournament: TournamentFro
           {/* 상태 배지 (좌상단) */}
           <span
             className="absolute top-2 left-2 rounded px-2 py-0.5 text-xs font-bold text-white"
-            style={{ backgroundColor: badge.bg }}
+            style={{ backgroundColor: badgeBg }}
           >
-            {badge.label}
+            {badgeLabel}
           </span>
 
           {/* 종별 + 디비전 뱃지 (좌하단) */}
