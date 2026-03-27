@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import Link from "next/link";
 import { updateTournamentStatusAction } from "@/app/actions/admin-tournaments";
 // 공통 상수에서 상태/형식/뱃지/전환 매핑을 가져옴 (중복 제거)
@@ -47,25 +48,13 @@ export default async function AdminTournamentsPage({
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold uppercase tracking-wide sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>토너먼트 관리</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-            전체 <span className="font-semibold text-[var(--color-text-primary)]">{totalCount}개</span>
-          </p>
-        </div>
-        <form method="GET" className="flex gap-2">
-          <input
-            name="q"
-            defaultValue={q ?? ""}
-            placeholder="대회명 검색"
-            className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2 text-sm outline-none focus:border-[var(--color-accent)]"
-          />
-          <button type="submit" className="rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white">
-            검색
-          </button>
-        </form>
-      </div>
+      {/* 공통 헤더: 제목 + 부제 + 검색 통일 */}
+      <AdminPageHeader
+        title="토너먼트 관리"
+        subtitle={`전체 ${totalCount}개`}
+        searchPlaceholder="대회명 검색"
+        searchDefaultValue={q ?? ""}
+      />
 
       <Card className="overflow-hidden p-0">
         <div className="overflow-x-auto">

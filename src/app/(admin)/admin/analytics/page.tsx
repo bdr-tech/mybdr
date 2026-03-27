@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { Card, StatCard } from "@/components/ui/card";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 
 export const dynamic = "force-dynamic";
 
@@ -53,24 +54,24 @@ export default async function AdminAnalyticsPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-extrabold uppercase tracking-wide sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>분석</h1>
+      <AdminPageHeader title="분석" />
 
-      {/* 이번 달 통계 */}
+      {/* 이번 달 통계: Material Symbols 아이콘 사용 */}
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <StatCard
           label="이번 달 가입"
           value={data.thisMonthUsers.toLocaleString()}
-          icon={<span className="text-xl font-bold text-[var(--color-accent)]">+</span>}
+          icon={<span className="material-symbols-outlined text-2xl">person_add</span>}
         />
         <StatCard
           label="이번 달 대회"
           value={data.thisMonthTournaments.toLocaleString()}
-          icon={<span className="text-xl font-bold text-[var(--color-accent)]">T</span>}
+          icon={<span className="material-symbols-outlined text-2xl">emoji_events</span>}
         />
         <StatCard
           label="이번 달 경기"
           value={data.thisMonthGames.toLocaleString()}
-          icon={<span className="text-xl font-bold text-[var(--color-primary)]">G</span>}
+          icon={<span className="material-symbols-outlined text-2xl">sports_basketball</span>}
         />
       </div>
 
