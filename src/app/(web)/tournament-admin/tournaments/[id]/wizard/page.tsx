@@ -11,18 +11,21 @@ import {
 } from "@/components/tournament/registration-settings-form";
 import { TeamSettingsForm, type TeamSettingsData } from "@/components/tournament/team-settings-form";
 
+// 대회 형식: value(영문 코드)를 DB에 저장, label(한글)은 표시용
 const FORMAT_OPTIONS = [
   { value: "single_elimination", label: "싱글 엘리미네이션" },
   { value: "double_elimination", label: "더블 엘리미네이션" },
-  { value: "round_robin", label: "라운드 로빈" },
-  { value: "group_stage", label: "그룹 스테이지" },
-  { value: "swiss", label: "스위스" },
+  { value: "round_robin", label: "리그전" },
+  { value: "group_stage", label: "조별리그" },
+  { value: "group_stage_knockout", label: "조별리그+토너먼트" },
+  { value: "swiss", label: "스위스 라운드" },
 ];
 
+// 대회 상태 4종 통일
 const STATUS_OPTIONS = [
-  { value: "draft", label: "초안" },
-  { value: "registration", label: "참가 접수 중" },
-  { value: "active", label: "진행 중" },
+  { value: "draft", label: "준비중" },
+  { value: "registration_open", label: "접수중" },
+  { value: "ongoing", label: "진행중" },
   { value: "completed", label: "종료" },
 ];
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Prisma } from "@prisma/client";
+import { TOURNAMENT_STATUS_LABEL, TOURNAMENT_FORMAT_LABEL } from "@/lib/constants/tournament-status";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 
@@ -91,26 +92,13 @@ function fmtTime(d: Date | null | undefined): string {
   });
 }
 
+// 대회 상태/형식 라벨 → 공통 상수에서 가져옴
 function statusLabel(s: string | null): string {
-  const map: Record<string, string> = {
-    draft: "준비 중",
-    registration_open: "참가 신청 중",
-    registration_closed: "신청 마감",
-    ongoing: "진행 중",
-    completed: "종료",
-  };
-  return map[s ?? ""] ?? "대회";
+  return TOURNAMENT_STATUS_LABEL[s ?? ""] ?? "대회";
 }
 
 function formatLabel(f: string | null): string {
-  const map: Record<string, string> = {
-    single_elimination: "싱글 엘리미네이션",
-    double_elimination: "더블 엘리미네이션",
-    round_robin: "라운드 로빈",
-    group_stage: "그룹 스테이지",
-    swiss: "스위스",
-  };
-  return map[f ?? ""] ?? f ?? "";
+  return TOURNAMENT_FORMAT_LABEL[f ?? ""] ?? f ?? "";
 }
 
 function TeamAvatar({ name, logoUrl, size = 8 }: { name: string; logoUrl: string | null; size?: number }) {

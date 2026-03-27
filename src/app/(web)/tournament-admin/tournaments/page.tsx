@@ -3,21 +3,10 @@ import { getWebSession } from "@/lib/auth/web-session";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { TOURNAMENT_STATUS_LABEL, TOURNAMENT_FORMAT_LABEL } from "@/lib/constants/tournament-status";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
-
-const STATUS_LABEL: Record<string, string> = {
-  draft: "준비중",
-  active: "모집중",
-  published: "모집중",
-  registration: "모집중",
-  registration_open: "모집중",
-  registration_closed: "접수마감",
-  ongoing: "진행중",
-  completed: "완료",
-  cancelled: "취소",
-};
 
 export default async function TournamentAdminTournamentsPage() {
   const session = await getWebSession();
@@ -44,10 +33,10 @@ export default async function TournamentAdminTournamentsPage() {
                   <p className="font-semibold">{t.name}</p>
                   <p className="text-xs text-[var(--color-text-muted)]">
                     {t.startDate ? t.startDate.toLocaleDateString("ko-KR") : "날짜 미정"}
-                    {t.format && ` · ${t.format}`}
+                    {t.format && ` · ${TOURNAMENT_FORMAT_LABEL[t.format] ?? t.format}`}
                   </p>
                 </div>
-                <Badge>{STATUS_LABEL[t.status ?? "draft"] ?? t.status}</Badge>
+                <Badge>{TOURNAMENT_STATUS_LABEL[t.status ?? "draft"] ?? t.status}</Badge>
               </Card>
             </Link>
           ))}

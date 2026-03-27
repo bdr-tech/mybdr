@@ -4,9 +4,15 @@ import { prisma } from "@/lib/db/prisma";
 import { getWebSession } from "@/lib/auth/web-session";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  TOURNAMENT_STATUS_LABEL,
+  TOURNAMENT_STATUS_COLOR,
+  TOURNAMENT_FORMAT_LABEL,
+} from "@/lib/constants/tournament-status";
 
 export const dynamic = "force-dynamic";
 
+// D-Day 계산 (한국 시간 기준)
 function getDDay(startDate: Date): string {
   const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
   const start = new Date(startDate.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
@@ -15,22 +21,6 @@ function getDDay(startDate: Date): string {
   if (diff === 0) return "D-Day";
   return `D-${diff}`;
 }
-
-const STATUS_LABEL: Record<string, string> = {
-  draft: "초안",
-  registration: "참가 접수 중",
-  active: "진행 중",
-  completed: "종료",
-  cancelled: "취소",
-};
-
-const STATUS_COLOR: Record<string, string> = {
-  draft: "text-[var(--color-text-muted)]",
-  registration: "text-[#60A5FA]",
-  active: "text-[#4ADE80]",
-  completed: "text-[var(--color-text-muted)]",
-  cancelled: "text-[var(--color-error)]",
-};
 
 export default async function TournamentAdminDetailPage({
   params,
@@ -124,8 +114,8 @@ export default async function TournamentAdminDetailPage({
             </div>
             <h1 className="text-2xl font-extrabold uppercase tracking-wide sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>{tournament.name}</h1>
             <div className="mt-1 flex flex-wrap items-center gap-3 text-sm">
-              <span className={STATUS_COLOR[status] ?? "text-[var(--color-text-muted)]"}>
-                ● {STATUS_LABEL[status] ?? status}
+              <span className={TOURNAMENT_STATUS_COLOR[status] ?? "text-[var(--color-text-muted)]"}>
+                ● {TOURNAMENT_STATUS_LABEL[status] ?? status}
               </span>
               {tournament.startDate && (
                 <>
@@ -138,7 +128,7 @@ export default async function TournamentAdminDetailPage({
                   </span>
                 </>
               )}
-              <span className="text-[var(--color-text-muted)]">{tournament.format ?? "싱글 엘리미네이션"}</span>
+              <span className="text-[var(--color-text-muted)]">{TOURNAMENT_FORMAT_LABEL[tournament.format ?? ""] ?? tournament.format ?? "싱글 엘리미네이션"}</span>
             </div>
           </div>
           {tournament.tournamentSite[0]?.isPublished && (

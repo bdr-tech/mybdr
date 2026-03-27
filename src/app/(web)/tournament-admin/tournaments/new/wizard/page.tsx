@@ -22,12 +22,14 @@ const STEPS = [
   { id: "preview", label: "미리보기", icon: "👁" },
 ];
 
+// 대회 형식: value(영문 코드)를 DB에 저장, label(한글)은 표시용
 const FORMAT_OPTIONS = [
-  "싱글 엘리미네이션",
-  "라운드 로빈",
-  "그룹 스테이지",
-  "더블 엘리미네이션",
-  "스위스",
+  { value: "single_elimination", label: "싱글 엘리미네이션" },
+  { value: "double_elimination", label: "더블 엘리미네이션" },
+  { value: "round_robin", label: "리그전" },
+  { value: "group_stage", label: "조별리그" },
+  { value: "group_stage_knockout", label: "조별리그+토너먼트" },
+  { value: "swiss", label: "스위스 라운드" },
 ];
 
 const inputCls =
@@ -47,7 +49,7 @@ export default function NewTournamentWizardPage() {
 
   // Step 1: 기본 정보
   const [name, setName] = useState("");
-  const [format, setFormat] = useState("싱글 엘리미네이션");
+  const [format, setFormat] = useState("single_elimination");
   const [description, setDescription] = useState("");
 
   // Step 2: 일정/장소
@@ -297,7 +299,7 @@ export default function NewTournamentWizardPage() {
                 className={inputCls}
               >
                 {FORMAT_OPTIONS.map((f) => (
-                  <option key={f}>{f}</option>
+                  <option key={f.value} value={f.value}>{f.label}</option>
                 ))}
               </select>
             </div>
@@ -410,7 +412,7 @@ export default function NewTournamentWizardPage() {
 
             <div className="space-y-3 rounded-[16px] bg-[var(--color-elevated)] p-4 text-sm">
               <Row label="대회명" value={name || "미입력"} />
-              <Row label="형식" value={format} />
+              <Row label="형식" value={FORMAT_OPTIONS.find((f) => f.value === format)?.label ?? format} />
               <Row
                 label="대회 기간"
                 value={

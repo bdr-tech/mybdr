@@ -83,7 +83,7 @@ export default function TournamentRecordersPage() {
       <div className="flex items-center gap-3">
         <Link
           href={`/tournament-admin/tournaments/${id}`}
-          className="text-sm text-gray-500 hover:text-gray-700"
+          className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
         >
           ← 대회 관리
         </Link>
@@ -92,8 +92,8 @@ export default function TournamentRecordersPage() {
 
       {/* 기록원 추가 */}
       <Card className="p-4 space-y-3">
-        <h2 className="font-semibold text-gray-800">기록원 추가</h2>
-        <p className="text-sm text-gray-500">
+        <h2 className="font-semibold text-[var(--color-text-primary)]">기록원 추가</h2>
+        <p className="text-sm text-[var(--color-text-muted)]">
           mybdr 가입 회원의 이메일로 기록원을 지정합니다. 기록원은 bdr_stat 앱으로 경기를 실시간 기록할 수 있습니다.
         </p>
         <div className="flex gap-2">
@@ -103,32 +103,32 @@ export default function TournamentRecordersPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addRecorder()}
-            className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-3 py-2 border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
           />
           <Button onClick={addRecorder} disabled={adding || !email.trim()}>
             {adding ? "추가 중..." : "추가"}
           </Button>
         </div>
-        {error && <p className="text-sm text-red-500">{error}</p>}
-        {success && <p className="text-sm text-green-600">{success}</p>}
+        {error && <p className="text-sm text-[var(--color-error)]">{error}</p>}
+        {success && <p className="text-sm text-[var(--color-success)]">{success}</p>}
       </Card>
 
       {/* 기록원 목록 */}
       <Card className="p-4 space-y-3">
-        <h2 className="font-semibold text-gray-800">
+        <h2 className="font-semibold text-[var(--color-text-primary)]">
           현재 기록원 {activeRecorders.length > 0 && `(${activeRecorders.length}명)`}
         </h2>
 
         {loading ? (
-          <p className="text-sm text-gray-400">불러오는 중...</p>
+          <p className="text-sm text-[var(--color-text-muted)]">불러오는 중...</p>
         ) : activeRecorders.length === 0 ? (
-          <p className="text-sm text-gray-400">등록된 기록원이 없습니다.</p>
+          <p className="text-sm text-[var(--color-text-muted)]">등록된 기록원이 없습니다.</p>
         ) : (
           <ul className="space-y-2">
             {activeRecorders.map((r) => (
               <li
                 key={r.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                className="flex items-center justify-between p-3 bg-[var(--color-elevated)] rounded-lg"
               >
                 <div className="flex items-center gap-3">
                   {r.recorder.profile_image_url ? (
@@ -141,15 +141,16 @@ export default function TournamentRecordersPage() {
                       unoptimized /* 외부 프로필 이미지 URL — 도메인이 다양 */
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold">
+                    /* 프로필 이미지 없을 때 이니셜 아바타 */
+                    <div className="w-8 h-8 rounded-full bg-[var(--color-accent)]/10 flex items-center justify-center text-[var(--color-accent)] text-xs font-bold">
                       {(r.recorder.nickname ?? r.recorder.email)[0].toUpperCase()}
                     </div>
                   )}
                   <div>
-                    <p className="text-sm font-medium">
+                    <p className="text-sm font-medium text-[var(--color-text-primary)]">
                       {r.recorder.nickname ?? r.recorder.email}
                     </p>
-                    <p className="text-xs text-gray-400">{r.recorder.email}</p>
+                    <p className="text-xs text-[var(--color-text-muted)]">{r.recorder.email}</p>
                   </div>
                 </div>
                 <button
@@ -159,7 +160,7 @@ export default function TournamentRecordersPage() {
                       r.recorder.nickname ?? r.recorder.email
                     )
                   }
-                  className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50"
+                  className="text-xs text-[var(--color-error)] hover:text-[var(--color-error)] px-2 py-1 rounded hover:bg-[var(--color-error)]/10"
                 >
                   제거
                 </button>
