@@ -3,46 +3,15 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { updateTournamentStatusAction } from "@/app/actions/admin-tournaments";
+// 공통 상수에서 상태/형식/뱃지/전환 매핑을 가져옴 (중복 제거)
+import {
+  TOURNAMENT_STATUS_LABEL as STATUS_LABEL,
+  TOURNAMENT_STATUS_BADGE as STATUS_BADGE,
+  TOURNAMENT_FORMAT_LABEL as FORMAT_LABEL,
+  TOURNAMENT_STATUS_TRANSITIONS as TRANSITIONS,
+} from "@/lib/constants/tournament-status";
 
 export const dynamic = "force-dynamic";
-
-const STATUS_LABEL: Record<string, string> = {
-  draft: "준비중",
-  active: "활성",
-  registration_open: "모집중",
-  registration_closed: "접수마감",
-  ongoing: "진행중",
-  completed: "완료",
-  cancelled: "취소",
-};
-
-const STATUS_BADGE: Record<string, "default" | "success" | "error" | "warning" | "info"> = {
-  draft: "default",
-  active: "success",
-  registration_open: "info",
-  registration_closed: "warning",
-  ongoing: "success",
-  completed: "info",
-  cancelled: "error",
-};
-
-const FORMAT_LABEL: Record<string, string> = {
-  single_elimination: "싱글 엘리미",
-  double_elimination: "더블 엘리미",
-  round_robin: "리그전",
-  hybrid: "혼합",
-};
-
-// 각 상태에서 전환 가능한 상태 목록
-const TRANSITIONS: Record<string, string[]> = {
-  draft: ["registration_open", "cancelled"],
-  active: ["registration_open", "cancelled"],
-  registration_open: ["registration_closed", "cancelled"],
-  registration_closed: ["ongoing", "cancelled"],
-  ongoing: ["completed", "cancelled"],
-  completed: [],
-  cancelled: ["draft"],
-};
 
 // FR-062: 토너먼트 관리 (Admin)
 export default async function AdminTournamentsPage({
