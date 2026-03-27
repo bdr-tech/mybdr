@@ -311,7 +311,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
        * pt-16 (모바일 헤더) / lg:pt-20 (데스크탑 여유)
        * pb-20 (모바일 하단 네비) / lg:pb-8 (데스크탑)
        * ======================================== */}
-      <main className="min-h-screen flex-1 pb-20 pt-16 lg:ml-64 lg:pb-12 lg:pt-12">
+      <main className="min-h-screen flex-1 pb-20 pt-16 lg:ml-64 lg:pb-12 lg:pt-14">
         <div className="mx-auto p-4 lg:px-6 lg:py-4">
           {children}
         </div>
