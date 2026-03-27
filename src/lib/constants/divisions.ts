@@ -236,3 +236,64 @@ export function getGenderFromDivision(code: string): GenderCode {
 export function getAllDivisionCodes(): string[] {
   return Object.keys(ALL_DIVISIONS_MAP);
 }
+
+// ─── 배열 형태 export (UI 필터/드롭다운용) ──────────────
+// Record 형태 외에 배열 형태도 필요한 곳(필터 UI 등)이 있어서 추가
+export const GENDERS_LIST = [
+  { key: "male" as const, label: "남성부" },
+  { key: "female" as const, label: "여성부" },
+] as const;
+
+export const CATEGORIES_LIST = [
+  { key: "general" as const, label: "일반부" },
+  { key: "youth" as const, label: "유청소년" },
+  { key: "university" as const, label: "대학부" },
+  { key: "senior" as const, label: "시니어" },
+] as const;
+
+// 성별+종별 조합별 디비전 배열 (UI 드롭다운/선택 컴포넌트용)
+export const DIVISIONS_BY_CATEGORY: Record<
+  GenderCode,
+  Record<CategoryCode, { key: string; label: string; subtitle?: string }[]>
+> = {
+  male: {
+    general: Object.entries(GENERAL_DIVISIONS).map(([key, info]) => ({
+      key,
+      label: info.label,
+      subtitle: info.leagueName ?? undefined,
+    })),
+    youth: Object.entries(YOUTH_DIVISIONS).map(([key, info]) => ({
+      key,
+      label: info.label,
+      subtitle: info.leagueName ?? undefined,
+    })),
+    university: Object.entries(UNIVERSITY_DIVISIONS).map(([key, info]) => ({
+      key,
+      label: info.label,
+    })),
+    senior: Object.entries(SENIOR_DIVISIONS).map(([key, info]) => ({
+      key,
+      label: info.label,
+    })),
+  },
+  female: {
+    general: Object.entries(GENERAL_DIVISIONS).map(([key, info]) => ({
+      key: `${key}W`,
+      label: `${info.label}W`,
+      subtitle: info.leagueName ?? undefined,
+    })),
+    youth: Object.entries(YOUTH_DIVISIONS).map(([key, info]) => ({
+      key: `${key}W`,
+      label: `${info.label}W`,
+      subtitle: info.leagueName ?? undefined,
+    })),
+    university: Object.entries(UNIVERSITY_DIVISIONS).map(([key, info]) => ({
+      key: `${key}W`,
+      label: `${info.label}W`,
+    })),
+    senior: Object.entries(SENIOR_DIVISIONS).map(([key, info]) => ({
+      key: `${key}W`,
+      label: `${info.label}W`,
+    })),
+  },
+};
