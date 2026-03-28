@@ -13,6 +13,22 @@ export const metadata: Metadata = {
 export const revalidate = 300;
 
 export default async function CourtsPage() {
+  // 각 코트의 활성 체크인 세션 수 조회 (3시간 이내, 체크아웃 안 한 사람)
+  const cutoff = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  const activeSessions = await prisma.court_sessions.groupBy({
+    by: ["court_id"],
+    where: {
+      checked_out_at: null,
+      checked_in_at: { gte: cutoff },
+    },
+    _count: { id: true },
+  }).catch(() => []);
+
+  // court_id -> 활성 세션 수 맵
+  const activeMap = new Map(
+    activeSessions.map((s) => [s.court_id.toString(), s._count.id])
+  );
+
   // DB에서 전체 코트 목록 조회 (active 상태만)
   const rawCourts = await prisma.court_infos.findMany({
     where: { status: "active" },
@@ -77,6 +93,8 @@ export default async function CourtsPage() {
     has_parking: c.has_parking,
     verified: c.verified,
     data_source: c.data_source,
+    // 혼잡도: 현재 활성 세션 수
+    activeCount: activeMap.get(c.id.toString()) ?? 0,
   }));
 
   // 지역 목록 추출 (중복 제거 + 정렬)

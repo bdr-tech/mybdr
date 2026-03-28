@@ -41,6 +41,8 @@ interface CourtItem {
   has_parking: boolean;
   verified: boolean;
   data_source: string | null;
+  // 혼잡도: 현재 활성 체크인 세션 수
+  activeCount: number;
 }
 
 interface CourtsContentProps {
@@ -472,6 +474,36 @@ function CourtListCard({ court }: { court: CourtItem }) {
                     star
                   </span>
                   {court.average_rating.toFixed(1)}
+                </span>
+              )}
+
+              {/* 혼잡도 뱃지: 5명+ 활발(초록), 1~4명 적당(노랑), 0명은 표시 안 함 */}
+              {court.activeCount >= 5 && (
+                <span
+                  className="inline-flex items-center gap-0.5 rounded-[4px] px-1.5 py-0.5 text-[11px] font-bold"
+                  style={{
+                    backgroundColor: "color-mix(in srgb, var(--color-success) 15%, transparent)",
+                    color: "var(--color-success)",
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: "12px" }}>
+                    local_fire_department
+                  </span>
+                  활발 {court.activeCount}명
+                </span>
+              )}
+              {court.activeCount >= 1 && court.activeCount < 5 && (
+                <span
+                  className="inline-flex items-center gap-0.5 rounded-[4px] px-1.5 py-0.5 text-[11px] font-bold"
+                  style={{
+                    backgroundColor: "color-mix(in srgb, var(--color-accent) 15%, transparent)",
+                    color: "var(--color-accent)",
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: "12px" }}>
+                    groups
+                  </span>
+                  적당 {court.activeCount}명
                 </span>
               )}
             </div>

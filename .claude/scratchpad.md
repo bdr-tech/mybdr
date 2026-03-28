@@ -1,9 +1,31 @@
 # 작업 스크래치패드
 
 ## 현재 작업
-- **요청**: 프로젝트 전체 계획 업데이트 + 코트 로드맵 고도화
-- **상태**: 계획 작성 중
-- **현재 담당**: pm
+- **요청**: 코트 Phase 2 — 체크인 + 혼잡도 시스템 구현
+- **상태**: 구현 완료 (tsc 통과)
+- **현재 담당**: developer
+
+### 구현 기록
+
+📝 구현한 기능: 코트 체크인/체크아웃 + 혼잡도 시스템
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| prisma/schema.prisma | court_sessions 모델 추가 + User/court_infos relation | 수정 |
+| src/app/api/web/courts/[id]/checkin/route.ts | GET(현황)/POST(체크인)/DELETE(체크아웃) API | 신규 |
+| src/app/(web)/courts/[id]/_components/court-checkin.tsx | 체크인UI+혼잡도 표시 (useSWR 30초) | 신규 |
+| src/app/(web)/courts/[id]/page.tsx | CourtCheckin 컴포넌트 삽입 | 수정 |
+| src/app/(web)/courts/page.tsx | 활성 세션 수 쿼리 + courts에 전달 | 수정 |
+| src/app/(web)/courts/_components/courts-content.tsx | 목록 카드에 혼잡도 뱃지 추가 | 수정 |
+
+💡 tester 참고:
+- 테스트 방법: /courts 목록에서 혼잡도 뱃지 확인, /courts/[id] 상세에서 체크인 버튼 클릭
+- 정상 동작: 로그인 후 체크인 -> 경과시간 표시 -> 체크아웃 -> XP 알림
+- 주의할 입력: 이미 체크인 중일 때 다른 코트 체크인 시도 (409 에러 확인)
+
+⚠️ reviewer 참고:
+- court_sessions는 기존 court_checkins와 별도 모델 (기존 체크인 데이터 유지)
+- 3시간 자동 만료: API 호출 시 cutoff 시간 체크로 구현 (Cron 불필요)
 
 ---
 

@@ -74,6 +74,7 @@ model User {
   court_checkins                                                            court_checkins[]
   court_infos                                                               court_infos[]
   court_reviews                                                             court_reviews[]
+  court_sessions                                                            court_sessions[]
   game_applications                                                         game_applications[]
   game_templates                                                            game_templates[]
   games                                                                     games[]
@@ -882,6 +883,7 @@ model court_infos {
   created_at      DateTime         @db.Timestamp(6)
   updated_at      DateTime         @db.Timestamp(6)
   court_checkins  court_checkins[]
+  court_sessions  court_sessions[]
   users           User             @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d006c2c973")
   court_reviews   court_reviews[]
 
@@ -918,6 +920,26 @@ model court_reviews {
   @@index([rating], map: "index_court_reviews_on_rating")
   @@index([status], map: "index_court_reviews_on_status")
   @@index([user_id], map: "index_court_reviews_on_user_id")
+}
+
+// 체크인/체크아웃 세션 — 혼잡도 + XP 시스템용
+model court_sessions {
+  id               BigInt    @id @default(autoincrement())
+  user_id          BigInt
+  court_id         BigInt
+  checked_in_at    DateTime  @default(now()) @db.Timestamp(6)
+  checked_out_at   DateTime? @db.Timestamp(6)
+  duration_minutes Int?
+  checkin_method   String    @default("manual") @db.VarChar // manual, proximity, qr
+  checkin_lat      Float?
+  checkin_lng      Float?
+  xp_earned        Int       @default(0)
+
+  users       User        @relation(fields: [user_id], references: [id])
+  court_infos court_infos @relation(fields: [court_id], references: [id])
+
+  @@index([court_id, checked_in_at])
+  @@index([user_id, checked_in_at])
 }
 
 model courts {

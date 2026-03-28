@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
+import { CourtCheckin } from "./_components/court-checkin";
 
 export const revalidate = 300;
 
@@ -302,6 +303,9 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
           </div>
         )}
       </div>
+
+      {/* 체크인 + 혼잡도 (클라이언트 컴포넌트, 30초 갱신) */}
+      <CourtCheckin courtId={court.id.toString()} />
 
       {/* 이용 현황 카드 */}
       <div
