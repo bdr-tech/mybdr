@@ -305,7 +305,7 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
       </div>
 
       {/* 체크인 + 혼잡도 (클라이언트 컴포넌트, 30초 갱신) */}
-      <CourtCheckin courtId={court.id.toString()} />
+      <CourtCheckin courtId={court.id.toString()} courtLat={lat} courtLng={lng} />
 
       {/* 이용 현황 카드 */}
       <div

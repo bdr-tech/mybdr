@@ -6,6 +6,32 @@ import { apiSuccess, apiError } from "@/lib/api/response";
 // 3시간 이내 세션만 활성으로 간주 (밀리초)
 const SESSION_TIMEOUT_MS = 3 * 60 * 60 * 1000;
 
+// 체크인 허용 최대 거리 (미터)
+const MAX_CHECKIN_DISTANCE_M = 100;
+
+// ─────────────────────────────────────────────────
+// Haversine 공식: 두 위경도 좌표 사이의 거리를 미터 단위로 계산
+// 지구를 완전한 구로 가정 (R = 6371km)
+// ─────────────────────────────────────────────────
+function haversineDistanceM(
+  lat1: number, lng1: number,
+  lat2: number, lng2: number
+): number {
+  const R = 6371000; // 지구 반지름 (미터)
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+
+  // Haversine 핵심 공식: sin²(Δlat/2) + cos(lat1)·cos(lat2)·sin²(Δlng/2)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 // ─────────────────────────────────────────────────
 // GET: 현재 코트의 체크인 현황 조회
 // - 활성 세션 수 (checked_out 안 했고 3시간 이내)
@@ -85,6 +111,51 @@ export async function POST(
   const userId = BigInt(session.sub);
   const cutoff = new Date(Date.now() - SESSION_TIMEOUT_MS);
 
+  // body에서 위치 정보 추출 (필수)
+  let checkinLat: number | null = null;
+  let checkinLng: number | null = null;
+  let checkinMethod = "manual";
+  try {
+    const body = await req.json();
+    if (body.latitude != null && body.longitude != null) {
+      checkinLat = Number(body.latitude);
+      checkinLng = Number(body.longitude);
+    }
+    if (body.method) {
+      checkinMethod = body.method;
+    }
+  } catch {
+    // body 파싱 실패
+  }
+
+  // 위치 정보가 없으면 에러 (위치 서비스 비활성화)
+  if (checkinLat == null || checkinLng == null) {
+    return apiError("위치 서비스를 활성화해주세요", 400, "LOCATION_REQUIRED");
+  }
+
+  // 코트 존재 확인 + 위경도 조회 (거리 검증에 필요)
+  const court = await prisma.court_infos.findUnique({
+    where: { id: courtId },
+    select: { id: true, name: true, latitude: true, longitude: true },
+  });
+  if (!court) {
+    return apiError("존재하지 않는 코트입니다", 404, "NOT_FOUND");
+  }
+
+  // GPS 거리 검증: 코트 위경도가 있는 경우에만 (0,0이면 검증 스킵)
+  const courtLat = Number(court.latitude);
+  const courtLng = Number(court.longitude);
+  if (courtLat !== 0 && courtLng !== 0) {
+    const distanceM = haversineDistanceM(checkinLat, checkinLng, courtLat, courtLng);
+    if (distanceM > MAX_CHECKIN_DISTANCE_M) {
+      return apiError(
+        "코트에서 100m 이내에서만 체크인할 수 있어요",
+        400,
+        "TOO_FAR"
+      );
+    }
+  }
+
   // 이미 활성 세션이 있는지 확인 (어떤 코트든)
   const existing = await prisma.court_sessions.findFirst({
     where: {
@@ -95,33 +166,15 @@ export async function POST(
   });
 
   if (existing) {
-    return apiError("이미 다른 코트에 체크인 중입니다", 409, "ALREADY_CHECKED_IN");
-  }
-
-  // 코트 존재 확인
-  const court = await prisma.court_infos.findUnique({
-    where: { id: courtId },
-    select: { id: true },
-  });
-  if (!court) {
-    return apiError("존재하지 않는 코트입니다", 404, "NOT_FOUND");
-  }
-
-  // body에서 위치 정보 추출 (선택)
-  let checkinLat: number | null = null;
-  let checkinLng: number | null = null;
-  let checkinMethod = "manual";
-  try {
-    const body = await req.json();
-    if (body.lat && body.lng) {
-      checkinLat = Number(body.lat);
-      checkinLng = Number(body.lng);
-    }
-    if (body.method) {
-      checkinMethod = body.method;
-    }
-  } catch {
-    // body 없어도 괜찮음 (수동 체크인)
+    // 409 응답에 체크인 중인 코트 정보를 포함 (UI에서 "체크인 중인 농구장 보기" 안내)
+    const checkedInCourt = await prisma.court_infos.findUnique({
+      where: { id: existing.court_id },
+      select: { name: true },
+    });
+    return apiError("이미 다른 코트에 체크인 중입니다", 409, "ALREADY_CHECKED_IN", {
+      checked_in_court_id: existing.court_id.toString(),
+      checked_in_court_name: checkedInCourt?.name ?? "알 수 없는 코트",
+    });
   }
 
   // 새 세션 생성

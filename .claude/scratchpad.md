@@ -98,34 +98,93 @@
 
 ---
 
-### 테스트 결과 (tester) -- 2026-03-29 거리계산+정렬+근접감지
+### 테스트 결과 (tester) -- 2026-03-29 GPS 거리 검증 + 중복 체크인 UI
 
+#### 1. 타입 검사
 | 테스트 항목 | 결과 | 비고 |
 |-----------|------|------|
-| tsc --noEmit 타입 검사 | PASS | 에러 0건 |
-| haversineDistance 수학 공식 정확성 | PASS | R=6371, 라디안 변환, sin/cos/atan2 표준 공식 |
-| userLocation state + useEffect 적절성 | PASS | getCurrentPosition(1회) + watchPosition(실시간) 이중 구조 |
-| distanceMap 계산 (위경도 0 제외) | PASS | useMemo + lat/lng 0 continue 처리 |
-| filtered 거리순 정렬 로직 | PASS | distanceMap 거리 오름차순, Infinity 폴백 |
-| 위치 권한 거부 시 기존 동작 유지 | PASS | userLocation=null -> 야외+검증+평점순 폴백 |
-| watchPosition cleanup (메모리 누수) | PASS | useEffect return에서 clearWatch 호출 |
-| sessionStorage 30분 재표시 방지 | PASS | Date.now() 저장 + 30*60*1000 비교 |
-| 체크인 버튼 URL (/courts/[id]) | PASS | Link href로 상세 페이지 이동 (API 직접 호출 아님) |
-| 닫기 버튼 동작 | PASS | dismissed=true + nearbyCourtId=null + sessionStorage 저장 |
-| CSS 변수 사용 (하드코딩 색상 없음) | PASS | 전체 var(--color-*) 사용 |
-| Material Symbols 아이콘 사용 | PASS | span.material-symbols-outlined 형태 |
-| API/데이터 패칭 변경 없음 | PASS | page.tsx 미변경, props 인터페이스 동일 |
-| 기존 필터 (야외/실내/지역/pill) 유지 | PASS | 필터 로직 코드 변경 없음 |
-| 마커 클릭 -> 목록 하이라이트 유지 | PASS | handleMarkerClick + scrollIntoView 유지 |
-| 위경도 0,0 코트 제외 처리 | PASS | distanceMap, watchPosition, mapMarkers 3곳 모두 제외 |
-| 빈 markers 배열 처리 | PASS | 빈 상태 UI + bounds 조건부 조정 |
-| 위치 권한 거부 시 에러 없음 | PASS | 에러 콜백에서 조용히 무시 |
+| tsc --noEmit | PASS | 에러 0건 |
 
-종합: 18개 중 18개 통과 / 0개 실패
+#### 2. API 검증 (route.ts)
+| 테스트 항목 | 결과 | 비고 |
+|-----------|------|------|
+| haversineDistanceM 수학 공식 | PASS | R=6371000m, toRad 변환, sin/cos/atan2 표준 Haversine |
+| body에 lat/lng 없을 때 400 반환 | PASS | checkinLat/Lng == null 검사 -> 400 LOCATION_REQUIRED |
+| 100m 초과 시 400 TOO_FAR | PASS | distanceM > MAX_CHECKIN_DISTANCE_M(100) -> 400 반환 |
+| 409에 checked_in_court_id/name 포함 | PASS | extra 파라미터로 court_id + court_name 전달 |
+| 코트 lat/lng DB 조회 | PASS | prisma select에 latitude, longitude 포함 |
+| 코트 0,0 위경도 시 거리 검증 스킵 | PASS | courtLat !== 0 && courtLng !== 0 조건 |
+
+#### 3. UI 검증 (court-checkin.tsx)
+| 테스트 항목 | 결과 | 비고 |
+|-----------|------|------|
+| 5단계 상태 분기 | PASS | 체크인중/다른코트(SWR)/다른코트(409)/로딩/위치거부/100m초과/정상 |
+| 위치 확인 중 로딩 UI | PASS | locationEnabled===null -> "위치 확인 중..." + 스피너 |
+| 위치 비활성화 시 비활성+안내 | PASS | locationEnabled===false -> location_off 아이콘 + 안내 |
+| 100m 초과 거리 표시+비활성 | PASS | distanceToCourtM>100 -> Xm/Xkm 표시 (1000m 기준 변환) |
+| "보기" 버튼 경로 | PASS | router.push(/courts/${checkedInCourtId}) |
+| "체크아웃" 버튼 DELETE API | PASS | fetch DELETE /api/web/courts/${checkedInCourtId}/checkin |
+| 체크아웃 후 상태 초기화+mutate | PASS | setCheckedInCourtId(null) + setCheckedInCourtName(null) + mutate() |
+| POST body에 latitude/longitude 포함 | PASS | JSON.stringify({ method, latitude: userLat, longitude: userLng }) |
+| CSS 변수 사용 | PASS | 모든 색상 var(--color-*) 사용, 하드코딩 없음 |
+| Material Symbols 아이콘 | PASS | span.material-symbols-outlined 형태 |
+
+#### 4. response.ts 호환성
+| 테스트 항목 | 결과 | 비고 |
+|-----------|------|------|
+| extra 파라미터 optional | PASS | extra?: Record<string, unknown> -- 기존 호출 영향 없음 |
+| extra 데이터 JSON 포함 | PASS | ...extra 스프레드로 응답 최상위에 병합 |
+| 기존 apiError 호출 호환 | PASS | 40+ 기존 호출 모두 2-3개 인자만 사용, 4번째 인자 생략 |
+
+#### 5. page.tsx
+| 테스트 항목 | 결과 | 비고 |
+|-----------|------|------|
+| courtLat/courtLng props 전달 | PASS | courtLat={lat} courtLng={lng} (line 308) |
+| DB 쿼리에서 lat/lng select | PASS | include로 전체 필드 조회, court.latitude/longitude 접근 |
+
+#### 6. 엣지 케이스
+| 테스트 항목 | 결과 | 비고 |
+|-----------|------|------|
+| 코트 위경도 0,0 처리 | PASS | API: 검증 스킵, UI: distanceToCourtM=0 -> 체크인 허용 |
+| 코트 lat=0 lng!=0 또는 반대 | WARN | API는 둘 다 0일 때만 스킵, UI도 동일 -- 문제 없으나 주의 |
+| 위치 권한 나중에 취소 | PASS | getCurrentPosition 1회 호출, 이후 취소해도 기존 값 유지 |
+| 체크아웃 API 실패 시 에러 처리 | PASS | res.ok 확인 -> alert(err.error) -> finally에서 setLoading(false) |
+| 409 후 체크아웃 성공 시 재체크인 | PASS | 상태 초기화 후 mutate -> 정상 체크인 버튼 표시 |
+
+종합: 25개 PASS / 0개 FAIL / 1개 WARN
+
+WARN 상세: 코트 위경도가 lat=0, lng!=0 (적도 어딘가) 같은 경우는 현실적으로 한국 코트에서 발생하지 않으므로 실질적 문제 없음
 
 ---
 
-### 구현 기록
+### 구현 기록 (developer) -- 2026-03-29 체크인 GPS 거리 검증
+
+📝 구현한 기능: 체크인 시 GPS 거리 검증 (100m 이내) + 위치 기반 UI 상태 분기 + 409에 코트 정보 추가
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/lib/api/response.ts | apiError에 extra 파라미터 추가 (추가 데이터 포함 가능) | 수정 |
+| src/app/api/web/courts/[id]/checkin/route.ts | Haversine 함수 + GPS 100m 거리 검증 + 409에 코트 ID/이름 포함 | 수정 |
+| src/app/(web)/courts/[id]/_components/court-checkin.tsx | 위치 기반 5단계 UI 분기 + 다른 코트 체크아웃 + 거리 표시 | 수정 |
+| src/app/(web)/courts/[id]/page.tsx | CourtCheckin에 courtLat, courtLng props 전달 | 수정 |
+
+💡 tester 참고:
+- 테스트 방법: /courts/[id] 상세 페이지에서 체크인 버튼 확인
+- 위치 확인 중: "위치 확인 중..." 로딩 표시 (짧은 시간)
+- 위치 거부: "위치 서비스를 활성화해주세요" 비활성 상태
+- 100m 초과: "코트에서 Xm/Xkm 떨어져 있어요" 비활성 상태 (개발자 도구 위치 오버라이드로 테스트)
+- 100m 이내: 기존처럼 "농구 시작! 체크인" 버튼 활성화
+- 다른 코트 체크인 중 (409): 코트 이름 표시 + "체크인 중인 농구장 보기" + "체크아웃" 버튼
+- 코트 위경도가 0,0인 경우: 거리 검증 스킵 (어디서든 체크인 가능)
+
+⚠️ reviewer 참고:
+- apiError 헬퍼에 optional extra 파라미터 추가 (기존 호출에 영향 없음)
+- API에서 latitude/longitude 없으면 400 반환 (기존 body.lat/lng → body.latitude/longitude로 변경)
+- Haversine 공식은 API와 UI 양쪽에 존재 (서버: 보안 검증, 클라이언트: UX 표시)
+
+---
+
+### 이전 구현 기록 (거리 계산 + 근접 감지)
 
 📝 구현한 기능: 거리 계산 + 거리순 정렬 + 거리 표시 + 100m 근접 감지 슬라이드업
 
