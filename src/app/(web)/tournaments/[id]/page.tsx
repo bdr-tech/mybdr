@@ -345,8 +345,8 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                 <div key={`${div.category}-${div.division}`} className="rounded-lg border p-3" style={{ borderColor: "var(--color-border)" }}>
                   <div className="mb-2 flex items-center justify-between">
                     <div>
-                      <span className="text-xs" style={{ color: "var(--color-text-secondary)" }}>{div.category}</span>
-                      <p className="text-sm font-bold">{div.division}</p>
+                      <span className="text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>{div.category}</span>
+                      <p className="text-lg font-bold" style={{ color: "var(--color-primary)" }}>{div.division}</p>
                     </div>
                     <div className="text-right">
                       {div.cap && (
@@ -364,7 +364,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                       <div className="h-full rounded-full transition-all" style={{ width: `${progressPct}%`, backgroundColor: isFull ? "var(--color-error)" : "var(--color-primary)" }} />
                     </div>
                   )}
-                  {div.fee !== null && div.fee > 0 && (
+                  {false && div.fee !== null && div.fee > 0 && (
                     <p className="mt-1.5 text-xs" style={{ color: "var(--color-text-secondary)" }}>{div.fee.toLocaleString()}원</p>
                   )}
                 </div>
