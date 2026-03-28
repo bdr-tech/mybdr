@@ -397,7 +397,7 @@ export function TeamsContent({
               );
             })}
 
-            {/* 빈 상태 */}
+            {/* 빈 상태 + CTA */}
             {teams.length === 0 && (
               <div className="py-16 text-center">
                 <span
@@ -406,11 +406,20 @@ export function TeamsContent({
                 >
                   sports_basketball
                 </span>
-                <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                <p className="text-sm mb-4" style={{ color: "var(--color-text-secondary)" }}>
                   {searchParams.get("q") || searchParams.get("city")
                     ? "조건에 맞는 팀이 없습니다"
                     : "등록된 팀이 없습니다"}
                 </p>
+                {/* 빈 상태 액션 버튼: 팀 만들기 */}
+                <Link
+                  href="/teams/new"
+                  className="inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold text-white transition-all active:scale-[0.97]"
+                  style={{ backgroundColor: "var(--color-primary)" }}
+                >
+                  <span className="material-symbols-outlined text-base">add</span>
+                  팀 만들기
+                </Link>
               </div>
             )}
           </TossCard>

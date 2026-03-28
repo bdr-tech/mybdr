@@ -303,7 +303,7 @@ export function CommunityContent({ fallbackPosts }: CommunityContentProps) {
               <PostCard key={p.id} post={p} />
             ))}
 
-            {/* 빈 상태 */}
+            {/* 빈 상태 + CTA */}
             {posts.length === 0 && (
               <div className="py-16 text-center">
                 <span
@@ -312,11 +312,20 @@ export function CommunityContent({ fallbackPosts }: CommunityContentProps) {
                 >
                   forum
                 </span>
-                <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                <p className="text-sm mb-4" style={{ color: "var(--color-text-secondary)" }}>
                   {hasFilters
                     ? "조건에 맞는 게시글이 없습니다"
                     : "아직 게시글이 없어요"}
                 </p>
+                {/* 빈 상태 액션 버튼: 글쓰기 */}
+                <Link
+                  href="/community/new"
+                  className="inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold text-white transition-all active:scale-[0.97]"
+                  style={{ backgroundColor: "var(--color-primary)" }}
+                >
+                  <span className="material-symbols-outlined text-base">edit</span>
+                  글쓰기
+                </Link>
               </div>
             )}
           </div>

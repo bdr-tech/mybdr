@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Footer } from "@/components/layout/Footer";
 import { SWRProvider } from "@/components/providers/swr-provider";
 import { PreferFilterProvider, usePreferFilter } from "@/contexts/prefer-filter-context";
+import { ToastProvider } from "@/contexts/toast-context";
 import { SlideMenu } from "@/components/shared/slide-menu";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { TextSizeToggle } from "@/components/shared/text-size-toggle";
@@ -33,7 +34,7 @@ const bottomNavItems = [
   { href: "/", label: "홈", icon: "home" },
   { href: "/games", label: "경기", icon: "sports_basketball" },
   { href: "/tournaments", label: "대회", icon: "emoji_events" },
-  { href: "/teams", label: "팀", icon: "groups" },
+  { href: "/community", label: "커뮤니티", icon: "forum" },
   { href: "#", label: "더보기", icon: "menu" },
 ];
 
@@ -198,7 +199,11 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2 lg:hidden">
             {pathname !== "/" && (
               <button
-                onClick={() => router.back()}
+                onClick={() => {
+                  /* 브라우저 히스토리가 있으면 뒤로가기, 없으면(직접 URL 접근) 홈으로 */
+                  if (window.history.length > 1) router.back();
+                  else router.push("/");
+                }}
                 className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-bright)]"
               >
                 <span className="material-symbols-outlined text-xl">arrow_back</span>
@@ -208,16 +213,24 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
               <Image src="/images/logo.png" alt="BDR" width={100} height={30} className="h-7 w-auto" />
             </Link>
           </div>
-          {/* PC: 검색바 */}
+          {/* PC: 검색바 — Enter 시 /games?q=검색어 로 이동 */}
           <div className="hidden lg:flex items-center gap-2">
-            <div className="relative w-72">
+            <form
+              className="relative w-72"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const q = (e.currentTarget.elements.namedItem("q") as HTMLInputElement).value.trim();
+                if (q) router.push(`/games?q=${encodeURIComponent(q)}`);
+              }}
+            >
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg" style={{ color: "var(--color-text-muted)" }}>search</span>
               <input
+                name="q"
                 placeholder="경기, 대회, 팀 검색..."
                 className="w-full rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none"
                 style={{ backgroundColor: "var(--color-surface)", color: "var(--color-text-primary)" }}
               />
-            </div>
+            </form>
           </div>
         </div>
 
@@ -270,7 +283,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
        * 토스 스타일: max-width 640px (모바일 앱 느낌), mx-auto 중앙 정렬
        * pt-14 (헤더 56px) + pb-20 (하단 네비 80px)
        * ======================================== */}
-      <main className="min-h-screen flex-1 pb-20 pt-14 lg:ml-60 lg:pb-8">
+      <main className="min-h-screen flex-1 pb-20 pt-14 lg:ml-60 lg:pb-8 animate-fade-in">
         <div className="mx-auto max-w-[640px] px-5 py-4 lg:max-w-[960px] lg:px-8">
           {children}
         </div>
@@ -357,7 +370,9 @@ export default function WebLayout({ children }: { children: React.ReactNode }) {
   return (
     <SWRProvider>
       <PreferFilterProvider>
-        <WebLayoutInner>{children}</WebLayoutInner>
+        <ToastProvider>
+          <WebLayoutInner>{children}</WebLayoutInner>
+        </ToastProvider>
       </PreferFilterProvider>
     </SWRProvider>
   );

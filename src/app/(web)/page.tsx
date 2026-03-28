@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "MyBDR | 농구 매칭 플랫폼",
   description: "픽업 게임, 팀 대결, 대회까지 — 농구인을 위한 올인원 매칭 플랫폼",
 };
+import { HomeGreeting } from "@/components/home/home-greeting";
 import { HeroBento } from "@/components/home/hero-bento";
 import { RecommendedGames } from "@/components/home/recommended-games";
 import { NotableTeams } from "@/components/home/notable-teams";
@@ -60,6 +61,9 @@ export default async function HomePage() {
     /* 1열 세로 스택: 각 섹션 사이 넉넉한 간격 (mb-10 = 40px)
      * 토스 앱처럼 섹션별로 구분감 있게 배치 */
     <div className="space-y-10">
+
+      {/* [섹션 0] 인사말(로그인) 또는 소개 히어로(비로그인) — 클라이언트에서 분기 */}
+      <HomeGreeting />
 
       {/* [섹션 1] 히어로 영상 슬라이드 (YouTube — 프리페치 안 함) */}
       <HeroBento />

@@ -9,6 +9,7 @@
  */
 
 import Link from "next/link";
+import { ShareTournamentButton } from "./share-tournament-button";
 
 // 구글 캘린더 URL 생성 유틸
 function buildCalendarUrl(name: string, startDate: Date | null, endDate: Date | null, venue: string | null): string {
@@ -146,7 +147,7 @@ export function TournamentSidebar({
             </div>
           )}
 
-          {/* CTA: 대회 공유하기 (아웃라인 버튼) */}
+          {/* CTA: 캘린더에 추가 (아웃라인 버튼) */}
           <a
             href={calendarUrl}
             target="_blank"
@@ -154,9 +155,12 @@ export function TournamentSidebar({
             className="flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors hover:opacity-80"
             style={{ borderColor: "var(--color-border)", color: "var(--color-text)" }}
           >
-            <span className="material-symbols-outlined text-base" style={{ color: "var(--color-info)" }}>share</span>
-            대회 공유하기
+            <span className="material-symbols-outlined text-base" style={{ color: "var(--color-info)" }}>calendar_today</span>
+            캘린더에 추가
           </a>
+
+          {/* CTA: 링크 복사 (클립보드 + 토스트 피드백) */}
+          <ShareTournamentButton />
 
           {/* 모집 마감 카운트다운 */}
           {daysLeft !== null && isRegistrationOpen && (

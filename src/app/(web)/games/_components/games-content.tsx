@@ -302,18 +302,27 @@ export function GamesContent({
               />
             ))}
 
-            {/* 빈 상태 */}
+            {/* 빈 상태 + CTA */}
             {games.length === 0 && (
               <div className="py-20 text-center">
                 <span className="material-symbols-outlined text-5xl text-[var(--color-text-disabled)] mb-3 block">
                   sports_basketball
                 </span>
-                <p className="text-[var(--color-text-muted)] text-sm">
+                <p className="text-[var(--color-text-muted)] text-sm mb-4">
                   {(searchParams.get("q") || searchParams.get("type") || searchParams.get("city") || searchParams.get("date") || preferFilter)
                     ? "조건에 맞는 경기가 없습니다."
                     : "등록된 경기가 없습니다."
                   }
                 </p>
+                {/* 빈 상태 액션 버튼: 경기 만들기 */}
+                <Link
+                  href="/games/new"
+                  className="inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold text-white transition-all active:scale-[0.97]"
+                  style={{ backgroundColor: "var(--color-primary)" }}
+                >
+                  <span className="material-symbols-outlined text-base">add</span>
+                  경기 만들기
+                </Link>
               </div>
             )}
           </div>
