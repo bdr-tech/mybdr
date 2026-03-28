@@ -38,6 +38,15 @@ export default async function CourtsPage() {
       average_rating: true,
       reviews_count: true,
       description: true,
+      // 야외 코트 확장 필드
+      nickname: true,
+      nearest_station: true,
+      court_size: true,
+      lighting_until: true,
+      has_restroom: true,
+      has_parking: true,
+      verified: true,
+      data_source: true,
     },
   }).catch(() => []);
 
@@ -59,6 +68,15 @@ export default async function CourtsPage() {
     average_rating: c.average_rating ? Number(c.average_rating) : null,
     reviews_count: c.reviews_count,
     description: c.description,
+    // 야외 코트 확장 필드
+    nickname: c.nickname,
+    nearest_station: c.nearest_station,
+    court_size: c.court_size,
+    lighting_until: c.lighting_until,
+    has_restroom: c.has_restroom,
+    has_parking: c.has_parking,
+    verified: c.verified,
+    data_source: c.data_source,
   }));
 
   // 지역 목록 추출 (중복 제거 + 정렬)

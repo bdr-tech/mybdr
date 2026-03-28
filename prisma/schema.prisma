@@ -864,6 +864,21 @@ model court_infos {
   photo_url       String?          @db.VarChar
   data_source     String?          @db.VarChar
   metadata        Json?            @default("{}")
+  // 야외 코트 확장 필드 (2026-03-28 추가)
+  nickname        String?          @db.VarChar        // 별칭 (예: "뚝섬 코트")
+  nearest_station String?          @db.VarChar        // 가까운 역 (예: "뚝섬역 2번 출구 도보 5분")
+  court_size      String?          @db.VarChar        // fullcourt, halfcourt, 3x3
+  hoop_height     Float?                              // 골대 높이 (cm)
+  lighting_until  String?          @db.VarChar        // 조명 종료 시간 (예: "23:00")
+  has_restroom    Boolean          @default(false)    // 화장실 유무
+  has_parking     Boolean          @default(false)    // 주차장 유무
+  rental_available Boolean         @default(false)    // 대관 가능 여부
+  rental_url      String?          @db.VarChar        // 대관 신청 URL
+  kakao_place_id  String?          @db.VarChar        // 카카오 장소 ID
+  kakao_place_url String?          @db.VarChar        // 카카오 장소 URL
+  avg_rating      Float?                              // 카카오 평균 평점
+  review_count    Int              @default(0)        // 카카오 리뷰 수
+  verified        Boolean          @default(false)    // 수동 큐레이션 검증 여부
   created_at      DateTime         @db.Timestamp(6)
   updated_at      DateTime         @db.Timestamp(6)
   court_checkins  court_checkins[]

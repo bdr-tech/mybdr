@@ -168,6 +168,14 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
             label={typeLabel}
             color={isIndoor ? "var(--color-info)" : "var(--color-success)"}
           />
+          {/* 코트 크기 (풀코트/하프/3x3) */}
+          {court.court_size && (
+            <InfoBadge
+              icon="square_foot"
+              label={court.court_size === "fullcourt" ? "풀코트" : court.court_size === "halfcourt" ? "하프코트" : "3x3"}
+              color="var(--color-text-secondary)"
+            />
+          )}
           {court.surface_type && (
             <InfoBadge icon="texture" label={court.surface_type} color="var(--color-text-secondary)" />
           )}
@@ -176,8 +184,13 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
             label={`골대 ${court.hoops_count ?? 2}개`}
             color="var(--color-text-secondary)"
           />
+          {/* 조명 + 종료시간 */}
           {court.has_lighting && (
-            <InfoBadge icon="lightbulb" label="야간 조명" color="var(--color-accent)" />
+            <InfoBadge
+              icon="lightbulb"
+              label={court.lighting_until ? `조명 ~${court.lighting_until}` : "야간 조명"}
+              color="var(--color-accent)"
+            />
           )}
           <InfoBadge
             icon={court.is_free ? "money_off" : "payments"}
@@ -190,6 +203,18 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
             }
             color={court.is_free ? "var(--color-success)" : "var(--color-warning)"}
           />
+          {/* 화장실 */}
+          {court.has_restroom && (
+            <InfoBadge icon="wc" label="화장실" color="var(--color-text-secondary)" />
+          )}
+          {/* 주차장 */}
+          {court.has_parking && (
+            <InfoBadge icon="local_parking" label="주차" color="var(--color-text-secondary)" />
+          )}
+          {/* 검증 여부 */}
+          {court.verified && (
+            <InfoBadge icon="verified" label="검증됨" color="var(--color-info)" />
+          )}
           {court.average_rating && Number(court.average_rating) > 0 && (
             <InfoBadge
               icon="star"
@@ -198,6 +223,22 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
             />
           )}
         </div>
+
+        {/* 가까운 역 정보 */}
+        {court.nearest_station && (
+          <div
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm"
+            style={{
+              backgroundColor: "var(--color-surface)",
+              color: "var(--color-text-muted)",
+            }}
+          >
+            <span className="material-symbols-outlined text-base" style={{ color: "var(--color-info)" }}>
+              train
+            </span>
+            {court.nearest_station}
+          </div>
+        )}
 
         {/* 소개 */}
         {court.description && (
