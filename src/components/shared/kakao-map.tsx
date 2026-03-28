@@ -62,6 +62,7 @@ export function KakaoMap({
   const overlayRef = useRef<any>(null); // 현재 열린 인포윈도우
   const [isLoaded, setIsLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const hasUserLocationRef = useRef(false); // 현위치 확보 여부 (setBounds 스킵용)
 
   // 마커 혼잡도에 따른 색상 결정 (초록: 활발, 노랑: 적당, 파랑: 한적/없음)
   const getMarkerColor = useCallback((activeCount: number) => {
@@ -254,8 +255,8 @@ export function KakaoMap({
     clusterer.addMarkers(kakaoMarkers);
     kakaoMarkersRef.current = kakaoMarkers;
 
-    // 마커가 있으면 모든 마커가 보이도록 bounds 조정
-    if (kakaoMarkers.length > 0 && !center) {
+    // 마커가 있으면 bounds 조정 (단, 현위치가 확보된 경우 스킵 → 20km 뷰 유지)
+    if (kakaoMarkers.length > 0 && !center && !hasUserLocationRef.current) {
       const bounds = new window.kakao.maps.LatLngBounds();
       validMarkers.forEach((m) => {
         bounds.extend(new window.kakao.maps.LatLng(m.lat, m.lng));
@@ -273,6 +274,7 @@ export function KakaoMap({
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         setUserLocation({ lat, lng });
+        hasUserLocationRef.current = true; // setBounds 스킵하여 20km 뷰 유지
 
         const moveLatLng = new window.kakao.maps.LatLng(lat, lng);
         mapRef.current.setCenter(moveLatLng);
