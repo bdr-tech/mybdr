@@ -46,6 +46,15 @@ export const updateTournamentSchema = z
     bank_account: z.string().nullable(),
     bank_holder: z.string().nullable(),
     fee_notes: z.string().nullable(),
+    // 새 필드: 주최/주관/후원/성별/경기설정/장소
+    organizer: z.string().nullable(),
+    host: z.string().nullable(),
+    sponsors: z.string().nullable(),
+    gender: z.string().nullable(),
+    game_time: z.string().nullable(),
+    game_ball: z.string().nullable(),
+    game_method: z.string().nullable(),
+    places: z.array(z.object({ name: z.string(), address: z.string() })).nullable(),
   })
   .partial()
   .refine(

@@ -76,6 +76,15 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (data.bank_account !== undefined) updateData.bank_account = data.bank_account;
   if (data.bank_holder !== undefined) updateData.bank_holder = data.bank_holder;
   if (data.fee_notes !== undefined) updateData.fee_notes = data.fee_notes;
+  // 새 필드: 주최/주관/후원/성별/경기설정/장소
+  if (data.organizer !== undefined) updateData.organizer = data.organizer;
+  if (data.host !== undefined) updateData.host = data.host;
+  if (data.sponsors !== undefined) updateData.sponsors = data.sponsors;
+  if (data.gender !== undefined) updateData.gender = data.gender;
+  if (data.game_time !== undefined) updateData.game_time = data.game_time;
+  if (data.game_ball !== undefined) updateData.game_ball = data.game_ball;
+  if (data.game_method !== undefined) updateData.game_method = data.game_method;
+  if (data.places !== undefined) updateData.places = data.places;
 
   const updated = await updateTournament(id, updateData);
 
