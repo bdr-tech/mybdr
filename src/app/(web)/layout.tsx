@@ -162,7 +162,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
        * [뒤로가기]  MyBDR  [검색] [알림] [프로필]
        * ======================================== */}
       <header
-        className="fixed top-0 z-50 flex h-14 w-full items-center justify-between border-b border-[var(--color-border)] px-4 backdrop-blur-xl lg:left-60"
+        className="fixed top-0 z-50 flex h-14 items-center justify-between border-b border-[var(--color-border)] px-4 backdrop-blur-xl left-0 right-0 lg:left-60"
         style={{ backgroundColor: "color-mix(in srgb, var(--color-background) 85%, transparent)" }}
       >
         {/* 좌측: 모바일=뒤로+로고, PC=검색바 */}
