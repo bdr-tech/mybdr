@@ -37,8 +37,8 @@ export const updateTournamentSchema = z
     primary_color: z.string().nullable(),
     secondary_color: z.string().nullable(),
     // 접수 설정
-    categories: z.record(z.string(), z.array(z.string())),
-    div_caps: z.record(z.string(), z.number().int().positive()),
+    categories: z.record(z.string(), z.union([z.array(z.string()), z.boolean()])),
+    div_caps: z.record(z.string(), z.number().int().min(0)),
     div_fees: z.record(z.string(), z.number().min(0)),
     allow_waiting_list: z.boolean(),
     waiting_list_cap: z.number().int().positive().nullable(),
