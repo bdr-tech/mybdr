@@ -115,6 +115,7 @@ model User {
   // 팔로우 시스템: 나를 팔로우하는 사람들 / 내가 팔로우하는 사람들
   followers                                                                 follows[]                     @relation("user_followers")
   following                                                                 follows[]                     @relation("user_following")
+  court_reports                                                             court_reports[]
 
   @@unique([provider, uid], map: "index_users_on_provider_and_uid")
   @@index([createdAt], map: "index_users_on_created_at")
@@ -885,7 +886,9 @@ model court_infos {
   court_checkins  court_checkins[]
   court_sessions  court_sessions[]
   users           User             @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d006c2c973")
+  reports_count   Int              @default(0)        // 활성 상태 제보 수
   court_reviews   court_reviews[]
+  court_reports   court_reports[]
 
   @@index([average_rating], map: "index_court_infos_on_average_rating")
   @@index([city], map: "index_court_infos_on_city")
@@ -899,27 +902,55 @@ model court_infos {
 }
 
 model court_reviews {
-  id                BigInt      @id @default(autoincrement())
-  court_info_id     BigInt
-  user_id           BigInt
-  rating            Int
-  content           String?
-  likes_count       Int         @default(0)
-  status            String      @default("published") @db.VarChar
-  is_checkin        Boolean     @default(false)
-  checkin_latitude  Decimal?    @db.Decimal(10, 7)
-  checkin_longitude Decimal?    @db.Decimal(10, 7)
-  metadata          Json?       @default("{}")
-  created_at        DateTime    @db.Timestamp(6)
-  updated_at        DateTime    @db.Timestamp(6)
-  court_infos       court_infos @relation(fields: [court_info_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_898a2b5629")
-  users             User        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_af1069aa7a")
+  id                   BigInt      @id @default(autoincrement())
+  court_info_id        BigInt
+  user_id              BigInt
+  rating               Int
+  content              String?
+  likes_count          Int         @default(0)
+  status               String      @default("published") @db.VarChar
+  is_checkin           Boolean     @default(false)
+  checkin_latitude     Decimal?    @db.Decimal(10, 7)
+  checkin_longitude    Decimal?    @db.Decimal(10, 7)
+  metadata             Json?       @default("{}")
+  // Phase 3: 5항목 세부 별점 (nullable로 기존 데이터 보존)
+  facility_rating      Int?                                // 시설 별점 1~5
+  accessibility_rating Int?                                // 접근성 별점 1~5
+  surface_rating       Int?                                // 바닥상태 별점 1~5
+  lighting_rating      Int?                                // 조명 별점 1~5
+  atmosphere_rating    Int?                                // 분위기 별점 1~5
+  photos               Json        @default("[]")          // 사진 URL 배열 (최대 3장)
+  created_at           DateTime    @db.Timestamp(6)
+  updated_at           DateTime    @db.Timestamp(6)
+  court_infos          court_infos @relation(fields: [court_info_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_898a2b5629")
+  users                User        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_af1069aa7a")
 
+  @@unique([court_info_id, user_id], map: "idx_court_reviews_court_user_unique") // 한 코트에 유저당 1개 리뷰
   @@index([court_info_id], map: "index_court_reviews_on_court_info_id")
   @@index([is_checkin], map: "index_court_reviews_on_is_checkin")
   @@index([rating], map: "index_court_reviews_on_rating")
   @@index([status], map: "index_court_reviews_on_status")
   @@index([user_id], map: "index_court_reviews_on_user_id")
+}
+
+// Phase 3: 코트 상태 제보 — 골대 파손, 바닥 손상 등
+model court_reports {
+  id            BigInt      @id @default(autoincrement())
+  court_info_id BigInt
+  user_id       BigInt
+  report_type   String      @db.VarChar            // hoop_broken, surface_damaged 등
+  description   String?                             // 상세 설명
+  photos        Json        @default("[]")          // 사진 URL 배열
+  status        String      @default("active") @db.VarChar  // active, resolved, dismissed
+  resolved_at   DateTime?   @db.Timestamp(6)        // 해결 처리 시각
+  resolved_by   BigInt?                             // 해결 처리한 관리자 ID
+  created_at    DateTime    @default(now()) @db.Timestamp(6)
+  updated_at    DateTime    @updatedAt @db.Timestamp(6)
+  court_infos   court_infos @relation(fields: [court_info_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users         User        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([court_info_id, status], map: "idx_court_reports_court_status")
+  @@index([user_id], map: "idx_court_reports_user")
 }
 
 // 체크인/체크아웃 세션 — 혼잡도 + XP 시스템용

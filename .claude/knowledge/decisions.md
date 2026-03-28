@@ -2,6 +2,14 @@
 <!-- 담당: planner-architect | 최대 30항목 -->
 <!-- "왜 A 대신 B를 선택했는지" 기술 결정의 배경과 이유를 기록 -->
 
+### [2026-03-29] 코트 리뷰 5항목 세부 별점 + 사진 업로드 방식
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: (1) 기존 court_reviews 테이블에 5개 세부 별점 필드를 nullable Int로 추가 (기존 데이터 보존). rating 필드는 5항목 평균으로 자동 계산하여 호환성 유지. (2) 사진 업로드는 서버 proxy 방식: 클라이언트 → /api/web/upload/court-photo → Supabase Storage. photos 필드는 Json 배열. (3) 중복 리뷰 방지를 @@unique([court_info_id, user_id])로 DB 레벨에서 강제. (4) 상태 제보(court_reports)는 별도 테이블 신규 생성. 리뷰와 분리하는 이유: 리뷰는 평가(별점+감상), 제보는 문제 신고(유형+긴급도) — 목적과 수명주기가 다름. 제보는 해결되면 비활성화, 리뷰는 영구 보존.
+- **이유**: (1) nullable 추가는 기존 데이터에 영향 없는 가장 안전한 확장 방법. (2) 클라이언트 직접 Supabase 업로드는 NEXT_PUBLIC_ 키 노출 필요 — 보안 규칙 위반. (3) 리뷰+제보 합치면 UI가 복잡해지고 평균 별점 계산에 제보가 섞임.
+- **대안 기각**: (A) 별도 court_review_ratings 테이블 — 조인 비용 + 복잡도 증가, 필드 5개면 컬럼 추가가 단순. (B) rating을 Json으로 변경 — 집계 쿼리 불가.
+- **참조횟수**: 0
+
 ### [2026-03-29] 웹(PWA) 백그라운드 위치 기반 자동 체크인 -- 기술 불가 판정
 - **분류**: decision
 - **발견자**: planner-architect

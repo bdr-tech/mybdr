@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
+import { getWebSession } from "@/lib/auth/web-session";
 import { CourtCheckin } from "./_components/court-checkin";
+import { CourtReviews } from "./_components/court-reviews";
+import { CourtReports } from "./_components/court-reports";
 
 export const revalidate = 300;
 
@@ -26,15 +29,15 @@ type Params = { id: string };
 export default async function CourtDetailPage({ params }: { params: Promise<Params> }) {
   const { id } = await params;
 
+  // 현재 로그인 유저 ID 조회 (리뷰/제보 컴포넌트에 전달)
+  const session = await getWebSession();
+  const currentUserId = session?.sub ?? undefined;
+
   // 코트 상세 정보 조회
   const court = await prisma.court_infos.findUnique({
     where: { id: BigInt(id) },
     include: {
-      court_reviews: {
-        orderBy: { created_at: "desc" },
-        take: 10,
-        include: { users: { select: { nickname: true } } },
-      },
+      // court_reviews는 CourtReviews 클라이언트 컴포넌트가 SWR로 직접 패치
       court_checkins: {
         orderBy: { created_at: "desc" },
         take: 5,
@@ -444,61 +447,11 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
         </div>
       )}
 
-      {/* 리뷰 */}
-      <div
-        className="rounded-2xl p-5 sm:p-6"
-        style={{
-          backgroundColor: "var(--color-card)",
-          boxShadow: "var(--shadow-card)",
-        }}
-      >
-        <h2 className="text-base font-bold mb-3" style={{ color: "var(--color-text-primary)" }}>
-          리뷰 ({court.reviews_count})
-        </h2>
-        {court.court_reviews.length > 0 ? (
-          <div className="space-y-3">
-            {court.court_reviews.map((r) => (
-              <div
-                key={r.id.toString()}
-                className="border-b pb-3 last:border-0 last:pb-0"
-                style={{ borderColor: "var(--color-border-subtle)" }}
-              >
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>
-                    {r.users?.nickname ?? "사용자"}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {/* 별점을 Material Symbols로 표시 */}
-                    <span className="flex items-center gap-0.5">
-                      {Array.from({ length: Math.min(r.rating, 5) }).map((_, i) => (
-                        <span
-                          key={i}
-                          className="material-symbols-outlined"
-                          style={{ fontSize: "14px", color: "var(--color-primary)", fontVariationSettings: "'FILL' 1" }}
-                        >
-                          star
-                        </span>
-                      ))}
-                    </span>
-                    <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-                      {new Date(r.created_at).toLocaleDateString("ko-KR")}
-                    </span>
-                  </div>
-                </div>
-                {r.content && (
-                  <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
-                    {r.content}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
-            아직 리뷰가 없습니다.
-          </p>
-        )}
-      </div>
+      {/* 리뷰 섹션 (클라이언트 컴포넌트 — SWR 자동 갱신) */}
+      <CourtReviews courtId={court.id.toString()} currentUserId={currentUserId} />
+
+      {/* 상태 제보 섹션 (클라이언트 컴포넌트) */}
+      <CourtReports courtId={court.id.toString()} currentUserId={currentUserId} />
     </div>
   );
 }
