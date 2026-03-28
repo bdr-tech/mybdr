@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { TossCard } from "@/components/toss/toss-card";
 import { ScheduleForm, type ScheduleFormData, type PlaceInfo } from "@/components/tournament/schedule-form";
 import {
   RegistrationSettingsForm,
@@ -17,19 +16,14 @@ import { GameMethodInput } from "@/components/tournament/game-method-input";
 import { DivisionGeneratorModal } from "@/components/tournament/division-generator-modal";
 import { TournamentCopyModal, type CopyData } from "@/components/tournament/tournament-copy-modal";
 
-// 8탭 구성 (기존 7탭 + "경기설정" 추가)
+// --- 3단계 구성 (기존 8탭 → 3단계로 간소화) ---
 const STEPS = [
-  { id: "template", label: "템플릿", icon: "dashboard" },
-  { id: "info", label: "기본 정보", icon: "edit_note" },
-  { id: "schedule", label: "일정/장소", icon: "calendar_month" },
-  { id: "game", label: "경기 설정", icon: "sports_basketball" },
-  { id: "registration", label: "접수 설정", icon: "how_to_reg" },
-  { id: "team", label: "팀 설정", icon: "groups" },
-  { id: "design", label: "디자인", icon: "palette" },
-  { id: "preview", label: "미리보기", icon: "visibility" },
+  { key: "info", label: "대회 정보", icon: "emoji_events" },
+  { key: "registration", label: "참가 설정", icon: "group_add" },
+  { key: "confirm", label: "확인 및 생성", icon: "check_circle" },
 ];
 
-// 대회 형식: value(영문 코드)를 DB에 저장, label(한글)은 표시용
+// 대회 형식 옵션
 const FORMAT_OPTIONS = [
   { value: "single_elimination", label: "싱글 엘리미네이션" },
   { value: "double_elimination", label: "더블 엘리미네이션" },
@@ -39,23 +33,34 @@ const FORMAT_OPTIONS = [
   { value: "swiss", label: "스위스 라운드" },
 ];
 
-// 성별 옵션 (pill) — BDR은 남성부/여성부만 운영 (혼성 없음)
+// 성별 옵션 — BDR은 남성부/여성부만 운영 (혼성 없음)
 const GENDER_OPTIONS = [
   { value: "male", label: "남성" },
   { value: "female", label: "여성" },
 ];
 
+// 토스 스타일 인풋 — surface 배경, border 없음, rounded-xl
 const inputCls =
-  "w-full rounded-[16px] border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50";
+  "w-full rounded-xl border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50";
 const labelCls = "mb-1 block text-sm text-[var(--color-text-muted)]";
 
-// pill 버튼 스타일
+// pill 버튼 — 선택 상태에 따라 accent/border 배경
 const pillCls = (active: boolean) =>
   `rounded-[4px] px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer ${
     active
       ? "bg-[var(--color-accent)] text-white"
       : "bg-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border-active)]"
   }`;
+
+// 섹션 제목 컴포넌트 — Material Symbols 아이콘 + bold
+function SectionTitle({ icon, children }: { icon: string; children: React.ReactNode }) {
+  return (
+    <h3 className="flex items-center gap-2 text-base font-bold text-[var(--color-text-primary)]">
+      <span className="material-symbols-outlined text-lg text-[var(--color-accent)]">{icon}</span>
+      {children}
+    </h3>
+  );
+}
 
 type AuthStatus = "loading" | "unauthenticated" | "unauthorized" | "authorized";
 
@@ -70,21 +75,18 @@ export default function NewTournamentWizardPage() {
   const [showDivisionGenerator, setShowDivisionGenerator] = useState(false);
   const [showCopyModal, setShowCopyModal] = useState(false);
 
-  // Step 0: 템플릿
-  const [template, setTemplate] = useState("기본형");
-
-  // Step 1: 기본 정보 (확장됨)
+  // --- Step 1에서 사용하는 state (기본정보 + 일정/장소 + 경기설정) ---
   const [name, setName] = useState("");
   const [format, setFormat] = useState("single_elimination");
   const [description, setDescription] = useState("");
   const [organizer, setOrganizer] = useState("");   // 주최
   const [host, setHost] = useState("");             // 주관
   const [sponsors, setSponsors] = useState("");     // 후원사
-  const [gender, setGender] = useState("male");      // 성별 (기본: 남성)
+  const [gender, setGender] = useState("male");     // 성별 (기본: 남성)
   const [rules, setRules] = useState("");           // 규칙
   const [prizeInfo, setPrizeInfo] = useState("");   // 상금 정보
 
-  // Step 2: 일정/장소 (places 배열 추가)
+  // 일정/장소 (places 배열 포함)
   const [schedule, setSchedule] = useState<ScheduleFormData>({
     startDate: "",
     endDate: "",
@@ -96,12 +98,12 @@ export default function NewTournamentWizardPage() {
     places: [],
   });
 
-  // Step 3: 경기 설정 (신규)
+  // 경기 설정
   const [gameTime, setGameTime] = useState("");
   const [gameBall, setGameBall] = useState("");
   const [gameMethod, setGameMethod] = useState("");
 
-  // Step 4: 접수 설정
+  // --- Step 2에서 사용하는 state (접수설정 + 팀설정) ---
   const [registration, setRegistration] = useState<RegistrationSettingsData>({
     categories: {},
     divCaps: {},
@@ -115,7 +117,6 @@ export default function NewTournamentWizardPage() {
     feeNotes: "",
   });
 
-  // Step 5: 팀 설정
   const [teamSettings, setTeamSettings] = useState<TeamSettingsData>({
     maxTeams: "16",
     teamSize: "5",
@@ -125,15 +126,15 @@ export default function NewTournamentWizardPage() {
     autoCalcMaxTeams: false,
   });
 
-  // Step 6: 디자인
+  // --- Step 3에서 사용하는 state (디자인) ---
   const [primaryColor, setPrimaryColor] = useState("#E31B23");
   const [secondaryColor, setSecondaryColor] = useState("#E76F51");
   const [subdomain, setSubdomain] = useState("");
 
-  // 디비전 정원 합산
+  // 디비전 정원 합산 — 자동 계산에 사용
   const totalDivCaps = Object.values(registration.divCaps).reduce((s, v) => s + v, 0);
 
-  // 이전 대회 복사 적용
+  // 이전 대회 복사 적용 — 모든 필드를 한 번에 덮어씌움
   const handleCopyApply = useCallback((data: CopyData) => {
     if (data.format) setFormat(data.format);
     if (data.description) setDescription(data.description);
@@ -189,7 +190,7 @@ export default function NewTournamentWizardPage() {
     }));
   }, []);
 
-  // 인증 체크
+  // 인증 체크 — 관리자 이상만 접근 가능
   useEffect(() => {
     fetch("/api/web/me")
       .then((res) => {
@@ -217,6 +218,7 @@ export default function NewTournamentWizardPage() {
     }
   }, [authStatus, router]);
 
+  // 로딩/미인증 상태
   if (authStatus === "loading" || authStatus === "unauthenticated") {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
@@ -225,6 +227,7 @@ export default function NewTournamentWizardPage() {
     );
   }
 
+  // 권한 없음
   if (authStatus === "unauthorized") {
     return (
       <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 text-center">
@@ -245,21 +248,24 @@ export default function NewTournamentWizardPage() {
     );
   }
 
-  // 다음 스텝 이동 (유효성 검사)
+  // 다음 단계 이동 — Step 0에서 대회명 필수 검증
   function goNext() {
-    if (currentStep === 1 && !name.trim()) {
+    if (currentStep === 0 && !name.trim()) {
       setError("대회 이름을 입력하세요.");
       return;
     }
     setError(null);
     setCurrentStep(currentStep + 1);
+    // 스크롤 최상단으로 이동 (긴 폼이므로)
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  // 생성 요청
+  // 대회 생성 API 호출 — 기존 로직 100% 유지
   async function handleCreate() {
     setLoading(true);
     setError(null);
 
+    // 디비전 정원 합산이 있으면 자동 계산, 없으면 수동 입력값
     const effectiveMaxTeams =
       teamSettings.autoCalcMaxTeams && totalDivCaps > 0
         ? totalDivCaps
@@ -270,18 +276,15 @@ export default function NewTournamentWizardPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          template,
           name,
           format,
           description: description || undefined,
-          // 기본 정보 확장 필드
           organizer: organizer || undefined,
           host: host || undefined,
           sponsors: sponsors || undefined,
           gender: gender || undefined,
           rules: rules || undefined,
           prizeInfo: prizeInfo || undefined,
-          // 일정
           startDate: schedule.startDate || undefined,
           endDate: schedule.endDate || undefined,
           registrationStartAt: schedule.registrationStartAt || undefined,
@@ -290,11 +293,9 @@ export default function NewTournamentWizardPage() {
           venueAddress: schedule.venueAddress || undefined,
           city: schedule.city || undefined,
           places: schedule.places.length > 0 ? schedule.places : undefined,
-          // 경기 설정
           gameTime: gameTime || undefined,
           gameBall: gameBall || undefined,
           gameMethod: gameMethod || undefined,
-          // 접수
           categories: Object.keys(registration.categories).length > 0 ? registration.categories : undefined,
           divCaps: Object.keys(registration.divCaps).length > 0 ? registration.divCaps : undefined,
           divFees: Object.keys(registration.divFees).length > 0 ? registration.divFees : undefined,
@@ -305,13 +306,11 @@ export default function NewTournamentWizardPage() {
           bankAccount: registration.bankAccount || undefined,
           bankHolder: registration.bankHolder || undefined,
           feeNotes: registration.feeNotes || undefined,
-          // 팀 설정
           maxTeams: effectiveMaxTeams,
           teamSize: Number(teamSettings.teamSize) || 5,
           rosterMin: Number(teamSettings.rosterMin) || 5,
           rosterMax: Number(teamSettings.rosterMax) || 12,
           autoApproveTeams: teamSettings.autoApproveTeams || undefined,
-          // 디자인
           primaryColor,
           secondaryColor,
           subdomain: subdomain || undefined,
@@ -332,8 +331,8 @@ export default function NewTournamentWizardPage() {
   }
 
   return (
-    <div>
-      {/* 헤더 + 이전 대회 복사 버튼 */}
+    <div className="mx-auto max-w-3xl">
+      {/* === 헤더: 타이틀 + 이전 대회 복사 버튼 === */}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-bold sm:text-2xl">새 대회 만들기</h1>
         <button
@@ -345,60 +344,52 @@ export default function NewTournamentWizardPage() {
         </button>
       </div>
 
-      {/* Step Indicator (Material Symbols 아이콘 사용) */}
-      <div className="mb-8 flex gap-1 overflow-x-auto">
+      {/* === 3단계 탭 인디케이터 === */}
+      <div className="mb-6 flex gap-2">
         {STEPS.map((step, i) => (
           <button
-            key={step.id}
-            onClick={() => i < currentStep && setCurrentStep(i)}
-            className={`flex items-center gap-1.5 whitespace-nowrap rounded-[4px] px-3 py-2 text-sm transition-colors ${
+            key={step.key}
+            onClick={() => {
+              // 이전 단계로만 이동 가능 (클릭으로 되돌아가기)
+              if (i < currentStep) {
+                setCurrentStep(i);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            }}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-[4px] py-3 text-sm font-semibold transition-colors ${
               i === currentStep
-                ? "bg-[var(--color-accent)] font-semibold text-white"
+                ? "bg-[var(--color-accent)] text-white"
                 : i < currentStep
-                  ? "cursor-pointer bg-[rgba(74,222,128,0.2)] text-[var(--color-success)]"
+                  ? "cursor-pointer bg-[rgba(74,222,128,0.15)] text-[var(--color-success)]"
                   : "cursor-not-allowed bg-[var(--color-elevated)] text-[var(--color-text-muted)]"
             }`}
           >
-            <span className="material-symbols-outlined text-base">{step.icon}</span>
-            {step.label}
+            <span className="material-symbols-outlined text-lg">
+              {/* 완료된 단계는 체크 아이콘 */}
+              {i < currentStep ? "check_circle" : step.icon}
+            </span>
+            <span className="hidden sm:inline">{step.label}</span>
+            <span className="sm:hidden">{i + 1}</span>
           </button>
         ))}
       </div>
 
+      {/* 에러 메시지 */}
       {error && (
-        <div className="mb-4 rounded-[12px] bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
+        <div className="mb-4 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
       )}
 
-      <Card className="min-h-[300px]">
-        {/* Step 0: 템플릿 */}
-        {currentStep === 0 && (
-          <div>
-            <h2 className="mb-4 text-lg font-semibold">템플릿 선택</h2>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {["기본형", "리그형", "토너먼트형"].map((t) => (
-                <div
-                  key={t}
-                  onClick={() => setTemplate(t)}
-                  className={`cursor-pointer rounded-[16px] border p-6 text-center transition-colors ${
-                    template === t
-                      ? "border-[var(--color-accent)] bg-[rgba(27,60,135,0.08)]"
-                      : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
-                  }`}
-                >
-                  <span className="material-symbols-outlined mb-2 text-3xl">emoji_events</span>
-                  <p className="font-medium">{t}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      {/* ================================================================
+       * Step 1: 대회 정보 (기본정보 + 일정/장소 + 경기설정)
+       * 하나의 긴 폼을 TossCard 섹션으로 구분
+       * ================================================================ */}
+      {currentStep === 0 && (
+        <div className="space-y-4">
+          {/* --- 섹션 1: 기본 정보 --- */}
+          <TossCard className="space-y-4 hover:scale-100">
+            <SectionTitle icon="edit_note">기본 정보</SectionTitle>
 
-        {/* Step 1: 기본 정보 (확장) */}
-        {currentStep === 1 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">기본 정보</h2>
-
-            {/* 대회 이름 */}
+            {/* 대회명 (필수) */}
             <div>
               <label className={labelCls}>대회 이름 *</label>
               <input
@@ -410,39 +401,8 @@ export default function NewTournamentWizardPage() {
               />
             </div>
 
-            {/* 대회 방식 */}
-            <div>
-              <label className={labelCls}>대회 방식</label>
-              <select
-                value={format}
-                onChange={(e) => setFormat(e.target.value)}
-                className={inputCls}
-              >
-                {FORMAT_OPTIONS.map((f) => (
-                  <option key={f.value} value={f.value}>{f.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* 성별 (pill 버튼) */}
-            <div>
-              <label className={labelCls}>성별</label>
-              <div className="flex gap-2">
-                {GENDER_OPTIONS.map((g) => (
-                  <button
-                    key={g.value}
-                    type="button"
-                    onClick={() => setGender(g.value)}
-                    className={pillCls(gender === g.value)}
-                  >
-                    {g.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 주최 / 주관 / 후원사 (2열) */}
-            <div className="grid gap-4 sm:grid-cols-2">
+            {/* 주최 / 주관 / 후원사 */}
+            <div className="grid gap-4 sm:grid-cols-3">
               <div>
                 <label className={labelCls}>주최</label>
                 <input
@@ -463,19 +423,36 @@ export default function NewTournamentWizardPage() {
                   placeholder="주관 단체/기관"
                 />
               </div>
-            </div>
-            <div>
-              <label className={labelCls}>후원사</label>
-              <input
-                type="text"
-                value={sponsors}
-                onChange={(e) => setSponsors(e.target.value)}
-                className={inputCls}
-                placeholder="후원사 (여러 개면 쉼표로 구분)"
-              />
+              <div>
+                <label className={labelCls}>후원</label>
+                <input
+                  type="text"
+                  value={sponsors}
+                  onChange={(e) => setSponsors(e.target.value)}
+                  className={inputCls}
+                  placeholder="후원사 (쉼표 구분)"
+                />
+              </div>
             </div>
 
-            {/* 대회 소개 */}
+            {/* 성별 pill */}
+            <div>
+              <label className={labelCls}>성별</label>
+              <div className="flex gap-2">
+                {GENDER_OPTIONS.map((g) => (
+                  <button
+                    key={g.value}
+                    type="button"
+                    onClick={() => setGender(g.value)}
+                    className={pillCls(gender === g.value)}
+                  >
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 대회 설명 */}
             <div>
               <label className={labelCls}>대회 소개</label>
               <textarea
@@ -510,64 +487,104 @@ export default function NewTournamentWizardPage() {
                 placeholder="우승 100만원, 준우승 50만원 등"
               />
             </div>
-          </div>
-        )}
+          </TossCard>
 
-        {/* Step 2: 일정/장소 (복수 경기장 지원) */}
-        {currentStep === 2 && (
-          <ScheduleForm
-            data={schedule}
-            onChange={(field, value) =>
-              setSchedule((prev) => ({ ...prev, [field]: value }))
-            }
-          />
-        )}
+          {/* --- 섹션 2: 일정 및 장소 --- */}
+          <TossCard className="hover:scale-100">
+            <SectionTitle icon="calendar_month">일정 및 장소</SectionTitle>
+            {/* ScheduleForm 서브 컴포넌트 재사용 (기존 그대로) */}
+            <div className="mt-4">
+              <ScheduleForm
+                data={schedule}
+                onChange={(field, value) =>
+                  setSchedule((prev) => ({ ...prev, [field]: value }))
+                }
+              />
+            </div>
+          </TossCard>
 
-        {/* Step 3: 경기 설정 (신규 탭) */}
-        {currentStep === 3 && (
-          <div className="space-y-6">
-            <h2 className="text-lg font-semibold">경기 설정</h2>
-            <GameTimeInput value={gameTime} onChange={setGameTime} />
-            <GameBallInput value={gameBall} onChange={setGameBall} />
+          {/* --- 섹션 3: 경기 설정 --- */}
+          <TossCard className="space-y-6 hover:scale-100">
+            <SectionTitle icon="sports_basketball">경기 설정</SectionTitle>
+
+            {/* 대회 방식 (FORMAT은 select → GameMethodInput 4종 pill) */}
+            <div>
+              <label className={labelCls}>대회 방식</label>
+              <select
+                value={format}
+                onChange={(e) => setFormat(e.target.value)}
+                className={inputCls}
+              >
+                {FORMAT_OPTIONS.map((f) => (
+                  <option key={f.value} value={f.value}>{f.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* 대회방식 상세 (GameMethodInput — 4종 pill) */}
             <GameMethodInput value={gameMethod} onChange={setGameMethod} />
-          </div>
-        )}
 
-        {/* Step 4: 접수 설정 */}
-        {currentStep === 4 && (
-          <div>
-            {/* 종별 자동생성기 버튼 */}
-            <div className="mb-4 flex justify-end">
+            {/* 경기시간 프리셋 */}
+            <GameTimeInput value={gameTime} onChange={setGameTime} />
+
+            {/* 경기구 선택 */}
+            <GameBallInput value={gameBall} onChange={setGameBall} />
+          </TossCard>
+        </div>
+      )}
+
+      {/* ================================================================
+       * Step 2: 참가 설정 (종별/디비전 + 팀설정 + 참가비/입금)
+       * ================================================================ */}
+      {currentStep === 1 && (
+        <div className="space-y-4">
+          {/* --- 섹션 1: 종별/디비전 --- */}
+          <TossCard className="hover:scale-100">
+            <div className="mb-4 flex items-center justify-between">
+              <SectionTitle icon="category">종별 / 디비전</SectionTitle>
+              {/* BDR 종별 자동생성기 버튼 */}
               <button
                 onClick={() => setShowDivisionGenerator(true)}
                 className="flex items-center gap-1 rounded-[4px] bg-[var(--color-navy)] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90"
               >
                 <span className="material-symbols-outlined text-base">auto_awesome</span>
-                BDR 종별 자동생성
+                자동생성
               </button>
             </div>
+            {/* RegistrationSettingsForm 재사용 — 접수 관련 전체 폼 */}
             <RegistrationSettingsForm
               data={registration}
               onChange={(updates) => setRegistration((prev) => ({ ...prev, ...updates }))}
             />
-          </div>
-        )}
+          </TossCard>
 
-        {/* Step 5: 팀 설정 */}
-        {currentStep === 5 && (
-          <TeamSettingsForm
-            data={teamSettings}
-            totalDivCaps={totalDivCaps}
-            onChange={(field, value) =>
-              setTeamSettings((prev) => ({ ...prev, [field]: value }))
-            }
-          />
-        )}
+          {/* --- 섹션 2: 팀 설정 --- */}
+          <TossCard className="hover:scale-100">
+            <SectionTitle icon="groups">팀 설정</SectionTitle>
+            <div className="mt-4">
+              {/* TeamSettingsForm 재사용 */}
+              <TeamSettingsForm
+                data={teamSettings}
+                totalDivCaps={totalDivCaps}
+                onChange={(field, value) =>
+                  setTeamSettings((prev) => ({ ...prev, [field]: value }))
+                }
+              />
+            </div>
+          </TossCard>
+        </div>
+      )}
 
-        {/* Step 6: 디자인 */}
-        {currentStep === 6 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">디자인 / URL</h2>
+      {/* ================================================================
+       * Step 3: 확인 및 생성 (디자인 + 미리보기)
+       * ================================================================ */}
+      {currentStep === 2 && (
+        <div className="space-y-4">
+          {/* --- 디자인 설정 --- */}
+          <TossCard className="space-y-4 hover:scale-100">
+            <SectionTitle icon="palette">디자인</SectionTitle>
+
+            {/* 대회 색상 */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className={labelCls}>대표 색상</label>
@@ -576,7 +593,7 @@ export default function NewTournamentWizardPage() {
                     type="color"
                     value={primaryColor}
                     onChange={(e) => setPrimaryColor(e.target.value)}
-                    className="h-12 w-16 cursor-pointer rounded-[12px] border-none bg-transparent p-0"
+                    className="h-12 w-16 cursor-pointer rounded-xl border-none bg-transparent p-0"
                   />
                   <span className="text-sm text-[var(--color-text-muted)]">{primaryColor}</span>
                 </div>
@@ -588,16 +605,16 @@ export default function NewTournamentWizardPage() {
                     type="color"
                     value={secondaryColor}
                     onChange={(e) => setSecondaryColor(e.target.value)}
-                    className="h-12 w-16 cursor-pointer rounded-[12px] border-none bg-transparent p-0"
+                    className="h-12 w-16 cursor-pointer rounded-xl border-none bg-transparent p-0"
                   />
                   <span className="text-sm text-[var(--color-text-muted)]">{secondaryColor}</span>
                 </div>
               </div>
             </div>
 
-            {/* 미리보기 배너 */}
+            {/* 미리보기 배너 — 선택한 색상으로 그라디언트 */}
             <div
-              className="rounded-[16px] p-6 text-center"
+              className="rounded-xl p-6 text-center"
               style={{
                 background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
               }}
@@ -605,7 +622,7 @@ export default function NewTournamentWizardPage() {
               <p className="font-bold text-white drop-shadow">{name || "대회 이름"}</p>
             </div>
 
-            {/* URL */}
+            {/* 서브도메인 URL */}
             <div>
               <label className={labelCls}>서브도메인 (선택)</label>
               <div className="flex items-center gap-2">
@@ -622,63 +639,74 @@ export default function NewTournamentWizardPage() {
               </div>
               <p className="mt-1 text-xs text-[var(--color-text-muted)]">비워두면 대회 ID로 접근합니다.</p>
             </div>
-          </div>
-        )}
+          </TossCard>
 
-        {/* Step 7: 미리보기 */}
-        {currentStep === 7 && (
-          <div className="space-y-4">
-            <div className="mb-2 text-center">
-              <span className="material-symbols-outlined text-4xl text-[var(--color-accent)]">celebration</span>
-            </div>
-            <h2 className="text-center text-lg font-semibold">대회 생성 미리보기</h2>
+          {/* --- 전체 요약 미리보기 --- */}
+          <TossCard className="hover:scale-100">
+            <SectionTitle icon="fact_check">입력 내용 확인</SectionTitle>
 
-            <div className="space-y-3 rounded-[16px] bg-[var(--color-elevated)] p-4 text-sm">
-              <Row label="대회명" value={name || "미입력"} />
-              <Row label="형식" value={FORMAT_OPTIONS.find((f) => f.value === format)?.label ?? format} />
-              <Row label="성별" value={GENDER_OPTIONS.find((g) => g.value === gender)?.label ?? gender} />
-              {organizer && <Row label="주최" value={organizer} />}
-              {host && <Row label="주관" value={host} />}
-              {sponsors && <Row label="후원사" value={sponsors} />}
-              <Row
-                label="대회 기간"
-                value={
-                  schedule.startDate
-                    ? `${schedule.startDate} ~ ${schedule.endDate || "미정"}`
-                    : "미정"
-                }
-              />
-              <Row
-                label="접수 기간"
-                value={
-                  schedule.registrationStartAt
-                    ? `${schedule.registrationStartAt} ~ ${schedule.registrationEndAt || "미정"}`
-                    : "미설정"
-                }
-              />
-              <Row
-                label="장소"
-                value={
-                  schedule.places.length > 0
-                    ? schedule.places.map((p) => p.name).join(", ")
-                    : [schedule.city, schedule.venueName].filter(Boolean).join(" ") || "미설정"
-                }
-              />
+            <div className="mt-4 space-y-3 text-sm">
+              {/* 기본 정보 */}
+              <div className="rounded-xl bg-[var(--color-elevated)] p-4 space-y-2">
+                <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">대회 정보</p>
+                <Row label="대회명" value={name || "미입력"} />
+                <Row label="형식" value={FORMAT_OPTIONS.find((f) => f.value === format)?.label ?? format} />
+                <Row label="성별" value={GENDER_OPTIONS.find((g) => g.value === gender)?.label ?? gender} />
+                {organizer && <Row label="주최" value={organizer} />}
+                {host && <Row label="주관" value={host} />}
+                {sponsors && <Row label="후원" value={sponsors} />}
+              </div>
+
+              {/* 일정/장소 */}
+              <div className="rounded-xl bg-[var(--color-elevated)] p-4 space-y-2">
+                <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">일정 및 장소</p>
+                <Row
+                  label="대회 기간"
+                  value={
+                    schedule.startDate
+                      ? `${schedule.startDate} ~ ${schedule.endDate || "미정"}`
+                      : "미정"
+                  }
+                />
+                <Row
+                  label="접수 기간"
+                  value={
+                    schedule.registrationStartAt
+                      ? `${schedule.registrationStartAt} ~ ${schedule.registrationEndAt || "미정"}`
+                      : "미설정"
+                  }
+                />
+                <Row
+                  label="장소"
+                  value={
+                    schedule.places.length > 0
+                      ? schedule.places.map((p) => p.name).join(", ")
+                      : [schedule.city, schedule.venueName].filter(Boolean).join(" ") || "미설정"
+                  }
+                />
+              </div>
 
               {/* 경기 설정 */}
-              {gameTime && <Row label="경기시간" value={gameTime} />}
-              {gameBall && <Row label="경기구" value={gameBall} />}
-              {gameMethod && <Row label="대회 방식 상세" value={gameMethod} />}
+              {(gameTime || gameBall || gameMethod) && (
+                <div className="rounded-xl bg-[var(--color-elevated)] p-4 space-y-2">
+                  <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">경기 설정</p>
+                  {gameTime && <Row label="경기시간" value={gameTime} />}
+                  {gameBall && <Row label="경기구" value={gameBall} />}
+                  {gameMethod && <Row label="대회 방식 상세" value={gameMethod} />}
+                </div>
+              )}
 
-              {/* 부문/디비전 */}
-              {Object.keys(registration.categories).length > 0 && (
-                <div className="border-t border-[var(--color-accent)]/10 pt-2">
-                  <span className="text-[var(--color-text-muted)]">부문/디비전</span>
-                  <div className="mt-1 space-y-1">
+              {/* 참가 설정 */}
+              <div className="rounded-xl bg-[var(--color-elevated)] p-4 space-y-2">
+                <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">참가 설정</p>
+
+                {/* 부문/디비전 */}
+                {Object.keys(registration.categories).length > 0 && (
+                  <div className="space-y-1">
                     {Object.entries(registration.categories).map(([cat, divs]) => (
                       <div key={cat} className="flex gap-2">
-                        <span className="font-medium">{cat}:</span>
-                        <span>
+                        <span className="text-[var(--color-text-muted)]">{cat}:</span>
+                        <span className="font-medium">
                           {divs
                             .map((d) => {
                               const cap = registration.divCaps[d];
@@ -693,64 +721,97 @@ export default function NewTournamentWizardPage() {
                       </div>
                     ))}
                   </div>
+                )}
+
+                <Row
+                  label="참가비"
+                  value={
+                    Number(registration.entryFee) > 0
+                      ? `${Number(registration.entryFee).toLocaleString()}원`
+                      : "무료"
+                  }
+                />
+                <Row
+                  label="최대 팀"
+                  value={`${teamSettings.autoCalcMaxTeams && totalDivCaps > 0 ? totalDivCaps : teamSettings.maxTeams}팀`}
+                />
+                <Row
+                  label="로스터"
+                  value={`${teamSettings.rosterMin} ~ ${teamSettings.rosterMax}명`}
+                />
+                {registration.bankName && (
+                  <Row
+                    label="입금계좌"
+                    value={`${registration.bankName} ${registration.bankAccount} (${registration.bankHolder})`}
+                  />
+                )}
+              </div>
+
+              {/* 기타 */}
+              {(rules || prizeInfo) && (
+                <div className="rounded-xl bg-[var(--color-elevated)] p-4 space-y-2">
+                  <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">기타</p>
+                  {rules && <Row label="규칙" value={rules.slice(0, 80) + (rules.length > 80 ? "..." : "")} />}
+                  {prizeInfo && <Row label="상금" value={prizeInfo.slice(0, 80) + (prizeInfo.length > 80 ? "..." : "")} />}
                 </div>
               )}
-
-              <Row
-                label="참가비"
-                value={
-                  Number(registration.entryFee) > 0
-                    ? `${Number(registration.entryFee).toLocaleString()}원`
-                    : "무료"
-                }
-              />
-              <Row
-                label="최대 팀"
-                value={`${teamSettings.autoCalcMaxTeams && totalDivCaps > 0 ? totalDivCaps : teamSettings.maxTeams}팀`}
-              />
-              <Row
-                label="로스터"
-                value={`${teamSettings.rosterMin} ~ ${teamSettings.rosterMax}명`}
-              />
-
-              {registration.bankName && (
-                <Row
-                  label="입금계좌"
-                  value={`${registration.bankName} ${registration.bankAccount} (${registration.bankHolder})`}
-                />
-              )}
-
-              {rules && <Row label="규칙" value={rules.slice(0, 50) + (rules.length > 50 ? "..." : "")} />}
-              {prizeInfo && <Row label="상금" value={prizeInfo.slice(0, 50) + (prizeInfo.length > 50 ? "..." : "")} />}
 
               <Row
                 label="URL"
                 value={subdomain ? `${subdomain}.mybdr.kr` : "자동 생성"}
               />
             </div>
-          </div>
-        )}
-      </Card>
+          </TossCard>
 
-      {/* 네비게이션 */}
-      <div className="mt-4 flex justify-between">
-        <Button
-          variant="secondary"
-          onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-          disabled={currentStep === 0 || loading}
-        >
-          이전
-        </Button>
-        {currentStep < STEPS.length - 1 ? (
-          <Button onClick={goNext}>다음</Button>
-        ) : (
-          <Button onClick={handleCreate} disabled={loading}>
-            {loading ? "생성 중..." : "대회 생성"}
-          </Button>
-        )}
-      </div>
+          {/* === 생성 버튼 (풀와이드 CTA) === */}
+          <button
+            onClick={handleCreate}
+            disabled={loading}
+            className="w-full rounded-[4px] bg-[var(--color-accent)] py-4 text-base font-bold text-white transition-colors hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
+          >
+            {loading ? "생성 중..." : "대회 생성하기"}
+          </button>
+        </div>
+      )}
 
-      {/* 모달들 */}
+      {/* === 하단 네비게이션: 이전/다음 (마지막 단계 제외 — CTA가 있으므로) === */}
+      {currentStep < 2 && (
+        <div className="mt-6 flex justify-between">
+          <button
+            onClick={() => {
+              setCurrentStep(Math.max(0, currentStep - 1));
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            disabled={currentStep === 0 || loading}
+            className="rounded-[4px] border border-[var(--color-border)] px-6 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-border)] disabled:opacity-30"
+          >
+            이전
+          </button>
+          <button
+            onClick={goNext}
+            className="rounded-[4px] bg-[var(--color-accent)] px-6 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-accent-hover)]"
+          >
+            다음
+          </button>
+        </div>
+      )}
+
+      {/* 마지막 단계에서 이전 버튼만 표시 */}
+      {currentStep === 2 && (
+        <div className="mt-4">
+          <button
+            onClick={() => {
+              setCurrentStep(1);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="rounded-[4px] border border-[var(--color-border)] px-6 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-border)]"
+          >
+            이전 단계로
+          </button>
+        </div>
+      )}
+
+      {/* === 모달들 === */}
       <DivisionGeneratorModal
         open={showDivisionGenerator}
         onClose={() => setShowDivisionGenerator(false)}
@@ -765,11 +826,12 @@ export default function NewTournamentWizardPage() {
   );
 }
 
+// 미리보기에서 라벨-값 한 줄 표시
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
       <span className="text-[var(--color-text-muted)]">{label}</span>
-      <span className="font-medium">{value}</span>
+      <span className="font-medium text-right">{value}</span>
     </div>
   );
 }
