@@ -12,7 +12,7 @@ import {
 import { TeamSettingsForm, type TeamSettingsData } from "@/components/tournament/team-settings-form";
 import { GameTimeInput } from "@/components/tournament/game-time-input";
 import { GameBallInput } from "@/components/tournament/game-ball-input";
-import { GameMethodInput } from "@/components/tournament/game-method-input";
+// GameMethodInput 제거 — 대회 방식은 FORMAT_OPTIONS 4종으로 통합
 import { DivisionGeneratorModal } from "@/components/tournament/division-generator-modal";
 import { TournamentCopyModal, type CopyData } from "@/components/tournament/tournament-copy-modal";
 
@@ -23,14 +23,12 @@ const STEPS = [
   { key: "confirm", label: "확인 및 생성", icon: "check_circle" },
 ];
 
-// 대회 형식 옵션
+// 대회 방식 옵션 (4종만)
 const FORMAT_OPTIONS = [
-  { value: "single_elimination", label: "싱글 엘리미네이션" },
-  { value: "double_elimination", label: "더블 엘리미네이션" },
-  { value: "round_robin", label: "리그전" },
-  { value: "group_stage", label: "조별리그" },
   { value: "group_stage_knockout", label: "조별리그+토너먼트" },
-  { value: "swiss", label: "스위스 라운드" },
+  { value: "dual_tournament", label: "듀얼토너먼트" },
+  { value: "single_elimination", label: "토너먼트" },
+  { value: "full_league_knockout", label: "풀리그+토너먼트" },
 ];
 
 // 성별 옵션 — BDR은 남성부/여성부만 운영 (혼성 없음)
@@ -77,7 +75,7 @@ export default function NewTournamentWizardPage() {
 
   // --- Step 1에서 사용하는 state (기본정보 + 일정/장소 + 경기설정) ---
   const [name, setName] = useState("");
-  const [format, setFormat] = useState("single_elimination");
+  const [format, setFormat] = useState("group_stage_knockout");
   const [description, setDescription] = useState("");
   const [organizer, setOrganizer] = useState("");   // 주최
   const [host, setHost] = useState("");             // 주관
@@ -521,9 +519,6 @@ export default function NewTournamentWizardPage() {
               </select>
             </div>
 
-            {/* 대회방식 상세 (GameMethodInput — 4종 pill) */}
-            <GameMethodInput value={gameMethod} onChange={setGameMethod} />
-
             {/* 경기시간 프리셋 */}
             <GameTimeInput value={gameTime} onChange={setGameTime} />
 
@@ -692,7 +687,7 @@ export default function NewTournamentWizardPage() {
                   <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">경기 설정</p>
                   {gameTime && <Row label="경기시간" value={gameTime} />}
                   {gameBall && <Row label="경기구" value={gameBall} />}
-                  {gameMethod && <Row label="대회 방식 상세" value={gameMethod} />}
+                  {gameMethod && <Row label="비고" value={gameMethod} />}
                 </div>
               )}
 
