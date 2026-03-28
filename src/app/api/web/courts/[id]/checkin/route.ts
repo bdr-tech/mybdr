@@ -73,6 +73,16 @@ export async function GET(
     });
 
     if (active) {
+      // 다른 코트에 체크인 중이면 해당 코트 이름도 조회
+      let courtName: string | null = null;
+      if (active.court_id !== courtId) {
+        const otherCourt = await prisma.court_infos.findUnique({
+          where: { id: active.court_id },
+          select: { name: true },
+        });
+        courtName = otherCourt?.name ?? "알 수 없는 코트";
+      }
+
       mySession = {
         id: active.id.toString(),
         courtId: active.court_id.toString(),
@@ -83,6 +93,8 @@ export async function GET(
         ),
         // 이 코트인지 다른 코트인지
         isThisCourt: active.court_id === courtId,
+        // 다른 코트일 때 코트 이름 (UI에서 "○○에 체크인 중" 표시용)
+        courtName,
       };
     }
   }

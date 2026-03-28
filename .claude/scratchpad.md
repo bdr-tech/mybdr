@@ -66,6 +66,7 @@ reviewer 참고:
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 03-29 | debugger | 코트 체크인 UI 버튼 미표시 버그: GET API에 courtName 추가 + UI 분기 통합 | 완료 |
 | 03-29 | developer | 코트 데이터 대청소: schema nullable 5필드 + cleanup 스크립트 + UI null 처리 5파일 | 완료 |
 | 03-29 | architect | 코트 데이터 품질 전수 조사 (672개 분석, 98% 추정 데이터 확인) | 완료 |
 | 03-29 | developer+tester+reviewer | Phase 4 게이미피케이션 구현+검증 (28항목 전통과) | 완료 |

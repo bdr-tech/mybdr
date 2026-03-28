@@ -44,6 +44,7 @@ interface CheckinData {
     checked_in_at: string;
     elapsed_minutes: number;
     is_this_court: boolean;
+    court_name: string | null; // 다른 코트 체크인 시 해당 코트 이름
   } | null;
 }
 
@@ -79,7 +80,19 @@ export function CourtCheckin({ courtId, courtLat, courtLng }: CourtCheckinProps)
   const mySession = data?.my_session;
   const activeCount = data?.active_count ?? 0;
   const isCheckedInHere = mySession?.is_this_court === true;
-  const isCheckedInElsewhere = mySession && !mySession.is_this_court;
+
+  // SWR GET 응답에서 다른 코트 체크인 정보 반영
+  // (페이지 진입 시 POST 없이도 버튼이 보이도록)
+  useEffect(() => {
+    if (mySession && !mySession.is_this_court) {
+      setCheckedInCourtId(mySession.court_id);
+      setCheckedInCourtName(mySession.court_name ?? "다른 코트");
+    } else if (!mySession) {
+      // 체크인 세션이 없으면 초기화 (체크아웃 후 갱신 시)
+      setCheckedInCourtId(null);
+      setCheckedInCourtName(null);
+    }
+  }, [mySession]);
 
   // 마운트 시 사용자 위치 확인
   useEffect(() => {
@@ -305,20 +318,6 @@ export function CourtCheckin({ courtId, courtLat, courtLng }: CourtCheckinProps)
           >
             {loading ? "처리 중..." : "농구 끝!"}
           </button>
-        </div>
-      ) : isCheckedInElsewhere ? (
-        // 다른 코트에 체크인 중인 경우
-        <div
-          className="rounded-[4px] px-4 py-3 text-sm text-center"
-          style={{
-            backgroundColor: "var(--color-surface)",
-            color: "var(--color-text-muted)",
-          }}
-        >
-          <span className="material-symbols-outlined text-base align-middle mr-1">
-            info
-          </span>
-          다른 코트에 체크인 중이에요. 먼저 체크아웃 해주세요.
         </div>
       ) : checkedInCourtId ? (
         // 409 응답 → 다른 코트에 체크인 중 (코트 이름 표시 + 이동/체크아웃 버튼)
