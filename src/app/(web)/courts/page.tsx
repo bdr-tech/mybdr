@@ -13,86 +13,85 @@ export const metadata: Metadata = {
 export const revalidate = 300;
 
 export default async function CourtsPage() {
-  // 각 코트의 활성 체크인 세션 수 조회 (3시간 이내, 체크아웃 안 한 사람)
+  // 3개 쿼리를 병렬 실행 (서로 의존 없으므로 동시에 보내서 대기 시간 단축)
+  // 비유: 마트에서 3번 왕복 -> 3명이 동시에 각자 물건을 가져오는 것
   const cutoff = new Date(Date.now() - 3 * 60 * 60 * 1000);
-  const activeSessions = await prisma.court_sessions.groupBy({
-    by: ["court_id"],
-    where: {
-      checked_out_at: null,
-      checked_in_at: { gte: cutoff },
-    },
-    _count: { id: true },
-  }).catch((err) => {
-    // 활성 세션 조회 실패 시 에러 로깅 (빈 배열로 폴백)
-    console.error("Courts active sessions query failed:", err);
-    return [];
-  });
+  const kstOffset = 9 * 60 * 60 * 1000;
+  const kstDate = new Date(Date.now() + kstOffset);
+  const todayStr = kstDate.toISOString().split("T")[0];
+  const todayDate = new Date(todayStr + "T00:00:00.000Z");
+
+  const [activeSessions, pickupCounts, rawCourts] = await Promise.all([
+    // 1) 각 코트의 활성 체크인 세션 수 조회 (3시간 이내, 체크아웃 안 한 사람)
+    prisma.court_sessions.groupBy({
+      by: ["court_id"],
+      where: {
+        checked_out_at: null,
+        checked_in_at: { gte: cutoff },
+      },
+      _count: { id: true },
+    }).catch((err) => {
+      console.error("Courts active sessions query failed:", err);
+      return [] as { court_id: bigint; _count: { id: number } }[];
+    }),
+    // 2) 코트별 모집 중인 픽업게임 수 조회 (오늘 이후, recruiting/full)
+    prisma.pickup_games.groupBy({
+      by: ["court_info_id"],
+      where: {
+        scheduled_date: { gte: todayDate },
+        status: { in: ["recruiting", "full"] },
+      },
+      _count: { id: true },
+    }).catch(() => [] as { court_info_id: bigint; _count: { id: number } }[]),
+    // 3) DB에서 전체 코트 목록 조회 (active 상태만)
+    prisma.court_infos.findMany({
+      where: { status: "active" },
+      orderBy: [
+        { average_rating: "desc" },
+        { reviews_count: "desc" },
+        { created_at: "desc" },
+      ],
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        city: true,
+        district: true,
+        latitude: true,
+        longitude: true,
+        court_type: true,
+        surface_type: true,
+        hoops_count: true,
+        is_free: true,
+        has_lighting: true,
+        fee: true,
+        average_rating: true,
+        reviews_count: true,
+        description: true,
+        nickname: true,
+        nearest_station: true,
+        court_size: true,
+        lighting_until: true,
+        has_restroom: true,
+        has_parking: true,
+        verified: true,
+        data_source: true,
+      },
+    }).catch((err) => {
+      console.error("Courts query failed:", err);
+      return [] as Awaited<ReturnType<typeof prisma.court_infos.findMany>>;
+    }),
+  ]);
 
   // court_id -> 활성 세션 수 맵
   const activeMap = new Map(
     activeSessions.map((s) => [s.court_id.toString(), s._count.id])
   );
 
-  // 코트별 모집 중인 픽업게임 수 조회 (오늘 이후, recruiting/full)
-  const kstOffset = 9 * 60 * 60 * 1000;
-  const kstDate = new Date(Date.now() + kstOffset);
-  const todayStr = kstDate.toISOString().split("T")[0];
-  const todayDate = new Date(todayStr + "T00:00:00.000Z");
-
-  const pickupCounts = await prisma.pickup_games.groupBy({
-    by: ["court_info_id"],
-    where: {
-      scheduled_date: { gte: todayDate },
-      status: { in: ["recruiting", "full"] },
-    },
-    _count: { id: true },
-  }).catch(() => []);
-
   // court_info_id -> 모집 중인 픽업게임 수 맵
   const pickupMap = new Map(
     pickupCounts.map((p) => [p.court_info_id.toString(), p._count.id])
   );
-
-  // DB에서 전체 코트 목록 조회 (active 상태만)
-  const rawCourts = await prisma.court_infos.findMany({
-    where: { status: "active" },
-    orderBy: [
-      { average_rating: "desc" },
-      { reviews_count: "desc" },
-      { created_at: "desc" },
-    ],
-    select: {
-      id: true,
-      name: true,
-      address: true,
-      city: true,
-      district: true,
-      latitude: true,
-      longitude: true,
-      court_type: true,
-      surface_type: true,
-      hoops_count: true,
-      is_free: true,
-      has_lighting: true,
-      fee: true,
-      average_rating: true,
-      reviews_count: true,
-      description: true,
-      // 야외 코트 확장 필드
-      nickname: true,
-      nearest_station: true,
-      court_size: true,
-      lighting_until: true,
-      has_restroom: true,
-      has_parking: true,
-      verified: true,
-      data_source: true,
-    },
-  }).catch((err) => {
-    // 코트 목록 조회 실패 시 에러 로깅 (빈 배열로 폴백)
-    console.error("Courts query failed:", err);
-    return [];
-  });
 
   // 디버깅: 조회된 코트 수 로깅
   console.log(`[Courts] Fetched ${rawCourts.length} courts`);
