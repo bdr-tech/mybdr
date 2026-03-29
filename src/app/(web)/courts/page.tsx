@@ -33,6 +33,26 @@ export default async function CourtsPage() {
     activeSessions.map((s) => [s.court_id.toString(), s._count.id])
   );
 
+  // 코트별 모집 중인 픽업게임 수 조회 (오늘 이후, recruiting/full)
+  const kstOffset = 9 * 60 * 60 * 1000;
+  const kstDate = new Date(Date.now() + kstOffset);
+  const todayStr = kstDate.toISOString().split("T")[0];
+  const todayDate = new Date(todayStr + "T00:00:00.000Z");
+
+  const pickupCounts = await prisma.pickup_games.groupBy({
+    by: ["court_info_id"],
+    where: {
+      scheduled_date: { gte: todayDate },
+      status: { in: ["recruiting", "full"] },
+    },
+    _count: { id: true },
+  }).catch(() => []);
+
+  // court_info_id -> 모집 중인 픽업게임 수 맵
+  const pickupMap = new Map(
+    pickupCounts.map((p) => [p.court_info_id.toString(), p._count.id])
+  );
+
   // DB에서 전체 코트 목록 조회 (active 상태만)
   const rawCourts = await prisma.court_infos.findMany({
     where: { status: "active" },
@@ -106,6 +126,8 @@ export default async function CourtsPage() {
     data_source: c.data_source,
     // 혼잡도: 현재 활성 세션 수
     activeCount: activeMap.get(c.id.toString()) ?? 0,
+    // 모집 중인 픽업게임 수
+    pickupCount: pickupMap.get(c.id.toString()) ?? 0,
   }));
 
   // 지역 목록 추출 (중복 제거 + 정렬)

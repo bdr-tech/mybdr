@@ -125,6 +125,9 @@ model User {
   streak_count                                                              Int                          @default(0)
   streak_last_date                                                          DateTime?                    @db.Date
   user_badges                                                               user_badges[]
+  // Phase 5: 픽업게임 — 방장 / 참가자 2가지 관계
+  pickup_games_hosted                                                       pickup_games[]               @relation("pickup_host")
+  pickup_participations                                                     pickup_participants[]        @relation("pickup_participant")
 
   @@unique([provider, uid], map: "index_users_on_provider_and_uid")
   @@index([createdAt], map: "index_users_on_created_at")
@@ -899,6 +902,7 @@ model court_infos {
   court_reviews            court_reviews[]
   court_reports            court_reports[]
   court_edit_suggestions   court_edit_suggestions[]
+  pickup_games             pickup_games[]
 
   @@index([average_rating], map: "index_court_infos_on_average_rating")
   @@index([city], map: "index_court_infos_on_city")
@@ -1734,4 +1738,48 @@ model site_registrations {
   @@unique([tournamentId, captainEmail, teamName], map: "idx_site_registrations_unique")
   @@index([tournamentId, status])
   @@map("site_registrations")
+}
+
+// ─────────────────────────────────────────
+// Phase 5: 픽업게임 모집 시스템
+// 기존 games(팀매치/대회경기)와 분리 — 코트에서 즉석 참가하는 가벼운 경기
+// ─────────────────────────────────────────
+model pickup_games {
+  id              BigInt    @id @default(autoincrement())
+  court_info_id   BigInt                                      // 코트 FK
+  host_id         BigInt                                      // 방장 (생성자)
+  title           String    @db.VarChar(100)                  // 게임 제목
+  description     String?                                     // 추가 설명
+  scheduled_date  DateTime  @db.Date                          // 경기 날짜
+  start_time      String    @db.VarChar(5)                    // 시작 시간 (HH:mm)
+  end_time        String?   @db.VarChar(5)                    // 종료 시간 (HH:mm, 선택)
+  max_players     Int                                         // 최대 인원
+  skill_level     String?   @db.VarChar(20)                   // beginner | intermediate | advanced | any
+  status          String    @default("recruiting") @db.VarChar(20) // recruiting | full | in_progress | completed | cancelled
+  created_at      DateTime  @default(now()) @db.Timestamp(6)
+  updated_at      DateTime  @updatedAt @db.Timestamp(6)
+
+  // 관계
+  court_infos     court_infos          @relation(fields: [court_info_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  host            User                 @relation("pickup_host", fields: [host_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  participants    pickup_participants[]
+
+  @@index([court_info_id, status], map: "idx_pickup_games_court_status")
+  @@index([host_id], map: "idx_pickup_games_host")
+  @@index([scheduled_date, status], map: "idx_pickup_games_date_status")
+  @@index([status], map: "idx_pickup_games_status")
+}
+
+model pickup_participants {
+  id             BigInt   @id @default(autoincrement())
+  pickup_game_id BigInt                                       // 픽업게임 FK
+  user_id        BigInt                                       // 참가자
+  joined_at      DateTime @default(now()) @db.Timestamp(6)    // 참가 시각
+
+  // 관계
+  pickup_game    pickup_games @relation(fields: [pickup_game_id], references: [id], onDelete: Cascade)
+  user           User         @relation("pickup_participant", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([pickup_game_id, user_id], map: "idx_pickup_participants_unique") // 중복 참가 방지
+  @@index([user_id], map: "idx_pickup_participants_user")
 }

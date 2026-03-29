@@ -70,6 +70,8 @@ interface CourtItem {
   data_source: string | null;
   // 혼잡도: 현재 활성 체크인 세션 수
   activeCount: number;
+  // 모집 중인 픽업게임 수 (Phase 5)
+  pickupCount: number;
 }
 
 interface CourtsContentProps {
@@ -90,6 +92,7 @@ const OUTDOOR_PILLS = [
   { key: "lighting", label: "조명", icon: "lightbulb" },
   { key: "fullcourt", label: "풀코트", icon: "square_foot" },
   { key: "active", label: "사람있는곳", icon: "local_fire_department" },
+  { key: "pickup", label: "픽업게임", icon: "sports_basketball" },
 ] as const;
 
 // 바닥재질 한글 매핑
@@ -186,6 +189,10 @@ export function CourtsContent({ courts, cities }: CourtsContentProps) {
     // "사람있는곳" 필터: 체크인 1명 이상인 코트만
     if (activePills.has("active")) {
       result = result.filter((c) => c.activeCount > 0);
+    }
+    // "픽업게임" 필터: 모집 중인 픽업게임이 있는 코트만
+    if (activePills.has("pickup")) {
+      result = result.filter((c) => c.pickupCount > 0);
     }
 
     // 정렬: 위치 있으면 거리순 우선, 없으면 기존 로직 (야외+검증+평점)

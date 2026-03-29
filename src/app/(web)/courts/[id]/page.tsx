@@ -8,6 +8,7 @@ import { CourtReviews } from "./_components/court-reviews";
 import { CourtReports } from "./_components/court-reports";
 import { CourtRankings } from "./_components/court-rankings";
 import { CourtEditSuggest } from "./_components/court-edit-suggest";
+import { CourtPickups } from "./_components/court-pickups";
 
 export const revalidate = 300;
 
@@ -339,6 +340,9 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
 
       {/* 체크인 + 혼잡도 (클라이언트 컴포넌트, 30초 갱신) */}
       <CourtCheckin courtId={court.id.toString()} courtLat={lat} courtLng={lng} />
+
+      {/* 픽업게임 모집 섹션 (클라이언트 컴포넌트 — SWR) */}
+      <CourtPickups courtId={court.id.toString()} currentUserId={currentUserId} />
 
       {/* 이용 현황 카드 */}
       <div
