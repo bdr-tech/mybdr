@@ -81,7 +81,7 @@ export default async function PricingPage() {
                 className="relative rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] p-6 transition-all hover:border-[var(--color-accent)]/50"
               >
                 {isSubscribed && (
-                  <span className="absolute right-4 top-4 rounded-[10px] bg-[rgba(74,222,128,0.15)] px-3 py-0.5 text-xs font-medium text-[#4ADE80]">
+                  <span className="absolute right-4 top-4 rounded-[10px] bg-[rgba(74,222,128,0.15)] px-3 py-0.5 text-xs font-medium text-[var(--color-game-team)]">
                     구독 중
                   </span>
                 )}
@@ -105,7 +105,7 @@ export default async function PricingPage() {
                 </div>
 
                 {isSubscribed ? (
-                  <div className="rounded-[12px] bg-[rgba(74,222,128,0.08)] py-3 text-center text-sm text-[#4ADE80]">
+                  <div className="rounded-[12px] bg-[rgba(74,222,128,0.08)] py-3 text-center text-sm text-[var(--color-game-team)]">
                     이미 구독 중입니다
                   </div>
                 ) : session ? (

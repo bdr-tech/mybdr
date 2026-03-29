@@ -130,6 +130,10 @@ export interface CreateTournamentInput {
   gender?: string;
   rules?: string;
   prizeInfo?: string;
+  // 디자인 템플릿 + 이미지 URL
+  designTemplate?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
 }
 
 export interface UpdateTournamentData {
@@ -374,6 +378,10 @@ export async function createTournament(input: CreateTournamentInput) {
       roster_min: input.rosterMin ?? 5,
       roster_max: input.rosterMax ?? 12,
       auto_approve_teams: input.autoApproveTeams ?? false,
+      // 디자인 템플릿 + 이미지 URL
+      design_template: input.designTemplate ?? null,
+      logo_url: input.logoUrl ?? null,
+      banner_url: input.bannerUrl ?? null,
     },
   });
 

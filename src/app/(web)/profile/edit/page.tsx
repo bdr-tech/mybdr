@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-// lucide-react 제거 → Material Symbols Outlined 사용
 import { BANKS } from "@/lib/constants/banks";
 import { RegionPicker, type Region } from "@/components/shared/region-picker";
 
@@ -313,7 +312,7 @@ export default function ProfileEditPage() {
                 type="button"
                 onClick={handleGenerateBio}
                 disabled={generatingBio}
-                className="flex items-center gap-1 rounded-[10px] border border-[#7C3AED]/30 px-2.5 py-1.5 text-xs font-medium text-[#7C3AED] transition-colors hover:bg-[#7C3AED]/10 disabled:opacity-50"
+                className="flex items-center gap-1 rounded-[10px] border border-[var(--color-ai-purple)]/30 px-2.5 py-1.5 text-xs font-medium text-[var(--color-ai-purple)] transition-colors hover:bg-[var(--color-ai-purple)]/10 disabled:opacity-50"
               >
                 <span className={`material-symbols-outlined text-xs ${generatingBio ? "animate-spin" : ""}`}>auto_awesome</span>
                 {generatingBio ? "생성 중..." : "AI 자동 작성"}

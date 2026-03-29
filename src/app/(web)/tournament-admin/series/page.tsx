@@ -3,6 +3,7 @@ import { getWebSession } from "@/lib/auth/web-session";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { TOURNAMENT_STATUS_LABEL } from "@/lib/constants/tournament-status";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -22,15 +23,6 @@ export default async function SeriesListPage() {
       },
     },
   }).catch(() => []);
-
-  const STATUS_LABEL: Record<string, string> = {
-    registration_open: "모집중",
-    registration_closed: "접수마감",
-    ongoing: "진행중",
-    completed: "완료",
-    draft: "준비중",
-    cancelled: "취소",
-  };
 
   return (
     <div>
@@ -61,7 +53,7 @@ export default async function SeriesListPage() {
                   <div className="flex flex-col items-end gap-1">
                     {latest && (
                       <Badge>
-                        {STATUS_LABEL[latest.status ?? "draft"] ?? latest.status}
+                        {TOURNAMENT_STATUS_LABEL[latest.status ?? "draft"] ?? latest.status}
                       </Badge>
                     )}
                     <span className="text-xs text-[var(--color-text-muted)]">

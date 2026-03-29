@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-// lucide-react 제거 → Material Symbols Outlined 사용
 
 export function ThemeToggle() {
   const [dark, setDark] = useState(false);
@@ -28,6 +27,7 @@ export function ThemeToggle() {
     <button
       onClick={toggle}
       className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-[rgba(27,60,135,0.08)]"
+      aria-label={dark ? "라이트 모드로 전환" : "다크 모드로 전환"}
       title={dark ? "라이트 모드" : "다크 모드"}
       style={{ color: dark ? "var(--color-warning)" : "var(--color-text-muted)" }}
     >
