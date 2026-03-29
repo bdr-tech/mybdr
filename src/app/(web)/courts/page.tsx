@@ -22,7 +22,11 @@ export default async function CourtsPage() {
       checked_in_at: { gte: cutoff },
     },
     _count: { id: true },
-  }).catch(() => []);
+  }).catch((err) => {
+    // 활성 세션 조회 실패 시 에러 로깅 (빈 배열로 폴백)
+    console.error("Courts active sessions query failed:", err);
+    return [];
+  });
 
   // court_id -> 활성 세션 수 맵
   const activeMap = new Map(
@@ -64,7 +68,14 @@ export default async function CourtsPage() {
       verified: true,
       data_source: true,
     },
-  }).catch(() => []);
+  }).catch((err) => {
+    // 코트 목록 조회 실패 시 에러 로깅 (빈 배열로 폴백)
+    console.error("Courts query failed:", err);
+    return [];
+  });
+
+  // 디버깅: 조회된 코트 수 로깅
+  console.log(`[Courts] Fetched ${rawCourts.length} courts`);
 
   // BigInt/Decimal을 JSON 직렬화 가능하게 변환
   const courts = rawCourts.map((c) => ({

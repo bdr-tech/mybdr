@@ -217,7 +217,7 @@ export function AdminCourtsContent({
                     {STATUS_LABEL[selected.status] ?? selected.status}
                   </Badge>
                 )],
-                ["무료 여부", selected.isFree ? "무료" : "유료"],
+                ["무료 여부", selected.isFree === null ? "미확인" : selected.isFree ? "무료" : "유료"],
                 ["리뷰수", `${selected.reviewsCount}건`],
               ]}
             />
