@@ -348,7 +348,7 @@ model TournamentTeam {
 model TournamentTeamPlayer {
   id               BigInt            @id @default(autoincrement())
   tournamentTeamId BigInt            @map("tournament_team_id")
-  userId           BigInt            @map("user_id")
+  userId           BigInt?           @map("user_id")
   jerseyNumber     Int?              @map("jersey_number")
   role             String?           @default("player") @db.VarChar
   position         String?           @db.VarChar
@@ -371,7 +371,7 @@ model TournamentTeamPlayer {
   updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamp(6)
   playerStats      MatchPlayerStat[]
   play_by_plays    play_by_plays[]
-  users            User              @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_4174bc8af3")
+  users            User?             @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_4174bc8af3")
   tournamentTeam   TournamentTeam    @relation(fields: [tournamentTeamId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_4ec2691050")
 
   @@unique([tournamentTeamId, jerseyNumber], map: "idx_tournament_team_players_jersey")

@@ -108,7 +108,7 @@ async function getPlayerRankings() {
       total_assists: true,
       games_played: true,
     },
-    where: { games_played: { gt: 0 } },
+    where: { games_played: { gt: 0 }, userId: { not: null } },
     orderBy: { _sum: { total_points: "desc" } },
     take: 50,
   });
@@ -119,7 +119,8 @@ async function getPlayerRankings() {
   }
 
   // 2+3단계 병렬 실행: 유저 이름 조회와 최근 팀명 조회는 서로 독립적이므로 동시에 실행
-  const userIds = grouped.map((g) => g.userId);
+  // userId: not null 조건으로 조회했으므로 null은 없지만 타입 안전하게 필터링
+  const userIds = grouped.map((g) => g.userId).filter((id): id is bigint => id !== null);
   const [users, latestPlayers] = await Promise.all([
     // 2단계: 유저 ID 목록으로 이름 조회
     prisma.user.findMany({
@@ -150,14 +151,14 @@ async function getPlayerRankings() {
   // userId -> 팀명 맵
   const teamMap = new Map(
     latestPlayers.map((p) => [
-      p.userId.toString(),
-      p.tournamentTeam?.team?.name ?? "-",
+      p.userId!.toString(),
+      (p as unknown as { tournamentTeam?: { team?: { name?: string } } }).tournamentTeam?.team?.name ?? "-",
     ])
   );
 
   // 4단계: 최종 응답 조합 (순위 + 유저명 + 팀명 + 합산 스탯)
   const rankings = grouped.map((g, idx) => {
-    const uid = g.userId.toString();
+    const uid = g.userId!.toString();
     const gamesPlayed = g._sum.games_played ?? 0;
     const totalPoints = g._sum.total_points ?? 0;
     // 평균 득점: 소수점 1자리

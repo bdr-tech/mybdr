@@ -119,7 +119,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
           select: { userId: true },
         })
         .then((players) => {
-          const uniqueUserIds = [...new Set(players.map((p) => p.userId))];
+          const uniqueUserIds = [...new Set(players.map((p) => p.userId).filter((id): id is bigint => id !== null))];
           if (uniqueUserIds.length === 0) return;
 
           return createNotificationBulk(

@@ -62,7 +62,7 @@ export async function PATCH(
           })
           .then((players) => {
             // 중복 제거 (한 명이 양쪽 팀에 속할 수 없지만 안전하게)
-            const uniqueUserIds = [...new Set(players.map((p) => p.userId))];
+            const uniqueUserIds = [...new Set(players.map((p) => p.userId).filter((id): id is bigint => id !== null))];
             if (uniqueUserIds.length === 0) return;
 
             return createNotificationBulk(
