@@ -55,41 +55,41 @@ export default function NewSeriesPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* 시리즈 이름 */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#111827]">
-              시리즈 이름 <span className="text-[#EF4444]">*</span>
+            <label className="mb-1.5 block text-sm font-medium text-[var(--color-text-primary)]">
+              시리즈 이름 <span className="text-[var(--color-error)]">*</span>
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="예: BDR 서울 올스타전"
-              className="w-full rounded-[12px] border border-[#E8ECF0] bg-[#F5F7FA] px-4 py-3 text-sm outline-none focus:border-[#1B3C87] focus:ring-1 focus:ring-[#1B3C87]"
+              className="w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]"
               required
               autoFocus
             />
             {name && (
-              <p className="mt-1.5 text-xs text-[#9CA3AF]">
-                URL 경로: /series/<span className="font-mono text-[#6B7280]">{slugPreview}-xxxxx</span>
+              <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">
+                URL 경로: /series/<span className="font-mono text-[var(--color-text-muted)]">{slugPreview}-xxxxx</span>
               </p>
             )}
           </div>
 
           {/* 한 줄 설명 (선택) */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#111827]">
-              한 줄 설명 <span className="text-[#9CA3AF] font-normal">(선택)</span>
+            <label className="mb-1.5 block text-sm font-medium text-[var(--color-text-primary)]">
+              한 줄 설명 <span className="text-[var(--color-text-muted)] font-normal">(선택)</span>
             </label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="예: 매분기 진행되는 BDR 정기 대회"
-              className="w-full rounded-[12px] border border-[#E8ECF0] bg-[#F5F7FA] px-4 py-3 text-sm outline-none focus:border-[#1B3C87] focus:ring-1 focus:ring-[#1B3C87]"
+              className="w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]"
             />
           </div>
 
           {error && (
-            <p className="rounded-[12px] bg-[rgba(239,68,68,0.1)] px-4 py-3 text-sm text-[#EF4444]">
+            <p className="rounded-[12px] bg-[rgba(239,68,68,0.1)] px-4 py-3 text-sm text-[var(--color-error)]">
               {error}
             </p>
           )}
@@ -104,7 +104,7 @@ export default function NewSeriesPage() {
         </form>
       </Card>
 
-      <p className="mt-4 text-center text-xs text-[#9CA3AF]">
+      <p className="mt-4 text-center text-xs text-[var(--color-text-muted)]">
         시리즈 생성 후 회차(1회, 2회...)를 추가할 수 있습니다.
       </p>
     </div>

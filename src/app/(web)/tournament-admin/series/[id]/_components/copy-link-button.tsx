@@ -1,23 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useToast } from "@/contexts/toast-context";
 
 export function CopyLinkButton({ slug }: { slug: string }) {
-  const [copied, setCopied] = useState(false);
+  const { showToast } = useToast();
 
   async function handleCopy() {
     const url = `${window.location.origin}/series/${slug}`;
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast("링크가 복사되었습니다", "success");
+    } catch {
+      showToast("링크 복사에 실패했습니다", "error");
+    }
   }
 
   return (
     <button
       onClick={handleCopy}
-      className="flex-shrink-0 rounded-full border border-[#E8ECF0] px-3 py-1.5 text-xs text-[#6B7280] hover:border-[#1B3C87] hover:text-[#1B3C87] transition-colors"
+      className="flex-shrink-0 rounded-full border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-muted)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
     >
-      {copied ? "✓ 복사됨" : "🔗 공개 링크"}
+      링크 복사
     </button>
   );
 }

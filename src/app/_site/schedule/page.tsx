@@ -51,7 +51,7 @@ export default async function SiteSchedulePage() {
     <div>
       <h2 className="mb-6 text-xl font-bold sm:text-2xl">경기 일정</h2>
       {dates.length === 0 ? (
-        <Card className="py-12 text-center text-[#6B7280]">
+        <Card className="py-12 text-center text-[var(--color-text-muted)]">
           <div className="mb-2 text-3xl">📅</div>
           등록된 경기 일정이 없습니다.
         </Card>
@@ -59,13 +59,13 @@ export default async function SiteSchedulePage() {
         <div className="space-y-6">
           {dates.map((date) => (
             <div key={date}>
-              <h3 className="mb-3 text-sm font-semibold text-[#6B7280]">{date}</h3>
+              <h3 className="mb-3 text-sm font-semibold text-[var(--color-text-muted)]">{date}</h3>
               <div className="space-y-2">
                 {grouped[date].map((m) => (
                   <Card key={m.id.toString()}>
                     <div className="flex flex-wrap items-center gap-3">
                       {/* 라운드 */}
-                      <span className="w-20 shrink-0 text-xs text-[#9CA3AF]">
+                      <span className="w-20 shrink-0 text-xs text-[var(--color-text-muted)]">
                         {m.roundName ?? `라운드 ${m.round_number ?? "-"}`}
                       </span>
 
@@ -80,7 +80,7 @@ export default async function SiteSchedulePage() {
                         <span
                           className={`font-semibold ${
                             m.winner_team_id && m.winner_team_id === m.homeTeamId
-                              ? "text-[#E31B23]"
+                              ? "text-[var(--color-primary)]"
                               : ""
                           }`}
                         >
@@ -91,11 +91,11 @@ export default async function SiteSchedulePage() {
                       {/* 스코어 */}
                       <div className="flex items-center gap-1 text-center">
                         {m.status === "completed" || m.status === "in_progress" ? (
-                          <span className="min-w-[4rem] rounded-[8px] bg-[#EEF2FF] px-3 py-1 font-mono font-bold">
+                          <span className="min-w-[4rem] rounded-[8px] bg-[var(--color-elevated)] px-3 py-1 font-mono font-bold">
                             {m.homeScore} : {m.awayScore}
                           </span>
                         ) : (
-                          <span className="min-w-[4rem] text-center text-sm text-[#9CA3AF]">
+                          <span className="min-w-[4rem] text-center text-sm text-[var(--color-text-muted)]">
                             {m.scheduledAt
                               ? m.scheduledAt.toLocaleTimeString("ko-KR", {
                                   hour: "2-digit",
@@ -111,7 +111,7 @@ export default async function SiteSchedulePage() {
                         <span
                           className={`font-semibold ${
                             m.winner_team_id && m.winner_team_id === m.awayTeamId
-                              ? "text-[#E31B23]"
+                              ? "text-[var(--color-primary)]"
                               : ""
                           }`}
                         >
@@ -141,7 +141,7 @@ export default async function SiteSchedulePage() {
                     </div>
 
                     {m.venue_name && (
-                      <p className="mt-1 pl-24 text-xs text-[#9CA3AF]">📍 {m.venue_name}</p>
+                      <p className="mt-1 pl-24 text-xs text-[var(--color-text-muted)]">📍 {m.venue_name}</p>
                     )}
                   </Card>
                 ))}

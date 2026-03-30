@@ -45,7 +45,7 @@ export default function AddEditionPage() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <Link href={`/tournament-admin/series/${id}`} className="mb-4 inline-block text-xs text-[#9CA3AF] hover:text-[#6B7280]">
+      <Link href={`/tournament-admin/series/${id}`} className="mb-4 inline-block text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-muted)]">
         ← 시리즈로 돌아가기
       </Link>
       <h1 className="mb-6 text-xl font-bold sm:text-2xl">새 회차 추가</h1>
@@ -54,14 +54,14 @@ export default function AddEditionPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* 날짜 */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#111827]">
-              대회 날짜 <span className="text-[#EF4444]">*</span>
+            <label className="mb-1.5 block text-sm font-medium text-[var(--color-text-primary)]">
+              대회 날짜 <span className="text-[var(--color-error)]">*</span>
             </label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full rounded-[12px] border border-[#E8ECF0] bg-[#F5F7FA] px-4 py-4 text-sm outline-none focus:border-[#1B3C87] focus:ring-1 focus:ring-[#1B3C87]"
+              className="w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4 text-sm outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]"
               required
               autoFocus
             />
@@ -69,21 +69,21 @@ export default function AddEditionPage() {
 
           {/* 장소 */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#111827]">
-              장소 <span className="text-[#9CA3AF] font-normal">(선택)</span>
+            <label className="mb-1.5 block text-sm font-medium text-[var(--color-text-primary)]">
+              장소 <span className="text-[var(--color-text-muted)] font-normal">(선택)</span>
             </label>
             <input
               type="text"
               value={venueName}
               onChange={(e) => setVenueName(e.target.value)}
               placeholder="예: 강남구민체육센터"
-              className="w-full rounded-[12px] border border-[#E8ECF0] bg-[#F5F7FA] px-4 py-4 text-sm outline-none focus:border-[#1B3C87] focus:ring-1 focus:ring-[#1B3C87]"
+              className="w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4 text-sm outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]"
             />
           </div>
 
           {/* 최대 팀 수 */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#111827]">
+            <label className="mb-1.5 block text-sm font-medium text-[var(--color-text-primary)]">
               최대 참가 팀 수
             </label>
             <input
@@ -93,13 +93,13 @@ export default function AddEditionPage() {
               onChange={(e) => setMaxTeams(Math.max(2, Number(e.target.value)))}
               min={2}
               max={64}
-              className="w-full rounded-[12px] border border-[#E8ECF0] bg-[#F5F7FA] px-4 py-4 text-sm outline-none focus:border-[#1B3C87] focus:ring-1 focus:ring-[#1B3C87]"
+              className="w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4 text-sm outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]"
             />
-            <p className="mt-1.5 text-xs text-[#9CA3AF]">기본값 8팀, 최대 64팀</p>
+            <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">기본값 8팀, 최대 64팀</p>
           </div>
 
           {error && (
-            <p className="rounded-[12px] bg-[rgba(239,68,68,0.1)] px-4 py-3 text-sm text-[#EF4444]">
+            <p className="rounded-[12px] bg-[rgba(239,68,68,0.1)] px-4 py-3 text-sm text-[var(--color-error)]">
               {error}
             </p>
           )}

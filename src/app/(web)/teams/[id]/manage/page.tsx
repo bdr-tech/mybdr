@@ -76,18 +76,18 @@ export default function TeamManagePage({ params }: { params: { id: string } }) {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold sm:text-2xl">멤버 관리</h1>
-          <p className="mt-0.5 text-sm text-[#6B7280]">가입 신청 처리</p>
+          <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">가입 신청 처리</p>
         </div>
         <Link
           href={`/teams/${id}`}
-          className="rounded-full border border-[#E8ECF0] px-4 py-2 text-sm text-[#6B7280] transition-colors hover:bg-[#EEF2FF]"
+          className="rounded-full border border-[var(--color-border)] px-4 py-2 text-sm text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-bright)]"
         >
           팀 상세로
         </Link>
       </div>
 
       {loading && (
-        <div className="py-12 text-center text-sm text-[#9CA3AF]">불러오는 중...</div>
+        <div className="py-12 text-center text-sm text-[var(--color-text-secondary)]">불러오는 중...</div>
       )}
 
       {!loading && error && (
@@ -95,9 +95,9 @@ export default function TeamManagePage({ params }: { params: { id: string } }) {
       )}
 
       {!loading && !error && requests.length === 0 && (
-        <div className="rounded-[16px] bg-white py-16 text-center">
+        <div className="rounded-[16px] bg-[var(--color-card)] py-16 text-center">
           <div className="mb-2 text-4xl">🏀</div>
-          <p className="text-sm text-[#9CA3AF]">대기 중인 가입 신청이 없습니다.</p>
+          <p className="text-sm text-[var(--color-text-secondary)]">대기 중인 가입 신청이 없습니다.</p>
         </div>
       )}
 
@@ -111,30 +111,30 @@ export default function TeamManagePage({ params }: { params: { id: string } }) {
             return (
               <div
                 key={req.id}
-                className="rounded-[16px] bg-white p-5"
+                className="rounded-[16px] bg-[var(--color-card)] p-5"
               >
                 <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[#EEF2FF] text-lg font-bold text-[#1B3C87]">
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-bright)] text-lg font-bold text-[var(--color-accent)]">
                     {displayName.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-[#111827]">{displayName}</p>
+                      <p className="font-semibold text-[var(--color-text-primary)]">{displayName}</p>
                       {req.user?.position && (
-                        <span className="rounded-full bg-[#EEF2FF] px-2 py-0.5 text-xs text-[#1B3C87]">
+                        <span className="rounded-full bg-[var(--color-surface-bright)] px-2 py-0.5 text-xs text-[var(--color-accent)]">
                           {req.user.position}
                         </span>
                       )}
                     </div>
                     {location && (
-                      <p className="mt-0.5 text-xs text-[#9CA3AF]">📍 {location}</p>
+                      <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">📍 {location}</p>
                     )}
                     {req.message && (
-                      <p className="mt-2 rounded-[8px] bg-[#F5F7FA] px-3 py-2 text-sm text-[#6B7280]">
+                      <p className="mt-2 rounded-[8px] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-muted)]">
                         {req.message}
                       </p>
                     )}
-                    <p className="mt-1 text-xs text-[#9CA3AF]">
+                    <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
                       신청일: {new Date(req.created_at).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })}
                     </p>
                   </div>

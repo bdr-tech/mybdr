@@ -105,6 +105,63 @@ export async function endPromotionAction(formData: FormData): Promise<{ error?: 
   return {};
 }
 
+export async function forceWithdrawUserAction(formData: FormData): Promise<void> {
+  await requireSuperAdmin();
+
+  const userId = formData.get("user_id") as string;
+  if (!userId) return;
+
+  const user = await prisma.user.findUnique({ where: { id: BigInt(userId) }, select: { email: true, isAdmin: true } });
+  if (!user) return;
+  if (user.isAdmin) {
+    redirect(`/admin/users?error=${encodeURIComponent("슈퍼관리자는 강제탈퇴할 수 없습니다.")}`);
+  }
+
+  await prisma.user.update({
+    where: { id: BigInt(userId) },
+    data: {
+      status: "withdrawn",
+      email: `withdrawn_${userId}_${Date.now()}@deleted.local`,
+      nickname: `탈퇴유저_${userId}`,
+      phone: null,
+      provider: null,
+      uid: null,
+      profile_image_url: null,
+    },
+  });
+
+  await adminLog("user.force_withdraw", "User", {
+    resourceId: userId,
+    description: `${user.email} 강제탈퇴 처리`,
+    severity: "critical",
+  });
+
+  revalidatePath("/admin/users");
+}
+
+export async function deleteUserAction(formData: FormData): Promise<void> {
+  await requireSuperAdmin();
+
+  const userId = formData.get("user_id") as string;
+  if (!userId) return;
+
+  const user = await prisma.user.findUnique({ where: { id: BigInt(userId) }, select: { email: true, isAdmin: true } });
+  if (!user) return;
+  if (user.isAdmin) {
+    redirect(`/admin/users?error=${encodeURIComponent("슈퍼관리자는 삭제할 수 없습니다.")}`);
+  }
+
+  await prisma.user.delete({ where: { id: BigInt(userId) } });
+
+  await adminLog("user.delete", "User", {
+    resourceId: userId,
+    description: `${user.email} 완전 삭제`,
+    severity: "critical",
+  });
+
+  revalidatePath("/admin/users");
+}
+
 export async function updateUserStatusAction(formData: FormData): Promise<void> {
   await requireSuperAdmin();
 

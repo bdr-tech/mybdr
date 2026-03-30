@@ -1,137 +1,41 @@
-import { prisma } from "@/lib/db/prisma";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import { CommunityContent } from "./_components/community-content";
+import CommunityLoading from "./loading";
+import { prefetchCommunity } from "@/lib/services/home";
 
-export const dynamic = "force-dynamic";
-
-const categoryMap: Record<string, { label: string; variant: "default" | "success" | "info" | "warning" }> = {
-  general: { label: "자유", variant: "default" },
-  info: { label: "정보", variant: "info" },
-  review: { label: "후기", variant: "success" },
-  marketplace: { label: "장터", variant: "warning" },
+// SEO: 커뮤니티 페이지 메타데이터
+export const metadata: Metadata = {
+  title: "커뮤니티 | MyBDR",
+  description: "농구 이야기를 나누고, 팀원을 모집하고, 정보를 공유하세요.",
 };
 
-export default async function CommunityPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ category?: string; q?: string }>;
-}) {
-  const { category, q } = await searchParams;
+// 60초 캐시: 홈 페이지와 동일한 revalidate 설정
+export const revalidate = 60;
 
-  const where = {
-    ...(category ? { category } : {}),
-    ...(q
-      ? {
-          OR: [
-            { title: { contains: q, mode: "insensitive" as const } },
-            { body: { contains: q, mode: "insensitive" as const } },
-          ],
-        }
-      : {}),
-  };
-
-  const posts = await prisma.community_posts.findMany({
-    where,
-    orderBy: { created_at: "desc" },
-    take: 30,
-    include: { users: { select: { nickname: true } } },
-  }).catch(() => []);
+/**
+ * /community 페이지 — 서버 프리페치 패턴
+ *
+ * 기존: 빈 HTML 전송 후 클라이언트에서 fetch (폭포수 패턴, 체감 느림)
+ * 개선: 서버에서 DB 직접 조회 -> fallbackPosts로 전달 -> 즉시 렌더링
+ *       카테고리 변경/검색 시에는 기존대로 클라이언트 API fetch
+ *
+ * 패턴 참고: src/app/(web)/page.tsx의 prefetchCommunity -> NotableTeams 전달 방식
+ */
+export default async function CommunityPage() {
+  // 서버에서 기본 게시글 목록 프리페치 (카테고리=전체, 검색=없음)
+  // 실패해도 undefined → 클라이언트가 기존대로 API fetch
+  let fallbackData: Awaited<ReturnType<typeof prefetchCommunity>> | undefined;
+  try {
+    fallbackData = await prefetchCommunity();
+  } catch {
+    fallbackData = undefined;
+  }
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold sm:text-2xl">커뮤니티</h1>
-        <Link href="/community/new" className="rounded-full bg-[#1B3C87] px-4 py-2 text-sm font-semibold text-white">글쓰기</Link>
-      </div>
-
-      {/* 검색 */}
-      <form method="GET" className="mb-4">
-        {category && <input type="hidden" name="category" value={category} />}
-        <div className="flex gap-2">
-          <input
-            name="q"
-            defaultValue={q ?? ""}
-            placeholder="제목 또는 내용 검색"
-            className="flex-1 rounded-full border border-[#E8ECF0] bg-[#FFFFFF] px-4 py-2 text-sm text-[#111827] placeholder-[#9CA3AF] outline-none focus:border-[#1B3C87]"
-          />
-          <button
-            type="submit"
-            className="rounded-full bg-[#1B3C87] px-4 py-2 text-sm font-semibold text-white"
-          >
-            검색
-          </button>
-          {q && (
-            <Link
-              href={category ? `/community?category=${category}` : "/community"}
-              className="rounded-full border border-[#E8ECF0] px-4 py-2 text-sm text-[#6B7280] hover:bg-[#EEF2FF]"
-            >
-              초기화
-            </Link>
-          )}
-        </div>
-      </form>
-
-      {/* 카테고리 필터 */}
-      <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-        <Link
-          href={q ? `/community?q=${encodeURIComponent(q)}` : "/community"}
-          className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${
-            !category ? "bg-[rgba(27,60,135,0.12)] text-[#1B3C87]" : "border border-[#E8ECF0] text-[#6B7280] hover:text-[#111827]"
-          }`}
-        >
-          전체
-        </Link>
-        {Object.entries(categoryMap).map(([key, val]) => {
-          const href = q
-            ? `/community?category=${key}&q=${encodeURIComponent(q)}`
-            : `/community?category=${key}`;
-          return (
-            <Link
-              key={key}
-              href={href}
-              className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm ${
-                category === key
-                  ? "bg-[rgba(27,60,135,0.12)] font-medium text-[#1B3C87]"
-                  : "border border-[#E8ECF0] text-[#6B7280] hover:text-[#111827]"
-              }`}
-            >
-              {val.label}
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* 검색 결과 안내 */}
-      {q && (
-        <p className="mb-3 text-sm text-[#6B7280]">
-          <span className="font-medium text-[#111827]">&ldquo;{q}&rdquo;</span> 검색 결과{" "}
-          <span className="font-medium text-[#1B3C87]">{posts.length}건</span>
-        </p>
-      )}
-
-      <div className="space-y-3">
-        {posts.map((p) => {
-          const cat = categoryMap[p.category ?? ""] ?? { label: p.category ?? "기타", variant: "default" as const };
-          return (
-            <Link key={p.id.toString()} href={`/community/${p.public_id}`}>
-              <Card className="hover:bg-[#EEF2FF] transition-colors cursor-pointer">
-                <div className="flex items-center gap-2">
-                  <Badge variant={cat.variant}>{cat.label}</Badge>
-                  <h3 className="font-semibold">{p.title}</h3>
-                </div>
-                <div className="mt-2 flex items-center gap-3 text-xs text-[#9CA3AF]">
-                  <span>{p.users?.nickname ?? "익명"}</span>
-                  <span>{p.created_at.toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })}</span>
-                  <span>조회 {p.view_count ?? 0}</span>
-                  <span>댓글 {p.comments_count ?? 0}</span>
-                </div>
-              </Card>
-            </Link>
-          );
-        })}
-        {posts.length === 0 && <Card className="text-center text-[#6B7280] py-12">게시글이 없습니다.</Card>}
-      </div>
-    </div>
+    <Suspense fallback={<CommunityLoading />}>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- 서버 프리페치 타입과 클라이언트 타입의 null 허용 차이를 맞추기 위한 단언 */}
+      <CommunityContent fallbackPosts={fallbackData?.posts as any} />
+    </Suspense>
   );
 }

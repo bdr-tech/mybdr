@@ -20,19 +20,20 @@ export default async function TournamentTeamsPage({ params }: { params: Promise<
         {teams.map((t) => (
           <Card key={t.id.toString()}>
             <div className="mb-3 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold" style={{ backgroundColor: `${t.team.primaryColor ?? "#E31B23"}20`, color: t.team.primaryColor ?? "#E31B23" }}>
+              {/* 팀 아이콘: primaryColor가 없으면 CSS 변수 --color-primary 사용 */}
+              <div className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold" style={{ backgroundColor: t.team.primaryColor ? `${t.team.primaryColor}20` : "color-mix(in srgb, var(--color-primary) 12%, transparent)", color: t.team.primaryColor ?? "var(--color-primary)" }}>
                 {t.team.name.charAt(0)}
               </div>
               <div>
                 <h3 className="font-semibold">{t.team.name}</h3>
-                <p className="text-xs text-[#9CA3AF]">{t.groupName && `${t.groupName} · `}{t.players.length}명</p>
+                <p className="text-xs text-[var(--color-text-secondary)]">{t.groupName && `${t.groupName} · `}{t.players.length}명</p>
               </div>
             </div>
             <div className="space-y-1">
               {t.players.map((p) => (
                 <div key={p.id.toString()} className="flex justify-between text-sm">
-                  <span className="text-[#6B7280]">#{p.jerseyNumber ?? "-"} {p.users?.nickname ?? "선수"}</span>
-                  <span className="text-xs text-[#9CA3AF]">{p.position ?? ""}</span>
+                  <span className="text-[var(--color-text-muted)]">#{p.jerseyNumber ?? "-"} {p.users?.nickname ?? "선수"}</span>
+                  <span className="text-xs text-[var(--color-text-secondary)]">{p.position ?? ""}</span>
                 </div>
               ))}
             </div>

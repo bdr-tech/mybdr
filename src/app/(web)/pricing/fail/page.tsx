@@ -11,19 +11,19 @@ export default function PaymentFailPage({
         <span className="text-4xl">❌</span>
       </div>
       <h1 className="mb-2 text-xl font-bold sm:text-2xl">결제 실패</h1>
-      <p className="mb-8 text-[#6B7280]">
+      <p className="mb-8 text-[var(--color-text-muted)]">
         결제가 완료되지 않았습니다. 다시 시도해주세요.
       </p>
       <div className="flex flex-col gap-3 sm:flex-row">
         <Link
           href="/pricing"
-          className="rounded-[12px] bg-[#1B3C87] px-6 py-3 font-semibold text-black transition-colors hover:bg-[#142D6B]"
+          className="rounded-[12px] bg-[var(--color-accent)] px-6 py-3 font-semibold text-black transition-colors hover:bg-[var(--color-accent-hover)]"
         >
           요금제 다시 보기
         </Link>
         <Link
           href="/"
-          className="rounded-[12px] border border-[#E8ECF0] px-6 py-3 text-sm text-[#6B7280] transition-colors hover:border-[#1B3C87]/50 hover:text-[#111827]"
+          className="rounded-[12px] border border-[var(--color-border)] px-6 py-3 text-sm text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-accent)]/50 hover:text-[var(--color-text-primary)]"
         >
           홈으로
         </Link>

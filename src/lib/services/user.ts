@@ -3,6 +3,7 @@
  *
  * Service 함수는 순수 데이터만 반환한다 (NextResponse 사용 금지).
  */
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 
 // ---------------------------------------------------------------------------
@@ -20,6 +21,8 @@ export const PROFILE_DETAIL_SELECT = {
   bio: true,
   profile_image_url: true,
   total_games_participated: true,
+  // 가입일 (profile-header에서 표시)
+  createdAt: true,
   // 신규 필드 (profile/edit 용)
   name: true,
   phone: true,
@@ -127,6 +130,122 @@ export async function getUserGameProfile(userId: bigint) {
       select: USER_GAME_PROFILE_SELECT,
     })
     .catch(() => null);
+}
+
+/**
+ * 프로필 스탯 집계 — 커리어 평균 + 시즌 최고
+ */
+export async function getPlayerStats(userId: bigint) {
+  // 유저의 tournamentTeamPlayer IDs 조회
+  const players = await prisma.tournamentTeamPlayer.findMany({
+    where: { userId },
+    select: { id: true },
+  });
+
+  const playerIds = players.map((p) => p.id);
+  if (playerIds.length === 0) {
+    return { careerAverages: null, seasonHighs: null };
+  }
+
+  const [aggregate, maxStats] = await Promise.all([
+    prisma.matchPlayerStat.aggregate({
+      where: { tournamentTeamPlayerId: { in: playerIds } },
+      _avg: {
+        points: true,
+        total_rebounds: true,
+        assists: true,
+        steals: true,
+        blocks: true,
+        minutesPlayed: true,
+      },
+      _count: { id: true },
+    }),
+    prisma.matchPlayerStat.aggregate({
+      where: { tournamentTeamPlayerId: { in: playerIds } },
+      _max: {
+        points: true,
+        total_rebounds: true,
+        assists: true,
+        steals: true,
+        blocks: true,
+      },
+    }),
+  ]);
+
+  // --- 승률(Win Rate) 계산 (DB에서 직접 집계) ---
+  // 기존: findMany로 N개 레코드 로딩 후 JS filter/count → 느림
+  // 개선: SQL로 DB에서 바로 승수/전체 경기수를 count → 데이터 1행만 전송
+  let winRate: number | null = null;
+
+  if (aggregate._count.id > 0) {
+    // raw SQL로 승률을 DB에서 직접 계산
+    // - 결과 확정 경기(winner_team_id IS NOT NULL)만 대상
+    // - winner_team_id = 선수 소속팀 ID이면 승리
+    const winRateResult = await prisma.$queryRaw<
+      Array<{ total: bigint; wins: bigint }>
+    >`
+      SELECT
+        COUNT(*) AS total,
+        COUNT(*) FILTER (
+          WHERE tm.winner_team_id = ttp.tournament_team_id
+        ) AS wins
+      FROM match_player_stats mps
+      JOIN tournament_matches tm ON tm.id = mps.tournament_match_id
+      JOIN tournament_team_players ttp ON ttp.id = mps.tournament_team_player_id
+      WHERE mps.tournament_team_player_id IN (${Prisma.join(playerIds)})
+        AND tm.winner_team_id IS NOT NULL
+    `;
+
+    const { total, wins } = winRateResult[0];
+    // bigint -> number 변환 후 승률 계산
+    const totalNum = Number(total);
+    const winsNum = Number(wins);
+
+    if (totalNum > 0) {
+      // 승률 = (승리수 / 전체 확정 경기수) * 100, 소수점 1자리
+      winRate = Number(((winsNum / totalNum) * 100).toFixed(1));
+    }
+  }
+
+  return {
+    careerAverages: aggregate._count.id > 0
+      ? {
+          gamesPlayed: aggregate._count.id,
+          avgPoints: Number((aggregate._avg.points ?? 0).toFixed(1)),
+          avgRebounds: Number((aggregate._avg.total_rebounds ?? 0).toFixed(1)),
+          avgAssists: Number((aggregate._avg.assists ?? 0).toFixed(1)),
+          avgSteals: Number((aggregate._avg.steals ?? 0).toFixed(1)),
+          avgBlocks: Number((aggregate._avg.blocks ?? 0).toFixed(1)),
+        }
+      : null,
+    seasonHighs: {
+      maxPoints: maxStats._max.points ?? 0,
+      maxRebounds: maxStats._max.total_rebounds ?? 0,
+      maxAssists: maxStats._max.assists ?? 0,
+    },
+    // 승률 (결과 확정 경기가 없으면 null)
+    winRate,
+  };
+}
+
+/**
+ * 이번 달 경기 참가 수 — 활동 링 월간 챌린지용
+ */
+export async function getMonthlyGames(userId: bigint) {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const count = await prisma.game_applications.count({
+    where: {
+      user_id: userId,
+      status: 1, // approved
+      games: {
+        scheduled_at: { gte: monthStart },
+      },
+    },
+  }).catch(() => 0);
+
+  return count;
 }
 
 /**

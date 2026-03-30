@@ -6,13 +6,15 @@ export function apiSuccess(data: unknown, status = 200) {
   return NextResponse.json(convertKeysToSnakeCase(data), { status });
 }
 
+// extra: 에러 응답에 추가 데이터를 포함할 때 사용 (예: 409에 코트 정보)
 export function apiError(
   error: string,
   status: number,
-  code?: string
+  code?: string,
+  extra?: Record<string, unknown>
 ) {
   return NextResponse.json(
-    { error, ...(code && { code }) },
+    { error, ...(code && { code }), ...extra },
     { status }
   );
 }

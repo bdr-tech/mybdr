@@ -1,8 +1,11 @@
+import { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth/jwt";
 import { WEB_SESSION_COOKIE } from "@/lib/auth/web-session";
-import { apiSuccess } from "@/lib/api/response";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { prisma } from "@/lib/db/prisma";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { getClientIp } from "@/lib/security/get-client-ip";
 
 export const dynamic = "force-dynamic";
 
@@ -12,19 +15,29 @@ export const dynamic = "force-dynamic";
  * 로그인 유저: 패턴 기반 개인화 추천
  *   1) 유저의 지역(city), 참가했던 경기 유형, 실력대를 분석
  *   2) 매칭되는 경기를 우선 정렬
- *   3) 패턴 데이터 부족 시 → 최신 경기 fallback
+ *   3) 패턴 데이터 부족 시 → user.city split하여 지역 기반 추천
  *
  * 비로그인: 최신 경기 목록
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // 공개 API — IP 기반 rate limit (분당 100회)
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit(`web-recommended:${ip}`, RATE_LIMITS.api);
+  if (!rl.allowed) {
+    return apiError("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.", 429);
+  }
+
   const cookieStore = await cookies();
   const token = cookieStore.get(WEB_SESSION_COOKIE)?.value;
   const session = token ? await verifyToken(token) : null;
 
-  // --- 비로그인 fallback: 최신 경기 ---
+  // --- 비로그인 fallback: 최신 경기 (캐시 가능) ---
   if (!session) {
     const games = await getLatestGames();
-    return apiSuccess({ userName: null, games });
+    const response = apiSuccess({ userName: null, games });
+    // 비로그인 응답은 개인화 없으므로 CDN/브라우저 캐시 허용 (1분, stale 2분)
+    response.headers.set("Cache-Control", "public, s-maxage=60, max-age=60, stale-while-revalidate=120");
+    return response;
   }
 
   const userId = BigInt(session.sub);
@@ -51,17 +64,25 @@ export async function GET() {
 
   const userName = user?.nickname || user?.name || null;
 
+  // user.city를 쉼표 구분 문자열에서 배열로 변환 (예: "서울,경기" → ["서울", "경기"])
+  const profileCities = user?.city
+    ? user.city.split(",").map((c) => c.trim()).filter(Boolean)
+    : [];
+
   // --- 패턴 분석 ---
   const hasHistory = pastApplications.length >= 3;
 
   if (!hasHistory) {
-    // 패턴 부족 → 유저 지역 기반 or 최신 경기
-    const games = await getLatestGames(user?.city ?? undefined);
+    // 이력 부족 → 프로필 지역(배열) 기반 추천, 없으면 전체 최신 경기
+    const games = await getLatestGames(profileCities.length > 0 ? profileCities : undefined);
     return apiSuccess({
       userName,
       games: games.map((g) => ({
         ...g,
-        matchReason: user?.city && g.city === user.city ? "내 지역 경기" : null,
+        // matchReason을 배열로 반환 (지역 매칭 시 이유 추가)
+        matchReason: g.city && profileCities.includes(g.city)
+          ? ["내 지역 경기"]
+          : [],
       })),
     });
   }
@@ -78,10 +99,14 @@ export async function GET() {
     if (g.skill_level) skillCounts.set(g.skill_level, (skillCounts.get(g.skill_level) ?? 0) + 1);
   }
 
-  const preferredCities = [...cityCounts.entries()]
+  // 이력에서 추출한 선호 지역 (최대 3개)
+  const historyCities = [...cityCounts.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([c]) => c);
+
+  // 프로필 지역으로 보완: 이력 지역 + 프로필 지역 합집합 (중복 제거)
+  const preferredCities = [...new Set([...historyCities, ...profileCities])];
 
   const preferredTypes = [...typeCounts.entries()]
     .sort((a, b) => b[1] - a[1])
@@ -115,22 +140,22 @@ export async function GET() {
     },
   });
 
-  // 점수 기반 정렬
+  // 점수 기반 정렬 — matchReason을 배열로 수집하여 복수 이유 반환
   const scored = candidates.map((g) => {
     let score = 0;
-    let reason: string | null = null;
+    const reasons: string[] = [];
 
     if (g.city && preferredCities.includes(g.city)) {
       score += 3;
-      reason = "자주 가는 지역";
+      reasons.push("자주 가는 지역");
     }
     if (g.game_type !== null && preferredTypes.includes(g.game_type)) {
       score += 2;
-      reason = reason ?? "선호 경기 유형";
+      reasons.push("선호 경기 유형");
     }
     if (g.skill_level && preferredSkills.includes(g.skill_level)) {
       score += 1;
-      reason = reason ?? "맞는 실력대";
+      reasons.push("맞는 실력대");
     }
 
     return {
@@ -145,7 +170,7 @@ export async function GET() {
         g.max_participants && g.current_participants
           ? g.max_participants - g.current_participants
           : null,
-      matchReason: reason,
+      matchReason: reasons,
       _score: score,
     };
   });
@@ -157,12 +182,13 @@ export async function GET() {
   return apiSuccess({ userName, games });
 }
 
-// --- Helper ---
-async function getLatestGames(city?: string) {
+// --- Helper: 최신 경기 조회 ---
+// cities 배열을 받아 { in: cities } 조건으로 필터링 (여러 도시 동시 매칭)
+async function getLatestGames(cities?: string[]) {
   const games = await prisma.games.findMany({
     where: {
       status: { in: [1, 2] },
-      ...(city ? { city } : {}),
+      ...(cities && cities.length > 0 ? { city: { in: cities } } : {}),
     },
     orderBy: { scheduled_at: "asc" },
     take: 6,
@@ -191,6 +217,6 @@ async function getLatestGames(city?: string) {
       g.max_participants && g.current_participants
         ? g.max_participants - g.current_participants
         : null,
-    matchReason: null as string | null,
+    matchReason: [] as string[],
   }));
 }

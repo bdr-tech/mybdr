@@ -5,6 +5,7 @@ interface TournamentsTabProps {
 }
 
 export async function TournamentsTab({ teamId }: TournamentsTabProps) {
+  // 기존 쿼리 100% 유지
   const tournamentTeams = await prisma.tournamentTeam.findMany({
     where: { teamId },
     include: {
@@ -23,38 +24,46 @@ export async function TournamentsTab({ teamId }: TournamentsTabProps) {
 
   if (tournamentTeams.length === 0) {
     return (
-      <div className="rounded-[16px] bg-white px-5 py-10 text-center">
-        <p className="text-sm text-[#9CA3AF]">대회 이력이 없습니다.</p>
+      <div className="rounded border border-[var(--color-border)] bg-[var(--color-card)] px-5 py-10 text-center">
+        <span className="material-symbols-outlined text-4xl text-[var(--color-text-muted)] mb-2">emoji_events</span>
+        <p className="text-sm text-[var(--color-text-muted)]">대회 이력이 없습니다.</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-[16px] bg-white p-5">
-      <div className="space-y-2">
+    <div className="rounded border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm overflow-hidden">
+      <div className="divide-y divide-[var(--color-border-subtle)]">
         {tournamentTeams.map((tt) => {
           const t = tt.tournament;
           const year = t.startDate ? new Date(t.startDate).getFullYear() : null;
           const rankLabel = tt.final_rank ? `${tt.final_rank}위` : null;
+
           return (
             <div
               key={tt.id.toString()}
-              className="flex items-center justify-between rounded-[12px] bg-[#EEF2FF] px-4 py-3"
+              className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-[var(--color-surface-bright)]"
             >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-[#111827]">{t.name}</p>
-                <p className="text-xs text-[#9CA3AF]">
-                  {year ? `${year}년` : ""}
-                  {tt.division ? ` · ${tt.division}` : ""}
-                </p>
+              <div className="flex items-center gap-4 min-w-0 flex-1">
+                {/* 대회 아이콘 */}
+                <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded bg-[var(--color-surface-high)]">
+                  <span className="material-symbols-outlined text-base text-[var(--color-text-secondary)]">emoji_events</span>
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">{t.name}</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">
+                    {year ? `${year}년` : ""}
+                    {tt.division ? ` · ${tt.division}` : ""}
+                  </p>
+                </div>
               </div>
               <div className="ml-3 flex flex-shrink-0 flex-col items-end gap-0.5">
                 {rankLabel && (
-                  <span className="rounded-full bg-[#E8ECF0] px-2 py-0.5 text-xs font-medium text-[#6B7280]">
+                  <span className="rounded bg-[var(--color-surface-high)] px-2 py-0.5 text-xs font-bold text-[var(--color-text-primary)]">
                     {rankLabel}
                   </span>
                 )}
-                <span className="text-xs text-[#9CA3AF]">{tt.status ?? t.status ?? "-"}</span>
+                <span className="text-xs text-[var(--color-text-muted)]">{tt.status ?? t.status ?? "-"}</span>
               </div>
             </div>
           );

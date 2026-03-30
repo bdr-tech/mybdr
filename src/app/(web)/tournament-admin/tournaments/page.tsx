@@ -3,21 +3,10 @@ import { getWebSession } from "@/lib/auth/web-session";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { TOURNAMENT_STATUS_LABEL, TOURNAMENT_FORMAT_LABEL } from "@/lib/constants/tournament-status";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
-
-const STATUS_LABEL: Record<string, string> = {
-  draft: "준비중",
-  active: "모집중",
-  published: "모집중",
-  registration: "모집중",
-  registration_open: "모집중",
-  registration_closed: "접수마감",
-  ongoing: "진행중",
-  completed: "완료",
-  cancelled: "취소",
-};
 
 export default async function TournamentAdminTournamentsPage() {
   const session = await getWebSession();
@@ -31,32 +20,32 @@ export default async function TournamentAdminTournamentsPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold sm:text-2xl">내 대회</h1>
-        <Link href="/tournament-admin/tournaments/new/wizard" className="rounded-full bg-[#1B3C87] px-4 py-2 text-sm font-semibold text-white">새 대회</Link>
+        <h1 className="text-2xl font-extrabold uppercase tracking-wide sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>내 대회</h1>
+        <Link href="/tournament-admin/tournaments/new/wizard" className="rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white">새 대회</Link>
       </div>
 
       {tournaments.length > 0 ? (
         <div className="space-y-3">
           {tournaments.map((t) => (
             <Link key={t.id} href={`/tournament-admin/tournaments/${t.id}`}>
-              <Card className="flex items-center justify-between hover:bg-[#EEF2FF] transition-colors cursor-pointer">
+              <Card className="flex items-center justify-between hover:bg-[var(--color-elevated)] transition-colors cursor-pointer">
                 <div>
                   <p className="font-semibold">{t.name}</p>
-                  <p className="text-xs text-[#6B7280]">
+                  <p className="text-xs text-[var(--color-text-muted)]">
                     {t.startDate ? t.startDate.toLocaleDateString("ko-KR") : "날짜 미정"}
-                    {t.format && ` · ${t.format}`}
+                    {t.format && ` · ${TOURNAMENT_FORMAT_LABEL[t.format] ?? t.format}`}
                   </p>
                 </div>
-                <Badge>{STATUS_LABEL[t.status ?? "draft"] ?? t.status}</Badge>
+                <Badge>{TOURNAMENT_STATUS_LABEL[t.status ?? "draft"] ?? t.status}</Badge>
               </Card>
             </Link>
           ))}
         </div>
       ) : (
-        <Card className="py-12 text-center text-[#6B7280]">
-          <div className="mb-2 text-3xl">🏆</div>
+        <Card className="py-12 text-center text-[var(--color-text-muted)]">
+          <div className="mb-2 text-lg font-semibold text-[var(--color-text-muted)]">No Tournaments</div>
           관리하는 대회가 없습니다.{" "}
-          <Link href="/tournament-admin/tournaments/new/wizard" className="text-[#E31B23] hover:underline">새 대회 만들기</Link>
+          <Link href="/tournament-admin/tournaments/new/wizard" className="text-[var(--color-primary)] hover:underline">새 대회 만들기</Link>
         </Card>
       )}
     </div>

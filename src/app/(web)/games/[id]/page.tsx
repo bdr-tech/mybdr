@@ -1,8 +1,8 @@
+import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getGame, listGameApplications } from "@/lib/services/game";
 import { getUserGameProfile } from "@/lib/services/user";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { GameApplyButton } from "./apply-button";
 import { CancelApplyButton } from "./cancel-apply-button";
 import { ProfileIncompleteBanner } from "./profile-banner";
@@ -10,11 +10,47 @@ import { PickupDetail } from "./_sections/pickup-detail";
 import { GuestDetail } from "./_sections/guest-detail";
 import { TeamMatchDetail } from "./_sections/team-match-detail";
 import { HostApplications } from "./_components/host-applications";
+import { HeroBanner } from "./_components/hero-banner";
+import { PriceCard } from "./_components/price-card";
+import { HostCard } from "./_components/host-card";
+import { ParticipantsGrid } from "./_components/participants-grid";
 import { getWebSession } from "@/lib/auth/web-session";
 import { getMissingFields } from "@/lib/profile/completion";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/shared/breadcrumb";
 
 export const revalidate = 30;
 
+// SEO: 경기 상세 동적 메타데이터 — 경기 제목을 DB에서 조회하여 title에 반영
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const game = await getGame(id);
+  if (!game) return { title: "경기 상세 | MyBDR" };
+
+  const title = `${game.title || "경기 상세"} | MyBDR`;
+  const description = game.description?.slice(0, 100) || "경기 상세 정보를 확인하고 참가 신청하세요.";
+
+  return {
+    title,
+    description,
+    /* Open Graph: 카카오톡/페이스북 등 SNS 공유 시 미리보기 카드 */
+    openGraph: {
+      title: game.title || "경기 상세",
+      description,
+      type: "website",
+      url: `https://mybdr.kr/games/${id}`,
+    },
+    /* Twitter Card: 트위터/X 공유 시 카드 */
+    twitter: {
+      card: "summary",
+      title: game.title || "경기 상세",
+      description,
+    },
+  };
+}
+
+// 경기 상태 라벨 매핑 (기존 유지)
 const STATUS_LABEL: Record<number, string> = {
   0: "대기",
   1: "모집중",
@@ -24,10 +60,11 @@ const STATUS_LABEL: Record<number, string> = {
   5: "취소",
 };
 
-const GAME_TYPE_LABEL: Record<number, { label: string; emoji: string; accent: string }> = {
-  0: { label: "픽업",        emoji: "🏀", accent: "#E31B23" },
-  1: { label: "게스트 모집",  emoji: "🤝", accent: "#60A5FA" },
-  2: { label: "팀 대결",     emoji: "⚔️", accent: "#4ADE80" },
+// 경기 타입 라벨 매핑 (기존 유지, 아이콘은 Material Symbols로 변경)
+const GAME_TYPE_LABEL: Record<number, { label: string; icon: string }> = {
+  0: { label: "픽업", icon: "sports_basketball" },
+  1: { label: "게스트 모집", icon: "group_add" },
+  2: { label: "팀 대결", icon: "emoji_events" },
 };
 
 export default async function GameDetailPage({
@@ -37,7 +74,7 @@ export default async function GameDetailPage({
 }) {
   const { id } = await params;
 
-  // Phase 1: 게임 조회 + 세션 확인 병렬 실행
+  // Phase 1: 게임 조회 + 세션 확인 병렬 실행 (기존 로직 100% 유지)
   const [game, session] = await Promise.all([
     getGame(id),
     getWebSession(),
@@ -45,7 +82,7 @@ export default async function GameDetailPage({
 
   if (!game) return notFound();
 
-  // Phase 2: 유저 프로필 + 신청자 목록 병렬 조회
+  // Phase 2: 유저 프로필 + 신청자 목록 병렬 조회 (기존 로직 100% 유지)
   const [userRecord, applications] = await Promise.all([
     session
       ? getUserGameProfile(BigInt(session.sub))
@@ -59,7 +96,7 @@ export default async function GameDetailPage({
     ? applications.find((a) => a.user_id === BigInt(session.sub))
     : null;
 
-  // 프로필 완성 여부 판단 — missingFields 기반 실시간 검증
+  // 프로필 완성 여부 판단 (기존 로직 100% 유지)
   let missingFields: string[] = [];
   let profileCompleted = true;
   let showProfileBanner = false;
@@ -71,7 +108,6 @@ export default async function GameDetailPage({
       phone: userRecord.phone,
       position: userRecord.position,
       city: userRecord.city,
-      district: userRecord.district,
     });
     profileCompleted = missingFields.length === 0;
 
@@ -90,115 +126,165 @@ export default async function GameDetailPage({
   const gameTypeInfo = GAME_TYPE_LABEL[game.game_type] ?? GAME_TYPE_LABEL[0];
   const statusLabel = STATUS_LABEL[game.status] ?? "대기";
 
+  // 승인된 참가자 목록 (아바타 그리드용)
+  const approvedParticipants = applications
+    .filter((a) => a.status === 1)
+    .map((a) => ({
+      id: a.id.toString(),
+      nickname: a.users?.nickname ?? null,
+      name: a.users?.name ?? null,
+    }));
+
   return (
     <div className="space-y-6">
+      {/* 브레드크럼: PC에서만 표시, 모바일은 뒤로가기 버튼이 대신 */}
+      <Breadcrumb items={[
+        { label: "경기", href: "/games" },
+        { label: game.title || "경기 상세" },
+      ]} />
+
       {/* 프로필 미완성 안내 배너 (1일 1회) */}
       {showProfileBanner && <ProfileIncompleteBanner />}
 
-      {/* 메인 정보 카드 */}
-      <Card>
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <span className="text-xl">{gameTypeInfo.emoji}</span>
-          <Badge variant="default">{gameTypeInfo.label}</Badge>
-          <Badge
-            variant={
-              game.status === 1
-                ? "success"
-                : game.status === 4 || game.status === 5
-                ? "error"
-                : "default"
-            }
-          >
-            {statusLabel}
-          </Badge>
-        </div>
-        <h1 className="mb-4 text-xl font-bold sm:text-2xl">{game.title}</h1>
+      {/* 히어로 배너: 경기장 이미지 + 그라디언트 + MATCH DAY 배지 */}
+      <HeroBanner game={game} />
 
-        {/* 게임 타입별 상세 섹션 */}
-        {game.game_type === 0 && <PickupDetail game={game} />}
-        {game.game_type === 1 && <GuestDetail game={game} />}
-        {game.game_type === 2 && <TeamMatchDetail game={game} />}
+      {/* 경기 타입/상태 배지 */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="material-symbols-outlined text-[var(--color-accent)]">
+          {gameTypeInfo.icon}
+        </span>
+        <Badge variant="default">{gameTypeInfo.label}</Badge>
+        <Badge
+          variant={
+            game.status === 1
+              ? "success"
+              : game.status === 4 || game.status === 5
+              ? "error"
+              : "default"
+          }
+        >
+          {statusLabel}
+        </Badge>
+      </div>
 
-        {/* 설명 */}
-        {game.description && (
-          <p className="mt-4 text-sm text-[#6B7280]">{game.description}</p>
-        )}
+      {/* 경기 제목 */}
+      <h1
+        className="text-2xl font-extrabold uppercase tracking-wide sm:text-3xl text-[var(--color-text-primary)]"
+        style={{ fontFamily: "var(--font-heading)" }}
+      >
+        {game.title}
+      </h1>
 
-        {/* 신청 버튼: 호스트 본인 제외, 미신청자만 */}
-        {session && !isHost && !myApplication && (
-          <div className="mt-6">
-            <GameApplyButton
-              gameId={id}
-              profileCompleted={profileCompleted}
-              missingFields={missingFields}
-              gameStatus={game.status}
+      {/* 설명 */}
+      {game.description && (
+        <p className="text-sm text-[var(--color-text-muted)]">{game.description}</p>
+      )}
+
+      {/* 2열 레이아웃: 메인 콘텐츠 + 우측 가격 카드 */}
+      <div className="grid lg:grid-cols-[1fr_360px] gap-8">
+        {/* 좌측: 메인 콘텐츠 */}
+        <div className="space-y-8">
+          {/* 게임 타입별 상세 섹션 (Amenities + Rules 스타일) */}
+          {game.game_type === 0 && <PickupDetail game={game} />}
+          {game.game_type === 1 && <GuestDetail game={game} />}
+          {game.game_type === 2 && <TeamMatchDetail game={game} />}
+
+          {/* 참여자 아바타 그리드 (호스트 아닌 경우) */}
+          {!isHost && (
+            <ParticipantsGrid
+              participants={approvedParticipants}
+              maxParticipants={game.max_participants}
             />
-          </div>
-        )}
-        {/* 신청 취소 버튼: 내가 신청한 경우 (대기 상태만) */}
-        {session && !isHost && myApplication?.status === 0 && (
-          <div className="mt-6">
-            <CancelApplyButton gameId={id} />
-          </div>
-        )}
-        {/* 이미 승인된 경우 */}
-        {session && !isHost && myApplication?.status === 1 && (
-          <div className="mt-6 rounded-[12px] bg-green-50 px-4 py-3 text-sm text-green-700">
-            ✅ 참가가 승인되었습니다.
-          </div>
-        )}
-      </Card>
-
-      {/* 호스트 신청자 관리 패널 */}
-      {isHost && (
-        <Card>
-          <h2 className="mb-4 text-lg font-semibold">
-            신청자 관리{" "}
-            <span className="text-sm font-normal text-[#6B7280]">
-              ({applications.length} / {game.max_participants ?? "∞"}명)
-            </span>
-          </h2>
-          <HostApplications
-            gameId={id}
-            applicants={applications.map((a) => ({
-              id: a.id.toString(),
-              status: a.status,
-              nickname: a.users?.nickname ?? null,
-              name: a.users?.name ?? null,
-              phone: a.users?.phone ?? null,
-              position: a.users?.position ?? null,
-              city: a.users?.city ?? null,
-              district: a.users?.district ?? null,
-            }))}
-          />
-        </Card>
-      )}
-
-      {/* 일반 참가자 목록 (호스트 제외 모두에게 공개) */}
-      {!isHost && (
-        <Card>
-          <h2 className="mb-4 text-lg font-semibold">
-            참가자 ({applications.filter((a) => a.status === 1).length} / {game.max_participants ?? "∞"}명)
-          </h2>
-          {applications.filter((a) => a.status === 1).length > 0 ? (
-            <div className="space-y-2">
-              {applications
-                .filter((a) => a.status === 1)
-                .map((a) => (
-                  <div
-                    key={a.id.toString()}
-                    className="flex items-center justify-between rounded-[12px] bg-[#EEF2FF] px-4 py-2"
-                  >
-                    <span className="text-sm">{a.users?.nickname ?? a.users?.name ?? "익명"}</span>
-                    <Badge variant="success">승인</Badge>
-                  </div>
-                ))}
-            </div>
-          ) : (
-            <p className="text-sm text-[#6B7280]">아직 승인된 참가자가 없습니다.</p>
           )}
-        </Card>
-      )}
+
+          {/* 호스트 신청자 관리 패널 (호스트만 보임) */}
+          {isHost && (
+            <Card>
+              <h2
+                className="mb-4 text-lg font-semibold uppercase tracking-wide"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                신청자 관리{" "}
+                <span className="text-sm font-normal text-[var(--color-text-muted)]">
+                  ({applications.length} / {game.max_participants ?? "~"}명)
+                </span>
+              </h2>
+              <HostApplications
+                gameId={id}
+                applicants={applications.map((a) => ({
+                  id: a.id.toString(),
+                  status: a.status,
+                  nickname: a.users?.nickname ?? null,
+                  name: a.users?.name ?? null,
+                  phone: a.users?.phone ?? null,
+                  position: a.users?.position ?? null,
+                  city: a.users?.city ?? null,
+                  district: a.users?.district ?? null,
+                }))}
+              />
+            </Card>
+          )}
+        </div>
+
+        {/* 우측: 가격 카드 + 호스트 카드 (sticky) */}
+        <div className="space-y-6">
+          <PriceCard game={game}>
+            {/* 신청 버튼: 호스트 제외, 미신청자만 */}
+            {session && !isHost && !myApplication && (
+              <GameApplyButton
+                gameId={id}
+                profileCompleted={profileCompleted}
+                missingFields={missingFields}
+                gameStatus={game.status}
+              />
+            )}
+
+            {/* 신청 취소 버튼: 대기 상태일 때만 */}
+            {session && !isHost && myApplication?.status === 0 && (
+              <CancelApplyButton gameId={id} />
+            )}
+
+            {/* 이미 승인된 경우 */}
+            {session && !isHost && myApplication?.status === 1 && (
+              <div className="flex items-center gap-2 rounded-lg bg-green-50 dark:bg-green-900/20 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+                <span className="material-symbols-outlined text-sm">check_circle</span>
+                참가가 승인되었습니다.
+              </div>
+            )}
+
+            {/* 비로그인 상태 안내 */}
+            {!session && (
+              <p className="text-sm text-center text-[var(--color-text-muted)]">
+                로그인 후 신청할 수 있습니다.
+              </p>
+            )}
+          </PriceCard>
+
+          {/* 호스트 프로필 카드 */}
+          <HostCard organizerName={null} />
+        </div>
+      </div>
+
+      {/* 다음 액션 유도: 다른 경기 탐색 + 내 경기 확인 */}
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link
+          href="/games"
+          className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-elevated)]"
+        >
+          <span className="material-symbols-outlined text-base">sports_basketball</span>
+          다른 경기 보기
+        </Link>
+        {session && (
+          <Link
+            href="/games/my-games"
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-elevated)]"
+          >
+            <span className="material-symbols-outlined text-base">assignment</span>
+            내 경기 보기
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

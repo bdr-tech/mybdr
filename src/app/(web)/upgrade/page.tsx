@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { MEMBERSHIP_LABELS, MEMBERSHIP_PRICES, type MembershipType } from "@/lib/auth/roles";
+
+// SEO: 업그레이드 안내 페이지 메타데이터
+export const metadata: Metadata = {
+  title: "업그레이드 | MyBDR",
+  description: "더 많은 기능을 이용하려면 멤버십을 업그레이드하세요.",
+};
 
 type UpgradeReason = "team_creation" | "pickup_hosting" | "tournament_management";
 
@@ -42,25 +49,25 @@ export default async function UpgradePage({
     <div className="mx-auto max-w-md py-12">
       <div className="rounded-[20px] bg-white p-8 text-center shadow-sm">
         <div className="mb-4 text-5xl">🔒</div>
-        <h1 className="mb-2 text-xl font-bold text-[#111827]">{info.title}</h1>
-        <p className="mb-6 text-sm text-[#6B7280]">{info.description}</p>
+        <h1 className="mb-2 text-xl font-bold text-[var(--color-text-primary)]">{info.title}</h1>
+        <p className="mb-6 text-sm text-[var(--color-text-muted)]">{info.description}</p>
 
-        <div className="mb-6 rounded-[16px] bg-[#EEF2FF] p-5 text-left">
+        <div className="mb-6 rounded-[16px] bg-[var(--color-elevated)] p-5 text-left">
           <div className="mb-3 flex items-center justify-between">
-            <span className="font-semibold text-[#111827]">{MEMBERSHIP_LABELS[mt as MembershipType]}</span>
-            <span className="text-lg font-bold text-[#1B3C87]">{MEMBERSHIP_PRICES[mt as MembershipType]}</span>
+            <span className="font-semibold text-[var(--color-text-primary)]">{MEMBERSHIP_LABELS[mt as MembershipType]}</span>
+            <span className="text-lg font-bold text-[var(--color-accent)]">{MEMBERSHIP_PRICES[mt as MembershipType]}</span>
           </div>
           <ul className="space-y-1.5">
             {info.features.map((f) => (
-              <li key={f} className="flex items-center gap-2 text-sm text-[#6B7280]">
-                <span className="text-[#1B3C87]">✓</span>
+              <li key={f} className="flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
+                <span className="text-[var(--color-accent)]">✓</span>
                 {f}
               </li>
             ))}
           </ul>
         </div>
 
-        <p className="mb-4 text-sm text-[#9CA3AF]">
+        <p className="mb-4 text-sm text-[var(--color-text-muted)]">
           현재 결제 시스템 구축 중입니다.
           <br />
           플랜 신청은 관리자에게 문의해 주세요.
@@ -68,13 +75,13 @@ export default async function UpgradePage({
 
         <a
           href="mailto:bdr.wonyoung@gmail.com?subject=플랜 신청 문의"
-          className="mb-3 flex w-full items-center justify-center rounded-[12px] bg-[#1B3C87] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#142D6B]"
+          className="mb-3 flex w-full items-center justify-center rounded-[12px] bg-[var(--color-accent)] px-6 py-3 font-semibold text-white transition-colors hover:bg-[var(--color-accent-hover)]"
         >
           관리자에게 문의하기
         </a>
         <Link
           href="/"
-          className="text-sm text-[#9CA3AF] hover:text-[#6B7280]"
+          className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
         >
           돌아가기
         </Link>

@@ -13,9 +13,10 @@ import {
 } from "@/lib/security/login-attempts";
 import { DUMMY_HASH } from "@/lib/security/constants";
 
+const isProduction = process.env.NODE_ENV === "production";
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: true,
+  secure: isProduction,
   sameSite: "lax" as const,
   maxAge: 60 * 60 * 24 * 30, // 30일
   path: "/",
@@ -88,20 +89,36 @@ export async function signupAction(_prevState: { error: string } | null, formDat
   const password = formData.get("password") as string;
   const passwordConfirm = formData.get("password_confirm") as string;
 
-  if (!email || !nickname || !password) {
+  if (!email || !nickname || !password || !passwordConfirm) {
     return { error: "모든 항목을 입력하세요." };
+  }
+  if (nickname.length < 2 || nickname.length > 20) {
+    return { error: "닉네임은 2~20자여야 합니다." };
   }
   if (password.length < 8) {
     return { error: "비밀번호는 8자 이상이어야 합니다." };
+  }
+  if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password) || !/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(password)) {
+    return { error: "비밀번호는 영문, 숫자, 특수문자를 모두 포함해야 합니다." };
   }
   if (password !== passwordConfirm) {
     return { error: "비밀번호가 일치하지 않습니다." };
   }
 
   try {
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
+    // 이메일 중복 확인
+    const existingEmail = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+    if (existingEmail) {
       return { error: "이미 사용 중인 이메일입니다." };
+    }
+
+    // 닉네임 중복 확인
+    const existingNickname = await prisma.user.findFirst({
+      where: { nickname: { equals: nickname, mode: "insensitive" } },
+      select: { id: true },
+    });
+    if (existingNickname) {
+      return { error: "이미 사용 중인 닉네임입니다." };
     }
 
     const passwordDigest = await bcrypt.hash(password, 12);
@@ -117,11 +134,16 @@ export async function signupAction(_prevState: { error: string } | null, formDat
     const token = await generateToken(user);
     const cookieStore = await cookies();
     cookieStore.set(WEB_SESSION_COOKIE, token, COOKIE_OPTIONS);
-  } catch {
-    return { error: "회원가입 중 오류가 발생했습니다." };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "";
+    if (message.includes("Unique constraint")) {
+      return { error: "이미 사용 중인 이메일 또는 닉네임입니다." };
+    }
+    console.error("Signup error:", message);
+    return { error: "회원가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요." };
   }
 
-  redirect("/");
+  redirect("/profile/complete");
 }
 
 export async function devLoginAction(_prevState: { error: string } | null, _formData: FormData) {

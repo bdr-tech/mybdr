@@ -1,72 +1,185 @@
 @import "tailwindcss";
 
+/* .claude 폴더를 Tailwind 스캔 대상에서 제외 (scratchpad.md에 있는
+   text-[var(--...)] 같은 문자열이 CSS 클래스로 인식되어 파싱 에러 발생 방지) */
+@source not "../../.claude";
+
 @theme {
-  --color-background: #F5F6FA;
-  --color-card: #FFFFFF;
-  --color-elevated: #EDF0F8;
-  --color-surface: #E8ECF0;
+  /* --- Breakpoints (Tailwind CSS 4 필수) --- */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
 
-  --color-primary: #1B3C87;
-  --color-primary-hover: #142D6B;
-  --color-primary-light: rgba(27, 60, 135, 0.08);
-  --color-accent: #E31B23;
-  --color-accent-hover: #C8101E;
-  --color-accent-light: rgba(227, 27, 35, 0.08);
+  /* ========================================
+   * 토스 스타일 디자인 시스템
+   * - 라이트 모드 기본 (화이트 + 토스 블루)
+   * - 그림자 최소화, 배경색 차이로 계층 표현
+   * - toss-design-analysis.md 수치 기반
+   * ======================================== */
 
-  --color-text-primary: #111827;
-  --color-text-secondary: #6B7280;
-  --color-text-muted: #9CA3AF;
-  --color-text-on-primary: #FFFFFF;
+  /* --- 배경/표면 계층 (라이트 모드 기본) --- */
+  --color-background: #FFFFFF;       /* 페이지 기본 배경 (화이트) */
+  --color-card: #FFFFFF;             /* 카드 배경 */
+  --color-elevated: #F2F4F6;         /* 떠있는 요소 (모달, 드롭다운) */
+  --color-surface: #F9FAFB;          /* 섹션/영역 배경 */
 
-  --color-success: #16A34A;
-  --color-error: #DC2626;
-  --color-warning: #D97706;
-  --color-info: #2563EB;
+  /* --- Surface 세분화 변수 --- */
+  --color-surface-lowest: #F2F4F6;   /* 입력 필드 배경 */
+  --color-surface-low: #F9FAFB;      /* surface와 동일 계층 */
+  --color-surface-high: #FFFFFF;     /* elevated와 동일 계층 */
+  --color-surface-bright: #F2F4F6;   /* 호버 시 배경 */
 
-  --color-border: #E8ECF0;
-  --color-border-subtle: #F1F5F9;
+  /* --- 브랜드 색상 (Primary = 토스 블루) --- */
+  --color-primary: #3182F6;          /* 토스 블루 */
+  --color-primary-hover: #1B64DA;    /* 호버 시 진한 블루 */
+  --color-primary-light: rgba(49, 130, 246, 0.08); /* 블루 반투명 배경 */
+  --color-on-primary: #FFFFFF;       /* primary 위 텍스트 */
 
-  --radius-card: 16px;
-  --radius-card-lg: 24px;
-  --radius-pill: 9999px;
+  /* --- 보조 색상 --- */
+  --color-accent: #191F28;           /* 진한 텍스트 활용 */
+  --color-accent-hover: #333D4B;     /* 호버 */
+  --color-accent-light: rgba(25, 31, 40, 0.08); /* 반투명 배경 */
+  --color-secondary: #4E5968;        /* 중간 회색 */
+  --color-tertiary: #3182F6;         /* primary와 통일 */
 
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.08);
-  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.12);
+  /* --- 텍스트 (토스 그레이 스케일) --- */
+  --color-text-primary: #191F28;     /* 헤드라인 (가장 진한 검정) */
+  --color-text-secondary: #4E5968;   /* 본문 텍스트 */
+  --color-text-muted: #8B95A1;       /* 약한 텍스트 (캡션, 힌트) */
+  --color-text-disabled: #B0B8C1;    /* 비활성 텍스트 */
+  --color-text-on-primary: #FFFFFF;  /* 브랜드 버튼 위 텍스트 */
 
+  /* --- 상태 색상 (토스 시맨틱) --- */
+  --color-success: #34C759;
+  --color-error: #F04452;            /* 토스 에러 레드 */
+  --color-error-light: rgba(240, 68, 82, 0.08); /* 에러 배경용 */
+  --color-warning: #FF9500;
+  --color-info: #3182F6;             /* primary와 통일 */
+
+  /* --- 테두리 (실선 보더) --- */
+  --color-border: #F2F4F6;           /* 기본 보더 (토스 기준 연하게) */
+  --color-border-subtle: #F2F4F6;    /* 미세한 구분선 */
+
+  /* --- 라운딩 (토스 스타일: 12~16px 둥근 모서리) --- */
+  --radius-card: 1rem;               /* 카드: 16px */
+  --radius-card-lg: 1.375rem;        /* 큰 카드: 22px */
+  --radius-pill: 0.75rem;            /* 버튼: 12px */
+  --radius-button: 12px;             /* 버튼 전용 별칭 */
+
+  /* --- 그림자 (토스 스타일: 매우 가볍게) --- */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+  /* --- 폰트 (Pretendard 통일, Space Grotesk 제거) --- */
   --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-heading: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  /* --- 기존 호환 변수 --- */
+  --color-bg-primary: #FFFFFF;       /* background와 동일 */
+  --color-bg-secondary: #F9FAFB;     /* surface와 동일 */
+  --color-bg-card: #FFFFFF;          /* card와 동일 */
+  --color-bg-hover: #F2F4F6;         /* 호버 배경 */
+  --color-card-hover: #F9FAFB;       /* 카드 호버 배경 */
+  --color-error-hover: #A51926;      /* 에러 호버 (진한 레드) */
+
+  /* --- 그라디언트/글래스모피즘 --- */
+  --color-gradient-start: #3182F6;   /* 블루 그라디언트 시작 */
+  --color-gradient-end: #1B64DA;     /* 진한 블루 그라디언트 끝 */
+  --color-glass-bg: rgba(255, 255, 255, 0.8); /* 밝은 글래스 배경 */
+  --color-glass-blur: 20px;          /* 글래스 블러 값 */
+
+  /* --- 경기 유형별 색상 (유지, primary만 블루로) --- */
+  --color-game-pickup: #3182F6;      /* 픽업 = 토스 블루 */
+  --color-game-guest: #60A5FA;       /* 게스트 모집 = 밝은 파랑 */
+  --color-game-team: #34C759;        /* 팀 대결 = 토스 그린 */
+
+  /* --- 경기 뱃지 색상 (Badge Colors) --- */
+  --color-badge-blue: #3182F6;       /* 픽업/확정 뱃지 (토스 블루) */
+  --color-badge-green: #34C759;      /* 게스트/모집중 뱃지 */
+  --color-badge-amber: #FF9500;      /* 연습 뱃지 (토스 워닝) */
+  --color-badge-red: #F04452;        /* 상급/에러 뱃지 (토스 에러) */
+  --color-badge-gray: #8B95A1;       /* 완료/비활성 뱃지 */
+
+  /* --- 상태 색상 (Status Semantic) --- */
+  --color-status-live: #F04452;      /* 라이브/진행중 */
+  --color-status-open: #34C759;      /* 모집중 */
+  --color-status-confirmed: #3182F6; /* 확정 */
+  --color-status-closed: #8B95A1;    /* 완료/마감 */
+  --color-status-cancelled: #F04452; /* 취소 */
+
+  /* --- 티어 색상 (Tier Colors, 유지) --- */
+  --color-tier-bronze: #CD7F32;
+  --color-tier-silver: #C0C0C0;
+  --color-tier-gold: #FFD700;
+  --color-tier-platinum: #A78BFA;
+  --color-tier-trophy: #F4A261;      /* 대회 트로피/하이라이트 */
+
+  /* --- AI/특수 기능 색상 --- */
+  --color-ai-purple: #7C3AED;       /* AI 기능 버튼 */
+
+  /* --- 토스 추가 변수 --- */
+  --color-text-strong: #333D4B;      /* 제목 바로 아래 강조 텍스트 */
+  --color-text-tertiary: #6B7684;    /* 3차 텍스트 (중간 회색) */
+  --color-primary-weak: #E8F3FF;     /* 연한 블루 배경 (뱃지, 태그) */
+  --color-primary-disabled: #C9E2FF; /* 비활성 블루 */
+}
+
+/* ---- Light Mode (기본) ---- */
+/* @theme 블록이 이미 라이트 값을 기본으로 가지므로,
+   :root에서는 color-scheme 선언만 유지 */
+:root {
+  color-scheme: light;
 }
 
 /* ---- Dark Mode Variables ---- */
+/* 토스 다크모드: slash-21 컨퍼런스 참고 */
 html.dark {
-  --color-background: #0F1117;
-  --color-card: #1A1D27;
-  --color-elevated: #22252F;
-  --color-surface: #2A2D37;
-
-  --color-primary: #5B7FD6;
-  --color-primary-hover: #7B9AE8;
-  --color-primary-light: rgba(91, 127, 214, 0.15);
-  --color-accent: #F04E54;
-  --color-accent-hover: #FF6B6F;
-  --color-accent-light: rgba(240, 78, 84, 0.15);
-
-  --color-text-primary: #F1F3F5;
-  --color-text-secondary: #9CA3AF;
-  --color-text-muted: #6B7280;
-  --color-text-on-primary: #FFFFFF;
-
-  --color-success: #4ADE80;
-  --color-error: #F87171;
-  --color-warning: #FBBF24;
-  --color-info: #60A5FA;
-
-  --color-border: #2A2D37;
-  --color-border-subtle: #22252F;
-
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
-  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.5);
-
   color-scheme: dark;
+
+  /* 배경/표면 계층 */
+  --color-background: #17171C;       /* 페이지 기본 배경 */
+  --color-card: #1B1B21;             /* 카드 배경 */
+  --color-elevated: #2C2C35;         /* 떠있는 요소 */
+  --color-surface: #1B1B21;          /* 섹션/영역 배경 */
+
+  --color-surface-lowest: #111116;   /* 입력 필드 배경 */
+  --color-surface-low: #1B1B21;      /* surface와 동일 */
+  --color-surface-high: #2C2C35;     /* elevated와 동일 */
+  --color-surface-bright: #3A3A45;   /* 호버 시 배경 */
+
+  /* 텍스트 */
+  --color-text-primary: #F2F4F6;     /* 헤드라인 텍스트 */
+  --color-text-secondary: #B0B8C1;   /* 본문 텍스트 */
+  --color-text-muted: #6B7684;       /* 약한 텍스트 */
+  --color-text-disabled: #4E5968;    /* 비활성 텍스트 */
+  --color-text-strong: #D1D6DB;      /* 강조 텍스트 */
+  --color-text-tertiary: #8B95A1;    /* 3차 텍스트 */
+
+  /* 테두리 */
+  --color-border: #2C2C35;           /* 기본 보더 */
+  --color-border-subtle: #23232B;    /* 미세한 구분선 */
+
+  /* 그림자 (다크모드는 더 진하게) */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+  /* 기존 호환 변수 */
+  --color-bg-primary: #17171C;
+  --color-bg-secondary: #1B1B21;
+  --color-bg-card: #1B1B21;
+  --color-bg-hover: #2C2C35;
+  --color-card-hover: #23232B;
+  --color-error-hover: #A51926;
+
+  /* 글래스 */
+  --color-glass-bg: rgba(23, 23, 28, 0.8);
+
+  /* 보조 색상 (다크에서 밝게 조정) */
+  --color-accent: #F2F4F6;
+  --color-accent-hover: #D1D6DB;
+  --color-accent-light: rgba(242, 244, 246, 0.08);
 }
 
 body {
@@ -96,6 +209,10 @@ html.dark [class*="bg-[#EDF0F8]"] {
   background-color: var(--color-elevated) !important;
 }
 
+html.dark [class*="bg-[#F9FAFB]"] {
+  background-color: var(--color-elevated) !important;
+}
+
 html.dark [class*="bg-[#E8ECF0]"] {
   background-color: var(--color-surface) !important;
 }
@@ -120,11 +237,11 @@ html.dark [class*="text-[#374151]"] {
 }
 
 html.dark [class*="text-[#6B7280]"] {
-  color: var(--color-text-secondary) !important;
+  color: #D1D5DB !important;
 }
 
 html.dark [class*="text-[#9CA3AF]"] {
-  color: var(--color-text-muted) !important;
+  color: #D1D5DB !important;
 }
 
 /* Gradient overlays */
@@ -163,6 +280,60 @@ html.dark [class*="from-[#1B3C87]/15"][class*="to-[#E31B23]"] {
   border-color: rgba(91,127,214,0.25) !important;
 }
 
+/* ====== Large Text Mode (큰글씨 모드) ====== */
+html.large-text {
+  font-size: 120%;
+}
+
+html.large-text [class*="text-xs"] {
+  font-size: 0.9rem !important;
+}
+
+html.large-text [class*="text-sm"] {
+  font-size: 1.05rem !important;
+}
+
+html.large-text [class*="text-base"] {
+  font-size: 1.2rem !important;
+}
+
+html.large-text [class*="text-lg"] {
+  font-size: 1.35rem !important;
+}
+
+html.large-text [class*="text-xl"] {
+  font-size: 1.5rem !important;
+}
+
+html.large-text [class*="text-2xl"] {
+  font-size: 1.8rem !important;
+}
+
+html.large-text [class*="text-[10px]"],
+html.large-text [class*="text-[9px]"] {
+  font-size: 0.8rem !important;
+}
+
+html.large-text [class*="text-[11px]"] {
+  font-size: 0.85rem !important;
+}
+
+/* ====== Typography (토스 스타일: Pretendard 통일, 제목 700 weight) ====== */
+h1, h2, h3,
+[class*="text-xl"],
+[class*="text-2xl"],
+[class*="text-3xl"],
+[class*="text-4xl"] {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: -0.02em; /* 토스 스타일: 약간 좁은 자간 */
+}
+
+/* Material Symbols 기본 설정: 아이콘 폰트의 기본 스타일 지정 */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
 /* 모바일 터치 개선 */
 button,
 a,
@@ -175,8 +346,52 @@ a,
   -webkit-overflow-scrolling: touch;
 }
 
+/* 스크롤바 숨기기 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 @media (max-width: 1023px) {
   .footer-mobile-space {
     padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
   }
+}
+
+/* Sidebar scaling to 96% - 사이드바 내부 컨텐츠를 96%로 표시 (기존 80%에서 120% 확대 적용: 0.8 * 1.2 = 0.96) */
+.sidebar-scaled {
+  transform: scale(0.96);
+  transform-origin: top left;
+  width: 104.17%;
+  height: 104.17%;
+}
+
+/* Hide scrollbar for horizontal scroll sections - 수평 스크롤 영역 스크롤바 숨기기 */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 페이지 전환 fade-in 애니메이션 — 살짝 위로 올라오며 나타남 */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* 모바일 지도 하단 미니카드 슬라이드업 애니메이션 */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.25s ease-out;
 }

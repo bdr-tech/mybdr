@@ -48,11 +48,18 @@ export async function handleOAuthLogin(profile: OAuthProfile): Promise<Response>
 
   // 3. 새 유저 생성
   if (!user) {
+    let finalNickname = nickname || `유저${uid.slice(-6)}`;
+    // 닉네임 중복 시 접미사 추가
+    const existing = await prisma.user.findFirst({ where: { nickname: finalNickname } });
+    if (existing) {
+      finalNickname = `${finalNickname}_${Math.random().toString(36).slice(2, 6)}`;
+    }
+
     user = await prisma.user.create({
       data: {
         email: email || `${provider}_${uid}@oauth.local`,
         passwordDigest: "", // OAuth 유저는 비밀번호 없음
-        nickname: nickname || `유저${uid.slice(-6)}`,
+        nickname: finalNickname,
         provider,
         uid,
         profile_image_url: profileImage,
@@ -64,7 +71,10 @@ export async function handleOAuthLogin(profile: OAuthProfile): Promise<Response>
     // 프로필 이미지/닉네임 업데이트 (없는 경우만)
     const updates: Record<string, string> = {};
     if (!user.profile_image_url && profileImage) updates.profile_image_url = profileImage;
-    if (!user.nickname && nickname) updates.nickname = nickname;
+    if (!user.nickname && nickname) {
+      const nicknameExists = await prisma.user.findFirst({ where: { nickname } });
+      if (!nicknameExists) updates.nickname = nickname;
+    }
     if (!user.phone && phone) updates.phone = phone;
     if (Object.keys(updates).length > 0) {
       await prisma.user.update({ where: { id: user.id }, data: updates });

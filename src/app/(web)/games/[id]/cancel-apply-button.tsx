@@ -30,7 +30,7 @@ export function CancelApplyButton({ gameId }: { gameId: string }) {
 
   return (
     <div className="space-y-1">
-      <p className="text-sm text-[#6B7280]">⏳ 호스트 승인 대기 중입니다.</p>
+      <p className="text-sm text-[var(--color-text-muted)]">⏳ 호스트 승인 대기 중입니다.</p>
       <Button variant="secondary" className="w-full" onClick={handleCancel} disabled={loading}>
         {loading ? "취소 중..." : "신청 취소"}
       </Button>

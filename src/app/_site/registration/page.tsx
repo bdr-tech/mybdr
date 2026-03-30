@@ -51,15 +51,15 @@ export default function SiteRegistrationPage() {
   };
 
   const inputCls =
-    "w-full rounded-[16px] border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50";
-  const labelCls = "mb-1 block text-sm text-[#6B7280]";
+    "w-full rounded-[16px] border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50";
+  const labelCls = "mb-1 block text-sm text-[var(--color-text-muted)]";
 
   if (step === "done") {
     return (
       <div className="flex flex-col items-center py-16 text-center">
         <div className="mb-4 text-5xl">🎉</div>
         <h2 className="mb-2 text-xl font-bold sm:text-2xl">신청 완료!</h2>
-        <p className="text-[#6B7280]">
+        <p className="text-[var(--color-text-muted)]">
           참가 신청이 완료되었습니다. 대회 관계자 검토 후 승인 연락드립니다.
         </p>
       </div>

@@ -10,13 +10,13 @@ export function ProfileIncompleteBanner() {
   }, []);
 
   return (
-    <div className="mb-4 flex items-center justify-between gap-3 rounded-[12px] bg-[#FFF8F0] px-4 py-3 border border-[#E31B23]/30">
-      <p className="text-sm text-[#92400E]">
+    <div className="mb-4 flex items-center justify-between gap-3 rounded-[12px] bg-[var(--color-warning)]/5 px-4 py-3 border border-[var(--color-primary)]/30">
+      <p className="text-sm text-[var(--color-warning)]">
         🔔 프로필을 완성하면 경기 신청이 더 편리해요.
       </p>
       <Link
         href="/profile/edit"
-        className="flex-shrink-0 rounded-[8px] bg-[#E31B23] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#E8935A] transition-colors"
+        className="flex-shrink-0 rounded-[8px] bg-[var(--color-primary)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--color-primary-hover)] transition-colors"
       >
         지금 완성하기
       </Link>

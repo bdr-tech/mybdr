@@ -28,10 +28,10 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  pending: "text-[#FBBF24] bg-[rgba(251,191,36,0.1)]",
-  approved: "text-[#4ADE80] bg-[rgba(74,222,128,0.1)]",
-  rejected: "text-[#EF4444] bg-[rgba(239,68,68,0.1)]",
-  withdrawn: "text-[#9CA3AF] bg-[#EEF2FF]",
+  pending: "text-[var(--color-warning)] bg-[var(--color-warning)]/10",
+  approved: "text-[var(--color-game-team)] bg-[var(--color-game-team)]/10",
+  rejected: "text-[var(--color-error)] bg-[rgba(239,68,68,0.1)]",
+  withdrawn: "text-[var(--color-text-muted)] bg-[var(--color-elevated)]",
 };
 
 export default function TournamentTeamsPage() {
@@ -87,13 +87,13 @@ export default function TournamentTeamsPage() {
   };
 
   if (loading)
-    return <div className="flex h-40 items-center justify-center text-[#6B7280]">불러오는 중...</div>;
+    return <div className="flex h-40 items-center justify-center text-[var(--color-text-muted)]">불러오는 중...</div>;
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <Link href={`/tournament-admin/tournaments/${id}`} className="text-sm text-[#6B7280] hover:text-[#111827]">← 대회 관리</Link>
+          <Link href={`/tournament-admin/tournaments/${id}`} className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">← 대회 관리</Link>
           <h1 className="mt-1 text-xl font-bold sm:text-2xl">참가팀 관리</h1>
         </div>
       </div>
@@ -105,7 +105,7 @@ export default function TournamentTeamsPage() {
             key={s}
             onClick={() => setFilter(s)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-sm transition-colors ${
-              filter === s ? "bg-[#1B3C87] font-semibold text-white" : "bg-[#EEF2FF] text-[#6B7280] hover:text-[#111827]"
+              filter === s ? "bg-[var(--color-accent)] font-semibold text-white" : "bg-[var(--color-elevated)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
             }`}
           >
             {s === "all" ? "전체" : STATUS_LABEL[s]}
@@ -115,7 +115,7 @@ export default function TournamentTeamsPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <Card className="py-12 text-center text-[#6B7280]">
+        <Card className="py-12 text-center text-[var(--color-text-muted)]">
           <div className="mb-2 text-3xl">🏀</div>
           {filter === "all" ? "참가 신청한 팀이 없습니다." : `${STATUS_LABEL[filter]} 상태의 팀이 없습니다.`}
         </Card>
@@ -128,11 +128,11 @@ export default function TournamentTeamsPage() {
                   {/* 팀 색상 아이콘 */}
                   <div
                     className="h-10 w-10 rounded-full"
-                    style={{ backgroundColor: tt.team.primaryColor ?? "#E31B23" }}
+                    style={{ backgroundColor: tt.team.primaryColor ?? "var(--color-primary)" }}
                   />
                   <div>
                     <p className="font-semibold">{tt.team.name}</p>
-                    <p className="text-xs text-[#6B7280]">
+                    <p className="text-xs text-[var(--color-text-muted)]">
                       선수 {tt.players.length}명 ·{" "}
                       {new Date(tt.createdAt).toLocaleDateString("ko-KR")} 신청
                     </p>
@@ -143,7 +143,7 @@ export default function TournamentTeamsPage() {
                   {/* 시드 배정 */}
                   {tt.status === "approved" && (
                     <div className="flex items-center gap-1">
-                      <label className="text-xs text-[#6B7280]">시드</label>
+                      <label className="text-xs text-[var(--color-text-muted)]">시드</label>
                       <input
                         type="number"
                         min={1}
@@ -151,7 +151,7 @@ export default function TournamentTeamsPage() {
                         onBlur={(e) =>
                           updateSeed(tt.id, e.target.value ? Number(e.target.value) : null)
                         }
-                        className="w-16 rounded-[8px] border-none bg-[#EEF2FF] px-2 py-1 text-center text-sm text-[#111827] focus:outline-none focus:ring-1 focus:ring-[#1B3C87]/50"
+                        className="w-16 rounded-[8px] border-none bg-[var(--color-elevated)] px-2 py-1 text-center text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/50"
                         placeholder="-"
                       />
                     </div>
@@ -168,14 +168,14 @@ export default function TournamentTeamsPage() {
                       <button
                         onClick={() => updateStatus(tt.id, "approved")}
                         disabled={actionLoading === tt.id}
-                        className="rounded-full bg-[#4ADE80]/10 px-3 py-1.5 text-xs font-medium text-[#4ADE80] hover:bg-[#4ADE80]/20 disabled:opacity-50"
+                        className="rounded-full bg-[var(--color-game-team)]/10 px-3 py-1.5 text-xs font-medium text-[var(--color-game-team)] hover:bg-[var(--color-game-team)]/20 disabled:opacity-50"
                       >
                         승인
                       </button>
                       <button
                         onClick={() => updateStatus(tt.id, "rejected")}
                         disabled={actionLoading === tt.id}
-                        className="rounded-full bg-[#EF4444]/10 px-3 py-1.5 text-xs font-medium text-[#EF4444] hover:bg-[#EF4444]/20 disabled:opacity-50"
+                        className="rounded-full bg-[var(--color-error)]/10 px-3 py-1.5 text-xs font-medium text-[var(--color-error)] hover:bg-[var(--color-error)]/20 disabled:opacity-50"
                       >
                         거절
                       </button>
@@ -185,7 +185,7 @@ export default function TournamentTeamsPage() {
                     <button
                       onClick={() => updateStatus(tt.id, "rejected")}
                       disabled={actionLoading === tt.id}
-                      className="rounded-full bg-[#EF4444]/10 px-3 py-1.5 text-xs font-medium text-[#EF4444] hover:bg-[#EF4444]/20 disabled:opacity-50"
+                      className="rounded-full bg-[var(--color-error)]/10 px-3 py-1.5 text-xs font-medium text-[var(--color-error)] hover:bg-[var(--color-error)]/20 disabled:opacity-50"
                     >
                       거절
                     </button>
@@ -194,7 +194,7 @@ export default function TournamentTeamsPage() {
                     <button
                       onClick={() => updateStatus(tt.id, "approved")}
                       disabled={actionLoading === tt.id}
-                      className="rounded-full bg-[#4ADE80]/10 px-3 py-1.5 text-xs font-medium text-[#4ADE80] hover:bg-[#4ADE80]/20 disabled:opacity-50"
+                      className="rounded-full bg-[var(--color-game-team)]/10 px-3 py-1.5 text-xs font-medium text-[var(--color-game-team)] hover:bg-[var(--color-game-team)]/20 disabled:opacity-50"
                     >
                       승인으로 변경
                     </button>

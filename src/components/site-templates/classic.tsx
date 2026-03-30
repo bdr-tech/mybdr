@@ -1,5 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Prisma } from "@prisma/client";
+import { TOURNAMENT_STATUS_LABEL, TOURNAMENT_FORMAT_LABEL } from "@/lib/constants/tournament-status";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 
@@ -90,41 +92,31 @@ function fmtTime(d: Date | null | undefined): string {
   });
 }
 
+// 대회 상태/형식 라벨 → 공통 상수에서 가져옴
 function statusLabel(s: string | null): string {
-  const map: Record<string, string> = {
-    draft: "준비 중",
-    registration_open: "참가 신청 중",
-    registration_closed: "신청 마감",
-    ongoing: "진행 중",
-    completed: "종료",
-  };
-  return map[s ?? ""] ?? "대회";
+  return TOURNAMENT_STATUS_LABEL[s ?? ""] ?? "대회";
 }
 
 function formatLabel(f: string | null): string {
-  const map: Record<string, string> = {
-    single_elimination: "싱글 엘리미네이션",
-    double_elimination: "더블 엘리미네이션",
-    round_robin: "라운드 로빈",
-    group_stage: "그룹 스테이지",
-    swiss: "스위스",
-  };
-  return map[f ?? ""] ?? f ?? "";
+  return TOURNAMENT_FORMAT_LABEL[f ?? ""] ?? f ?? "";
 }
 
 function TeamAvatar({ name, logoUrl, size = 8 }: { name: string; logoUrl: string | null; size?: number }) {
   if (logoUrl) {
     return (
-      <img
+      <Image
         src={logoUrl}
         alt={name}
+        width={size * 4}
+        height={size * 4}
         className={`h-${size} w-${size} rounded-full object-cover`}
+        unoptimized /* 외부 도메인이 다양하므로 최적화 생략 */
       />
     );
   }
   return (
     <div
-      className={`flex h-${size} w-${size} items-center justify-center rounded-full bg-[#E8ECF0] text-xs font-bold text-[#6B7280]`}
+      className={`flex h-${size} w-${size} items-center justify-center rounded-full bg-(--color-border) text-xs font-bold text-(--color-text-muted)`}
     >
       {name[0]}
     </div>
@@ -135,11 +127,11 @@ function TeamAvatar({ name, logoUrl, size = 8 }: { name: string; logoUrl: string
 
 function StatCard({ label, value, primary }: { label: string; value: number; primary: string }) {
   return (
-    <div className="rounded-2xl border border-[#E8ECF0] bg-white p-5 text-center shadow-sm">
+    <div className="rounded-2xl border border-(--color-border) bg-(--color-card) p-5 text-center shadow-sm">
       <p className="text-3xl font-bold" style={{ color: primary }}>
         {value}
       </p>
-      <p className="mt-1 text-sm text-[#6B7280]">{label}</p>
+      <p className="mt-1 text-sm text-(--color-text-muted)">{label}</p>
     </div>
   );
 }
@@ -158,13 +150,13 @@ function MatchCard({
   const isCompleted = match.status === "completed";
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#E8ECF0] bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-(--color-border) bg-(--color-card) shadow-sm">
       {/* Round label */}
       {match.roundName && (
-        <div className="border-b border-[#E8ECF0] px-4 py-2">
-          <span className="text-xs font-medium text-[#6B7280]">{match.roundName}</span>
+        <div className="border-b border-(--color-border) px-4 py-2">
+          <span className="text-xs font-medium text-(--color-text-muted)">{match.roundName}</span>
           {match.scheduledAt && (
-            <span className="ml-2 text-xs text-[#9CA3AF]">
+            <span className="ml-2 text-xs text-(--color-text-secondary)">
               {fmtDate(match.scheduledAt)} {fmtTime(match.scheduledAt)}
             </span>
           )}
@@ -175,7 +167,7 @@ function MatchCard({
         {/* Home team */}
         <div className="flex flex-1 flex-col items-center gap-2">
           <TeamAvatar name={home?.name ?? "TBD"} logoUrl={home?.logoUrl ?? null} size={10} />
-          <span className="text-sm font-medium text-[#111827]">{home?.name ?? "TBD"}</span>
+          <span className="text-sm font-medium text-(--color-text-primary)">{home?.name ?? "TBD"}</span>
         </div>
         {/* Score or VS */}
         <div className="flex flex-col items-center px-4">
@@ -185,27 +177,27 @@ function MatchCard({
                 className="text-3xl font-black"
                 style={{
                   color:
-                    (match.homeScore ?? 0) > (match.awayScore ?? 0) ? primary : "#9CA3AF",
+                    (match.homeScore ?? 0) > (match.awayScore ?? 0) ? primary : "var(--color-text-secondary)",
                 }}
               >
                 {match.homeScore ?? 0}
               </span>
-              <span className="text-sm text-[#9CA3AF]">:</span>
+              <span className="text-sm text-(--color-text-secondary)">:</span>
               <span
                 className="text-3xl font-black"
                 style={{
                   color:
-                    (match.awayScore ?? 0) > (match.homeScore ?? 0) ? primary : "#9CA3AF",
+                    (match.awayScore ?? 0) > (match.homeScore ?? 0) ? primary : "var(--color-text-secondary)",
                 }}
               >
                 {match.awayScore ?? 0}
               </span>
             </div>
           ) : (
-            <span className="text-xl font-bold sm:text-2xl text-[#E8ECF0]">VS</span>
+            <span className="text-xl font-bold sm:text-2xl text-(--color-border)">VS</span>
           )}
           {match.scheduledAt && !showScore && !isCompleted && (
-            <span className="mt-1 text-xs text-[#9CA3AF]">
+            <span className="mt-1 text-xs text-(--color-text-secondary)">
               {fmtDate(match.scheduledAt)} {fmtTime(match.scheduledAt)}
             </span>
           )}
@@ -213,11 +205,11 @@ function MatchCard({
         {/* Away team */}
         <div className="flex flex-1 flex-col items-center gap-2">
           <TeamAvatar name={away?.name ?? "TBD"} logoUrl={away?.logoUrl ?? null} size={10} />
-          <span className="text-sm font-medium text-[#111827]">{away?.name ?? "TBD"}</span>
+          <span className="text-sm font-medium text-(--color-text-primary)">{away?.name ?? "TBD"}</span>
         </div>
       </div>
       {match.venue_name && (
-        <div className="border-t border-[#E8ECF0] px-4 py-2 text-center text-xs text-[#9CA3AF]">
+        <div className="border-t border-(--color-border) px-4 py-2 text-center text-xs text-(--color-text-secondary)">
           📍 {match.venue_name}
         </div>
       )}
@@ -252,15 +244,15 @@ function HomePage({
       {teams.length > 0 && (
         <section>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#111827]">팀 순위</h2>
+            <h2 className="text-xl font-bold text-(--color-text-primary)">팀 순위</h2>
             <Link href="/teams" className="text-sm font-medium hover:opacity-80" style={{ color: primary }}>
               전체 보기 →
             </Link>
           </div>
-          <div className="overflow-hidden rounded-2xl border border-[#E8ECF0]">
+          <div className="overflow-hidden rounded-2xl border border-(--color-border)">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-[#E8ECF0] bg-[#F5F7FA] text-xs font-medium text-[#6B7280]">
+                <tr className="border-b border-(--color-border) bg-(--color-surface) text-xs font-medium text-(--color-text-muted)">
                   <th className="px-4 py-3 text-left">순위</th>
                   <th className="px-4 py-3 text-left">팀</th>
                   <th className="px-4 py-3 text-center">승</th>
@@ -272,7 +264,7 @@ function HomePage({
                 {teams.slice(0, 5).map((t, i) => (
                   <tr
                     key={t.id.toString()}
-                    className="border-b border-[#E8ECF0] last:border-0 hover:bg-[#F5F7FA]"
+                    className="border-b border-(--color-border) last:border-0 hover:bg-(--color-surface)"
                   >
                     <td className="px-4 py-3">
                       <span
@@ -280,10 +272,10 @@ function HomePage({
                           i === 0
                             ? "text-yellow-500"
                             : i === 1
-                            ? "text-[#9CA3AF]"
+                            ? "text-(--color-text-secondary)"
                             : i === 2
                             ? "text-amber-600"
-                            : "text-[#C4C9D4]"
+                            : "text-[var(--color-text-disabled)]"
                         }`}
                       >
                         {i + 1}
@@ -292,21 +284,21 @@ function HomePage({
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <TeamAvatar name={t.team.name} logoUrl={t.team.logoUrl} size={7} />
-                        <span className="text-sm font-medium text-[#111827]">{t.team.name}</span>
+                        <span className="text-sm font-medium text-(--color-text-primary)">{t.team.name}</span>
                         {t.team.city && (
-                          <span className="hidden text-xs text-[#9CA3AF] md:inline">
+                          <span className="hidden text-xs text-(--color-text-secondary) md:inline">
                             {t.team.city}
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-center text-sm font-semibold text-[#111827]">
+                    <td className="px-4 py-3 text-center text-sm font-semibold text-(--color-text-primary)">
                       {t.wins ?? 0}
                     </td>
-                    <td className="px-4 py-3 text-center text-sm text-[#6B7280]">
+                    <td className="px-4 py-3 text-center text-sm text-(--color-text-muted)">
                       {t.losses ?? 0}
                     </td>
-                    <td className="hidden px-4 py-3 text-center text-sm text-[#6B7280] md:table-cell">
+                    <td className="hidden px-4 py-3 text-center text-sm text-(--color-text-muted) md:table-cell">
                       {(t.points_for ?? 0) - (t.points_against ?? 0) >= 0 ? "+" : ""}
                       {(t.points_for ?? 0) - (t.points_against ?? 0)}
                     </td>
@@ -322,7 +314,7 @@ function HomePage({
       {upcoming.length > 0 && (
         <section>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#111827]">다음 경기</h2>
+            <h2 className="text-xl font-bold text-(--color-text-primary)">다음 경기</h2>
             <Link href="/schedule" className="text-sm font-medium hover:opacity-80" style={{ color: primary }}>
               전체 일정 →
             </Link>
@@ -335,7 +327,7 @@ function HomePage({
       {completed.length > 0 && (
         <section>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#111827]">최근 결과</h2>
+            <h2 className="text-xl font-bold text-(--color-text-primary)">최근 결과</h2>
             <Link href="/results" className="text-sm font-medium hover:opacity-80" style={{ color: primary }}>
               전체 결과 →
             </Link>
@@ -350,9 +342,9 @@ function HomePage({
 
       {/* 데이터 없음 */}
       {teams.length === 0 && matches.length === 0 && (
-        <div className="py-16 text-center text-[#9CA3AF]">
+        <div className="py-16 text-center text-(--color-text-secondary)">
           <p className="text-5xl mb-4">🏀</p>
-          <p className="text-lg font-medium text-[#6B7280]">대회가 준비 중입니다</p>
+          <p className="text-lg font-medium text-(--color-text-muted)">대회가 준비 중입니다</p>
           <p className="mt-1 text-sm">곧 정보가 업데이트될 예정입니다</p>
         </div>
       )}
@@ -365,20 +357,20 @@ function HomePage({
 function TeamsPage({ teams, primary }: { teams: TeamEntry[]; primary: string }) {
   if (teams.length === 0) {
     return (
-      <div className="py-20 text-center text-[#9CA3AF]">
+      <div className="py-20 text-center text-(--color-text-secondary)">
         <p className="text-5xl mb-4">👥</p>
-        <p className="text-lg font-medium text-[#6B7280]">참가 팀이 아직 없습니다</p>
+        <p className="text-lg font-medium text-(--color-text-muted)">참가 팀이 아직 없습니다</p>
       </div>
     );
   }
 
   return (
     <div>
-      <h2 className="mb-6 text-xl font-bold text-[#111827]">참가팀 ({teams.length})</h2>
-      <div className="overflow-hidden rounded-2xl border border-[#E8ECF0]">
+      <h2 className="mb-6 text-xl font-bold text-(--color-text-primary)">참가팀 ({teams.length})</h2>
+      <div className="overflow-hidden rounded-2xl border border-(--color-border)">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#E8ECF0] bg-[#F5F7FA] text-xs font-medium text-[#6B7280]">
+            <tr className="border-b border-(--color-border) bg-(--color-surface) text-xs font-medium text-(--color-text-muted)">
               <th className="px-4 py-3 text-left">순위</th>
               <th className="px-4 py-3 text-left">팀명</th>
               <th className="px-4 py-3 text-center">승</th>
@@ -393,7 +385,7 @@ function TeamsPage({ teams, primary }: { teams: TeamEntry[]; primary: string }) 
             {teams.map((t, i) => (
               <tr
                 key={t.id.toString()}
-                className="border-b border-[#E8ECF0] last:border-0 hover:bg-[#F5F7FA]"
+                className="border-b border-(--color-border) last:border-0 hover:bg-(--color-surface)"
               >
                 <td className="px-4 py-3 text-center">
                   <span
@@ -401,10 +393,10 @@ function TeamsPage({ teams, primary }: { teams: TeamEntry[]; primary: string }) 
                       i === 0
                         ? "text-yellow-500"
                         : i === 1
-                        ? "text-[#9CA3AF]"
+                        ? "text-(--color-text-secondary)"
                         : i === 2
                         ? "text-amber-600"
-                        : "text-[#C4C9D4]"
+                        : "text-[var(--color-text-disabled)]"
                     }`}
                   >
                     {i + 1}
@@ -414,9 +406,9 @@ function TeamsPage({ teams, primary }: { teams: TeamEntry[]; primary: string }) 
                   <div className="flex items-center gap-3">
                     <TeamAvatar name={t.team.name} logoUrl={t.team.logoUrl} size={9} />
                     <div>
-                      <p className="text-sm font-semibold text-[#111827]">{t.team.name}</p>
+                      <p className="text-sm font-semibold text-(--color-text-primary)">{t.team.name}</p>
                       {t.team.city && (
-                        <p className="text-xs text-[#9CA3AF]">{t.team.city}</p>
+                        <p className="text-xs text-(--color-text-secondary)">{t.team.city}</p>
                       )}
                     </div>
                   </div>
@@ -427,16 +419,16 @@ function TeamsPage({ teams, primary }: { teams: TeamEntry[]; primary: string }) 
                 >
                   {t.wins ?? 0}
                 </td>
-                <td className="px-4 py-3 text-center text-sm text-[#6B7280]">
+                <td className="px-4 py-3 text-center text-sm text-(--color-text-muted)">
                   {t.losses ?? 0}
                 </td>
-                <td className="hidden px-4 py-3 text-center text-sm text-[#6B7280] md:table-cell">
+                <td className="hidden px-4 py-3 text-center text-sm text-(--color-text-muted) md:table-cell">
                   {t.draws ?? 0}
                 </td>
-                <td className="hidden px-4 py-3 text-center text-sm text-[#6B7280] md:table-cell">
+                <td className="hidden px-4 py-3 text-center text-sm text-(--color-text-muted) md:table-cell">
                   {t.points_for ?? 0}
                 </td>
-                <td className="hidden px-4 py-3 text-center text-sm text-[#6B7280] md:table-cell">
+                <td className="hidden px-4 py-3 text-center text-sm text-(--color-text-muted) md:table-cell">
                   {t.points_against ?? 0}
                 </td>
                 <td className="hidden px-4 py-3 text-center text-sm md:table-cell" style={{ color: primary }}>
@@ -465,16 +457,16 @@ function SchedulePage({
 
   if (upcoming.length === 0) {
     return (
-      <div className="py-20 text-center text-[#9CA3AF]">
+      <div className="py-20 text-center text-(--color-text-secondary)">
         <p className="text-5xl mb-4">📅</p>
-        <p className="text-lg font-medium text-[#6B7280]">예정된 경기가 없습니다</p>
+        <p className="text-lg font-medium text-(--color-text-muted)">예정된 경기가 없습니다</p>
       </div>
     );
   }
 
   return (
     <div>
-      <h2 className="mb-6 text-xl font-bold text-[#111827]">경기 일정 ({upcoming.length})</h2>
+      <h2 className="mb-6 text-xl font-bold text-(--color-text-primary)">경기 일정 ({upcoming.length})</h2>
       <div className="space-y-3">
         {upcoming.map((m) => (
           <MatchCard key={m.id.toString()} match={m} primary={primary} />
@@ -497,16 +489,16 @@ function ResultsPage({
 
   if (completed.length === 0) {
     return (
-      <div className="py-20 text-center text-[#9CA3AF]">
+      <div className="py-20 text-center text-(--color-text-secondary)">
         <p className="text-5xl mb-4">🏆</p>
-        <p className="text-lg font-medium text-[#6B7280]">완료된 경기가 없습니다</p>
+        <p className="text-lg font-medium text-(--color-text-muted)">완료된 경기가 없습니다</p>
       </div>
     );
   }
 
   return (
     <div>
-      <h2 className="mb-6 text-xl font-bold text-[#111827]">경기 결과 ({completed.length})</h2>
+      <h2 className="mb-6 text-xl font-bold text-(--color-text-primary)">경기 결과 ({completed.length})</h2>
       <div className="space-y-3">
         {[...completed].reverse().map((m) => (
           <MatchCard key={m.id.toString()} match={m} primary={primary} showScore />
@@ -525,6 +517,7 @@ function RegistrationPage({
   tournament: Tournament;
   primary: string;
 }) {
+  // 상태별 색상 - 의미적 고정 색상이므로 하드코딩 유지 (시맨틱 컬러)
   const statusColors: Record<string, string> = {
     registration_open: "#22C55E",
     registration_closed: "#EF4444",
@@ -535,37 +528,37 @@ function RegistrationPage({
 
   return (
     <div className="mx-auto max-w-xl">
-      <h2 className="mb-6 text-xl font-bold text-[#111827]">참가 신청</h2>
+      <h2 className="mb-6 text-xl font-bold text-(--color-text-primary)">참가 신청</h2>
 
       <div className="space-y-4">
         {/* 신청 상태 */}
-        <div className="flex items-center justify-between rounded-2xl border border-[#E8ECF0] bg-white p-5 shadow-sm">
-          <span className="text-sm font-medium text-[#6B7280]">신청 현황</span>
+        <div className="flex items-center justify-between rounded-2xl border border-(--color-border) bg-(--color-card) p-5 shadow-sm">
+          <span className="text-sm font-medium text-(--color-text-muted)">신청 현황</span>
           <span className="text-sm font-bold" style={{ color: statusColor }}>
             ● {statusLabel(tournament.status)}
           </span>
         </div>
 
         {/* 정보 카드 */}
-        <div className="rounded-2xl border border-[#E8ECF0] bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-base font-semibold text-[#111827]">대회 정보</h3>
+        <div className="rounded-2xl border border-(--color-border) bg-(--color-card) p-6 shadow-sm">
+          <h3 className="mb-4 text-base font-semibold text-(--color-text-primary)">대회 정보</h3>
           <dl className="space-y-3 text-sm">
             {tournament.format && (
               <div className="flex justify-between">
-                <dt className="text-[#6B7280]">방식</dt>
-                <dd className="font-medium text-[#111827]">{formatLabel(tournament.format)}</dd>
+                <dt className="text-(--color-text-muted)">방식</dt>
+                <dd className="font-medium text-(--color-text-primary)">{formatLabel(tournament.format)}</dd>
               </div>
             )}
             {tournament.maxTeams && (
               <div className="flex justify-between">
-                <dt className="text-[#6B7280]">최대 참가팀</dt>
-                <dd className="font-medium text-[#111827]">{tournament.maxTeams}팀</dd>
+                <dt className="text-(--color-text-muted)">최대 참가팀</dt>
+                <dd className="font-medium text-(--color-text-primary)">{tournament.maxTeams}팀</dd>
               </div>
             )}
             {tournament.startDate && (
               <div className="flex justify-between">
-                <dt className="text-[#6B7280]">대회 기간</dt>
-                <dd className="font-medium text-[#111827]">
+                <dt className="text-(--color-text-muted)">대회 기간</dt>
+                <dd className="font-medium text-(--color-text-primary)">
                   {fmtDateFull(tournament.startDate)}
                   {tournament.endDate && ` ~ ${fmtDateFull(tournament.endDate)}`}
                 </dd>
@@ -573,14 +566,14 @@ function RegistrationPage({
             )}
             {tournament.venue_name && (
               <div className="flex justify-between">
-                <dt className="text-[#6B7280]">장소</dt>
-                <dd className="font-medium text-[#111827]">{tournament.venue_name}</dd>
+                <dt className="text-(--color-text-muted)">장소</dt>
+                <dd className="font-medium text-(--color-text-primary)">{tournament.venue_name}</dd>
               </div>
             )}
             {tournament.entry_fee !== null && tournament.entry_fee !== undefined && (
               <div className="flex justify-between">
-                <dt className="text-[#6B7280]">참가비</dt>
-                <dd className="font-medium text-[#111827]">
+                <dt className="text-(--color-text-muted)">참가비</dt>
+                <dd className="font-medium text-(--color-text-primary)">
                   {Number(tournament.entry_fee) === 0
                     ? "무료"
                     : `₩${Number(tournament.entry_fee).toLocaleString()}`}
@@ -602,7 +595,7 @@ function RegistrationPage({
             신청하기 →
           </a>
         ) : (
-          <div className="rounded-2xl bg-[#F5F7FA] p-4 text-center text-sm text-[#9CA3AF]">
+          <div className="rounded-2xl bg-(--color-surface) p-4 text-center text-sm text-(--color-text-secondary)">
             {tournament.status === "completed"
               ? "대회가 종료되었습니다"
               : "현재 참가 신청을 받지 않습니다"}
@@ -634,15 +627,15 @@ export function ClassicTemplate({
   const secondary = site.secondaryColor ?? "#E76F51";
   const siteName = site.site_name ?? site.tournament.name;
 
-  // dark 템플릿은 어두운 배경으로 변형
+  // dark 템플릿은 어두운 배경으로 변형 - CSS 변수가 자동으로 다크/라이트 대응
   const isDark = templateType === "dark";
-  const bgBase = isDark ? "#0F172A" : "#FFFFFF";
+  const bgBase = isDark ? "#0F172A" : "var(--color-card)";
   const bgHero = isDark
     ? `linear-gradient(160deg, ${primary}30 0%, #0F172A 60%)`
     : `linear-gradient(160deg, ${primary}12 0%, ${secondary}08 100%)`;
-  const textPrimary = isDark ? "#F1F5F9" : "#111827";
-  const textSecondary = isDark ? "#94A3B8" : "#6B7280";
-  const borderColor = isDark ? "#1E293B" : "#E8ECF0";
+  const textPrimary = isDark ? "#F1F5F9" : "var(--color-text-primary)";
+  const textSecondary = isDark ? "#94A3B8" : "var(--color-text-muted)";
+  const borderColor = isDark ? "#1E293B" : "var(--color-border)";
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: bgBase }}>
@@ -651,7 +644,7 @@ export function ClassicTemplate({
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
           <Link href="/" className="flex items-center gap-2">
             {site.logoUrl ? (
-              <img src={site.logoUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
+              <Image src={site.logoUrl} alt={`${siteName} 로고`} width={32} height={32} className="h-8 w-8 rounded-full object-cover" unoptimized />
             ) : (
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-sm font-bold text-white">
                 {siteName[0]}
@@ -699,7 +692,7 @@ export function ClassicTemplate({
         className="border-b py-12 text-center"
         style={{
           background: bgHero,
-          borderColor: isDark ? "#1E293B" : "#E8ECF0",
+          borderColor: isDark ? "#1E293B" : "var(--color-border)",
         }}
       >
         <span

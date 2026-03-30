@@ -210,7 +210,7 @@ function MatchCard({ match, isLive }: { match: LiveMatch; isLive?: boolean }) {
 
         {/* 터치해서 박스스코어 보기 */}
         <div className="mt-3 text-center">
-          <span className="text-[10px] text-gray-600">
+          <span className="text-xs text-gray-600">
             터치하면 박스스코어를 볼 수 있습니다
           </span>
         </div>

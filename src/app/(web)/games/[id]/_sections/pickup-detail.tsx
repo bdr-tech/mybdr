@@ -1,5 +1,9 @@
 import type { games } from "@prisma/client";
 
+// 픽업 경기 상세: 시설 안내(Amenities) + 경기 규칙(Rules) 스타일
+// 기존 테이블 형태 -> 디자인 시안(bdr_2, bdr_6) 기반 카드 레이아웃으로 전환
+// 데이터 로직은 100% 유지, UI만 변경
+
 interface PickupDetailProps {
   game: Pick<
     games,
@@ -30,85 +34,117 @@ const SKILL_LABEL: Record<string, string> = {
   advanced: "고급",
 };
 
-function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <tr className="border-b border-[#E8ECF0] last:border-0">
-      <th className="w-24 py-2.5 pr-4 text-left text-sm font-normal text-[#6B7280] align-top whitespace-nowrap">
-        {label}
-      </th>
-      <td className="py-2.5 text-sm font-medium text-[#111827]">{value}</td>
-    </tr>
-  );
-}
-
 export function PickupDetail({ game }: PickupDetailProps) {
+  // 장소 정보 조합
   const location = [game.city, game.district, game.venue_name]
     .filter(Boolean)
     .join(" ");
-  const cur = game.current_participants ?? 0;
-  const max = game.max_participants ?? 0;
 
-  const feeDisplay = game.entry_fee_note
-    ? game.entry_fee_note
-    : game.fee_per_person && Number(game.fee_per_person) > 0
-    ? `${Number(game.fee_per_person).toLocaleString()}원`
-    : "무료";
+  // requirements를 줄바꿈 기준으로 규칙 목록으로 분리
+  const rules = game.requirements
+    ? game.requirements.split("\n").filter((r) => r.trim())
+    : [];
 
   return (
-    <table className="w-full">
-      <tbody>
-        <InfoRow
-          label="일시"
-          value={
-            game.scheduled_at
-              ? game.scheduled_at.toLocaleString("ko-KR", {
-                  timeZone: "Asia/Seoul",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  weekday: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : "-"
-          }
-        />
-        {game.duration_hours && (
-          <InfoRow label="경기 시간" value={`${game.duration_hours}시간`} />
-        )}
-        {location && <InfoRow label="장소" value={location} />}
-        {game.venue_address && (
-          <InfoRow label="주소" value={game.venue_address} />
-        )}
-        <InfoRow
-          label="모집 인원"
-          value={`${game.min_participants ?? 4}~${max}명 (현재 ${cur}명)`}
-        />
-        <InfoRow label="참가비" value={feeDisplay} />
-        {game.contact_phone && (
-          <InfoRow
-            label="담당자 연락처"
-            value={
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* 시설 안내 (Amenities) - 2칸 차지 */}
+      <section className="md:col-span-2 bg-[var(--color-card)] p-6 rounded-xl border border-[var(--color-border)] shadow-sm">
+        <h3 className="text-[var(--color-accent)] dark:text-[var(--color-game-guest)] font-bold text-xl mb-6 flex items-center gap-2">
+          <span className="material-symbols-outlined">info</span>
+          시설 안내 (Amenities)
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {/* 장소 정보 */}
+          {location && (
+            <div className="flex flex-col items-center p-4 bg-[var(--color-surface)] rounded-lg border border-transparent hover:border-[var(--color-primary)] transition-all">
+              <span className="material-symbols-outlined text-[var(--color-primary)] text-3xl mb-2">location_on</span>
+              <span className="text-sm font-medium text-[var(--color-text-primary)] text-center">{location}</span>
+              <span className="text-xs text-[var(--color-text-muted)]">Location</span>
+            </div>
+          )}
+
+          {/* 주소 */}
+          {game.venue_address && (
+            <div className="flex flex-col items-center p-4 bg-[var(--color-surface)] rounded-lg border border-transparent hover:border-[var(--color-primary)] transition-all">
+              <span className="material-symbols-outlined text-[var(--color-primary)] text-3xl mb-2">map</span>
+              <span className="text-sm font-medium text-[var(--color-text-primary)] text-center">{game.venue_address}</span>
+              <span className="text-xs text-[var(--color-text-muted)]">Address</span>
+            </div>
+          )}
+
+          {/* 경기 시간 */}
+          {game.duration_hours && (
+            <div className="flex flex-col items-center p-4 bg-[var(--color-surface)] rounded-lg border border-transparent hover:border-[var(--color-primary)] transition-all">
+              <span className="material-symbols-outlined text-[var(--color-primary)] text-3xl mb-2">timer</span>
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">{game.duration_hours}시간</span>
+              <span className="text-xs text-[var(--color-text-muted)]">Duration</span>
+            </div>
+          )}
+
+          {/* 실력 수준 */}
+          {game.skill_level && game.skill_level !== "all" && (
+            <div className="flex flex-col items-center p-4 bg-[var(--color-surface)] rounded-lg border border-transparent hover:border-[var(--color-primary)] transition-all">
+              <span className="material-symbols-outlined text-[var(--color-primary)] text-3xl mb-2">fitness_center</span>
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                {SKILL_LABEL[game.skill_level] ?? game.skill_level}
+              </span>
+              <span className="text-xs text-[var(--color-text-muted)]">Skill Level</span>
+            </div>
+          )}
+
+          {/* 연락처 */}
+          {game.contact_phone && (
+            <div className="flex flex-col items-center p-4 bg-[var(--color-surface)] rounded-lg border border-transparent hover:border-[var(--color-primary)] transition-all">
+              <span className="material-symbols-outlined text-[var(--color-primary)] text-3xl mb-2">call</span>
               <a
                 href={`tel:${game.contact_phone}`}
-                className="text-[#1B3C87] hover:underline"
+                className="text-sm font-medium text-[var(--color-text-primary)] hover:underline"
               >
                 {game.contact_phone}
               </a>
-            }
-          />
-        )}
-        {game.skill_level && game.skill_level !== "all" && (
-          <InfoRow
-            label="기술 수준"
-            value={SKILL_LABEL[game.skill_level] ?? game.skill_level}
-          />
-        )}
-        {game.requirements && (
-          <InfoRow label="참가 조건" value={game.requirements} />
-        )}
-        {game.notes && <InfoRow label="비고" value={game.notes} />}
-      </tbody>
-    </table>
+              <span className="text-xs text-[var(--color-text-muted)]">Contact</span>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* 경기 규칙 (Rules) - 1칸 차지 */}
+      <section className="bg-[var(--color-card)] p-6 rounded-xl border border-[var(--color-border)] shadow-sm">
+        <h3 className="text-[var(--color-accent)] dark:text-[var(--color-game-guest)] font-bold text-lg mb-4">
+          경기 규칙 (Rules)
+        </h3>
+        <ul className="space-y-3">
+          {/* 기본 규칙: 모집 인원 표시 */}
+          <li className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
+            <span className="material-symbols-outlined text-[var(--color-primary)] text-sm mt-1">check_circle</span>
+            {game.min_participants ?? 4}~{game.max_participants ?? 0}명 모집 (현재 {game.current_participants ?? 0}명)
+          </li>
+
+          {/* requirements에서 파싱한 규칙들 */}
+          {rules.map((rule, i) => (
+            <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
+              <span className="material-symbols-outlined text-[var(--color-primary)] text-sm mt-1">check_circle</span>
+              {rule.trim()}
+            </li>
+          ))}
+
+          {/* 비고(notes)가 있으면 표시 */}
+          {game.notes && (
+            <li className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
+              <span className="material-symbols-outlined text-[var(--color-primary)] text-sm mt-1">check_circle</span>
+              {game.notes}
+            </li>
+          )}
+
+          {/* 규칙이 하나도 없을 때 기본 메시지 */}
+          {rules.length === 0 && !game.notes && (
+            <li className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
+              <span className="material-symbols-outlined text-[var(--color-primary)] text-sm mt-1">check_circle</span>
+              모든 레벨 환영
+            </li>
+          )}
+        </ul>
+      </section>
+    </div>
   );
 }

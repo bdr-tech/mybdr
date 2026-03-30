@@ -26,7 +26,7 @@ const securityHeaders = [
   },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), payment=()",
+    value: "camera=(), microphone=(), geolocation=(self), payment=()",
   },
   {
     key: "Cross-Origin-Opener-Policy",
@@ -43,12 +43,12 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       // TODO: middleware에서 nonce 생성 구현 후 'unsafe-inline' 제거
-      "script-src 'self' 'unsafe-inline' https://accounts.google.com https://t1.daumcdn.net",
-      "style-src 'self' 'unsafe-inline'", // Tailwind inline은 불가피
-      "img-src 'self' data: https:",
-      "font-src 'self' data:",
-      "connect-src 'self' https:",
-      "frame-src https://postcode.map.daum.net http://postcode.map.daum.net https://postcode.map.kakao.com http://postcode.map.kakao.com https://t1.daumcdn.net https://accounts.google.com https://nid.naver.com https://kauth.kakao.com", // 카카오 우편번호 + OAuth
+      "script-src 'self' 'unsafe-inline' https://accounts.google.com https://t1.daumcdn.net http://t1.daumcdn.net https://dapi.kakao.com http://dapi.kakao.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://t1.daumcdn.net http://t1.daumcdn.net https://cdn.jsdelivr.net",
+      "img-src 'self' data: https: http:",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      "connect-src 'self' https: http:",
+      "frame-src https://postcode.map.daum.net http://postcode.map.daum.net https://postcode.map.kakao.com http://postcode.map.kakao.com https://t1.daumcdn.net https://accounts.google.com https://nid.naver.com https://kauth.kakao.com https://www.youtube.com https://www.youtube-nocookie.com", // 카카오 우편번호 + OAuth + YouTube embed
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -57,6 +57,17 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  images: {
+    // AVIF 우선, 미지원 브라우저는 WebP fallback (AVIF는 WebP보다 20~30% 더 작음)
+    formats: ["image/avif", "image/webp"],
+    remotePatterns: [
+      { protocol: "http", hostname: "k.kakaocdn.net" },
+      { protocol: "https", hostname: "k.kakaocdn.net" },
+      { protocol: "https", hostname: "p.kakaocdn.net" },
+      { protocol: "https", hostname: "phinf.pstatic.net" },
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
+    ],
+  },
   // Serwist(@serwist/next)가 webpack config를 추가함 → Turbopack이 경고 발생
   // dev는 disable:true로 SW 비활성화, 프로덕션 빌드(webpack)만 Serwist 사용
   // turbopack: {} → "이 설정을 인지했다"고 Next.js에 알림 (경고 억제)

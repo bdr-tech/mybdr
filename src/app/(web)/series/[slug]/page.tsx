@@ -68,32 +68,32 @@ export default async function SeriesHubPage({
       <div className="mb-6 text-center">
         <h1 className="text-3xl font-bold">{series.name}</h1>
         {series.description && (
-          <p className="mt-2 text-[#6B7280]">{series.description}</p>
+          <p className="mt-2 text-[var(--color-text-muted)]">{series.description}</p>
         )}
       </div>
 
       {/* 통계 */}
       <div className="mb-8 grid grid-cols-3 gap-3">
-        <div className="rounded-[16px] bg-[#EEF2FF] p-4 text-center">
-          <p className="text-xl font-bold sm:text-2xl text-[#1B3C87]">{series.tournaments_count ?? 0}</p>
-          <p className="mt-1 text-xs text-[#6B7280]">총 회차</p>
+        <div className="rounded-[16px] bg-[var(--color-surface-bright)] p-4 text-center">
+          <p className="text-xl font-bold sm:text-2xl text-[var(--color-accent)]">{series.tournaments_count ?? 0}</p>
+          <p className="mt-1 text-xs text-[var(--color-text-muted)]">총 회차</p>
         </div>
-        <div className="rounded-[16px] bg-[#EEF2FF] p-4 text-center">
-          <p className="text-xl font-bold sm:text-2xl text-[#1B3C87]">{totalTeams}</p>
-          <p className="mt-1 text-xs text-[#6B7280]">누적 참가팀</p>
+        <div className="rounded-[16px] bg-[var(--color-surface-bright)] p-4 text-center">
+          <p className="text-xl font-bold sm:text-2xl text-[var(--color-accent)]">{totalTeams}</p>
+          <p className="mt-1 text-xs text-[var(--color-text-muted)]">누적 참가팀</p>
         </div>
-        <div className="rounded-[16px] bg-[#EEF2FF] p-4 text-center">
-          <p className="text-xl font-bold sm:text-2xl text-[#E31B23]">
+        <div className="rounded-[16px] bg-[var(--color-surface-bright)] p-4 text-center">
+          <p className="text-xl font-bold sm:text-2xl text-[var(--color-primary)]">
             {latestActive ? `${latestActive.edition_number}회` : "-"}
           </p>
-          <p className="mt-1 text-xs text-[#6B7280]">진행 중</p>
+          <p className="mt-1 text-xs text-[var(--color-text-muted)]">진행 중</p>
         </div>
       </div>
 
       {/* CTA — 모집 중인 회차 강조 */}
       {latestActive && (
         <Link href={`/tournaments/${latestActive.id}`}>
-          <div className="mb-6 rounded-[16px] bg-[#1B3C87] px-6 py-4 text-white">
+          <div className="mb-6 rounded-[16px] bg-[var(--color-accent)] px-6 py-4 text-white">
             <p className="text-xs opacity-80">현재 신청 가능</p>
             <p className="mt-0.5 text-lg font-bold">{latestActive.name}</p>
             {latestActive.startDate && (
@@ -117,14 +117,14 @@ export default async function SeriesHubPage({
             const location = [t.city, t.venue_name].filter(Boolean).join(" ");
             return (
               <Link key={t.id} href={`/tournaments/${t.id}`}>
-                <Card className="flex items-center justify-between hover:bg-[#EEF2FF] transition-colors cursor-pointer">
+                <Card className="flex items-center justify-between hover:bg-[var(--color-surface-bright)] transition-colors cursor-pointer">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#EEF2FF] text-sm font-bold text-[#1B3C87]">
+                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-bright)] text-sm font-bold text-[var(--color-accent)]">
                       {t.edition_number}
                     </span>
                     <div>
                       <p className="font-medium">{t.name}</p>
-                      <p className="text-xs text-[#9CA3AF]">
+                      <p className="text-xs text-[var(--color-text-secondary)]">
                         {t.startDate
                           ? new Date(t.startDate).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })
                           : "날짜 미정"}
@@ -140,7 +140,7 @@ export default async function SeriesHubPage({
           })}
         </div>
       ) : (
-        <Card className="py-12 text-center text-[#6B7280]">
+        <Card className="py-12 text-center text-[var(--color-text-muted)]">
           <p className="text-sm">아직 공개된 회차가 없습니다.</p>
         </Card>
       )}

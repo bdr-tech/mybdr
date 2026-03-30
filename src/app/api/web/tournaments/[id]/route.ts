@@ -66,6 +66,29 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (data.auto_approve_teams !== undefined) updateData.auto_approve_teams = data.auto_approve_teams;
   if (data.primary_color !== undefined) updateData.primary_color = data.primary_color;
   if (data.secondary_color !== undefined) updateData.secondary_color = data.secondary_color;
+  // 접수 설정
+  if (data.categories !== undefined) updateData.categories = data.categories;
+  if (data.div_caps !== undefined) updateData.div_caps = data.div_caps;
+  if (data.div_fees !== undefined) updateData.div_fees = data.div_fees;
+  if (data.allow_waiting_list !== undefined) updateData.allow_waiting_list = data.allow_waiting_list;
+  if (data.waiting_list_cap !== undefined) updateData.waiting_list_cap = data.waiting_list_cap;
+  if (data.bank_name !== undefined) updateData.bank_name = data.bank_name;
+  if (data.bank_account !== undefined) updateData.bank_account = data.bank_account;
+  if (data.bank_holder !== undefined) updateData.bank_holder = data.bank_holder;
+  if (data.fee_notes !== undefined) updateData.fee_notes = data.fee_notes;
+  // 새 필드: 주최/주관/후원/성별/경기설정/장소
+  if (data.organizer !== undefined) updateData.organizer = data.organizer;
+  if (data.host !== undefined) updateData.host = data.host;
+  if (data.sponsors !== undefined) updateData.sponsors = data.sponsors;
+  if (data.gender !== undefined) updateData.gender = data.gender;
+  if (data.game_time !== undefined) updateData.game_time = data.game_time;
+  if (data.game_ball !== undefined) updateData.game_ball = data.game_ball;
+  if (data.game_method !== undefined) updateData.game_method = data.game_method;
+  if (data.places !== undefined) updateData.places = data.places;
+  // 디자인 템플릿 + 이미지 URL
+  if (data.design_template !== undefined) updateData.design_template = data.design_template;
+  if (data.logo_url !== undefined) updateData.logo_url = data.logo_url || null;
+  if (data.banner_url !== undefined) updateData.banner_url = data.banner_url || null;
 
   const updated = await updateTournament(id, updateData);
 

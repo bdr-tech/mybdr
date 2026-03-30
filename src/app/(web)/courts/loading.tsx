@@ -9,7 +9,7 @@ export default function CourtsLoading() {
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="rounded-[16px] border border-[#E8ECF0] bg-white overflow-hidden">
+          <div key={i} className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] overflow-hidden">
             <Skeleton className="h-40 rounded-none" />
             <div className="p-4 space-y-2">
               <Skeleton className="h-5 w-32" />

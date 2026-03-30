@@ -35,7 +35,7 @@ export default async function SiteResultsPage() {
       <h2 className="mb-6 text-xl font-bold sm:text-2xl">경기 결과</h2>
 
       {completed.length === 0 ? (
-        <Card className="py-12 text-center text-[#6B7280]">
+        <Card className="py-12 text-center text-[var(--color-text-muted)]">
           <div className="mb-2 text-3xl">📋</div>
           아직 종료된 경기가 없습니다.
         </Card>
@@ -47,7 +47,7 @@ export default async function SiteResultsPage() {
 
             return (
               <div key={roundNum}>
-                <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#6B7280]">
+                <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
                   {label}
                 </h3>
                 <div className="space-y-2">
@@ -61,7 +61,7 @@ export default async function SiteResultsPage() {
                           {/* 홈팀 */}
                           <div className="flex flex-1 items-center justify-end gap-2">
                             {homeWin && (
-                              <span className="text-xs font-bold text-[#E31B23]">WIN</span>
+                              <span className="text-xs font-bold text-[var(--color-primary)]">WIN</span>
                             )}
                             <div className="flex items-center gap-2">
                               {m.homeTeam?.team.primaryColor && (
@@ -71,7 +71,7 @@ export default async function SiteResultsPage() {
                                 />
                               )}
                               <span
-                                className={`font-semibold ${homeWin ? "text-[#E31B23]" : "text-[#111827]"}`}
+                                className={`font-semibold ${homeWin ? "text-[var(--color-primary)]" : "text-[var(--color-text-primary)]"}`}
                               >
                                 {m.homeTeam?.team.name ?? "TBD"}
                               </span>
@@ -81,13 +81,13 @@ export default async function SiteResultsPage() {
                           {/* 스코어 */}
                           <div className="flex items-center gap-2">
                             <span
-                              className={`min-w-[2rem] text-center text-xl font-bold sm:text-2xl ${homeWin ? "text-[#E31B23]" : ""}`}
+                              className={`min-w-[2rem] text-center text-xl font-bold sm:text-2xl ${homeWin ? "text-[var(--color-primary)]" : ""}`}
                             >
                               {m.homeScore}
                             </span>
-                            <span className="text-[#9CA3AF]">:</span>
+                            <span className="text-[var(--color-text-muted)]">:</span>
                             <span
-                              className={`min-w-[2rem] text-center text-xl font-bold sm:text-2xl ${awayWin ? "text-[#E31B23]" : ""}`}
+                              className={`min-w-[2rem] text-center text-xl font-bold sm:text-2xl ${awayWin ? "text-[var(--color-primary)]" : ""}`}
                             >
                               {m.awayScore}
                             </span>
@@ -103,19 +103,19 @@ export default async function SiteResultsPage() {
                                 />
                               )}
                               <span
-                                className={`font-semibold ${awayWin ? "text-[#E31B23]" : "text-[#111827]"}`}
+                                className={`font-semibold ${awayWin ? "text-[var(--color-primary)]" : "text-[var(--color-text-primary)]"}`}
                               >
                                 {m.awayTeam?.team.name ?? "TBD"}
                               </span>
                             </div>
                             {awayWin && (
-                              <span className="text-xs font-bold text-[#E31B23]">WIN</span>
+                              <span className="text-xs font-bold text-[var(--color-primary)]">WIN</span>
                             )}
                           </div>
                         </div>
 
                         {m.scheduledAt && (
-                          <p className="mt-1 text-center text-xs text-[#9CA3AF]">
+                          <p className="mt-1 text-center text-xs text-[var(--color-text-muted)]">
                             {m.scheduledAt.toLocaleDateString("ko-KR")}
                             {m.venue_name ? ` · ${m.venue_name}` : ""}
                           </p>

@@ -8,7 +8,12 @@ export const dynamic = "force-dynamic";
 export const GET = withWebAuth(async (ctx: WebAuthContext) => {
   const user = await prisma.user.findUnique({
     where: { id: ctx.userId },
-    select: { profile_image: true, profile_image_url: true },
+    select: {
+      profile_image: true,
+      profile_image_url: true,
+      // 맞춤 보기 토글 상태를 DB에서 직접 읽어옴 (디비전 존재 여부가 아닌 실제 저장값)
+      prefer_filter_enabled: true,
+    },
   }).catch(() => null);
 
   return apiSuccess({
@@ -17,5 +22,7 @@ export const GET = withWebAuth(async (ctx: WebAuthContext) => {
     name: ctx.session.name,
     role: ctx.session.role,
     profileImage: user?.profile_image_url || user?.profile_image || null,
+    // DB에 저장된 실제 토글 상태값을 반환 (false면 OFF, true면 ON)
+    prefer_filter_enabled: user?.prefer_filter_enabled ?? false,
   });
 });

@@ -35,28 +35,28 @@ export function TeamMatchCard({ game }: { game: GameCardData }) {
   return (
     <Link href={href}>
       <div
-        className="group relative overflow-hidden rounded-[16px] bg-white p-5 transition-all hover:bg-[#F0FDF4] hover:-translate-y-0.5 hover:shadow-lg"
-        style={{ borderLeft: "3px solid #4ADE80" }}
+        className="group relative overflow-hidden rounded-[16px] bg-[var(--color-card)] p-5 transition-all hover:bg-[var(--color-surface-bright)] hover:-translate-y-0.5 hover:shadow-lg"
+        style={{ borderLeft: "3px solid var(--color-game-team)" }}
       >
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="text-base">⚔️</span>
-            <span className="text-xs font-medium" style={{ color: "#4ADE80" }}>팀 대결</span>
+            <span className="text-xs font-medium" style={{ color: "var(--color-game-team)" }}>팀 대결</span>
           </div>
           <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
         </div>
 
-        <h3 className="mb-3 font-semibold leading-snug text-[#111827] line-clamp-2">{game.title}</h3>
+        <h3 className="mb-3 font-semibold leading-snug text-[var(--color-text-primary)] line-clamp-2">{game.title}</h3>
 
         <div className="mb-3 space-y-1">
           {location && (
-            <div className="flex items-center gap-1.5 text-xs text-[#6B7280]">
+            <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
               <span>📍</span>
               <span className="truncate">{location}</span>
             </div>
           )}
           {game.scheduled_at && (
-            <div className="flex items-center gap-1.5 text-xs text-[#6B7280]">
+            <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
               <span>📅</span>
               <span>
                 {game.scheduled_at.toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short", timeZone: "Asia/Seoul" })}
@@ -67,26 +67,26 @@ export function TeamMatchCard({ game }: { game: GameCardData }) {
           )}
         </div>
 
-        <div className="mb-3 h-px bg-[#E8ECF0]" />
+        <div className="mb-3 h-px bg-[var(--color-border)]" />
 
         {/* 유니폼 색상 */}
-        <div className="flex items-center gap-2 text-xs text-[#6B7280]">
+        <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
           <span>유니폼</span>
           <div className="flex items-center gap-1">
             <span
-              className="inline-block h-4 w-4 rounded-full border border-[#E8ECF0] shadow-sm"
+              className="inline-block h-4 w-4 rounded-full border border-[var(--color-border)] shadow-sm"
               style={{ backgroundColor: homeColor }}
               title="홈"
             />
-            <span className="text-[#9CA3AF]">vs</span>
+            <span className="text-[var(--color-text-secondary)]">vs</span>
             <span
-              className="inline-block h-4 w-4 rounded-full border border-[#E8ECF0] shadow-sm"
+              className="inline-block h-4 w-4 rounded-full border border-[var(--color-border)] shadow-sm"
               style={{ backgroundColor: awayColor }}
               title="어웨이"
             />
           </div>
           {game.requirements && (
-            <span className="ml-auto truncate text-[#9CA3AF]">{game.requirements}</span>
+            <span className="ml-auto truncate text-[var(--color-text-secondary)]">{game.requirements}</span>
           )}
         </div>
       </div>

@@ -33,7 +33,7 @@ export function BracketConnector({
         <path
           key={path.id}
           d={path.d}
-          stroke={path.isActive ? "rgba(244,162,97,0.4)" : "#D1D5DB"}
+          stroke={path.isActive ? "rgba(244,162,97,0.4)" : "var(--color-text-muted)"}
           strokeWidth={1.5}
           fill="none"
         />

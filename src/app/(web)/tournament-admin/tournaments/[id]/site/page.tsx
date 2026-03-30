@@ -202,7 +202,7 @@ export default function TournamentSitePage() {
 
   if (loading) {
     return (
-      <div className="flex h-40 items-center justify-center text-[#6B7280]">
+      <div className="flex h-40 items-center justify-center text-[var(--color-text-muted)]">
         불러오는 중...
       </div>
     );
@@ -214,18 +214,18 @@ export default function TournamentSitePage() {
     return (
       <div>
         <div className="mb-6">
-          <Link href={`/tournament-admin/tournaments/${id}`} className="text-sm text-[#6B7280] hover:text-[#111827]">
+          <Link href={`/tournament-admin/tournaments/${id}`} className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
             ← 대회 관리
           </Link>
           <h1 className="mt-1 text-xl font-bold sm:text-2xl">사이트 관리</h1>
         </div>
 
         {/* 발행 중 상태 카드 */}
-        <div className="mb-6 rounded-2xl border border-[#22C55E]/30 bg-[#22C55E]/5 p-6">
+        <div className="mb-6 rounded-2xl border border-[var(--color-success)]/30 bg-[var(--color-success)]/5 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-[#22C55E]">● 사이트 공개 중</p>
-              <p className="mt-0.5 font-mono text-lg font-semibold text-[#111827]">
+              <p className="text-sm font-medium text-[var(--color-success)]">● 사이트 공개 중</p>
+              <p className="mt-0.5 font-mono text-lg font-semibold text-[var(--color-text-primary)]">
                 {site.subdomain}.mybdr.kr
               </p>
             </div>
@@ -234,14 +234,14 @@ export default function TournamentSitePage() {
                 href={`https://${site.subdomain}.mybdr.kr`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-full border border-[#E8ECF0] px-4 py-2 text-sm text-[#6B7280] hover:text-[#111827]"
+                className="rounded-full border border-[var(--color-border)] px-4 py-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
               >
                 방문하기 ↗
               </a>
               <button
                 onClick={() => togglePublish(false)}
                 disabled={publishing}
-                className="rounded-full border border-[#EF4444]/30 px-4 py-2 text-sm text-[#EF4444] hover:bg-[#EF4444]/5 disabled:opacity-50"
+                className="rounded-full border border-[var(--color-error)]/30 px-4 py-2 text-sm text-[var(--color-error)] hover:bg-[var(--color-error)]/5 disabled:opacity-50"
               >
                 {publishing ? "처리 중..." : "비공개 전환"}
               </button>
@@ -257,32 +257,32 @@ export default function TournamentSitePage() {
         <div className="grid gap-3 md:grid-cols-3">
           <button
             onClick={() => setStep(1)}
-            className="rounded-2xl border border-[#E8ECF0] bg-white p-5 text-left shadow-sm transition-shadow hover:shadow-md"
+            className="rounded-2xl border border-[var(--color-border)] bg-white p-5 text-left shadow-sm transition-shadow hover:shadow-md"
           >
             <p className="text-2xl mb-2">🎨</p>
-            <p className="font-semibold text-[#111827]">템플릿 변경</p>
-            <p className="mt-0.5 text-sm text-[#6B7280]">
+            <p className="font-semibold text-[var(--color-text-primary)]">템플릿 변경</p>
+            <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
               {TEMPLATES.find((t) => t.slug === selectedTemplate)?.name ?? "Classic"}
             </p>
           </button>
           <button
             onClick={() => setStep(2)}
-            className="rounded-2xl border border-[#E8ECF0] bg-white p-5 text-left shadow-sm transition-shadow hover:shadow-md"
+            className="rounded-2xl border border-[var(--color-border)] bg-white p-5 text-left shadow-sm transition-shadow hover:shadow-md"
           >
             <div
               className="mb-2 h-8 w-8 rounded-full border-2 border-white shadow"
               style={{ backgroundColor: selectedColor }}
             />
-            <p className="font-semibold text-[#111827]">색상 변경</p>
-            <p className="mt-0.5 font-mono text-sm text-[#6B7280]">{selectedColor}</p>
+            <p className="font-semibold text-[var(--color-text-primary)]">색상 변경</p>
+            <p className="mt-0.5 font-mono text-sm text-[var(--color-text-muted)]">{selectedColor}</p>
           </button>
           <Link
             href={`/tournament-admin/tournaments/${id}/site/pages`}
-            className="rounded-2xl border border-[#E8ECF0] bg-white p-5 text-left shadow-sm transition-shadow hover:shadow-md"
+            className="rounded-2xl border border-[var(--color-border)] bg-white p-5 text-left shadow-sm transition-shadow hover:shadow-md"
           >
             <p className="text-2xl mb-2">📄</p>
-            <p className="font-semibold text-[#111827]">공지 페이지</p>
-            <p className="mt-0.5 text-sm text-[#6B7280]">공지사항 작성</p>
+            <p className="font-semibold text-[var(--color-text-primary)]">공지 페이지</p>
+            <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">공지사항 작성</p>
           </Link>
         </div>
 
@@ -315,11 +315,11 @@ export default function TournamentSitePage() {
     <div>
       {/* 헤더 */}
       <div className="mb-8">
-        <Link href={`/tournament-admin/tournaments/${id}`} className="text-sm text-[#6B7280] hover:text-[#111827]">
+        <Link href={`/tournament-admin/tournaments/${id}`} className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
           ← 대회 관리
         </Link>
         <h1 className="mt-1 text-xl font-bold sm:text-2xl">사이트 만들기</h1>
-        <p className="mt-1 text-sm text-[#6B7280]">
+        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
           3단계로 대회 전용 웹사이트를 만들어보세요
         </p>
       </div>
@@ -331,22 +331,22 @@ export default function TournamentSitePage() {
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold transition-colors ${
                 step === s
-                  ? "bg-[#1B3C87] text-white"
+                  ? "bg-[var(--color-accent)] text-white"
                   : step > s
-                  ? "bg-[#22C55E] text-white"
-                  : "bg-[#E8ECF0] text-[#9CA3AF]"
+                  ? "bg-[var(--color-success)] text-white"
+                  : "bg-[var(--color-border)] text-[var(--color-text-muted)]"
               }`}
             >
               {step > s ? "✓" : s}
             </div>
             <span
               className={`text-sm font-medium ${
-                step === s ? "text-[#111827]" : "text-[#9CA3AF]"
+                step === s ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-muted)]"
               }`}
             >
               {["템플릿", "색상", "발행"][s - 1]}
             </span>
-            {s < 3 && <div className="h-px w-8 bg-[#E8ECF0]" />}
+            {s < 3 && <div className="h-px w-8 bg-[var(--color-border)]" />}
           </div>
         ))}
       </div>
@@ -415,8 +415,8 @@ function Step1({
 }) {
   return (
     <div>
-      <h2 className="mb-2 text-lg font-bold text-[#111827]">템플릿 선택</h2>
-      <p className="mb-6 text-sm text-[#6B7280]">
+      <h2 className="mb-2 text-lg font-bold text-[var(--color-text-primary)]">템플릿 선택</h2>
+      <p className="mb-6 text-sm text-[var(--color-text-muted)]">
         대회 사이트의 전체 스타일을 선택하세요. 언제든지 변경할 수 있습니다.
       </p>
 
@@ -427,19 +427,19 @@ function Step1({
             onClick={() => onChange(tpl.slug)}
             className={`rounded-2xl border-2 p-4 text-left transition-all ${
               selected === tpl.slug
-                ? "border-[#1B3C87] shadow-[0_0_0_4px_rgba(0,102,255,0.1)]"
-                : "border-[#E8ECF0] hover:border-[#C4C9D4]"
+                ? "border-[var(--color-accent)] shadow-[0_0_0_4px_rgba(0,102,255,0.1)]"
+                : "border-[var(--color-border)] hover:border-[var(--color-text-muted)]"
             }`}
           >
             <TemplateMockup template={tpl} accentColor={accentColor} />
             <div className="mt-3">
               <div className="flex items-center justify-between">
-                <p className="font-semibold text-[#111827]">{tpl.name}</p>
+                <p className="font-semibold text-[var(--color-text-primary)]">{tpl.name}</p>
                 {selected === tpl.slug && (
-                  <span className="text-xs font-medium text-[#1B3C87]">선택됨 ✓</span>
+                  <span className="text-xs font-medium text-[var(--color-accent)]">선택됨 ✓</span>
                 )}
               </div>
-              <p className="mt-0.5 text-sm text-[#6B7280]">{tpl.desc}</p>
+              <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">{tpl.desc}</p>
             </div>
           </button>
         ))}
@@ -447,7 +447,7 @@ function Step1({
 
       <div className="mt-8 flex justify-between">
         {onCancel && (
-          <button onClick={onCancel} className="text-sm text-[#6B7280] hover:text-[#111827]">
+          <button onClick={onCancel} className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
             취소
           </button>
         )}
@@ -476,8 +476,8 @@ function Step2({
 }) {
   return (
     <div>
-      <h2 className="mb-2 text-lg font-bold text-[#111827]">대표 색상 선택</h2>
-      <p className="mb-6 text-sm text-[#6B7280]">
+      <h2 className="mb-2 text-lg font-bold text-[var(--color-text-primary)]">대표 색상 선택</h2>
+      <p className="mb-6 text-sm text-[var(--color-text-muted)]">
         사이트 네비게이션과 강조 색상으로 사용됩니다.
       </p>
 
@@ -495,12 +495,12 @@ function Step2({
             <div
               className={`h-14 w-14 rounded-full shadow-md transition-transform ${
                 selected === c.hex
-                  ? "scale-110 ring-4 ring-[#1B3C87]/30 ring-offset-2"
+                  ? "scale-110 ring-4 ring-[var(--color-accent)]/30 ring-offset-2"
                   : "hover:scale-105"
               }`}
               style={{ backgroundColor: c.hex }}
             />
-            <span className="text-xs text-[#6B7280]">{c.name}</span>
+            <span className="text-xs text-[var(--color-text-muted)]">{c.name}</span>
             {selected === c.hex && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="text-lg text-white drop-shadow">✓</span>
@@ -511,8 +511,8 @@ function Step2({
       </div>
 
       {/* 미리보기 */}
-      <div className="mt-8 rounded-2xl border border-[#E8ECF0] p-4">
-        <p className="mb-3 text-xs font-medium text-[#6B7280]">미리보기</p>
+      <div className="mt-8 rounded-2xl border border-[var(--color-border)] p-4">
+        <p className="mb-3 text-xs font-medium text-[var(--color-text-muted)]">미리보기</p>
         <div className="overflow-hidden rounded-xl" style={{ height: 64 }}>
           <div
             className="flex h-10 items-center gap-2 px-4"
@@ -536,7 +536,7 @@ function Step2({
       </div>
 
       <div className="mt-8 flex justify-between">
-        <button onClick={onBack} className="text-sm text-[#6B7280] hover:text-[#111827]">
+        <button onClick={onBack} className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
           ← 이전
         </button>
         <Button onClick={onNext} disabled={saving}>
@@ -576,25 +576,25 @@ function Step3({
 
   return (
     <div>
-      <h2 className="mb-2 text-lg font-bold text-[#111827]">주소 설정 및 발행</h2>
-      <p className="mb-6 text-sm text-[#6B7280]">
+      <h2 className="mb-2 text-lg font-bold text-[var(--color-text-primary)]">주소 설정 및 발행</h2>
+      <p className="mb-6 text-sm text-[var(--color-text-muted)]">
         대회 사이트 URL을 설정하고 바로 공개하거나 임시 저장할 수 있습니다.
       </p>
 
       {/* 요약 */}
-      <div className="mb-6 grid gap-3 rounded-2xl bg-[#F5F7FA] p-4 md:grid-cols-2">
+      <div className="mb-6 grid gap-3 rounded-2xl bg-[var(--color-surface)] p-4 md:grid-cols-2">
         <div>
-          <p className="text-xs text-[#9CA3AF]">선택한 템플릿</p>
-          <p className="mt-1 font-semibold text-[#111827]">{tplName}</p>
+          <p className="text-xs text-[var(--color-text-muted)]">선택한 템플릿</p>
+          <p className="mt-1 font-semibold text-[var(--color-text-primary)]">{tplName}</p>
         </div>
         <div>
-          <p className="text-xs text-[#9CA3AF]">대표 색상</p>
+          <p className="text-xs text-[var(--color-text-muted)]">대표 색상</p>
           <div className="mt-1 flex items-center gap-2">
             <div
               className="h-5 w-5 rounded-full border border-white shadow-sm"
               style={{ backgroundColor: selectedColor }}
             />
-            <span className="font-mono text-sm font-semibold text-[#111827]">
+            <span className="font-mono text-sm font-semibold text-[var(--color-text-primary)]">
               {selectedColor}
             </span>
           </div>
@@ -603,12 +603,12 @@ function Step3({
 
       {/* URL 설정 */}
       <div className="mb-6">
-        <label className="mb-2 block text-sm font-medium text-[#111827]">
-          사이트 주소 <span className="text-[#EF4444]">*</span>
+        <label className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">
+          사이트 주소 <span className="text-[var(--color-error)]">*</span>
         </label>
         <div className="flex items-center gap-2">
           <input
-            className="flex-1 rounded-2xl border-none bg-[#E8ECF0] px-4 py-3 text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1B3C87]/50"
+            className="flex-1 rounded-2xl border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
             value={subdomain}
             onChange={(e) =>
               onChange(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
@@ -616,13 +616,13 @@ function Step3({
             placeholder="my-tournament"
             autoFocus
           />
-          <span className="whitespace-nowrap text-sm font-medium text-[#6B7280]">
+          <span className="whitespace-nowrap text-sm font-medium text-[var(--color-text-muted)]">
             .mybdr.kr
           </span>
         </div>
         {subdomain && (
-          <p className="mt-2 text-sm text-[#9CA3AF]">
-            https://<span className="text-[#1B3C87]">{subdomain}</span>.mybdr.kr
+          <p className="mt-2 text-sm text-[var(--color-text-muted)]">
+            https://<span className="text-[var(--color-accent)]">{subdomain}</span>.mybdr.kr
           </p>
         )}
       </div>
@@ -634,7 +634,7 @@ function Step3({
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
         <button
           onClick={onBack}
-          className="text-sm text-[#6B7280] hover:text-[#111827]"
+          className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
           disabled={saving}
         >
           ← 이전
@@ -643,7 +643,7 @@ function Step3({
           <button
             onClick={onSaveDraft}
             disabled={saving || !subdomain.trim()}
-            className="rounded-full border border-[#E8ECF0] px-5 py-2.5 text-sm font-medium text-[#6B7280] hover:text-[#111827] disabled:opacity-40"
+            className="rounded-full border border-[var(--color-border)] px-5 py-2.5 text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] disabled:opacity-40"
           >
             {saving ? "저장 중..." : "임시 저장"}
           </button>
@@ -657,7 +657,7 @@ function Step3({
         </div>
       </div>
 
-      <p className="mt-4 text-center text-xs text-[#9CA3AF]">
+      <p className="mt-4 text-center text-xs text-[var(--color-text-muted)]">
         공개 후에도 언제든지 설정을 변경하거나 비공개로 전환할 수 있습니다
       </p>
     </div>

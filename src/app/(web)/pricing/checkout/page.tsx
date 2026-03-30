@@ -81,7 +81,7 @@ function CheckoutContent() {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#1B3C87] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent" />
       </div>
     );
   }
@@ -89,8 +89,8 @@ function CheckoutContent() {
   if (error || !plan) {
     return (
       <div className="py-16 text-center">
-        <p className="mb-4 text-[#EF4444]">{error ?? "요금제를 찾을 수 없습니다."}</p>
-        <a href="/pricing" className="text-sm text-[#E31B23] underline">요금제 목록으로</a>
+        <p className="mb-4 text-[var(--color-error)]">{error ?? "요금제를 찾을 수 없습니다."}</p>
+        <a href="/pricing" className="text-sm text-[var(--color-primary)] underline">요금제 목록으로</a>
       </div>
     );
   }
@@ -99,15 +99,15 @@ function CheckoutContent() {
     <div className="mx-auto max-w-md py-10">
       <h1 className="mb-6 text-xl font-bold sm:text-2xl">결제하기</h1>
 
-      <div className="mb-6 rounded-[20px] border border-[#E8ECF0] bg-[#FFFFFF] p-6">
+      <div className="mb-6 rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] p-6">
         <h2 className="mb-1 text-lg font-semibold">{plan.name}</h2>
-        <p className="mb-4 text-sm text-[#6B7280]">
+        <p className="mb-4 text-sm text-[var(--color-text-muted)]">
           {plan.plan_type === "monthly" ? "월 구독 (30일)" : "1회 구매"}
         </p>
-        <div className="border-t border-[#E8ECF0] pt-4">
+        <div className="border-t border-[var(--color-border)] pt-4">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-[#6B7280]">결제 금액</span>
-            <span className="text-xl font-bold text-[#E31B23]">{plan.price.toLocaleString()}원</span>
+            <span className="text-sm text-[var(--color-text-muted)]">결제 금액</span>
+            <span className="text-xl font-bold text-[var(--color-primary)]">{plan.price.toLocaleString()}원</span>
           </div>
         </div>
       </div>
@@ -121,17 +121,17 @@ function CheckoutContent() {
       <button
         onClick={handlePay}
         disabled={paying}
-        className="w-full rounded-[14px] bg-[#1B3C87] py-4 font-semibold text-black transition-colors hover:bg-[#142D6B] disabled:opacity-50"
+        className="w-full rounded-[14px] bg-[var(--color-accent)] py-4 font-semibold text-black transition-colors hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
       >
         {paying ? "결제 진행 중..." : `${plan.price.toLocaleString()}원 결제하기`}
       </button>
 
-      <p className="mt-4 text-center text-xs text-[#9CA3AF]">
+      <p className="mt-4 text-center text-xs text-[var(--color-text-muted)]">
         결제는 토스페이먼츠를 통해 안전하게 처리됩니다.
       </p>
 
       <div className="mt-4 text-center">
-        <a href="/pricing" className="text-sm text-[#6B7280] hover:text-[#111827]">
+        <a href="/pricing" className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
           ← 요금제 목록으로
         </a>
       </div>
@@ -144,7 +144,7 @@ export default function CheckoutPage() {
     <Suspense
       fallback={
         <div className="flex min-h-[60vh] items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#1B3C87] border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent" />
         </div>
       }
     >

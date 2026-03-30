@@ -1,16 +1,18 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useCallback, useRef, useState, useEffect } from "react";
-import { Search, X } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import { FloatingFilterPanel, type FilterConfig } from "@/components/shared/floating-filter-panel";
 
+// 경기 유형 옵션 (기존 로직 유지)
 const GAME_TYPES = [
   { value: "all", label: "전체 유형" },
-  { value: "0",   label: "🏀 픽업" },
-  { value: "1",   label: "🤝 게스트" },
-  { value: "2",   label: "⚔️ 연습경기" },
+  { value: "0",   label: "픽업" },
+  { value: "1",   label: "게스트" },
+  { value: "2",   label: "연습경기" },
 ];
 
+// 날짜 옵션 (기존 로직 유지)
 const DATE_OPTIONS = [
   { value: "all",   label: "전체 날짜" },
   { value: "today", label: "오늘" },
@@ -18,43 +20,31 @@ const DATE_OPTIONS = [
   { value: "month", label: "이번 달" },
 ];
 
-const selectCls =
-  "h-10 w-full appearance-none rounded-[12px] border border-[#E8ECF0] bg-[#FFFFFF] pl-3 pr-8 text-sm text-[#111827] focus:border-[#1B3C87]/60 focus:outline-none cursor-pointer";
+// 실력 옵션 (기존 로직 유지)
+const SKILL_OPTIONS = [
+  { value: "all",                  label: "전체 실력" },
+  { value: "beginner",             label: "초급" },
+  { value: "intermediate",         label: "중급" },
+  { value: "intermediate_advanced", label: "중상" },
+  { value: "advanced",             label: "상급" },
+];
 
-function Select({
-  value,
-  onChange,
-  children,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="relative">
-      <select value={value} onChange={(e) => onChange(e.target.value)} className={selectCls}>
-        {children}
-      </select>
-      <svg
-        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
-        width="12" height="12" viewBox="0 0 12 12" fill="none"
-      >
-        <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </div>
-  );
-}
-
+/**
+ * GamesFilter - 경기 필터 (플로팅 패널 방식으로 교체)
+ *
+ * 기존: 인라인 select 4개 + "Apply Filters" 버튼
+ * 변경: FloatingFilterPanel 트리거 버튼만 노출, 클릭 시 패널 열림
+ *
+ * URL 쿼리 파라미터 기반 필터링 로직은 100% 유지.
+ * 검색바만 인라인으로 남기고, 나머지 필터는 패널 안으로 이동.
+ */
 export function GamesFilter({ cities }: { cities: string[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(false);
 
-  const hasActiveFilters = params.get("q") || params.get("type") || params.get("city") || params.get("date");
-
+  // 기존 update 함수 유지 - URL 쿼리 파라미터를 업데이트
   const update = useCallback(
     (updates: Record<string, string>) => {
       const sp = new URLSearchParams(params.toString());
@@ -67,91 +57,114 @@ export function GamesFilter({ cities }: { cities: string[] }) {
     [router, pathname, params]
   );
 
+  // 기존 검색 디바운스 로직 유지
   const handleSearch = (v: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => update({ q: v }), 380);
   };
 
-  const clearAll = () => {
+  // 전체 필터 초기화
+  const clearAll = useCallback(() => {
     router.push(pathname);
-    setOpen(false);
-  };
+  }, [router, pathname]);
 
-  // 외부 클릭 닫기
-  useEffect(() => {
-    if (!open) return;
-    function handleClick(e: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
+  // 현재 필터 값 읽기 (URL params에서)
+  const currentType = params.get("type") ?? "all";
+  const currentDate = params.get("date") ?? "all";
+  const currentCity = params.get("city") ?? "all";
+  const currentSkill = params.get("skill") ?? "all";
+
+  // 활성 필터 수 계산 (기본값 "all"이 아닌 것의 개수)
+  const activeCount = [currentType, currentDate, currentCity, currentSkill]
+    .filter((v) => v !== "all")
+    .length;
+
+  // 지역 옵션: "전체" + API에서 받은 도시 목록
+  const cityOptions = [
+    { value: "all", label: "전체 지역" },
+    ...cities.map((c) => ({ value: c, label: c })),
+  ];
+
+  // FloatingFilterPanel에 전달할 필터 설정 배열
+  const filterConfigs: FilterConfig[] = [
+    {
+      key: "type",
+      label: "유형",
+      type: "select",
+      options: GAME_TYPES,
+      value: currentType,
+      onChange: (v) => update({ type: v }),
+    },
+    {
+      key: "date",
+      label: "날짜",
+      type: "select",
+      options: DATE_OPTIONS,
+      value: currentDate,
+      onChange: (v) => update({ date: v }),
+    },
+    {
+      key: "city",
+      label: "지역",
+      type: "select",
+      options: cityOptions,
+      value: currentCity,
+      onChange: (v) => update({ city: v }),
+    },
+    {
+      key: "skill",
+      label: "실력",
+      type: "select",
+      options: SKILL_OPTIONS,
+      value: currentSkill,
+      onChange: (v) => update({ skill: v }),
+    },
+  ];
+
+  // 모바일에서 검색창 열기/닫기 토글 (작은 화면에서 공간 절약)
+  const [searchOpen, setSearchOpen] = useState(false);
 
   return (
-    <div className="relative" ref={panelRef}>
-      {/* 검색 아이콘 버튼 */}
+    <div className="flex items-center gap-2">
+      {/* 모바일: 검색 아이콘 토글 버튼 (md 이상에서는 숨김) */}
       <button
-        onClick={() => setOpen(!open)}
-        className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
-          open || hasActiveFilters
-            ? "bg-[#1B3C87] text-white"
-            : "text-[#6B7280] hover:bg-[rgba(27,60,135,0.08)] hover:text-[#111827]"
-        }`}
-        title="검색 및 필터"
+        type="button"
+        onClick={() => setSearchOpen(!searchOpen)}
+        className="md:hidden flex h-9 w-9 items-center justify-center rounded-full transition-colors shrink-0"
+        style={{
+          backgroundColor: searchOpen ? "var(--color-primary)" : "var(--color-surface)",
+          color: searchOpen ? "#fff" : "var(--color-text-secondary)",
+        }}
+        title="검색"
       >
-        {open ? <X size={18} /> : <Search size={18} />}
+        <span className="material-symbols-outlined text-lg">search</span>
       </button>
 
-      {/* 활성 필터 도트 인디케이터 */}
-      {hasActiveFilters && !open && (
-        <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[#E31B23]" />
-      )}
+      {/* 검색바: 데스크탑에서는 항상 보임, 모바일에서는 토글 */}
+      <div className={`relative ${searchOpen ? "block" : "hidden"} md:block`}>
+        <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-base" style={{ color: "var(--color-text-muted)" }}>
+          search
+        </span>
+        <input
+          type="text"
+          placeholder="경기 검색..."
+          defaultValue={params.get("q") ?? ""}
+          onChange={(e) => handleSearch(e.target.value)}
+          className="h-9 w-[160px] lg:w-[200px] rounded border pl-8 pr-3 text-sm focus:ring-1 focus:outline-none transition-all"
+          style={{
+            borderColor: "var(--color-border)",
+            backgroundColor: "var(--color-surface)",
+            color: "var(--color-text-primary)",
+          }}
+        />
+      </div>
 
-      {/* 플로팅 패널 */}
-      {open && (
-        <div className="absolute right-0 top-12 z-50 w-[300px] rounded-[16px] border border-[#E8ECF0] bg-[#FFFFFF] p-4 shadow-[0_8px_32px_rgba(0,0,0,0.12)] space-y-3">
-          {/* 검색 */}
-          <div className="relative">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280]" />
-            <input
-              type="text"
-              placeholder="경기 검색..."
-              defaultValue={params.get("q") ?? ""}
-              onChange={(e) => handleSearch(e.target.value)}
-              autoFocus
-              className="h-10 w-full rounded-[12px] border border-[#E8ECF0] bg-[#FFFFFF] pl-9 pr-4 text-sm text-[#111827] placeholder:text-[#6B7280] focus:border-[#1B3C87]/60 focus:outline-none"
-            />
-          </div>
-
-          {/* 필터 그리드 */}
-          <div className="grid grid-cols-2 gap-2">
-            <Select value={params.get("type") ?? "all"} onChange={(v) => update({ type: v })}>
-              {GAME_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-            </Select>
-
-            <Select value={params.get("city") ?? "all"} onChange={(v) => update({ city: v })}>
-              <option value="all">전체 지역</option>
-              {cities.map((c) => <option key={c} value={c}>{c}</option>)}
-            </Select>
-          </div>
-
-          <Select value={params.get("date") ?? "all"} onChange={(v) => update({ date: v })}>
-            {DATE_OPTIONS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
-          </Select>
-
-          {/* 초기화 버튼 */}
-          {hasActiveFilters && (
-            <button
-              onClick={clearAll}
-              className="w-full rounded-full border border-[#E8ECF0] py-2 text-xs text-[#6B7280] hover:bg-[#EEF2FF] transition-colors"
-            >
-              필터 초기화
-            </button>
-          )}
-        </div>
-      )}
+      {/* 플로팅 필터 트리거 버튼 */}
+      <FloatingFilterPanel
+        filters={filterConfigs}
+        onReset={clearAll}
+        activeCount={activeCount}
+      />
     </div>
   );
 }
