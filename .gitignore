@@ -54,3 +54,4 @@ local_dump.sql
 
 # Playwright MCP (도구 산출물)
 .playwright-mcp/
+google calendar.json
