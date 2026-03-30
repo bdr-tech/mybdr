@@ -45,14 +45,37 @@ export async function toggleFollowAction(
       });
       return { followed: false };
     } else {
-      // 팔로우 안 한 상태 -> 팔로우 (생성)
-      await prisma.follows.create({
-        data: {
-          follower_id: followerId,
-          following_id: followingId,
-          created_at: new Date(),
-        },
+      // 팔로우 안 한 상태 -> 팔로우 (생성) + 알림 생성
+      // 팔로우 레코드와 알림을 트랜잭션으로 묶어 일관성 보장
+      const followerUser = await prisma.user.findUnique({
+        where: { id: followerId },
+        select: { nickname: true, name: true },
       });
+      const followerName = followerUser?.nickname ?? followerUser?.name ?? "누군가";
+
+      await prisma.$transaction([
+        prisma.follows.create({
+          data: {
+            follower_id: followerId,
+            following_id: followingId,
+            created_at: new Date(),
+          },
+        }),
+        // 팔로우 대상에게 알림 전송
+        prisma.notifications.create({
+          data: {
+            user_id: followingId,
+            notification_type: "follow",
+            title: "새 팔로워",
+            content: `${followerName}님이 회원님을 팔로우했습니다.`,
+            action_url: `/users/${followerId}`,
+            action_type: "link",
+            status: "unread",
+            created_at: new Date(),
+            updated_at: new Date(),
+          },
+        }),
+      ]);
       return { followed: true };
     }
   } catch {

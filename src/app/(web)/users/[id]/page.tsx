@@ -64,7 +64,8 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
 
   // 기존 user 쿼리 유지 + matchPlayerStat 집계 추가 (병렬 실행)
   // playerStats: 내 프로필과 동일한 서비스 함수로 승률(winRate) 계산
-  const [user, statAgg, recentGames, playerStats, followRecord] = await Promise.all([
+  // 팔로워/팔로잉 수 + 기존 쿼리를 병렬 실행
+  const [user, statAgg, recentGames, playerStats, followRecord, followersCount, followingCount] = await Promise.all([
     // 1) 기존 유저 정보 쿼리 (유지)
     prisma.user.findUnique({
       where: { id: BigInt(id) },
@@ -148,6 +149,16 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
           },
         }).catch(() => null)
       : Promise.resolve(null),
+
+    // 6) 팔로워 수: 이 유저를 팔로우하는 사람 수
+    prisma.follows.count({
+      where: { following_id: BigInt(id) },
+    }).catch(() => 0),
+
+    // 7) 팔로잉 수: 이 유저가 팔로우하는 사람 수
+    prisma.follows.count({
+      where: { follower_id: BigInt(id) },
+    }).catch(() => 0),
   ]);
 
   const isFollowing = !!followRecord;
@@ -294,9 +305,10 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
                 className="p-3 rounded-lg text-center min-w-[90px]"
                 style={{ backgroundColor: "var(--color-card)" }}
               >
-                <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>소속 팀</p>
+                {/* 팔로워: 이 유저를 팔로우하는 사람 수 */}
+                <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>팔로워</p>
                 <p className="text-xl font-bold" style={{ color: "var(--color-text-primary)" }}>
-                  {user.teamMembers.length}
+                  {followersCount}
                 </p>
               </div>
               <div
@@ -313,9 +325,10 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
                 className="p-3 rounded-lg text-center min-w-[90px]"
                 style={{ backgroundColor: "var(--color-card)" }}
               >
-                <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>가입</p>
+                {/* 팔로잉: 이 유저가 팔로우하는 사람 수 */}
+                <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>팔로잉</p>
                 <p className="text-xl font-bold" style={{ color: "var(--color-text-primary)" }}>
-                  {user.createdAt.getFullYear()}년
+                  {followingCount}
                 </p>
               </div>
             </div>
