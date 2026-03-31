@@ -591,6 +591,22 @@ export default function ProfilePage() {
             subtitle="이번주 운동 요약과 지난주 비교"
             href="/profile/weekly-report"
           />
+          {/* 결제 내역: 결제/환불 이력 확인 */}
+          <TossListItem
+            icon="receipt_long"
+            iconBg="var(--color-accent)"
+            title="결제 내역"
+            subtitle="결제 이력 확인 및 환불"
+            href="/profile/payments"
+          />
+          {/* 구독 관리: 요금제 현황 및 해지 */}
+          <TossListItem
+            icon="card_membership"
+            iconBg="var(--color-navy, #1B3C87)"
+            title="구독 관리"
+            subtitle="요금제 현황 및 해지"
+            href="/profile/subscription"
+          />
           <TossListItem
             icon="edit"
             iconBg="var(--color-text-secondary)"
