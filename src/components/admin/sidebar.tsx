@@ -16,6 +16,8 @@ const navItems = [
   { href: "/admin/plans", label: "요금제 관리", icon: "payments" },
   { href: "/admin/payments", label: "결제", icon: "credit_card" },
   { href: "/admin/suggestions", label: "건의사항", icon: "lightbulb" },
+  { href: "/admin/partners", label: "파트너 관리", icon: "handshake" },
+  { href: "/admin/campaigns", label: "광고 캠페인", icon: "campaign" },
   { href: "/admin/analytics", label: "분석", icon: "analytics" },
   { href: "/admin/settings", label: "시스템 설정", icon: "settings" },
   { href: "/admin/logs", label: "활동 로그", icon: "list_alt" },

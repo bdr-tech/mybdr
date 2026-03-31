@@ -16,6 +16,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { KakaoMap, type MapMarker } from "@/components/shared/kakao-map";
+import { CourtTopAd } from "@/components/ads/ad-card";
 // HeatmapOverlay: Canvas 기반 히트맵은 초기 렌더에 불필요하므로 동적 import로 분리
 // 사용자가 히트맵 토글을 켤 때만 로드되어 초기 번들 크기를 줄임
 import { type HeatmapPoint } from "@/components/shared/heatmap-overlay";
@@ -662,6 +663,8 @@ export function CourtsContent({ courts, cities }: CourtsContentProps) {
         >
           {filtered.length > 0 ? (
             <div className="space-y-2 pr-1">
+              {/* 코트 목록 상단에 네이티브 광고 삽입 — 광고 없으면 자동 숨김 */}
+              <CourtTopAd />
               {filtered.map((court) => (
                 <div
                   key={court.id}

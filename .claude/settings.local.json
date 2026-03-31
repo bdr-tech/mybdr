@@ -204,7 +204,8 @@
       "Bash(mkdir -p 'C:/0.programing/my-bdr-subin-main/src/app/api/web/organizations/[id]/members')",
       "Bash(mkdir -p 'C:/0.programing/my-bdr-subin-main/src/app/api/web/organizations/[id]/members/[memberId]')",
       "Bash(mkdir -p 'C:/0.programing/my-bdr-subin-main/src/app/api/web/organizations/slug/[slug]')",
-      "Bash(mkdir -p 'C:/0.programing/my-bdr-subin-main/src/app/api/web/organizations/slug/[slug]/series')"
+      "Bash(mkdir -p 'C:/0.programing/my-bdr-subin-main/src/app/api/web/organizations/slug/[slug]/series')",
+      "Bash(findstr \"300[0-9]\")"
     ]
   }
 }

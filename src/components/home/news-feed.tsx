@@ -8,8 +8,10 @@
  * snap-scroll로 카드 단위 스크롤이 되도록 함.
  * ============================================================ */
 
+import React from "react";
 import useSWR from "swr";
 import Link from "next/link";
+import { FeedAd } from "@/components/ads/ad-card";
 
 // API 응답 아이템 타입
 interface NewsItem {
@@ -125,8 +127,12 @@ export function NewsFeed({ preferredRegions }: NewsFeedProps) {
         ? "flex flex-col gap-3"
         : "flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory"
       }>
-        {items.map((item) => (
-          <NewsCard key={`${item.type}-${item.id}`} item={item} />
+        {items.map((item, idx) => (
+          <React.Fragment key={`${item.type}-${item.id}`}>
+            {/* 2번째 위치(index=1)에 네이티브 광고 삽입 — 광고 없으면 자동 숨김 */}
+            {idx === 1 && <FeedAd />}
+            <NewsCard item={item} />
+          </React.Fragment>
         ))}
       </div>
     </div>

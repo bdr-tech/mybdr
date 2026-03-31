@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import useSWR from "swr";
+import { SidebarAd } from "@/components/ads/ad-card";
 
 /* ============================================================
  * RightSidebar — PC 우측 사이드바 (xl 이상에서만 표시)
@@ -263,6 +264,9 @@ export function RightSidebar() {
           </ul>
         </Widget>
       )}
+
+      {/* ======== 사이드바 광고 — 주목할 팀과 인기 코트 사이에 배치, 광고 없으면 숨김 ======== */}
+      <SidebarAd />
 
       {/* ======== 3. 인기 코트 TOP 5 ======== */}
       <Widget title="인기 코트" moreHref="/courts">

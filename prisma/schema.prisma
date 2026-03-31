@@ -144,6 +144,9 @@ model User {
   // 단체(Organization) 관계: 소유한 단체 / 멤버로 소속된 단체
   organizations_owned                                                       organizations[]      @relation("org_owner")
   organization_members                                                      organization_members[]
+  // 광고 파트너: 소유한 파트너사 / 파트너 멤버
+  partners_owned                                                            partners[]           @relation("partner_owner")
+  partner_members                                                           partner_members[]
 
   @@unique([provider, uid], map: "index_users_on_provider_and_uid")
   @@index([createdAt], map: "index_users_on_created_at")
@@ -2006,4 +2009,101 @@ model organization_members {
   @@unique([organization_id, user_id], map: "idx_org_members_org_user")
   @@index([organization_id], map: "idx_org_members_organization_id")
   @@index([user_id], map: "idx_org_members_user_id")
+}
+
+// ===== 네이티브 광고 시스템 (MVP) =====
+
+// 파트너사: 광고를 집행하는 업체/개인
+model partners {
+  id             BigInt            @id @default(autoincrement())
+  uuid           String            @unique @default(uuid()) @db.VarChar
+  name           String            @db.VarChar                           // 파트너사명
+  logo_url       String?           @db.VarChar                           // 로고 이미지 URL
+  website_url    String?           @db.VarChar                           // 홈페이지 URL
+  contact_email  String?           @db.VarChar                           // 담당자 이메일
+  contact_phone  String?           @db.VarChar                           // 담당자 연락처
+  owner_id       BigInt                                                  // 등록한 유저 FK
+  status         String            @default("pending") @db.VarChar       // pending | approved | rejected | suspended
+  description    String?                                                 // 파트너 소개
+  created_at     DateTime          @default(now()) @db.Timestamp(6)
+  updated_at     DateTime          @updatedAt @db.Timestamp(6)
+
+  // 관계
+  owner          User              @relation("partner_owner", fields: [owner_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  members        partner_members[]
+  campaigns      ad_campaigns[]
+
+  @@index([owner_id], map: "idx_partners_owner_id")
+  @@index([status], map: "idx_partners_status")
+}
+
+// 파트너 멤버: 파트너사에 소속된 유저 (광고 관리 권한)
+model partner_members {
+  id          BigInt   @id @default(autoincrement())
+  partner_id  BigInt                                                     // 파트너사 FK
+  user_id     BigInt                                                     // 유저 FK
+  role        String   @default("member") @db.VarChar                    // owner | admin | member
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+  updated_at  DateTime @updatedAt @db.Timestamp(6)
+
+  // 관계
+  partner     partners @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([partner_id, user_id], map: "idx_partner_members_partner_user")
+  @@index([partner_id], map: "idx_partner_members_partner_id")
+  @@index([user_id], map: "idx_partner_members_user_id")
+}
+
+// 광고 캠페인: 파트너가 만든 광고 단위
+model ad_campaigns {
+  id             BigInt          @id @default(autoincrement())
+  uuid           String          @unique @default(uuid()) @db.VarChar
+  partner_id     BigInt                                                  // 파트너사 FK
+  title          String          @db.VarChar                             // 광고 제목 (내부 관리용)
+  headline       String          @db.VarChar                             // 표시될 제목
+  description    String?                                                 // 광고 설명문
+  image_url      String?         @db.VarChar                             // 광고 이미지 URL
+  link_url       String          @db.VarChar                             // 클릭 시 이동할 URL
+  cta_text       String?         @default("자세히 보기") @db.VarChar     // CTA 버튼 텍스트
+  status         String          @default("draft") @db.VarChar           // draft | pending | approved | rejected | paused | ended
+  // 게재 기간 (null이면 무기한)
+  start_date     DateTime?       @db.Date
+  end_date       DateTime?       @db.Date
+  // 과금 관련 필드 (스키마만, 로직 미구현)
+  budget         Decimal?        @db.Decimal(12, 2)                      // 총 예산
+  spent          Decimal?        @default(0) @db.Decimal(12, 2)          // 소진 금액
+  pricing_type   String?         @default("cpm") @db.VarChar             // cpm | cpc | flat
+  price_per_unit Decimal?        @db.Decimal(10, 2)                      // 단가
+  // 통계 (캐시 카운터)
+  impressions    Int             @default(0)                             // 노출 수
+  clicks         Int             @default(0)                             // 클릭 수
+  created_at     DateTime        @default(now()) @db.Timestamp(6)
+  updated_at     DateTime        @updatedAt @db.Timestamp(6)
+
+  // 관계
+  partner        partners        @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+  placements     ad_placements[]
+
+  @@index([partner_id], map: "idx_ad_campaigns_partner_id")
+  @@index([status], map: "idx_ad_campaigns_status")
+  @@index([start_date, end_date], map: "idx_ad_campaigns_date_range")
+}
+
+// 광고 배치: 어느 위치에 어떤 캠페인을 노출할지
+model ad_placements {
+  id           BigInt       @id @default(autoincrement())
+  campaign_id  BigInt                                                    // 캠페인 FK
+  placement    String       @db.VarChar                                  // feed | sidebar | court_top | list
+  priority     Int          @default(0)                                  // 높을수록 우선 노출
+  is_active    Boolean      @default(true)                               // 활성 여부
+  created_at   DateTime     @default(now()) @db.Timestamp(6)
+  updated_at   DateTime     @updatedAt @db.Timestamp(6)
+
+  // 관계
+  campaign     ad_campaigns @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
+
+  @@index([placement, is_active], map: "idx_ad_placements_placement_active")
+  @@index([campaign_id], map: "idx_ad_placements_campaign_id")
 }
