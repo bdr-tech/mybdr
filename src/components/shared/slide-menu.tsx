@@ -14,6 +14,7 @@ const menuItems = [
   { href: "/", label: "홈", icon: "home" },
   { href: "/games", label: "경기찾기", icon: "sports_basketball" },
   { href: "/tournaments", label: "대회", icon: "emoji_events" },
+  { href: "/organizations", label: "단체", icon: "corporate_fare" },
   { href: "/teams", label: "팀", icon: "groups" },
   { href: "/courts", label: "코트", icon: "location_on" },
   { href: "/rankings", label: "랭킹", icon: "leaderboard" },
