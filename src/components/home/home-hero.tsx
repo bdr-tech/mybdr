@@ -77,16 +77,14 @@ export function HomeHero() {
   if (user) {
     return (
       <div className="space-y-4">
-        {/* PC: 프로필 위젯 + 소식을 2열로, 모바일: 세로 스택 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* 왼쪽: 프로필 위젯 + 퀵 액션 (세로 스택) */}
-          <div className="space-y-4">
-            <ProfileWidget dashboardData={dashboardData ?? null} />
-            <QuickActions dashboardData={dashboardData ?? null} />
-          </div>
-          {/* 오른쪽: 소식 피드 (PC에서 옆에 배치) */}
-          <div className="md:flex md:flex-col">
+        {/* PC: 프로필 위젯 + (소식+퀵액션)을 2열, 높이 맞춤 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:items-stretch">
+          {/* 왼쪽: 프로필 위젯 (높이 자동 맞춤) */}
+          <ProfileWidget dashboardData={dashboardData ?? null} />
+          {/* 오른쪽: 소식 피드 + 퀵 액션 (세로 스택, 프로필과 높이 맞춤) */}
+          <div className="flex flex-col gap-4">
             <NewsFeed preferredRegions={dashboardData?.preferredRegions} />
+            <QuickActions dashboardData={dashboardData ?? null} />
           </div>
         </div>
       </div>
