@@ -166,9 +166,7 @@ export function RightSidebar() {
 
   return (
     <div
-      className="sticky top-[4.5rem] max-h-[calc(100vh-5rem)] space-y-4 overflow-y-auto"
-      // 스크롤바 숨김 (깔끔한 UI)
-      style={{ scrollbarWidth: "none" }}
+      className="space-y-4"
     >
       {/* ======== 1. BDR 랭킹 TOP 5 ======== */}
       {data.rankings.length > 0 && (
