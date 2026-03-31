@@ -227,7 +227,7 @@ export function ProfileWidget({ dashboardData }: ProfileWidgetProps) {
       </div>
 
       {/* ─── 개인화 정보: 자주 가는 코트 + 다음 경기 ─── */}
-      {dashboardData && (dashboardData.frequentCourts.length > 0 || dashboardData.nextGame) && (
+      {dashboardData && (dashboardData.frequentCourts?.length > 0 || dashboardData.nextGame) && (
         <>
           <div
             className="border-t mt-3 mb-3"
