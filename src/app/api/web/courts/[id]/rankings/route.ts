@@ -10,6 +10,8 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { getLevelInfo } from "@/lib/services/gamification";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { getClientIp } from "@/lib/security/get-client-ip";
 
 type RouteCtx = { params: Promise<{ id: string }> };
 
@@ -17,6 +19,13 @@ export async function GET(
   _req: NextRequest,
   { params }: RouteCtx
 ) {
+  // 공개 API이므로 rate limit 적용
+  const ip = getClientIp(_req);
+  const rl = await checkRateLimit(`court-rankings:${ip}`, RATE_LIMITS.api);
+  if (!rl.allowed) {
+    return apiError("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.", 429);
+  }
+
   const { id } = await params;
   const courtId = BigInt(id);
 

@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import crypto from "crypto";
 import { prisma } from "@/lib/db/prisma";
 import { apiSuccess, apiError } from "@/lib/api/response";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { getClientIp } from "@/lib/security/get-client-ip";
 
 /**
  * POST /api/web/auth/forgot-password
@@ -11,6 +13,13 @@ import { apiSuccess, apiError } from "@/lib/api/response";
  */
 export async function POST(req: NextRequest) {
   try {
+    // 비밀번호 재설정은 남용 위험이 높으므로 rate limit 적용 (login 수준)
+    const ip = getClientIp(req);
+    const rl = await checkRateLimit(`forgot-pwd:${ip}`, RATE_LIMITS.login);
+    if (!rl.allowed) {
+      return apiError("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.", 429);
+    }
+
     const body = await req.json();
     const email = (body.email ?? "").trim().toLowerCase();
 

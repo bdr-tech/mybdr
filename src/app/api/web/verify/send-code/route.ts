@@ -1,8 +1,6 @@
 import { withWebAuth, type WebAuthContext } from "@/lib/auth/web-session";
 import { apiSuccess, apiError } from "@/lib/api/response";
-
-// 메모리 저장소 (프로덕션에서는 Redis로 교체)
-const codeStore = new Map<string, { code: string; expires: number }>();
+import { storeCode } from "@/lib/security/verify-store";
 
 /**
  * POST /api/web/verify/send-code
@@ -19,12 +17,11 @@ export const POST = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
     return apiError("올바른 전화번호를 입력해주세요.", 400);
   }
 
-  // 6자리 랜덤 코드
+  // 6자리 랜덤 코드 생성
   const code = String(Math.floor(100000 + Math.random() * 900000));
-  const key = `${ctx.userId}:${phone}`;
 
-  // 5분 유효
-  codeStore.set(key, { code, expires: Date.now() + 5 * 60 * 1000 });
+  // Redis(있으면) 또는 인메모리에 코드 저장 (5분 TTL)
+  await storeCode(ctx.userId, phone, code);
 
   // TODO: 프로덕션에서 SMS 발송
   // await sendSMS(phone, `[BDR] 인증 코드: ${code}`);
@@ -35,17 +32,3 @@ export const POST = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
     ...(isDev && { code }), // 개발 환경에서만 코드 노출
   });
 });
-
-// 코드 검증 (내부 함수로 export)
-export function verifyCode(userId: bigint, phone: string, code: string): boolean {
-  const key = `${userId}:${phone}`;
-  const stored = codeStore.get(key);
-  if (!stored) return false;
-  if (Date.now() > stored.expires) {
-    codeStore.delete(key);
-    return false;
-  }
-  if (stored.code !== code) return false;
-  codeStore.delete(key); // 일회성
-  return true;
-}

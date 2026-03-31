@@ -190,7 +190,11 @@
       "Bash(find \"C:/0.programing/my-bdr-subin-main/src/app/\\(web\\)/verify\" -name \"*.tsx\" -o -name \"*.ts\")",
       "Bash(find \"C:/0.programing/my-bdr-subin-main/src/app/\\(web\\)/~offline\" -name \"*.tsx\")",
       "Bash(find \"C:/0.programing/my-bdr-subin-main/src/app/\\(web\\)/verify\" -name \"*.tsx\")",
-      "Bash(find \"C:/0.programing/my-bdr-subin-main/src/app/\\(web\\)/community\" -type f -name \"*.tsx\" -o -name \"*.ts\")"
+      "Bash(find \"C:/0.programing/my-bdr-subin-main/src/app/\\(web\\)/community\" -type f -name \"*.tsx\" -o -name \"*.ts\")",
+      "Bash(ls \"C:\\\\0.programing\\\\my-bdr-subin-main\\\\src\\\\app\\\\\\(web\\)/\")",
+      "Bash(ls \"C:\\\\0.programing\\\\my-bdr-subin-main\\\\src\\\\app\\\\\\(web\\)\\\\admin/\")",
+      "Bash(ls \"C:\\\\0.programing\\\\my-bdr-subin-main\\\\src\\\\app\\\\\\(admin\\)/\")",
+      "Bash(ls \"C:\\\\0.programing\\\\my-bdr-subin-main\\\\src\\\\app/\\(web\\)/admin/\")"
     ]
   }
 }

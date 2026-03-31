@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { apiSuccess, apiError } from "@/lib/api/response";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { getClientIp } from "@/lib/security/get-client-ip";
 
 /**
  * GET /api/web/feed
@@ -15,6 +17,13 @@ import { apiSuccess, apiError } from "@/lib/api/response";
  */
 export async function GET(_request: NextRequest) {
   try {
+    // 3개 테이블 병렬 조회이므로 rate limit 적용
+    const ip = getClientIp(_request);
+    const rl = await checkRateLimit(`feed:${ip}`, RATE_LIMITS.api);
+    if (!rl.allowed) {
+      return apiError("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.", 429);
+    }
+
     // 3개 테이블에서 최근 활동을 병렬 조회
     const [gameApps, tournamentTeams, posts] = await Promise.all([
       // 경기 참가: 승인된(status=1) 최근 신청 5건

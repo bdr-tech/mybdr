@@ -1,6 +1,6 @@
 import { withWebAuth, type WebAuthContext } from "@/lib/auth/web-session";
 import { apiSuccess, apiError } from "@/lib/api/response";
-import { verifyCode } from "../send-code/route";
+import { verifyCode } from "@/lib/security/verify-store";
 
 /**
  * POST /api/web/verify/confirm-code
@@ -15,7 +15,8 @@ export const POST = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
     return apiError("전화번호와 인증번호를 입력해주세요.", 400);
   }
 
-  const valid = verifyCode(ctx.userId, phone, code);
+  // verify-store에서 검증 (Redis 또는 인메모리, 일회성)
+  const valid = await verifyCode(ctx.userId, phone, code);
   if (!valid) {
     return apiError("인증번호가 올바르지 않거나 만료되었습니다.", 400);
   }

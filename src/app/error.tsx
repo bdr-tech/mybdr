@@ -1,13 +1,25 @@
 "use client";
 
+import { useEffect } from "react";
+import { captureException } from "@/lib/utils/error-tracker";
+
 // 글로벌 에러 페이지: 예상치 못한 에러 발생 시 Next.js가 자동으로 이 컴포넌트를 보여줌
 // "use client" 필수 — 에러 바운더리는 클라이언트 컴포넌트여야 함
 export default function GlobalError({
+  error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  // 에러 발생 시 추적 서비스에 자동 보고
+  useEffect(() => {
+    captureException(error, {
+      context: "error.tsx",
+      extra: { digest: error.digest },
+    });
+  }, [error]);
+
   return (
     <div
       style={{

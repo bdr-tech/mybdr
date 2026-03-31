@@ -16,6 +16,8 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { apiSuccess, apiError } from "@/lib/api/response";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { getClientIp } from "@/lib/security/get-client-ip";
 
 // 시간대별 시간 범위 정의 (한국 시간 기준)
 const PERIOD_HOURS: Record<string, [number, number]> = {
@@ -26,6 +28,13 @@ const PERIOD_HOURS: Record<string, [number, number]> = {
 
 export async function GET(request: NextRequest) {
   try {
+    // 무거운 raw query이므로 rate limit 적용
+    const ip = getClientIp(request);
+    const rl = await checkRateLimit(`heatmap:${ip}`, RATE_LIMITS.api);
+    if (!rl.allowed) {
+      return apiError("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.", 429);
+    }
+
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "all";
     const days = Math.min(Number(searchParams.get("days")) || 30, 90); // 최대 90일

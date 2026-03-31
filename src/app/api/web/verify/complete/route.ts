@@ -1,7 +1,7 @@
 import { withWebAuth, type WebAuthContext } from "@/lib/auth/web-session";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { prisma } from "@/lib/db/prisma";
-import { verifyCode } from "../send-code/route";
+import { verifyCode } from "@/lib/security/verify-store";
 
 /**
  * POST /api/web/verify/complete
@@ -18,7 +18,7 @@ export const POST = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
     if (!body.code) {
       return apiError("인증 코드를 입력해주세요.", 400);
     }
-    const valid = verifyCode(ctx.userId, phone, body.code);
+    const valid = await verifyCode(ctx.userId, phone, body.code);
     if (!valid) {
       return apiError("인증 코드가 올바르지 않거나 만료되었습니다.", 400);
     }
