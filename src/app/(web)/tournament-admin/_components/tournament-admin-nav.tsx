@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 // 대회 관리 사이드 네비게이션 항목 (Rails tournament_admin.html.erb 레이아웃 복제)
 const navItems = [
   { href: "/tournament-admin", label: "대시보드" },
+  { href: "/tournament-admin/organizations", label: "단체" },
   { href: "/tournament-admin/tournaments", label: "내 대회" },
   { href: "/tournament-admin/series", label: "시리즈" },
   { href: "/tournament-admin/templates", label: "템플릿" },

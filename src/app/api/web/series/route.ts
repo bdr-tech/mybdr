@@ -20,6 +20,8 @@ export const POST = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
     const name = (body.name as string)?.trim();
     const description = (body.description as string)?.trim() || null;
     const customSlug = (body.slug as string)?.trim();
+    // 단체 소속 시리즈 생성 시 organization_id 연결 (선택적)
+    const organizationId = body.organization_id ? BigInt(body.organization_id as string) : null;
 
     if (!name) {
       return apiError("시리즈 이름은 필수입니다.", 400);
@@ -57,6 +59,7 @@ export const POST = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
         slug,
         description,
         organizer_id: ctx.userId,
+        organization_id: organizationId,  // nullable: 기존 시리즈 호환
         status: "active",
         is_public: true,
         tournaments_count: 0,
@@ -64,6 +67,14 @@ export const POST = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
         updated_at: new Date(),
       },
     });
+
+    // 단체 소속이면 series_count 증가
+    if (organizationId) {
+      await prisma.organizations.update({
+        where: { id: organizationId },
+        data: { series_count: { increment: 1 } },
+      });
+    }
 
     return apiSuccess({
       success: true,

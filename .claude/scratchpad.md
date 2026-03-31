@@ -1,66 +1,54 @@
 # 작업 스크래치패드
 
 ## 현재 작업
-- **요청**: PC 우측 사이드바 구현 (3파일)
+- **요청**: 대회 단체(Organization) 3단계 계층 구조 전체 구현
 - **상태**: 구현 완료 (tsc 통과)
 - **현재 담당**: developer
 
 ### 구현 기록
 
-구현한 기능: PC 우측 사이드바 (BDR랭킹+주목팀+인기코트+최근활동, 3파일)
+구현한 기능: Organization 3단계 계층 (단체 -> 시리즈 -> 대회) 전체 구현 (7단계, 15파일)
 
 | 파일 경로 | 변경 내용 | 신규/수정 |
 |----------|----------|----------|
-| src/app/api/web/sidebar/route.ts | 통합 API (4쿼리 병렬, 5분 ISR 캐시) | 신규 |
-| src/components/layout/right-sidebar.tsx | 4개 위젯 + useSWR + 스켈레톤 + 에러 숨김 | 신규 |
-| src/app/(web)/layout.tsx | main을 flex 래퍼로 감싸고 xl에서 사이드바 표시 | 수정 |
+| prisma/schema.prisma | organizations + organization_members 모델 + tournament_series에 organization_id 추가 | 수정 |
+| src/app/api/web/organizations/route.ts | POST(생성)+GET(내 목록) API | 신규 |
+| src/app/api/web/organizations/[id]/route.ts | GET(상세)+PATCH(수정) API | 신규 |
+| src/app/api/web/organizations/[id]/members/route.ts | GET(멤버목록)+POST(초대) API | 신규 |
+| src/app/api/web/organizations/[id]/members/[memberId]/route.ts | DELETE(멤버제거) API | 신규 |
+| src/app/api/web/organizations/slug/[slug]/route.ts | 공개 단체 조회 (인증 불필요) | 신규 |
+| src/app/api/web/organizations/slug/[slug]/series/route.ts | 소속 시리즈 목록 (인증 불필요) | 신규 |
+| src/app/(web)/tournament-admin/organizations/page.tsx | 내 단체 목록 (관리) | 신규 |
+| src/app/(web)/tournament-admin/organizations/new/page.tsx | 단체 생성 폼 | 신규 |
+| src/app/(web)/tournament-admin/organizations/[orgId]/page.tsx | 단체 대시보드 (정보+시리즈+멤버) | 신규 |
+| src/app/(web)/tournament-admin/organizations/[orgId]/members/page.tsx | 멤버 관리 (초대+제거) | 신규 |
+| src/app/(web)/organizations/page.tsx | 공개 단체 목록 (ISR 60초) | 신규 |
+| src/app/(web)/organizations/[slug]/page.tsx | 공개 단체 상세 (통계+시리즈+멤버) | 신규 |
+| src/app/(web)/organizations/[slug]/series/[seriesSlug]/page.tsx | 시리즈 상세 (회차 타임라인) | 신규 |
+| src/app/api/web/series/route.ts | POST에 organization_id 파라미터 추가 | 수정 |
+| src/app/(web)/tournament-admin/_components/tournament-admin-nav.tsx | 네비에 "단체" 메뉴 추가 | 수정 |
 
 tester 참고:
-- xl(1280px) 이상에서만 우측 사이드바 표시 (모바일/태블릿 변경 없음)
-- BDR 랭킹: XP 높은 순 TOP5, 클릭 시 /profile/{id}
-- 주목할 팀: 승수 높은 순 TOP3, 승률% + N승 N패
-- 인기 코트: 최근 7일 체크인 수 TOP5, 클릭 시 /courts/{id}
-- 최근 활동: 체크인 5건, "닉네임이 코트명에 체크인" + 상대시간
-- /api/web/sidebar 호출 확인 (인증 불필요, 5분 캐시)
-- 데이터 없으면 해당 위젯 미표시, 에러 시 사이드바 전체 숨김
-
----
-
-이전 구현 기록: 홈 히어로 개인화 + 픽업게임 실내/야외 구분 (7파일)
-
-| 파일 경로 | 변경 내용 | 신규/수정 |
-|----------|----------|----------|
-| src/app/api/web/dashboard/route.ts | 자주가는코트TOP3+활동프로필+선호설정 3쿼리 추가 | 수정 |
-| src/app/api/web/home/news/route.ts | court_type 포함 + regions 파라미터 우선정렬 | 수정 |
-| src/app/api/web/courts/[id]/pickups/route.ts | 응답에 courtType 필드 추가 | 수정 |
-| src/components/home/home-hero.tsx | useSWR(dashboard) + props 전달 + DashboardData 타입 | 수정 |
-| src/components/home/quick-actions.tsx | 활동프로필 기반 동적 버튼 생성 | 수정 |
-| src/components/home/profile-widget.tsx | 자주가는코트+다음경기 링크 추가 | 수정 |
-| src/components/home/news-feed.tsx | preferredRegions prop + 픽업 실내/야외 뱃지 | 수정 |
-| src/app/(web)/courts/[id]/_components/court-pickups.tsx | 실내/야외 뱃지 추가 | 수정 |
-
-tester 참고:
-- 비로그인: 기존과 동일 (퀵액션 3고정버튼 + 소식피드)
-- 로그인(신규유저): dominantType="new" → 기본 버튼 3개
-- 로그인(체크인많은유저): 퀵액션 1번에 "코트명 체크인", 프로필위젯에 자주가는코트 표시
-- 로그인(경기참가유저): 퀵액션 1번에 "다음 경기 D-N"
-- 픽업게임 카드에 실내(파란)/야외(초록) 뱃지 표시
-- /api/web/home/news?regions=서울,경기 호출 시 해당 지역 소식 우선 정렬
-- /api/web/dashboard 응답에 frequentCourts, activityProfile, preferredRegions 추가 확인
+- Prisma 모델 2개 추가 (organizations, organization_members) → DB 마이그레이션 필요
+- 관리 페이지: /tournament-admin/organizations 에서 단체 CRUD + 멤버 관리
+- 공개 페이지: /organizations 에서 단체 목록 → /organizations/{slug} 상세 → 시리즈 상세
+- 권한: owner/admin만 단체 수정/멤버 초대 가능, owner만 admin 제거 가능
+- organization_id는 nullable (기존 시리즈 호환)
+- 시리즈 생성 시 organization_id 전달하면 단체 series_count 자동 증가
 
 ## 전체 프로젝트 현황 대시보드 (2026-03-31)
 
 ### 규모 요약
 | 항목 | 수치 |
 |------|------|
-| 웹 페이지 (web) | 71개 |
+| 웹 페이지 (web) | 78개 |
 | 관리자 페이지 (admin) | 14개 |
 | 사이트 페이지 (_site) | 6개 |
 | 라이브 페이지 | 2개 |
-| Web API | 91개 라우트 |
+| Web API | 98개 라우트 |
 | Flutter API (v1) | 33개 라우트 |
 | Cron | 2개 (대회알림, 주간리포트) |
-| Prisma 모델 | 67개 (comment_likes 추가) |
+| Prisma 모델 | 69개 (organizations + organization_members 추가) |
 | 코트 데이터 | 1,045개 (카카오 실데이터) |
 | tsc 에러 | 0개 |
 
@@ -96,6 +84,7 @@ tester 참고:
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-01 | developer | Organization 3단계 계층 (스키마+API7개+관리4P+공개3P+기존연결, 15파일) | 완료 |
 | 03-31 | developer | #8 검색코트 + #9 알림설정 + #10 PWA배너 (7파일) | 완료 |
 | 03-31 | developer | 비밀번호 재설정 + 회원 탈퇴 (8파일) | 완료 |
 | 03-31 | pm | main 머지 + 푸시 (Phase 5 성능 + 소셜) | 완료 |

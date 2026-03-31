@@ -198,7 +198,13 @@
       "Bash(ping -n 12 127.0.0.1)",
       "Bash(ping -n 15 127.0.0.1)",
       "Bash(ping -n 20 127.0.0.1)",
-      "Bash(ls \"src/app/\\(web\\)/~offline/\")"
+      "Bash(ls \"src/app/\\(web\\)/~offline/\")",
+      "Bash(findstr :3000)",
+      "Bash(findstr :300)",
+      "Bash(mkdir -p 'C:/0.programing/my-bdr-subin-main/src/app/api/web/organizations/[id]/members')",
+      "Bash(mkdir -p 'C:/0.programing/my-bdr-subin-main/src/app/api/web/organizations/[id]/members/[memberId]')",
+      "Bash(mkdir -p 'C:/0.programing/my-bdr-subin-main/src/app/api/web/organizations/slug/[slug]')",
+      "Bash(mkdir -p 'C:/0.programing/my-bdr-subin-main/src/app/api/web/organizations/slug/[slug]/series')"
     ]
   }
 }
