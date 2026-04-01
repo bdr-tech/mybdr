@@ -11,17 +11,25 @@ import webpush from "web-push";
 import { prisma } from "@/lib/db/prisma";
 
 // VAPID 키 설정 — 환경변수에서 가져온다
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY!;
+// VAPID lazy init
+
 
 // web-push에 VAPID 인증 정보 등록
 // subject는 푸시 서비스에 문의할 이메일 (필수)
-webpush.setVapidDetails(
-  "mailto:admin@mybdr.co.kr",
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY
-);
-
+let _vapidReady = false;
+function ensureVapid(): boolean {
+  if (_vapidReady) return true;
+  const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const priv = process.env.VAPID_PRIVATE_KEY;
+  if (!pub || !priv) return false;
+  try {
+    webpush.setVapidDetails("mailto:admin@mybdr.co.kr", pub, priv);
+    _vapidReady = true;
+    return true;
+  } catch {
+    return false;
+  }
+}
 /**
  * 특정 유저에게 푸시 알림 전송
  *
@@ -36,6 +44,7 @@ export async function sendPushToUser(
   body: string,
   url?: string
 ): Promise<void> {
+  if (!ensureVapid()) return;
   // 1) 해당 유저의 모든 푸시 구독 조회
   const subscriptions = await prisma.push_subscriptions.findMany({
     where: { user_id: userId },
@@ -93,6 +102,7 @@ export async function sendPushToUsers(
   body: string,
   url?: string
 ): Promise<void> {
+  if (!ensureVapid()) return;
   await Promise.allSettled(
     userIds.map((uid) => sendPushToUser(uid, title, body, url))
   );

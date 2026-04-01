@@ -126,6 +126,8 @@ export async function listRecentGames(take = 4) {
  * @returns game 또는 null
  */
 export async function getGame(idOrShortUuid: string) {
+  if (!idOrShortUuid || idOrShortUuid.length < 8) return null;
+
   let fullUuid: string | undefined;
 
   if (idOrShortUuid.length === 8) {

@@ -2116,3 +2116,22 @@ model ad_placements {
   @@index([placement, is_active], map: "idx_ad_placements_placement_active")
   @@index([campaign_id], map: "idx_ad_placements_campaign_id")
 }
+
+model DuoSession {
+  id            BigInt   @id @default(autoincrement())
+  pin           String   @unique @db.VarChar(6)
+  matchId       BigInt   @map("match_id")
+  tournamentId  String   @map("tournament_id") @db.Uuid
+  hostUserId    BigInt   @map("host_user_id")
+  guestUserId   BigInt?  @map("guest_user_id")
+  hostTeam      String   @default("home") @map("host_team") @db.VarChar(10)
+  status        String   @default("waiting") @db.VarChar(20)
+  channelName   String   @map("channel_name") @db.VarChar(100)
+  createdAt     DateTime @default(now()) @map("created_at")
+  expiresAt     DateTime @map("expires_at")
+
+  @@index([pin])
+  @@index([tournamentId])
+  @@index([status])
+  @@map("duo_sessions")
+}

@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/web/youtube/recommend",
-      "schedule": "*/25 * * * *"
+      "schedule": "0 0 * * *"
     },
     {
       "path": "/api/cron/weekly-report",
