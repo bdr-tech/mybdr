@@ -3,7 +3,7 @@
  *
  * 내 게이미피케이션 종합 현황 조회 (인증 필수)
  * - XP, 레벨, 칭호, 다음 레벨 진행률
- * - 스트릭 (연속 출석 일수)
+ * - 연속 출석 (연속 출석 일수)
  * - 뱃지 컬렉션
  * - 도장깨기 현황 (방문 코트 수 + 마일스톤)
  */
@@ -23,7 +23,7 @@ export async function GET() {
 
   const userId = BigInt(session.sub);
 
-  // 유저 XP/레벨/스트릭 조회
+  // 유저 XP/레벨/연속 출석 조회
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {

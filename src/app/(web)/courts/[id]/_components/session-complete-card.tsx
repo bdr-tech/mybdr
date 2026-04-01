@@ -4,7 +4,7 @@
  * 세션 완료 카드 (체크아웃 후 팝업)
  *
  * 체크아웃 성공 시 표시되는 세션 요약 카드.
- * 운동 시간, 획득 XP, 레벨, 스트릭, 새 뱃지를 보여준다.
+ * 운동 시간, 획득 XP, 레벨, 연속 출석, 새 뱃지를 보여준다.
  * 닫기 버튼으로 사라진다.
  */
 
@@ -111,7 +111,7 @@ export function SessionCompleteCard({
           </div>
         )}
 
-        {/* 스트릭 */}
+        {/* 연속 출석 */}
         {gamification.streak > 0 && (
           <div className="flex items-center gap-2 justify-center">
             <span

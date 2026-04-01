@@ -4,7 +4,7 @@
  * ProfileWidget — 로그인 유저 게이미피케이션 위젯
  *
  * 홈 히어로 상단에 표시되는 프로필 카드.
- * XP 진행률, 스트릭, 체크인, 뱃지 + 오늘의 미션을 보여준다.
+ * XP 진행률, 연속 출석, 체크인, 뱃지 + 오늘의 미션을 보여준다.
  * 비로그인 시에는 home-hero에서 이 컴포넌트를 렌더링하지 않는다.
  * ============================================================ */
 
@@ -57,7 +57,7 @@ interface ProfileWidgetProps {
 }
 
 export function ProfileWidget({ dashboardData }: ProfileWidgetProps) {
-  // 게이미피케이션 데이터 (XP, 레벨, 스트릭, 뱃지)
+  // 게이미피케이션 데이터 (XP, 레벨, 연속 출석, 뱃지)
   const { data: gData, isLoading: gLoading } = useSWR<GamificationData>(
     "/api/web/profile/gamification",
     { dedupingInterval: 30000 }
@@ -119,9 +119,9 @@ export function ProfileWidget({ dashboardData }: ProfileWidgetProps) {
       missionText = "리뷰 작성하기";
       missionXp = 15;
     } else if (lastDate === yesterdayStr) {
-      // 어제 체크인함 → 스트릭 이어가기
+      // 어제 체크인함 → 연속 출석 이어가기
       missionIcon = "local_fire_department";
-      missionText = "스트릭 이어가기! 체크인";
+      missionText = "연속 출석 이어가기! 체크인";
       missionXp = 10;
     }
   }
@@ -189,9 +189,9 @@ export function ProfileWidget({ dashboardData }: ProfileWidgetProps) {
         </div>
       </div>
 
-      {/* 3칸 통계: 스트릭 / 체크인 / 뱃지 */}
+      {/* 3칸 통계: 연속 출석 / 체크인 / 뱃지 */}
       <div className="grid grid-cols-3 gap-2 mb-4">
-        <StatBox icon="local_fire_department" value={gData.streak} label="스트릭" />
+        <StatBox icon="local_fire_department" value={gData.streak} label="연속 출석" />
         <StatBox icon="location_on" value={gData.court_stamps.count} label="체크인" />
         <StatBox icon="military_tech" value={gData.badges.length} label="뱃지" />
       </div>

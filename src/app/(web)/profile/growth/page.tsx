@@ -4,7 +4,7 @@
  * 내 성장 페이지 (/profile/growth)
  *
  * 기존 /profile 페이지에서 게이미피케이션 섹션을 분리한 페이지.
- * XP/레벨 + 연속 출석(스트릭) + 뱃지 컬렉션 + 코트 도장깨기
+ * XP/레벨 + 연속 출석(연속 출석) + 뱃지 컬렉션 + 코트 도장깨기
  * API: /api/web/profile/gamification 엔드포인트 사용
  */
 
@@ -103,7 +103,7 @@ export default function GrowthPage() {
         xpToNextLevel={gamification.xp_to_next_level}
       />
 
-      {/* 연속 출석 스트릭 */}
+      {/* 연속 출석 연속 출석 */}
       <StreakCard streak={gamification.streak} />
 
       {/* 코트 도장깨기 진행률 */}

@@ -211,7 +211,8 @@
       "Bash(test -f /c/0.programing/my-bdr-subin-main/src/app/\\\\\\(web\\\\\\)/organizations/apply/page.tsx)",
       "Bash(test -f /c/0.programing/my-bdr-subin-main/src/app/\\\\\\(admin\\\\\\)/admin/organizations/page.tsx)",
       "Bash(ls \"C:\\\\0.programing\\\\my-bdr-subin-main\\\\src\\\\app\\\\\\(web\\)\")",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(echo \"수정: $f\")"
     ]
   }
 }

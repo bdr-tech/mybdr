@@ -61,7 +61,7 @@ const categoryCards = [
   {
     id: "growth",
     label: "내 성장",
-    description: "XP/레벨, 뱃지, 스트릭, 도장깨기",
+    description: "XP/레벨, 뱃지, 연속 출석, 도장깨기",
     icon: "trending_up",
     href: "/profile/growth",
     color: "var(--color-accent)",

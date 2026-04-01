@@ -140,7 +140,7 @@ export async function updateStreak(userId: bigint) {
   yesterdayKST.setDate(yesterdayKST.getDate() - 1);
   const yesterdayStr = yesterdayKST.toISOString().slice(0, 10);
 
-  // 마지막 스트릭 날짜를 KST 문자열로 변환
+  // 마지막 연속 출석 날짜를 KST 문자열로 변환
   let lastDateStr: string | null = null;
   if (user.streak_last_date) {
     // DB에 Date로 저장되므로 UTC 기준 → KST 변환
@@ -176,7 +176,7 @@ export async function updateStreak(userId: bigint) {
   // 7일 달성 시 보너스 XP + 뱃지
   if (newStreak === 7) {
     await addXP(userId, XP_REWARDS.streak_7, "streak_7");
-    // 스트릭 뱃지 부여
+    // 연속 출석 뱃지 부여
     await prisma.user_badges.upsert({
       where: {
         user_id_badge_type: { user_id: userId, badge_type: "streak_7" },

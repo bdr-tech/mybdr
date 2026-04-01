@@ -122,7 +122,7 @@ export async function GET() {
 
   const userId = BigInt(session.sub);
 
-  // 유저 정보 조회 (XP/레벨/스트릭)
+  // 유저 정보 조회 (XP/레벨/연속 출석)
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
