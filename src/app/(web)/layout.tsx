@@ -53,7 +53,6 @@ const sideNavItems = [
   { href: "/courts", label: "코트", icon: "location_on" },
   { href: "/rankings", label: "랭킹", icon: "leaderboard" },
   { href: "/community", label: "커뮤니티", icon: "forum" },
-  { href: "/notifications", label: "알림", icon: "notifications" },
 ];
 
 const bottomNavItems = [
@@ -435,34 +434,9 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* SNS 링크: YouTube + Instagram (사이드 네비 하단) */}
-        <div className="px-4 pb-2 flex items-center gap-3">
-          <a
-            href="https://www.youtube.com/@BDRBASKET"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--color-surface)]"
-            style={{ color: "var(--color-text-muted)" }}
-            aria-label="BDR YouTube"
-          >
-            <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
-          </a>
-          <a
-            href="https://www.instagram.com/bdr_basket"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--color-surface)]"
-            style={{ color: "var(--color-text-muted)" }}
-            aria-label="BDR Instagram"
-          >
-            <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>photo_camera</span>
-          </a>
-        </div>
-
-        {/* 하단: 역할별 관리 링크 + 프로필 + 로그아웃 */}
+        {/* 하단: 관리 링크 + 로그인 버튼 (프로필/로그아웃은 프로필 페이지 안에서만) */}
         <div className="border-t border-[var(--color-border)] p-4 space-y-2">
           {/* 관리 링크: 로그인 유저에게 통합 "관리" 1개만 표시 */}
-          {/* /admin layout에서 권한별 메뉴를 자동 필터링함 */}
           {user && (
             <Link href="/admin"
               className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-[var(--color-primary)] hover:bg-[var(--color-surface)] transition-colors">
@@ -470,25 +444,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
               관리
             </Link>
           )}
-          {user ? (
-            <>
-              <Link href="/profile" className="flex items-center gap-3 px-2 py-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-primary)] text-sm font-bold text-white">
-                  {user.name?.trim()?.[0]?.toUpperCase() ?? "U"}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>{user.name || "사용자"}</p>
-                  <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>프로필 보기</p>
-                </div>
-              </Link>
-              <button onClick={async () => { await fetch("/api/web/logout", { method: "POST", credentials: "include" }); window.location.href = "/login"; }}
-                className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] transition-colors"
-              >
-                <span className="material-symbols-outlined text-lg">logout</span>
-                로그아웃
-              </button>
-            </>
-          ) : (
+          {!user && (
             <Link href="/login" className="block w-full rounded-xl bg-[var(--color-primary)] py-3 text-center text-sm font-bold text-white">
               로그인
             </Link>
