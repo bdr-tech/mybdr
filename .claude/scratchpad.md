@@ -29,14 +29,20 @@ tester 참고:
 주의사항 (reviewer용):
 - 보호 메뉴(홈, 경기찾기)는 protected: true로 토글 비활성화 + opacity-50 처리
 - 테마/텍스트 크기는 localStorage만 사용 (DB 저장 불필요)
+
+#### 수정 이력
+| 회차 | 날짜 | 수정 내용 | 수정 파일 | 사유 |
+|------|------|----------|----------|------|
+| 1차 | 2026-04-02 | handleSave에서 mode="settings"일 때 저장 성공 후 window.location.reload() 추가 | preference-form.tsx | PM 요청: 메뉴 설정 저장 후 사이드바에 즉시 반영 안 되는 문제 해결
 - hidden_menus는 DB에 JSON 배열로 저장, slug(href) 기반 (예: ["/rankings", "/organizations"])
 
 ## 수정 요청 (debugger)
 
 | # | 버그 | 원인 | 수정 대상 파일 | 수정 방안 | 우선순위 |
 |---|------|------|--------------|----------|---------|
-| 1 | 커뮤니티 게시판이 맞춤 설정 무시하고 모든 게시판 표시 | header.tsx와 layout.tsx에서 setLoggedIn 이중 호출 경쟁 조건. header.tsx가 preferEnabled 없이 호출하여 preferDefault를 false로 덮어씀 | `src/components/shared/header.tsx` (60행) | header.tsx의 setLoggedIn 호출 제거 (layout.tsx에서 이미 처리) 또는 preferEnabled 전달 추가 | 높음 |
+| 1 | 커뮤니티 게시판이 맞춤 설정 무시하고 모든 게시판 표시 | header.tsx와 layout.tsx에서 setLoggedIn 이중 호출 경쟁 조건. header.tsx가 preferEnabled 없이 호출하여 preferDefault를 false로 덮어씀 | `src/components/shared/header.tsx` (60행) | header.tsx의 setLoggedIn 호출 제거 (layout.tsx에서 이미 처리) 또는 preferEnabled 전달 추가 | 해결됨 |
 | 2 | (부차적) header.tsx와 layout.tsx에서 /api/web/me 중복 fetch | 두 컴포넌트가 동시에 동일 API를 호출하여 불필요한 네트워크 요청 발생 | `src/components/shared/header.tsx`, `src/app/(web)/layout.tsx` | user 상태를 context/props로 공유하여 fetch 1회로 통합 | 중간 |
+| 3 | 전체 페이지 무한 로딩 (커뮤니티 포함 모든 페이지) | 개발서버 프로세스(PID 106908)가 메모리 1.67GB 사용하며 hung 상태. 모든 HTTP 요청에 응답 불가. 코드 에러가 아닌 개발서버 자체의 문제 | 개발서버 프로세스 | 개발서버 재시작: (1) `netstat -ano \| findstr :3001`로 PID 확인 (2) `taskkill //f //pid <PID>` (3) `npm run dev` 재시작 | 긴급 |
 
 ## 기획설계 (planner-architect) - 맞춤 설정 강화
 

@@ -378,6 +378,14 @@ export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps
       // preferFilter가 false(OFF)면 페이지 이동 시에도 OFF 유지
       updatePreferDefault(preferFilter);
 
+      // settings 모드: 페이지 새로고침으로 사이드바(layout)에 변경사항 즉시 반영
+      // layout.tsx는 최초 마운트 시에만 /api/web/me를 fetch하므로,
+      // hidden_menus 등 변경 후 reload 해야 사이드바에 반영됨
+      if (mode === "settings") {
+        window.location.reload();
+        return; // reload 후에는 아래 코드 실행 불필요
+      }
+
       setMessage({ type: "success", text: "맞춤 설정이 저장되었습니다." });
       // 3초 후 메시지 자동 제거
       setTimeout(() => setMessage(null), 3000);
