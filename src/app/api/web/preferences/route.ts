@@ -3,13 +3,13 @@ import { apiSuccess, apiError } from "@/lib/api/response";
 import { prisma } from "@/lib/db/prisma";
 import { z } from "zod";
 
-// 선호 설정 검증 스키마 - preferred_cities 제거 (user.city를 직접 활용)
+// 맞춤 설정 검증 스키마 - preferred_cities 제거 (user.city를 직접 활용)
 const preferencesSchema = z.object({
   preferred_divisions: z.array(z.string()).optional(),
   preferred_board_categories: z.array(z.string()).optional(),
   // 경기 유형: 0=PICKUP, 1=GUEST, 2=PRACTICE (숫자 배열)
   preferred_game_types: z.array(z.number().int().min(0).max(2)).optional(),
-  // 선호 지역/요일/시간대/실력 (문자열 배열)
+  // 맞춤 지역/요일/시간대/실력 (문자열 배열)
   preferred_regions: z.array(z.string()).optional(),
   preferred_days: z.array(z.string()).optional(),
   preferred_time_slots: z.array(z.string()).optional(),
@@ -18,7 +18,7 @@ const preferencesSchema = z.object({
   prefer_filter_enabled: z.boolean().optional(),
 });
 
-// GET: 현재 유저의 선호 설정 조회
+// GET: 현재 유저의 맞춤 설정 조회
 export const GET = withWebAuth(async (ctx: WebAuthContext) => {
   try {
     const user = await prisma.user.findUnique({
@@ -52,7 +52,7 @@ export const GET = withWebAuth(async (ctx: WebAuthContext) => {
   }
 });
 
-// PATCH: 선호 설정 업데이트
+// PATCH: 맞춤 설정 업데이트
 export const PATCH = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
   try {
     const body = await req.json();
@@ -70,7 +70,7 @@ export const PATCH = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
     if (preferred_divisions !== undefined) updateData.preferred_divisions = preferred_divisions;
     if (preferred_board_categories !== undefined) updateData.preferred_board_categories = preferred_board_categories;
     if (preferred_game_types !== undefined) updateData.preferred_game_types = preferred_game_types;
-    // 선호 지역/요일/시간대/실력
+    // 맞춤 지역/요일/시간대/실력
     if (preferred_regions !== undefined) updateData.preferred_regions = preferred_regions;
     if (preferred_days !== undefined) updateData.preferred_days = preferred_days;
     if (preferred_time_slots !== undefined) updateData.preferred_time_slots = preferred_time_slots;
@@ -95,7 +95,7 @@ export const PATCH = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
       return apiSuccess(user);
     }
 
-    // 현재 유저의 onboarding_step 확인 — 선호 설정 완료 시 step 2로 진행시키기 위함
+    // 현재 유저의 onboarding_step 확인 — 맞춤 설정 완료 시 step 2로 진행시키기 위함
     const currentUser = await prisma.user.findUnique({
       where: { id: ctx.userId },
       select: { onboarding_step: true },

@@ -485,7 +485,7 @@ export default function ProfileEditPage() {
         </div>
       )}
 
-      {/* 선호 설정 안내 카드 - 별도 페이지로 이동하는 링크 */}
+      {/* 맞춤 설정 안내 카드 - 별도 페이지로 이동하는 링크 */}
       <div className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
         <h2
           className="mb-1 font-semibold uppercase tracking-wide text-[var(--color-text-primary)]"

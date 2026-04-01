@@ -266,7 +266,7 @@ export async function prefetchRecommendedGames(sessionSub?: string) {
     let score = 0;
     const reasons: string[] = [];
     if (g.city && preferredCities.includes(g.city)) { score += 3; reasons.push("자주 가는 지역"); }
-    if (g.game_type !== null && preferredTypes.includes(g.game_type)) { score += 2; reasons.push("선호 경기 유형"); }
+    if (g.game_type !== null && preferredTypes.includes(g.game_type)) { score += 2; reasons.push("맞춤 경기 유형"); }
     if (g.skill_level && preferredSkills.includes(g.skill_level)) { score += 1; reasons.push("맞는 실력대"); }
 
     return {

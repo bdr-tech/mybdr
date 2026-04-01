@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { SKILL_LABEL } from "@/lib/constants/game-status";
 import type { games } from "@prisma/client";
 
 type GameCardData = Pick<
@@ -27,12 +28,7 @@ const STATUS_INFO: Record<number, { label: string; variant: "success" | "default
   4: { label: "취소",   variant: "error" },
 };
 
-const SKILL_LABEL: Record<string, string> = {
-  beginner: "초급",
-  intermediate: "중급",
-  intermediate_advanced: "중고급",
-  advanced: "고급",
-};
+// SKILL_LABEL은 @/lib/constants/game-status에서 import (7단계 + 하위 호환)
 
 function ParticipantBar({ current, max }: { current: number; max: number }) {
   const pct = max > 0 ? Math.min((current / max) * 100, 100) : 0;

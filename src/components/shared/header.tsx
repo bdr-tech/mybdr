@@ -42,8 +42,8 @@ export function Header() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // 전역 선호 필터 Context -- 로그인 상태를 Provider에 전달하고, 토글 함수를 받아옴
-  const { preferFilter, togglePreferFilter, setLoggedIn } = usePreferFilter();
+  // 전역 맞춤 필터 Context -- 토글 함수를 받아옴 (setLoggedIn은 layout.tsx에서만 호출)
+  const { preferFilter, togglePreferFilter } = usePreferFilter();
 
   // 마운트 시 1회: me + notifications 병렬 fetch (waterfall 제거)
   useEffect(() => {
@@ -56,11 +56,11 @@ export function Header() {
         .catch(() => null),
     ]).then(([userData, notifData]) => {
       setUser(userData);
-      // 로그인 여부를 PreferFilterProvider에 전달
-      setLoggedIn(!!userData);
+      // setLoggedIn은 layout.tsx에서 preferEnabled와 함께 처리하므로 여기서 호출하지 않음
+      // (이중 호출 시 경쟁 조건으로 preferDefault가 false로 덮어씌워지는 버그 방지)
       if (userData && notifData) setUnreadCount(notifData.unreadCount ?? 0);
     });
-  }, [setLoggedIn]);
+  }, []);
 
   // 페이지 이동 시: 알림 카운트만 갱신 (me 재호출 없음)
   useEffect(() => {
@@ -121,7 +121,7 @@ export function Header() {
 
           {/* Right: PreferFilter + TextSize + Theme + Bell + Login/Profile */}
           <div className="flex items-center gap-1.5">
-            {/* 선호 필터 토글 -- 로그인 유저에게만 표시 */}
+            {/* 맞춤 필터 토글 -- 로그인 유저에게만 표시 */}
             {/* Sparkles 토글: 활성 시 웜 오렌지, 비활성 시 muted 색상 */}
             {user && (
               <button

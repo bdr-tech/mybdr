@@ -63,7 +63,7 @@ interface NewsFeedProps {
 }
 
 export function NewsFeed({ preferredRegions }: NewsFeedProps) {
-  // 선호 지역이 있으면 regions 쿼리 파라미터로 전달
+  // 맞춤 지역이 있으면 regions 쿼리 파라미터로 전달
   const regionsQuery =
     preferredRegions && preferredRegions.length > 0
       ? `?regions=${encodeURIComponent(preferredRegions.join(","))}`

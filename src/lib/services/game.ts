@@ -14,9 +14,9 @@ export interface GameListFilters {
   q?: string;
   type?: string;
   city?: string;
-  /** 선호 지역 필터 — 여러 도시를 OR 조건으로 검색 (prefer=true 시 사용) */
+  /** 맞춤 지역 필터 — 여러 도시를 OR 조건으로 검색 (prefer=true 시 사용) */
   cities?: string[];
-  /** 선호 경기 유형 필터 — game_type IN (...) 조건 (prefer=true 시 사용) */
+  /** 맞춤 경기 유형 필터 — game_type IN (...) 조건 (prefer=true 시 사용) */
   gameTypes?: number[];
   scheduledAt?: { gte?: Date; lt?: Date };
   take?: number;
@@ -37,15 +37,15 @@ export async function listGames(filters: GameListFilters = {}) {
     status: { not: 4 },
   };
   if (q) where.title = { contains: q, mode: "insensitive" };
-  // 명시적 type 파라미터가 우선, 없으면 선호 경기 유형(gameTypes)으로 필터
+  // 명시적 type 파라미터가 우선, 없으면 맞춤 경기 유형(gameTypes)으로 필터
   if (type && type !== "all") {
     where.game_type = parseInt(type);
   } else if (gameTypes && gameTypes.length > 0) {
-    // 선호 경기 유형이 설정되어 있으면 해당 유형만 표시 (city 필터와 AND 결합)
+    // 맞춤 경기 유형이 설정되어 있으면 해당 유형만 표시 (city 필터와 AND 결합)
     where.game_type = { in: gameTypes };
   }
 
-  // 선호 지역(cities) 우선, 단일 도시(city) 차선 — 둘 다 있으면 cities 사용
+  // 맞춤 지역(cities) 우선, 단일 도시(city) 차선 — 둘 다 있으면 cities 사용
   if (cities && cities.length > 0) {
     // 여러 도시를 OR 조건으로 묶어 검색
     where.city = { in: cities, mode: "insensitive" };

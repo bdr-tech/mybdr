@@ -4,9 +4,9 @@
 ## 파일별 요약
 | 파일 | 항목 수 | 최종 업데이트 | 설명 |
 |------|--------|------------|------|
-| architecture.md | 15 | 2026-03-28 | 페이지별 구조, admin 개편, 프론트-백엔드 연결맵 |
+| architecture.md | 16 | 2026-04-02 | 페이지별 구조, admin 개편, 프론트-백엔드 연결맵, 맞춤설정 시스템 |
 | conventions.md | 11 | 2026-03-28 | 디자인 시스템, 디비전 체계, 대회 상태 4종, admin UI 패턴 |
-| decisions.md | 26 | 2026-03-29 | 기술 결정 (성능/구조/디비전/admin 개편/코트 데이터 정리/픽업게임/위키/앰배서더/리포트/3x3/히트맵) |
+| decisions.md | 27 | 2026-04-02 | 기술 결정 (성능/구조/디비전/admin 개편/코트 데이터 정리/픽업게임/위키/앰배서더/리포트/3x3/히트맵/맞춤설정) |
 | errors.md | 5 | 2026-03-28 | 에러 패턴, 함정, 주의사항 |
 | lessons.md | 4 | 2026-03-28 | 삽질 경험, 효과적 접근법 |
 | toss-design-analysis.md | 10 | 2026-03-28 | 토스 디자인 시스템 심층 분석 (색상/폰트/간격/컴포넌트/레이아웃) |
@@ -92,6 +92,8 @@
 | Stitch 원본 | Dev/design/0. 레이아웃/DESIGN.md | Stitch에서 내보낸 원본 디자인 규격 |
 
 ## 최근 추가된 지식 (최근 10건)
+- [04-02] decisions: 맞춤 설정 강화 — 실력 7단계 + 메뉴 토글 + 카테고리 분리 (DB 변경 최소, 하위 호환 유지)
+- [04-02] architecture: 맞춤 설정 시스템 구조 분석 — preference-form + API + context + 필터 적용 흐름 + SKILL_LABEL 중복 4곳
 - [03-29] decisions: GPS 히트맵 — Canvas 오버레이 + simpleheat (카카오맵 히트맵 미지원, court_sessions 시간대 집계)
 - [03-29] decisions: 3x3 이벤트 — tournament 완전 분리, court_events 4테이블 신설 (코트 종속 경량 대회)
 - [03-29] decisions: 앰배서더 — court_ambassadors 테이블 + 위키 바이패스 (코트별 동네 관리자)

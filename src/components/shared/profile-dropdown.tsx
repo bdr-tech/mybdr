@@ -15,11 +15,13 @@ import { usePathname } from "next/navigation";
  * 사용처: layout.tsx 헤더 우측 프로필 아이콘 자리
  * ============================================================ */
 
-// 4개 카테고리 (각각 페이지로 이동, 하위 항목 없음)
+// 5개 카테고리 (각각 페이지로 이동, 하위 항목 없음)
+// "맞춤 설정"을 "내 정보"와 "계정" 사이에 단독 항목으로 배치
 const menuItems = [
   { href: "/profile/basketball", label: "내 농구", icon: "sports_basketball", subtitle: "팀 · 경기 · 대회 · 주간 리포트" },
   { href: "/profile/growth", label: "내 성장", icon: "trending_up", subtitle: "XP · 레벨 · 뱃지 · 도장깨기" },
-  { href: "/profile/edit", label: "내 정보", icon: "person", subtitle: "프로필 편집 · 선호 설정" },
+  { href: "/profile/edit", label: "내 정보", icon: "person", subtitle: "프로필 편집 · 소셜 계정" },
+  { href: "/profile/preferences", label: "맞춤 설정", icon: "tune", subtitle: "종별 · 경기유형 · 지역 · 실력" },
   { href: "/profile/subscription", label: "계정", icon: "settings", subtitle: "구독 · 결제 · 알림 설정" },
 ];
 

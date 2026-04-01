@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // 패턴 추출: 선호 지역, 경기 유형, 실력대
+  // 패턴 추출: 맞춤 지역, 경기 유형, 실력대
   const cityCounts = new Map<string, number>();
   const typeCounts = new Map<number, number>();
   const skillCounts = new Map<string, number>();
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
     if (g.skill_level) skillCounts.set(g.skill_level, (skillCounts.get(g.skill_level) ?? 0) + 1);
   }
 
-  // 이력에서 추출한 선호 지역 (최대 3개)
+  // 이력에서 추출한 맞춤 지역 (최대 3개)
   const historyCities = [...cityCounts.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
     }
     if (g.game_type !== null && preferredTypes.includes(g.game_type)) {
       score += 2;
-      reasons.push("선호 경기 유형");
+      reasons.push("맞춤 경기 유형");
     }
     if (g.skill_level && preferredSkills.includes(g.skill_level)) {
       score += 1;

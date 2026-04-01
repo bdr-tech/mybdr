@@ -2,6 +2,12 @@
 <!-- 담당: planner-architect, developer | 최대 30항목 -->
 <!-- 프로젝트의 폴더 구조, 파일 역할, 핵심 패턴을 기록 -->
 
+### [2026-04-02] 맞춤 설정(Preferences) 시스템 구조 분석
+- **분류**: architecture
+- **발견자**: planner-architect
+- **내용**: 맞춤 설정 시스템 전체 구조 파악. (1) 데이터 흐름: preference-form.tsx(클라이언트) → /api/web/preferences(GET/PATCH) → User 모델 preferred_* 7필드 + prefer_filter_enabled. (2) 필터 적용: prefer-filter-context.tsx가 전역 상태 관리, header.tsx와 layout.tsx에 토글 버튼, game.ts/tournament.ts/community-content.tsx에서 필터 적용. (3) 온보딩 연결: /profile/complete/preferences에서 onboarding 모드로 PreferenceForm 사용, 온보딩 step 2로 진행. (4) 실력 관련: SKILL_BADGE(game-status.ts)가 공통 상수이나, SKILL_LABEL이 pickup-game-card/guest-game-card/pickup-detail/guest-detail 4파일에 인라인 중복 정의. (5) 메뉴 구조: profile-dropdown.tsx(헤더 드롭다운 4카테고리), profile-accordion.tsx(모바일 슬라이드 메뉴 4카테고리). 맞춤 설정은 "내 정보" 카테고리 하위에 위치.
+- **참조횟수**: 0
+
 ### [2026-03-28] 프론트-백엔드 연결 전수 조사 + admin 관리 갭 분석
 - **분류**: architecture
 - **발견자**: planner-architect

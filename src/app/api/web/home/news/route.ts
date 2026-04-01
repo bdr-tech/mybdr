@@ -12,7 +12,7 @@ import { apiSuccess } from "@/lib/api/response";
 export type NewsItemType = "tournament" | "pickup" | "event" | "promo";
 
 export async function GET(req: Request) {
-  // regions 쿼리 파라미터: 선호 지역 우선 정렬 (예: ?regions=서울,경기)
+  // regions 쿼리 파라미터: 맞춤 지역 우선 정렬 (예: ?regions=서울,경기)
   const url = new URL(req.url);
   const regionsParam = url.searchParams.get("regions");
   const preferredRegions = regionsParam
@@ -123,7 +123,7 @@ export async function GET(req: Request) {
     });
   }
 
-  // 선호 지역이 있으면 해당 지역 소식을 앞으로 정렬
+  // 맞춤 지역이 있으면 해당 지역 소식을 앞으로 정렬
   // venue_name / court_name에 지역명이 포함되면 우선 배치
   if (preferredRegions.length > 0) {
     items.sort((a, b) => {

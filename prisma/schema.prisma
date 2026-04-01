@@ -55,7 +55,7 @@ model User {
   preferred_divisions                                                       Json                         @default("[]")
   preferred_board_categories                                                Json                         @default("[]")
   preferred_game_types                                                      Json                         @default("[]")
-  // 선호 지역/요일/시간대/실력 (JSON 배열로 저장)
+  // 맞춤 지역/요일/시간대/실력 (JSON 배열로 저장)
   preferred_regions                                                         Json                         @default("[]")
   preferred_days                                                            Json                         @default("[]")
   preferred_time_slots                                                      Json                         @default("[]")

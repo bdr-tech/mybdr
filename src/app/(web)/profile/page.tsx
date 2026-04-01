@@ -69,7 +69,7 @@ const categoryCards = [
   {
     id: "info",
     label: "내 정보",
-    description: "프로필 편집, 소셜 계정, 선호 설정",
+    description: "프로필 편집, 소셜 계정",
     icon: "person",
     href: "/profile/edit",
     color: "var(--color-info)",

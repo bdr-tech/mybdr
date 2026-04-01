@@ -1,7 +1,7 @@
 "use client";
 
 /* ============================================================
- * PreferenceForm — 선호 설정 폼 (토스 스타일)
+ * PreferenceForm — 맞춤 설정 폼 (토스 스타일)
  *
  * 3개 섹션: 관심 종별/디비전, 경기 유형, 게시판 카테고리
  * + "원하는 정보만 보기" 토글 스위치
@@ -36,13 +36,13 @@ const BOARD_CATEGORIES = [
   { code: "marketplace", label: "농구장터" },
 ] as const;
 
-// 선호 지역 목록 (17개 광역시/도)
+// 맞춤 지역 목록 (17개 광역시/도)
 const REGIONS = [
   "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종",
   "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주",
 ];
 
-// 선호 요일 (월~일)
+// 맞춤 요일 (월~일)
 const DAYS = [
   { code: "mon", label: "월" }, { code: "tue", label: "화" },
   { code: "wed", label: "수" }, { code: "thu", label: "목" },
@@ -50,7 +50,7 @@ const DAYS = [
   { code: "sun", label: "일" },
 ] as const;
 
-// 선호 시간대 (4구간)
+// 맞춤 시간대 (4구간)
 const TIME_SLOTS = [
   { code: "morning", label: "오전 (6~12시)" },
   { code: "afternoon", label: "오후 (12~18시)" },
@@ -58,12 +58,15 @@ const TIME_SLOTS = [
   { code: "night", label: "심야 (22~6시)" },
 ] as const;
 
-// 실력 수준 (4단계)
+// 실력 수준 (7단계)
 const SKILL_LEVELS = [
-  { code: "beginner", label: "초급" },
-  { code: "intermediate", label: "중급" },
-  { code: "intermediate_advanced", label: "중상" },
-  { code: "advanced", label: "상급" },
+  { code: "lowest", label: "최하" },
+  { code: "low", label: "하" },
+  { code: "mid_low", label: "중하" },
+  { code: "mid", label: "중" },
+  { code: "mid_high", label: "중상" },
+  { code: "high", label: "상" },
+  { code: "highest", label: "최상" },
 ] as const;
 
 // --- Props 타입 정의 ---
@@ -104,16 +107,16 @@ function PillButton({
 }
 
 export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps) {
-  // 전역 선호 필터 상태 (헤더의 "원하는 정보만 보기" 토글과 동기화)
+  // 전역 맞춤 필터 상태 (헤더의 "원하는 정보만 보기" 토글과 동기화)
   const { preferFilter, togglePreferFilter, updatePreferDefault } = usePreferFilter();
 
-  // 선호 디비전 선택 상태
+  // 맞춤 디비전 선택 상태
   const [selectedDivisions, setSelectedDivisions] = useState<string[]>([]);
-  // 선호 게시판 카테고리 선택 상태
+  // 맞춤 게시판 카테고리 선택 상태
   const [selectedBoardCategories, setSelectedBoardCategories] = useState<string[]>([]);
-  // 선호 경기 유형 선택 상태 (숫자 배열: 0=PICKUP, 1=GUEST, 2=PRACTICE)
+  // 맞춤 경기 유형 선택 상태 (숫자 배열: 0=PICKUP, 1=GUEST, 2=PRACTICE)
   const [selectedGameTypes, setSelectedGameTypes] = useState<number[]>([]);
-  // 선호 지역/요일/시간대/실력 선택 상태
+  // 맞춤 지역/요일/시간대/실력 선택 상태
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<string[]>([]);
@@ -129,7 +132,7 @@ export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // 기존 선호 설정 불러오기 (API에서 현재 유저의 선호 데이터 조회)
+  // 기존 맞춤 설정 불러오기 (API에서 현재 유저의 맞춤 데이터 조회)
   const loadPreferences = useCallback(async () => {
     try {
       const res = await fetch("/api/web/preferences");
@@ -204,7 +207,7 @@ export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps
     );
   };
 
-  // 저장 처리 - API에 선호 설정을 PATCH로 전송
+  // 저장 처리 - API에 맞춤 설정을 PATCH로 전송
   const handleSave = async () => {
     setSaving(true);
     setMessage(null);
@@ -407,9 +410,9 @@ export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps
             </p>
           )}
 
-          {/* --- 서브섹션: 선호 실력 수준 --- */}
+          {/* --- 서브섹션: 맞춤 실력 수준 --- */}
           <div className="mt-6">
-            <p className="text-xs font-medium mb-2" style={{ color: "var(--color-text-muted)" }}>선호 실력</p>
+            <p className="text-xs font-medium mb-2" style={{ color: "var(--color-text-muted)" }}>맞춤 실력</p>
             <div className="flex flex-wrap gap-2">
               {SKILL_LEVELS.map(({ code, label }) => (
                 <PillButton key={code} selected={selectedSkills.includes(code)} onClick={() => toggleSkill(code)}>
@@ -428,9 +431,9 @@ export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps
       <div>
         <TossSectionHeader title="경기 일정 선호" />
         <TossCard>
-          {/* 선호 지역 */}
+          {/* 맞춤 지역 */}
           <div>
-            <p className="text-xs font-medium mb-2" style={{ color: "var(--color-text-muted)" }}>선호 지역</p>
+            <p className="text-xs font-medium mb-2" style={{ color: "var(--color-text-muted)" }}>맞춤 지역</p>
             <div className="flex flex-wrap gap-2">
               {REGIONS.map((region) => (
                 <PillButton key={region} selected={selectedRegions.includes(region)} onClick={() => toggleRegion(region)}>
@@ -445,9 +448,9 @@ export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps
             )}
           </div>
 
-          {/* 선호 요일 */}
+          {/* 맞춤 요일 */}
           <div className="mt-6">
-            <p className="text-xs font-medium mb-2" style={{ color: "var(--color-text-muted)" }}>선호 요일</p>
+            <p className="text-xs font-medium mb-2" style={{ color: "var(--color-text-muted)" }}>맞춤 요일</p>
             <div className="flex flex-wrap gap-2">
               {DAYS.map(({ code, label }) => (
                 <PillButton key={code} selected={selectedDays.includes(code)} onClick={() => toggleDay(code)}>
@@ -457,9 +460,9 @@ export function PreferenceForm({ mode, onComplete, onSkip }: PreferenceFormProps
             </div>
           </div>
 
-          {/* 선호 시간대 */}
+          {/* 맞춤 시간대 */}
           <div className="mt-6">
-            <p className="text-xs font-medium mb-2" style={{ color: "var(--color-text-muted)" }}>선호 시간대</p>
+            <p className="text-xs font-medium mb-2" style={{ color: "var(--color-text-muted)" }}>맞춤 시간대</p>
             <div className="flex flex-wrap gap-2">
               {TIME_SLOTS.map(({ code, label }) => (
                 <PillButton key={code} selected={selectedTimeSlots.includes(code)} onClick={() => toggleTimeSlot(code)}>

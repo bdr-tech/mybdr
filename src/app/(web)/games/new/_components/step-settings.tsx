@@ -3,12 +3,16 @@
 import { useState } from "react";
 import type { WizardFormData } from "./game-wizard";
 
+// 경기 생성 시 실력 선택 (7단계 + 전체)
 const SKILL_LEVELS = [
   { value: "all", label: "전체" },
-  { value: "beginner", label: "초급" },
-  { value: "intermediate", label: "중급" },
-  { value: "intermediate_advanced", label: "중고급" },
-  { value: "advanced", label: "고급" },
+  { value: "lowest", label: "최하" },
+  { value: "low", label: "하" },
+  { value: "mid_low", label: "중하" },
+  { value: "mid", label: "중" },
+  { value: "mid_high", label: "중상" },
+  { value: "high", label: "상" },
+  { value: "highest", label: "최상" },
 ];
 
 const FEE_PRESETS = [0, 5000, 10000];

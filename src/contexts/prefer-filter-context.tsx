@@ -5,11 +5,11 @@ import { usePathname } from "next/navigation";
 
 // Context 타입 정의
 interface PreferFilterContextType {
-  preferFilter: boolean;       // true: 선호 필터 ON, false: 전체 보기
+  preferFilter: boolean;       // true: 맞춤 필터 ON, false: 전체 보기
   isLoggedIn: boolean;         // 로그인 여부 (비로그인이면 preferFilter 항상 false)
   togglePreferFilter: () => void;  // ON <-> OFF 전환 (현재 페이지에서만 일시적)
-  setLoggedIn: (v: boolean, preferEnabled?: boolean) => void; // 로그인 상태 + DB 선호 기본값 전달
-  updatePreferDefault: (v: boolean) => void; // 선호 설정 저장 후 기본값 갱신용
+  setLoggedIn: (v: boolean, preferEnabled?: boolean) => void; // 로그인 상태 + DB 맞춤 기본값 전달
+  updatePreferDefault: (v: boolean) => void; // 맞춤 설정 저장 후 기본값 갱신용
 }
 
 // 기본값 (SSR 시 사용) -- false로 시작하여 hydration mismatch 방지
@@ -29,8 +29,8 @@ export function usePreferFilter() {
 /**
  * PreferFilterProvider
  *
- * 전역 선호 필터 상태를 관리하는 Provider.
- * - 로그인 유저: DB에 선호 설정이 있으면 preferFilter = true, 없으면 false
+ * 전역 맞춤 필터 상태를 관리하는 Provider.
+ * - 로그인 유저: DB에 맞춤 설정이 있으면 preferFilter = true, 없으면 false
  * - 비로그인 유저: preferFilter = false (고정, 전환 불가)
  * - 페이지 이동 시 DB 기본값으로 복귀 (무조건 true가 아님)
  * - 상단 버튼으로 현재 페이지에서 일시적 토글 가능
@@ -38,7 +38,7 @@ export function usePreferFilter() {
 export function PreferFilterProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname(); // 현재 URL 경로를 감시
   const [isLoggedIn, setLoggedInState] = useState(false);
-  // DB에서 가져온 선호 필터 기본값 (선호 설정이 있으면 true)
+  // DB에서 가져온 맞춤 필터 기본값 (맞춤 설정이 있으면 true)
   const [preferDefault, setPreferDefault] = useState(false);
   const [preferFilter, setPreferFilter] = useState(false);
 
@@ -50,8 +50,8 @@ export function PreferFilterProvider({ children }: { children: ReactNode }) {
     }
   }, [pathname, isLoggedIn, preferDefault]);
 
-  // 로그인 상태 + DB 선호 기본값을 함께 설정
-  // preferEnabled: DB에 선호 설정(디비전 등)이 하나라도 있으면 true
+  // 로그인 상태 + DB 맞춤 기본값을 함께 설정
+  // preferEnabled: DB에 맞춤 설정(디비전 등)이 하나라도 있으면 true
   const setLoggedIn = useCallback((v: boolean, preferEnabled?: boolean) => {
     setLoggedInState(v);
     // DB에서 가져온 값을 기본값으로 저장 (전달되지 않으면 false)
@@ -66,7 +66,7 @@ export function PreferFilterProvider({ children }: { children: ReactNode }) {
     setPreferFilter((prev) => !prev);
   }, [isLoggedIn]);
 
-  // 선호 설정 저장 후 기본값을 갱신하는 함수
+  // 맞춤 설정 저장 후 기본값을 갱신하는 함수
   // preference-form에서 저장 완료 시 호출하여 페이지 이동 시 새 기본값 적용
   const updatePreferDefault = useCallback((v: boolean) => {
     setPreferDefault(v);

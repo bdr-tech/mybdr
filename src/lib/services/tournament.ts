@@ -81,9 +81,9 @@ export const TOURNAMENT_DETAIL_INCLUDE = {
 
 export interface TournamentListFilters {
   status?: string;
-  /** 선호 지역 필터 -- 여러 도시를 OR 조건으로 검색 (prefer=true 시 사용) */
+  /** 맞춤 지역 필터 -- 여러 도시를 OR 조건으로 검색 (prefer=true 시 사용) */
   cities?: string[];
-  /** 선호 종별 필터 -- Json 배열 교집합 매칭 (prefer=true 시 사용) */
+  /** 맞춤 종별 필터 -- Json 배열 교집합 매칭 (prefer=true 시 사용) */
   divisions?: string[];
   take?: number;
 }
@@ -219,12 +219,12 @@ export async function listTournaments(filters: TournamentListFilters = {}) {
     status: status && status !== "all" ? status : { not: "draft" },
   };
 
-  // 선호 지역(cities)이 있으면 OR 조건으로 도시 필터 적용
+  // 맞춤 지역(cities)이 있으면 OR 조건으로 도시 필터 적용
   if (cities && cities.length > 0) {
     where.city = { in: cities, mode: "insensitive" };
   }
 
-  // 선호 종별(divisions) 필터: Json 배열 교집합 매칭
+  // 맞춤 종별(divisions) 필터: Json 배열 교집합 매칭
   // divisions 배열의 각 값에 대해 OR 조건을 만들고, AND로 감싸서
   // 기존/미래의 다른 OR 조건과 충돌하지 않도록 한다.
   // 예: divisions = ["챌린저", "비기너스"] 이면

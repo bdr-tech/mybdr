@@ -120,7 +120,7 @@ export function CommunityContent({ fallbackPosts }: CommunityContentProps) {
   const [initialLoadDone, setInitialLoadDone] = useState(!!fallbackPosts);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // 전역 선호 필터 Context
+  // 전역 맞춤 필터 Context
   const { preferFilter } = usePreferFilter();
 
   // URL에서 필터 상태 읽기

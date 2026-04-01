@@ -61,7 +61,14 @@ const categories: Category[] = [
     items: [
       { href: "/profile/edit", label: "프로필 편집", icon: "edit" },
       { href: "/profile/edit#social", label: "소셜 계정", icon: "link" },
-      { href: "/profile/preferences", label: "선호 설정", icon: "tune" },
+    ],
+  },
+  {
+    id: "preferences",
+    label: "맞춤 설정",
+    icon: "tune",
+    items: [
+      { href: "/profile/preferences", label: "맞춤 설정 관리", icon: "tune" },
     ],
   },
   {

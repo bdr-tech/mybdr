@@ -3,9 +3,9 @@
 import { PreferenceForm } from "@/components/shared/preference-form";
 
 /**
- * 프로필 선호 설정 페이지 (설정 메뉴에서 접근)
+ * 프로필 맞춤 설정 페이지 (설정 메뉴에서 접근)
  *
- * 온보딩 이후에도 언제든 선호 설정을 변경할 수 있는 페이지.
+ * 온보딩 이후에도 언제든 맞춤 설정을 변경할 수 있는 페이지.
  * 공통 PreferenceForm 컴포넌트를 "settings" 모드로 사용한다.
  * (settings 모드에서는 스킵 버튼이 표시되지 않음)
  */
