@@ -150,36 +150,16 @@ export function SlideMenu({
 
         {/* 하단: 관리 링크 + 유틸리티 버튼 + Settings + Logout */}
         <div className="border-t border-[var(--color-border)] p-4">
-          {/* 역할별 관리 링크: 해당 역할을 가진 유저에게만 표시 */}
-          {isLoggedIn && role === "super_admin" && (
+          {/* 관리 링크: 로그인 유저에게 통합 "관리" 1개만 표시 */}
+          {/* /admin layout에서 권한별 메뉴를 필터링하므로 여기서는 단순 링크만 */}
+          {isLoggedIn && (
             <Link
               href="/admin"
               onClick={onClose}
               className="flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-[var(--color-primary)] transition-colors hover:bg-[var(--color-elevated)]"
             >
               <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
-              <span>관리자 대시보드</span>
-            </Link>
-          )}
-          {isLoggedIn && (role === "tournament_admin" || role === "super_admin") && (
-            <Link
-              href="/tournament-admin"
-              onClick={onClose}
-              className="flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-elevated)]"
-            >
-              <span className="material-symbols-outlined text-lg">emoji_events</span>
-              <span>대회 관리</span>
-            </Link>
-          )}
-          {/* 파트너 관리: 모든 로그인 유저에게 표시 (접근 시 소속 확인은 layout에서 처리) */}
-          {isLoggedIn && (
-            <Link
-              href="/partner-admin"
-              onClick={onClose}
-              className="flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-elevated)]"
-            >
-              <span className="material-symbols-outlined text-lg">storefront</span>
-              <span>파트너 관리</span>
+              <span>관리</span>
             </Link>
           )}
 

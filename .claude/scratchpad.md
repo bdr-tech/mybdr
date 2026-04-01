@@ -1,29 +1,28 @@
 # 작업 스크래치패드
 
 ## 현재 작업
-- **요청**: 대회 캘린더 뷰 (월간/주간) 구현
+- **요청**: 관리자 통합 메뉴 + 권한별 노출
 - **상태**: 구현 완료 (tsc 통과, 기존 lucide-react 에러 1건만 잔존)
 - **현재 담당**: developer
 
 ### 구현 기록
 
-구현한 기능: 대회 캘린더 3뷰 시스템 (리스트/월간/주간) — 6파일 신규/수정
+구현한 기능: 관리자 통합 메뉴 — 권한별 메뉴 필터링 + 접근 권한 확장 (5파일 수정)
 
 | 파일 경로 | 변경 내용 | 신규/수정 |
 |----------|----------|----------|
-| src/lib/constants/calendar-colors.ts | 8색 상수 + getCalendarColor() + CALENDAR_COLOR_LEGEND | 신규 |
-| src/app/api/web/tournaments/calendar/route.ts | GET (year/month/category/gender) 캘린더 전용 API | 신규 |
-| src/app/(web)/tournaments/_components/view-toggle.tsx | 3뷰 전환 토글 (list/calendar/week) | 신규 |
-| src/app/(web)/tournaments/_components/calendar-view.tsx | 월간 CSS Grid 캘린더 + 범례 + 날짜 클릭 상세 | 신규 |
-| src/app/(web)/tournaments/_components/week-view.tsx | 주간 7열 타임라인 뷰 | 신규 |
-| src/app/(web)/tournaments/_components/tournaments-content.tsx | ViewToggle 추가 + 뷰별 조건부 렌더링 | 수정 |
+| src/components/admin/sidebar.tsx | roles prop 받아 권한별 메뉴 필터링 (NavItem에 roles 배열) | 수정 |
+| src/app/(admin)/admin/layout.tsx | 접근 권한 확장: DB 조회로 partner_members/organization_members 소속 확인 | 수정 |
+| src/components/shared/slide-menu.tsx | 3개 관리 링크 → "관리" 1개로 통합 | 수정 |
+| src/app/(web)/layout.tsx | PC 사이드네비 3개 관리 링크 → "관리" 1개로 통합 | 수정 |
+| src/proxy.ts | ADMIN_PATHS 미들웨어 체크 제거 (layout에서 DB 기반 권한 판단으로 위임) | 수정 |
 
 tester 참고:
-- /tournaments 페이지에서 "대회 찾기" 옆에 리스트/월간/주간 토글 버튼 확인
-- 월간 뷰: 좌우 화살표로 월 이동, 날짜 클릭 시 해당일 대회 목록 표시, "범례" 버튼으로 8색 범례 토글
-- 주간 뷰: 7일 타임라인, 좌우 화살표로 주 이동, "이번주" 버튼
-- 리스트 뷰: 기존과 100% 동일 (변경 없음)
-- 종별/성별 필터가 캘린더/주간 뷰에도 전달됨
+- super_admin 계정: /admin 접속 시 전체 메뉴 표시
+- tournament_admin 계정: /admin 접속 시 대시보드 + 대회관리 링크만 표시
+- partner_members 소속 유저: /admin 접속 시 대시보드 + 협력업체/캠페인 메뉴 표시
+- 권한 없는 유저: /admin 접속 시 /login?error=no_permission으로 리다이렉트
+- 슬라이드 메뉴/PC 사이드네비: 로그인 유저에게 "관리" 링크 1개만 표시
 
 ## 전체 프로젝트 현황 대시보드 (2026-04-01)
 

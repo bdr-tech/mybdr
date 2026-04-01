@@ -144,14 +144,10 @@ export async function proxy(req: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // admin 경로: super_admin 또는 admin_role 보유자만 접근 가능
-    // 기존 isAdmin=true(role=super_admin) 호환 + admin_role 세분화 지원
-    if (matchesPath(pathname, ADMIN_PATHS)) {
-      const isAdmin = payload.role === "super_admin" || !!(payload as Record<string, unknown>).admin_role;
-      if (!isAdmin) {
-        return NextResponse.redirect(new URL("/", req.url));
-      }
-    }
+    // admin 경로: 미들웨어에서는 로그인 여부만 확인
+    // 세부 권한(super_admin/site_admin/tournament_admin/partner_member/org_member)은
+    // admin layout.tsx에서 DB 조회 후 판단 → 권한 없으면 layout에서 리다이렉트
+    // (미들웨어에서는 JWT만으로 DB 소속 확인이 불가능하므로 layout에 위임)
   }
 
   // 3. 페이지 요청: 서브도메인 감지
