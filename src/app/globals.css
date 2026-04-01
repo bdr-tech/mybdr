@@ -47,7 +47,7 @@
   /* --- 텍스트 (토스 그레이 스케일) --- */
   --color-text-primary: #191F28;     /* 헤드라인 (가장 진한 검정) */
   --color-text-secondary: #4E5968;   /* 본문 텍스트 */
-  --color-text-muted: #8B95A1;       /* 약한 텍스트 (캡션, 힌트) */
+  --color-text-muted: #7B8894;       /* 약한 텍스트 (캡션, 힌트) — 가독성 위해 +10% 진하게 */
   --color-text-disabled: #B0B8C1;    /* 비활성 텍스트 */
   --color-text-on-primary: #FFFFFF;  /* 브랜드 버튼 위 텍스트 */
 
@@ -152,7 +152,7 @@ html.dark {
   /* 텍스트 */
   --color-text-primary: #F2F4F6;     /* 헤드라인 텍스트 */
   --color-text-secondary: #B0B8C1;   /* 본문 텍스트 */
-  --color-text-muted: #6B7684;       /* 약한 텍스트 */
+  --color-text-muted: #808B98;       /* 약한 텍스트 — 가독성 위해 +15% 밝게 */
   --color-text-disabled: #4E5968;    /* 비활성 텍스트 */
   --color-text-strong: #D1D6DB;      /* 강조 텍스트 */
   --color-text-tertiary: #8B95A1;    /* 3차 텍스트 */
@@ -186,6 +186,10 @@ body {
   background-color: var(--color-background);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
+  font-size: 15px;              /* 14px → 15px: 본문 가독성 향상 */
+  line-height: 1.65;            /* 줄 간격 넉넉하게 */
+  letter-spacing: -0.01em;      /* 한글 자간 미세 조정 */
+  font-weight: 420;             /* Pretendard variable: 기본보다 살짝 굵게 */
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
