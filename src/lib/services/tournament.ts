@@ -228,7 +228,8 @@ export async function listTournaments(filters: TournamentListFilters = {}) {
       ...(Array.isArray(where.AND) ? (where.AND as unknown[]) : []),
       {
         OR: [
-          { city: { in: cities, mode: "insensitive" } },
+          // 각 도시명에 대해 부분 매칭 (예: "서울" → "서울특별시" 매칭)
+          ...cities.map(c => ({ city: { contains: c, mode: "insensitive" as const } })),
           { city: null },
         ],
       },

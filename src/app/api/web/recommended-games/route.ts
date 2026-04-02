@@ -188,7 +188,13 @@ async function getLatestGames(cities?: string[]) {
   const games = await prisma.games.findMany({
     where: {
       status: { in: [1, 2] },
-      ...(cities && cities.length > 0 ? { city: { in: cities } } : {}),
+      // 맞춤 지역: 부분 매칭 + 지역 미정(null)도 포함
+      ...(cities && cities.length > 0 ? {
+        OR: [
+          ...cities.map(c => ({ city: { contains: c, mode: "insensitive" as const } })),
+          { city: null },
+        ],
+      } : {}),
     },
     orderBy: { scheduled_at: "asc" },
     take: 6,

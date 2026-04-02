@@ -43,6 +43,7 @@ reviewer 참고:
 | 2차 | 2026-04-02 | 성별/종별 단일선택 탭 → 복수선택 토글 버튼으로 변경. 디비전 목록은 선택된 조합의 합집합 표시 (미선택 시 전체) | preference-form.tsx | PM 요청: 복수 선택 지원 |
 | 3차 | 2026-04-02 | (1) 독립 성별 섹션 완전 삭제 (GENDER_OPTIONS/selectedGenders/toggleGender/preferred_gender 전송) (2) 종별/성별 복수선택→단일탭 복구 (activeGender/activeCategory) (3) 모든 "미선택 시 전체" 문구 삭제 (4) 7개 섹션에 전체선택/전체해제 버튼 추가 | preference-form.tsx | PM 요청: UI 4건 수정 |
 | 4차 | 2026-04-02 | 대회 목록 필터 버그 3건 수정: (1) divisions→division_tiers 기준 필터 변경 (2) city null 대회 포함 OR 조건 (3) gender null 대회 포함 OR 조건. 경기 목록도 city null 포함 OR 조건 추가 | tournament.ts, game.ts | PM 요청: 필터 적용 시 0건 반환 버그 |
+| 5차 | 2026-04-02 | 지역 필터 4곳을 exact match(in)에서 부분 매칭(contains)으로 변경. "서울"→"서울특별시" 매칭 가능. city null도 포함 | game.ts, tournament.ts, home.ts, recommended-games/route.ts | PM 요청: 지역명 부분매칭 필요 |
 
 ## 수정 요청 (debugger)
 
