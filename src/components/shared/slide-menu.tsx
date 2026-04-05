@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
 import { ProfileAccordion } from "@/components/shared/profile-accordion";
 
 /* ============================================================
@@ -85,8 +84,8 @@ export function SlideMenu({
                 </div>
               </Link>
 
-              {/* 프로필 4카테고리 아코디언 (하단에서 최상단으로 이동) */}
-              <ProfileAccordion name={name} onNavigate={onClose} />
+              {/* 프로필 4카테고리 아코디언 — role을 전달하여 관리자 메뉴 분기 */}
+              <ProfileAccordion name={name} role={role} onNavigate={onClose} />
             </>
           ) : (
             /* 비로그인 상태: 로그인/회원가입 버튼 */
@@ -140,7 +139,6 @@ export function SlideMenu({
             );
           })}
         </nav>
-
 
       </div>
     </>

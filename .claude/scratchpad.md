@@ -152,7 +152,98 @@ home-sidebar.tsx, hero-section.tsx, quick-menu.tsx, hero-bento.tsx, home-greetin
 
 ## 구현 기록 (developer)
 
-📝 구현한 기능: 홈 컴포넌트 3개 NBA 2K 스타일 통일
+📝 구현한 기능: 슬라이드 메뉴 하단 유틸리티 영역 삭제
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/components/shared/slide-menu.tsx | ThemeToggle, TextSizeToggle, PushNotificationToggle import 3줄 삭제 + 하단 유틸리티 div 영역 전체 삭제 | 수정 |
+
+💡 tester 참고:
+- 테스트 방법: 모바일 슬라이드 메뉴 열어서 하단 확인
+- 정상 동작: 메뉴 항목(홈~커뮤니티) 아래에 아무것도 없음 (다크모드 아이콘, Tt 아이콘, 푸시알림 배너 모두 사라짐)
+- 주의: 프로필 아코디언, PRO 배너, 메뉴 항목은 그대로 유지되어야 함
+
+#### 수정 이력
+| 회차 | 날짜 | 수정 내용 | 수정 파일 | 사유 |
+|------|------|----------|----------|------|
+| 1차 | 04-05 | PushNotificationToggle→PushPermissionBanner 교체 + push-notification-toggle.tsx 삭제 | notifications-client.tsx, push-notification-toggle.tsx(삭제) | debugger 요청: 권한만 요청하고 SW 구독 안 하는 반쪽짜리 컴포넌트를 완전한 구현으로 교체 |
+
+---
+
+(이전) 📝 구현한 기능: 프로필 아코디언 기본 접힘 상태로 변경
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/components/shared/profile-accordion.tsx | useState 복원하여 아코디언 토글 구현. 기본값 접힘(false). 프로필 헤더를 Link→button으로 변경(클릭 시 토글). expand_more 화살표 아이콘 추가(180도 회전 애니메이션). 카테고리+로그아웃은 isOpen일 때만 렌더링. | 수정 |
+
+💡 tester 참고:
+- 테스트 방법: 모바일 슬라이드 메뉴에서 프로필 영역 확인
+- 정상 동작: 초기 상태에서 카테고리 숨김, 프로필 헤더 클릭 시 카테고리 5개+로그아웃 표시, 다시 클릭 시 숨김
+- 주의: 화살표 아이콘이 펼침 시 위를 가리키고(180도 회전), 접힘 시 아래를 가리키는지 확인
+
+---
+
+(이전) 📝 구현한 기능: 프로필 아코디언 → 직접 이동 메뉴로 변경
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/components/shared/profile-accordion.tsx | 아코디언(접기/펴기) 제거. 5개 카테고리를 Link로 변경하여 클릭 시 바로 페이지 이동. 하위 메뉴 항목 제거. 화살표(expand_more) 아이콘 제거. 프로필 헤더도 /profile로 이동하는 Link로 변경. 로그아웃 버튼은 카테고리 하단에 별도 배치. useState 제거(상태 불필요). | 수정 |
+
+카테고리별 이동 경로:
+- 내 농구 → /teams
+- 내 성장 → /profile#gamification
+- 내 정보 → /profile/edit
+- 맞춤 설정 → /profile/preferences
+- 계정 → /profile/subscription
+
+💡 tester 참고:
+- 테스트 방법: 모바일 슬라이드 메뉴에서 프로필 영역 확인
+- 정상 동작: 카테고리 클릭 시 바로 해당 페이지로 이동, 아코디언 펼침/접힘 없음
+- 주의: 로그아웃 버튼이 하단에 잘 보이는지 확인. 관리자 모드 링크는 제거됨(프로필 페이지 내에서 접근)
+
+⚠️ reviewer 참고:
+- API/데이터 패칭 변경 없음
+- role prop은 interface에 유지(하위 호환), 내부에서는 사용하지 않음
+- 관리자 모드/회원 탈퇴 등 하위 메뉴 항목은 PM 지시에 따라 제거
+
+---
+
+(이전) 📝 구현한 기능: 프로필 페이지 아바타+정보 영역 세로→가로 레이아웃 변경
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/app/(web)/profile/page.tsx | 프로필 헤더 영역을 flex-col items-center text-center → flex-row items-center gap-4로 변경. 아바타 좌측 고정(shrink-0), 이름+레벨+부가정보를 우측에 flex-col로 세로 나열. mb-4/mb-1/mb-2 제거하고 gap-1로 통일 | 수정 |
+
+💡 tester 참고:
+- 테스트 방법: /profile 페이지에서 프로필 상단 영역 확인
+- 정상 동작: 아바타가 좌측, 이름/레벨배지+포지션/지역+가입일이 우측에 가로 배치
+- 주의: 프로필 이미지가 있는 경우와 없는 경우(이니셜 표시) 모두 확인
+
+⚠️ reviewer 참고:
+- API/데이터 패칭 변경 없음 (CSS 클래스만 변경)
+- 하드코딩 색상 없음 (기존 var(--color-*) 유지)
+- 4개 카테고리 카드 영역, 로그아웃 버튼 등 하단 영역은 변경 없음
+
+---
+
+(이전) 📝 구현한 기능: 홈 프로필 위젯 레이아웃 세로→가로 변경
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/components/home/profile-widget.tsx | 아바타+닉네임+레벨뱃지 영역을 세로→가로(row) 레이아웃으로 변경. 아바타 12→16(w-16 h-16) 확대, gap-3→gap-4, 레벨뱃지에 w-fit 추가. 로딩 스켈레톤도 동일 가로 레이아웃 적용 | 수정 |
+
+💡 tester 참고:
+- 테스트 방법: 홈 페이지 로그인 상태에서 프로필 위젯 확인
+- 정상 동작: 아바타가 좌측, 닉네임+레벨뱃지가 우측에 가로로 배치
+- 주의: 로딩 스켈레톤도 동일한 가로 레이아웃인지 확인
+
+⚠️ reviewer 참고:
+- API/데이터 패칭 변경 없음 (CSS 클래스만 변경)
+- 하드코딩 색상 없음 (기존 var(--color-*) 유지)
+
+---
+
+(이전) 📝 구현한 기능: 홈 컴포넌트 3개 NBA 2K 스타일 통일
 
 | 파일 경로 | 변경 내용 | 신규/수정 |
 |----------|----------|----------|
@@ -248,6 +339,9 @@ home-sidebar.tsx, hero-section.tsx, quick-menu.tsx, hero-bento.tsx, home-greetin
 | reviewer | live/page.tsx, live/[id]/page.tsx | #111118, #16161F -> CSS 변수로 교체 | 완료 (이미 수정됨) |
 | reviewer | home-hero.tsx, _site/layout.tsx 등 | bg-white/text-black -> CSS 변수로 교체 (다크모드 대응) | 완료 (이미 수정됨) |
 | reviewer | profile-accordion.tsx | 하드코딩 "경기 남양주"/"STIZ"/"SG" 제거, 실제 데이터 또는 placeholder 사용 | 완료 (이미 수정됨) |
+| debugger | notifications-client.tsx | PushNotificationToggle이 권한만 요청하고 SW 구독 안 함 -> PushPermissionBanner로 교체 필요 | 완료 |
+| debugger | push-notification-toggle.tsx | PushPermissionBanner의 하위 호환이므로 삭제 검토 (교체 후) | 완료 (삭제됨) |
+| debugger | header.tsx 또는 layout | PushPermissionBanner가 어디에서도 사용 안 됨 -> 알림 페이지 또는 헤더 영역에 배치 필요 | 완료 (알림 페이지에 배치) |
 
 ## 전체 프로젝트 현황 대시보드 (2026-04-01)
 | 항목 | 수치 |

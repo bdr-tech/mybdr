@@ -133,11 +133,11 @@ export default function ProfilePage() {
   return (
     <div className="max-w-[640px] mx-auto space-y-8">
 
-      {/* ==== 프로필 헤더: 아바타 + 닉네임 + 레벨 ==== */}
-      <div className="flex flex-col items-center text-center pt-4">
-        {/* 아바타 (80px) */}
+      {/* ==== 프로필 헤더: 아바타(좌) + 정보(우) 가로 배치 ==== */}
+      <div className="flex items-center gap-4 pt-4">
+        {/* 아바타 (80px) — 좌측 고정 */}
         <div
-          className="w-20 h-20 rounded-full overflow-hidden mb-4"
+          className="w-20 h-20 shrink-0 rounded-full overflow-hidden"
           style={{ backgroundColor: "var(--color-surface)" }}
         >
           {user.profile_image_url ? (
@@ -158,34 +158,37 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* 이름 */}
-        <h1 className="text-xl font-bold mb-1" style={{ color: "var(--color-text-primary)" }}>
-          {displayName}
-        </h1>
+        {/* 이름 + 레벨 + 부가정보 — 우측 세로 나열 */}
+        <div className="flex flex-col gap-1">
+          {/* 이름 */}
+          <h1 className="text-xl font-bold" style={{ color: "var(--color-text-primary)" }}>
+            {displayName}
+          </h1>
 
-        {/* 레벨 배지 + 포지션 */}
-        <div className="flex items-center gap-2 mb-2">
-          <span
-            className="flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full"
-            style={{ backgroundColor: "var(--color-primary)", color: "#FFFFFF" }}
-          >
-            {gEmoji && <span style={{ fontSize: "12px" }}>{gEmoji}</span>}
-            Lv.{gLevel} {gTitle}
-          </span>
-          {user.position && (
-            <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-              {POSITION_LABEL[user.position] ?? user.position}
+          {/* 레벨 배지 + 포지션 */}
+          <div className="flex items-center gap-2">
+            <span
+              className="flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full"
+              style={{ backgroundColor: "var(--color-primary)", color: "#FFFFFF" }}
+            >
+              {gEmoji && <span style={{ fontSize: "12px" }}>{gEmoji}</span>}
+              Lv.{gLevel} {gTitle}
             </span>
-          )}
-        </div>
+            {user.position && (
+              <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                {POSITION_LABEL[user.position] ?? user.position}
+              </span>
+            )}
+          </div>
 
-        {/* 부가 정보 */}
-        <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-          {[
-            user.city,
-            user.created_at ? `${new Date(user.created_at).getFullYear()}년 가입` : null,
-          ].filter(Boolean).join(" · ")}
-        </p>
+          {/* 부가 정보 */}
+          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+            {[
+              user.city,
+              user.created_at ? `${new Date(user.created_at).getFullYear()}년 가입` : null,
+            ].filter(Boolean).join(" · ")}
+          </p>
+        </div>
       </div>
 
       {/* ==== 4개 카테고리 카드 그리드 ==== */}

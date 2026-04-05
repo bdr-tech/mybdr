@@ -77,8 +77,9 @@ export function ProfileWidget({ dashboardData }: ProfileWidgetProps) {
       <div
         className="rounded-md border p-5 animate-pulse bg-[var(--color-card)] border-[var(--color-border)]"
       >
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-md" style={{ backgroundColor: "var(--color-surface)" }} />
+        {/* 스켈레톤도 가로 레이아웃에 맞춤 */}
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-16 h-16 rounded-md shrink-0" style={{ backgroundColor: "var(--color-surface)" }} />
           <div className="space-y-2 flex-1">
             <div className="h-4 w-24 rounded" style={{ backgroundColor: "var(--color-surface)" }} />
             <div className="h-3 w-16 rounded" style={{ backgroundColor: "var(--color-surface)" }} />
@@ -126,16 +127,17 @@ export function ProfileWidget({ dashboardData }: ProfileWidgetProps) {
     <div
       className="rounded-md border p-5 bg-[var(--color-card)] border-[var(--color-border)] shadow-sm hover:shadow-glow-primary transition-shadow duration-300"
     >
-      {/* 상단: 아바타 + 닉네임 + 레벨 뱃지 */}
-      <div className="flex items-center gap-3 mb-4">
-        {/* 아바타 (기울임 효과 없음) */}
+      {/* 상단: 아바타(좌) + 정보(우) 가로 배치 */}
+      <div className="flex items-center gap-4 mb-4">
+        {/* 아바타: 좌측 고정, 가로 레이아웃에 맞게 크기 확대 */}
         <div
-          className="w-12 h-12 rounded-md flex items-center justify-center text-xl font-black italic text-white shrink-0 shadow-inner"
+          className="w-16 h-16 rounded-md flex items-center justify-center text-2xl font-black italic text-white shrink-0 shadow-inner"
           style={{ background: "linear-gradient(135deg, var(--color-primary) 0%, rgba(0,0,0,0.5) 100%)" }}
         >
           {initial}
         </div>
-        <div className="min-w-0 flex-1">
+        {/* 우측: 닉네임 + 레벨뱃지를 세로 스택 */}
+        <div className="min-w-0 flex-1 flex flex-col gap-1">
           <p
             className="text-lg font-black italic uppercase tracking-wide truncate pr-1"
             style={{ color: "var(--color-text-primary)" }}
@@ -144,7 +146,7 @@ export function ProfileWidget({ dashboardData }: ProfileWidgetProps) {
           </p>
           {/* 레벨 뱃지 */}
           <span
-            className="inline-flex items-center gap-1 text-[10px] font-black italic uppercase px-2 py-0.5 clip-slant"
+            className="inline-flex items-center gap-1 text-[10px] font-black italic uppercase px-2 py-0.5 clip-slant w-fit"
             style={{
               backgroundColor: "var(--color-surface-bright)",
               color: "var(--color-text-primary)",
