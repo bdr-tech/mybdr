@@ -49,10 +49,15 @@ export default function VerifyPage() {
     }
   };
 
-  // 전화번호 저장 (SMS 인증 없이 바로 저장 — SOLAPI 연동 후 활성화)
+  // 인증 코드 확인 + 프로필 저장
   const handleSubmit = async () => {
-    if (needsPhone && !phone.match(/^01[016789]\d{7,8}$/)) {
-      setError("올바른 전화번호를 입력해주세요. (예: 01012345678)");
+    if (needsPhone && step === "input") {
+      sendCode();
+      return;
+    }
+
+    if (needsPhone && step === "verify-phone" && verifyCode.length !== 6) {
+      setError("6자리 인증 코드를 입력해주세요.");
       return;
     }
 
@@ -66,6 +71,7 @@ export default function VerifyPage() {
         body: JSON.stringify({
           email: needsEmail ? email : undefined,
           phone: needsPhone ? phone : undefined,
+          code: needsPhone ? verifyCode : undefined,
         }),
       });
       const data = await res.json();
