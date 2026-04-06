@@ -6,10 +6,10 @@ import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
-// 디자인 시안 컴포넌트: 히어로(배너) + About(대회 소개) + 사이드바(참가비/도움말) + 탭
+// 디자인 시안 컴포넌트: 히어로(배너 + 액션 바) + About(대회 소개) + 탭
+// 사이드바 기능은 히어로 하단 액션 바로 이동됨
 import { TournamentHero } from "./_components/tournament-hero";
 import { TournamentAbout } from "./_components/tournament-about";
-import { TournamentSidebar } from "./_components/tournament-sidebar";
 import { Breadcrumb } from "@/components/shared/breadcrumb";
 
 // 탭 전환 컴포넌트 (클라이언트) — lazy loading 방식으로 변경
@@ -411,7 +411,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         { label: tournament.name },
       ]} />
 
-      {/* 히어로 배너 */}
+      {/* 히어로 배너 + 액션 바 (사이드바 기능 통합) */}
       <TournamentHero
         name={tournament.name}
         format={tournament.format}
@@ -427,49 +427,20 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         bannerUrl={tournament.banner_url}
         primaryColor={tournament.primary_color}
         secondaryColor={tournament.secondary_color}
+        tournamentId={id}
+        entryFee={tournament.entry_fee ? Number(tournament.entry_fee) : null}
+        isRegistrationOpen={isRegistrationOpen}
+        isRegistrationSoon={isRegistrationSoon ?? false}
+        venue={[tournament.city, tournament.venue_name].filter(Boolean).join(" ")}
       />
 
-      {/* 2열 레이아웃: 좌측 콘텐츠 + 우측 사이드바 */}
+      {/* 1열 전체 너비 레이아웃: 사이드바 기능은 히어로 액션 바로 이동 */}
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
-          <div className="min-w-0">
-            {/* 탭: 개요는 서버 렌더링, 나머지는 클라이언트 lazy loading */}
-            <TournamentTabs
-              tournamentId={id}
-              overviewContent={overviewContent}
-            />
-          </div>
-
-          <aside className="hidden lg:block">
-            <TournamentSidebar
-              tournamentId={id}
-              name={tournament.name}
-              entryFee={tournament.entry_fee ? Number(tournament.entry_fee) : null}
-              teamCount={tournament._count.tournamentTeams}
-              maxTeams={tournament.maxTeams}
-              isRegistrationOpen={isRegistrationOpen}
-              isRegistrationSoon={isRegistrationSoon ?? false}
-              regClose={regClose}
-              startDate={tournament.startDate}
-              endDate={tournament.endDate}
-              venue={[tournament.city, tournament.venue_name].filter(Boolean).join(" ")}
-            />
-          </aside>
-        </div>
-
-        <div className="mt-8 lg:hidden">
-          <TournamentSidebar
+        <div className="min-w-0">
+          {/* 탭: 개요는 서버 렌더링, 나머지는 클라이언트 lazy loading */}
+          <TournamentTabs
             tournamentId={id}
-            name={tournament.name}
-            entryFee={tournament.entry_fee ? Number(tournament.entry_fee) : null}
-            teamCount={tournament._count.tournamentTeams}
-            maxTeams={tournament.maxTeams}
-            isRegistrationOpen={isRegistrationOpen}
-            isRegistrationSoon={isRegistrationSoon ?? false}
-            regClose={regClose}
-            startDate={tournament.startDate}
-            endDate={tournament.endDate}
-            venue={[tournament.city, tournament.venue_name].filter(Boolean).join(" ")}
+            overviewContent={overviewContent}
           />
         </div>
 

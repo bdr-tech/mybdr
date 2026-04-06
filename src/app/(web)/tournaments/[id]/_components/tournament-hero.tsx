@@ -15,6 +15,22 @@ import {
   TOURNAMENT_STATUS_LABEL,
   TOURNAMENT_STATUS_BADGE,
 } from "@/lib/constants/tournament-status";
+// 링크 복사 버튼 — 클라이언트 컴포넌트 (클립보드 API 필요)
+import { ShareTournamentButton } from "./share-tournament-button";
+// 참가 신청 버튼용
+import Link from "next/link";
+
+// 구글 캘린더 URL 생성 (사이드바에서 그대로 가져옴)
+function buildCalendarUrl(name: string, startDate: Date | null, endDate: Date | null, venue: string | null): string {
+  const base = "https://calendar.google.com/calendar/render?action=TEMPLATE";
+  const text = encodeURIComponent(name);
+  const formatDate = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, "");
+  const dates = startDate
+    ? `${formatDate(startDate)}/${endDate ? formatDate(endDate) : formatDate(startDate)}`
+    : "";
+  const location = venue ? encodeURIComponent(venue) : "";
+  return `${base}&text=${text}${dates ? `&dates=${dates}` : ""}${location ? `&location=${location}` : ""}`;
+}
 
 interface TournamentHeroProps {
   name: string;
@@ -32,6 +48,12 @@ interface TournamentHeroProps {
   bannerUrl?: string | null;
   primaryColor?: string | null;
   secondaryColor?: string | null;
+  // 사이드바에서 이동해 온 props
+  tournamentId: string;
+  entryFee: number | null;
+  isRegistrationOpen: boolean;
+  isRegistrationSoon: boolean;
+  venue: string | null;
 }
 
 export function TournamentHero({
@@ -49,7 +71,22 @@ export function TournamentHero({
   bannerUrl,
   primaryColor,
   secondaryColor,
+  tournamentId,
+  entryFee,
+  isRegistrationOpen,
+  isRegistrationSoon,
+  venue,
 }: TournamentHeroProps) {
+  // 참가비 표시
+  const hasFee = entryFee !== null && entryFee > 0;
+  const feeDisplay = hasFee ? `₩${entryFee!.toLocaleString()}` : "무료";
+
+  // 참가팀 프로그레스 바 계산
+  const progressPct = maxTeams ? Math.min((teamCount / maxTeams) * 100, 100) : null;
+
+  // 캘린더 URL
+  const calendarUrl = buildCalendarUrl(name, startDate, endDate, venue);
+
   // 공통 상수에서 상태 라벨과 뱃지 variant를 가져옴
   const statusLabel = TOURNAMENT_STATUS_LABEL[status ?? "draft"] ?? (status ?? "draft");
   const statusVariant = TOURNAMENT_STATUS_BADGE[status ?? "draft"] ?? ("default" as const);
@@ -94,7 +131,7 @@ export function TournamentHero({
     </div>
   );
 
-  // --- 공통 배지 그룹 ---
+  // --- 공통 배지 그룹 (참가비 뱃지 포함) ---
   const badges = (
     <div className="mb-2 flex flex-wrap items-center gap-2">
       <span
@@ -104,6 +141,16 @@ export function TournamentHero({
         PREMIUM
       </span>
       <Badge variant={statusVariant}>{statusLabel}</Badge>
+      {/* 참가비: 사이드바에서 이동 — 무료/유료 표시 */}
+      <span
+        className="rounded-sm px-2 py-0.5 text-xs font-bold"
+        style={{
+          backgroundColor: hasFee ? "var(--color-elevated)" : "rgba(255,255,255,0.15)",
+          color: hasFee ? "var(--color-text)" : "white",
+        }}
+      >
+        {feeDisplay}
+      </span>
     </div>
   );
 
@@ -115,6 +162,85 @@ export function TournamentHero({
     >
       {name}
     </h1>
+  );
+
+  // --- 히어로 하단 액션 바: 사이드바 기능들을 인라인으로 배치 ---
+  const actionBar = (
+    <div
+      className="mt-4 flex flex-wrap items-center gap-3 border-t pt-3"
+      style={{ borderColor: "rgba(255,255,255,0.15)" }}
+    >
+      {/* 참가팀 현황 + 프로그레스바 */}
+      <div className="flex items-center gap-2">
+        <span className="material-symbols-outlined text-base" style={{ color: "rgba(255,255,255,0.7)" }}>groups</span>
+        <span className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.9)" }}>
+          참가팀 {teamCount}{maxTeams ? `/${maxTeams}` : ""}
+        </span>
+        {/* 프로그레스바: maxTeams가 있을 때만 */}
+        {progressPct !== null && (
+          <div className="h-1.5 w-16 overflow-hidden rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.2)" }}>
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${progressPct}%`,
+                backgroundColor: progressPct >= 90 ? "var(--color-error)" : "var(--color-primary)",
+              }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* 구분선 */}
+      <span className="hidden sm:block h-4 w-px" style={{ backgroundColor: "rgba(255,255,255,0.2)" }} />
+
+      {/* 참가 신청 버튼: 접수중일 때만 */}
+      {isRegistrationOpen && (
+        <Link
+          href={`/tournaments/${tournamentId}/join`}
+          className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-bold text-white transition-all hover:opacity-90"
+          style={{ backgroundColor: "var(--color-primary)" }}
+        >
+          <span className="material-symbols-outlined text-sm">edit_square</span>
+          참가 신청
+        </Link>
+      )}
+
+      {/* 접수 예정 */}
+      {isRegistrationSoon && (
+        <span
+          className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium"
+          style={{ backgroundColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)" }}
+        >
+          <span className="material-symbols-outlined text-sm">schedule</span>
+          접수 예정
+        </span>
+      )}
+
+      {/* 캘린더에 추가 */}
+      <a
+        href={calendarUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-white/10"
+        style={{ color: "rgba(255,255,255,0.8)" }}
+      >
+        <span className="material-symbols-outlined text-sm">calendar_today</span>
+        <span className="hidden sm:inline">캘린더</span>
+      </a>
+
+      {/* 링크 복사 — 클라이언트 컴포넌트 (인라인 스타일) */}
+      <ShareTournamentButton variant="inline" />
+
+      {/* 도움 문의 */}
+      <a
+        href="mailto:support@bdrbasket.com"
+        className="flex items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-white/10"
+        style={{ color: "rgba(255,255,255,0.8)" }}
+      >
+        <span className="material-symbols-outlined text-sm">help</span>
+        <span className="hidden sm:inline">문의</span>
+      </a>
+    </div>
   );
 
   // ===== 템플릿별 렌더링 =====
@@ -137,6 +263,7 @@ export function TournamentHero({
           {badges}
           {title}
           {metaBar}
+          {actionBar}
         </div>
       </section>
     );
@@ -171,6 +298,7 @@ export function TournamentHero({
           {badges}
           {title}
           {metaBar}
+          {actionBar}
         </div>
       </section>
     );
@@ -194,6 +322,7 @@ export function TournamentHero({
           {badges}
           {title}
           {metaBar}
+          {actionBar}
         </div>
       </section>
     );
@@ -224,7 +353,7 @@ export function TournamentHero({
 
       {/* 콘텐츠: 좌측 하단 정렬, 컴팩트 패딩 */}
       <div className="relative flex flex-col justify-end px-4 py-6 sm:px-10 sm:py-8">
-        {/* 배지 그룹 */}
+        {/* 배지 그룹 (참가비 뱃지 포함) */}
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <span
             className="rounded-sm px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-white sm:text-xs"
@@ -233,6 +362,12 @@ export function TournamentHero({
             PREMIUM
           </span>
           <Badge variant={statusVariant}>{statusLabel}</Badge>
+          <span
+            className="rounded-sm px-2 py-0.5 text-xs font-bold"
+            style={{ backgroundColor: "var(--color-elevated)", color: "var(--color-text)" }}
+          >
+            {feeDisplay}
+          </span>
         </div>
 
         {/* 대회명 */}
@@ -261,6 +396,70 @@ export function TournamentHero({
             <span className="material-symbols-outlined text-base" style={{ color: pColor }}>groups</span>
             {teamsStr}{formatLabel && ` · ${formatLabel}`}
           </span>
+        </div>
+
+        {/* 액션 바: basic 템플릿용 (다크모드 CSS 변수 기반 색상) */}
+        <div
+          className="mt-4 flex flex-wrap items-center gap-3 border-t pt-3"
+          style={{ borderColor: "var(--color-border)" }}
+        >
+          {/* 참가팀 현황 */}
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-base" style={{ color: "var(--color-text-tertiary)" }}>groups</span>
+            <span className="text-xs font-semibold" style={{ color: "var(--color-text-secondary)" }}>
+              참가팀 {teamCount}{maxTeams ? `/${maxTeams}` : ""}
+            </span>
+            {progressPct !== null && (
+              <div className="h-1.5 w-16 overflow-hidden rounded-full" style={{ backgroundColor: "var(--color-surface)" }}>
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${progressPct}%`,
+                    backgroundColor: progressPct >= 90 ? "var(--color-error)" : "var(--color-primary)",
+                  }}
+                />
+              </div>
+            )}
+          </div>
+          <span className="hidden sm:block h-4 w-px" style={{ backgroundColor: "var(--color-border)" }} />
+          {isRegistrationOpen && (
+            <Link
+              href={`/tournaments/${tournamentId}/join`}
+              className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-bold text-white transition-all hover:opacity-90"
+              style={{ backgroundColor: "var(--color-primary)" }}
+            >
+              <span className="material-symbols-outlined text-sm">edit_square</span>
+              참가 신청
+            </Link>
+          )}
+          {isRegistrationSoon && (
+            <span
+              className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium"
+              style={{ backgroundColor: "var(--color-elevated)", color: "var(--color-text-secondary)" }}
+            >
+              <span className="material-symbols-outlined text-sm">schedule</span>
+              접수 예정
+            </span>
+          )}
+          <a
+            href={calendarUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-[var(--color-elevated)]"
+            style={{ color: "var(--color-text-secondary)" }}
+          >
+            <span className="material-symbols-outlined text-sm">calendar_today</span>
+            <span className="hidden sm:inline">캘린더</span>
+          </a>
+          <ShareTournamentButton variant="inline" />
+          <a
+            href="mailto:support@bdrbasket.com"
+            className="flex items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-[var(--color-elevated)]"
+            style={{ color: "var(--color-text-secondary)" }}
+          >
+            <span className="material-symbols-outlined text-sm">help</span>
+            <span className="hidden sm:inline">문의</span>
+          </a>
         </div>
       </div>
     </section>
