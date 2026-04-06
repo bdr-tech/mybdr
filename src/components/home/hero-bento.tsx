@@ -167,7 +167,7 @@ export function HeroBento() {
   if (isLoading) {
     return (
       <div>
-        <div className="relative aspect-video rounded-xl overflow-hidden bg-card border border-border animate-pulse">
+        <div className="relative aspect-video rounded-md overflow-hidden bg-card border border-border animate-pulse">
           {/* 스켈레톤 중앙 아이콘 */}
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="material-symbols-outlined text-text-tertiary text-5xl">
@@ -183,7 +183,7 @@ export function HeroBento() {
   if (hasError || videos.length === 0) {
     return (
       <div>
-        <div className="relative aspect-video rounded-xl overflow-hidden bg-card group border border-border">
+        <div className="relative aspect-video rounded-md overflow-hidden bg-card group border border-border">
           <div className="absolute inset-0 w-full h-full overflow-hidden">
             <img
               alt="BDR 농구 대회"
@@ -223,7 +223,7 @@ export function HeroBento() {
       {/* 슬라이드 컨테이너: aspect-video로 16:9 비율 유지, max-h로 데스크탑 제한 */}
       <div
         ref={containerRef}
-        className="relative aspect-video rounded-xl overflow-hidden bg-black group border border-border"
+        className="relative aspect-video rounded-md overflow-hidden bg-black group border border-border"
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
         onTouchStart={() => setIsHovering(true)}

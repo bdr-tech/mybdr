@@ -21,8 +21,8 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
 
   if (!site.isPublished) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <div className="rounded-2xl bg-white p-12 text-center shadow-[0_4px_24px_rgba(0,0,0,0.08)]">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--color-background)]">
+        <div className="rounded-md bg-[var(--color-background)] p-12 text-center shadow-[0_4px_24px_rgba(0,0,0,0.08)]">
           <div className="mb-4 text-5xl">🏗️</div>
           <h1 className="mb-2 text-xl font-bold text-[var(--color-text-primary)]">
             {site.site_name ?? site.tournament.name}

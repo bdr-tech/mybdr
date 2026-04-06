@@ -1,4 +1,5 @@
 import type { games } from "@prisma/client";
+import { SKILL_LABEL } from "@/lib/constants/game-status";
 
 // 게스트 모집 경기 상세: 시설 안내(Amenities) + 경기 규칙(Rules) 스타일
 // 기존 테이블 형태 -> 디자인 시안 기반 카드 레이아웃으로 전환
@@ -24,13 +25,7 @@ interface GuestDetailProps {
   >;
 }
 
-const SKILL_LABEL: Record<string, string> = {
-  all: "전체",
-  beginner: "초급",
-  intermediate: "중급",
-  intermediate_advanced: "중고급",
-  advanced: "고급",
-};
+// SKILL_LABEL은 @/lib/constants/game-status에서 import (7단계 + 하위 호환)
 
 export function GuestDetail({ game }: GuestDetailProps) {
   const location = [game.city, game.district, game.venue_name]
@@ -44,7 +39,7 @@ export function GuestDetail({ game }: GuestDetailProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* 시설 안내 (Amenities) */}
-      <section className="md:col-span-2 bg-[var(--color-card)] p-6 rounded-xl border border-[var(--color-border)] shadow-sm">
+      <section className="md:col-span-2 bg-[var(--color-card)] p-6 rounded-md border border-[var(--color-border)] shadow-sm">
         <h3 className="text-[var(--color-accent)] dark:text-[var(--color-game-guest)] font-bold text-xl mb-6 flex items-center gap-2">
           <span className="material-symbols-outlined">info</span>
           시설 안내 (Amenities)
@@ -98,7 +93,7 @@ export function GuestDetail({ game }: GuestDetailProps) {
       </section>
 
       {/* 경기 규칙 (Rules) */}
-      <section className="bg-[var(--color-card)] p-6 rounded-xl border border-[var(--color-border)] shadow-sm">
+      <section className="bg-[var(--color-card)] p-6 rounded-md border border-[var(--color-border)] shadow-sm">
         <h3 className="text-[var(--color-accent)] dark:text-[var(--color-game-guest)] font-bold text-lg mb-4">
           경기 규칙 (Rules)
         </h3>

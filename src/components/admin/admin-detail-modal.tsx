@@ -48,10 +48,10 @@ export function AdminDetailModal({
       }}
     >
       {/* 중앙 모달 컨테이너 — fade-in + scale 애니메이션 */}
-      <div className="relative mx-4 flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-[var(--color-card)] shadow-2xl animate-[modal-in_0.2s_ease-out]">
+      <div className="relative mx-4 flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-md border-t-4 border-[var(--color-primary)] bg-[var(--color-card)] shadow-[0_0_25px_rgba(0,0,0,0.5)] animate-[modal-in_0.2s_ease-out]">
         {/* 상단: 제목 + X 닫기 버튼 */}
         <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-4">
-          <h2 className="text-base font-bold text-[var(--color-text-primary)]">
+          <h2 className="text-[15px] font-black uppercase tracking-wide text-[var(--color-text-primary)] pr-1">
             {title}
           </h2>
           <button
@@ -101,10 +101,10 @@ export function ModalInfoSection({
 }) {
   return (
     <div>
-      <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+      <p className="mb-1.5 text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)] pr-1">
         {title}
       </p>
-      <div className="overflow-hidden rounded-[12px] border border-[var(--color-border)]">
+      <div className="overflow-hidden rounded-md border border-[var(--color-border)]">
         {rows.map(([label, value], i) => (
           <div
             key={label}

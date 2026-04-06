@@ -107,7 +107,7 @@ export function CourtEvents({ courtId, currentUserId }: CourtEventsProps) {
 
   return (
     <div
-      className="rounded-2xl p-5 sm:p-6 mb-4"
+      className="rounded-md p-5 sm:p-6 mb-4"
       style={{
         backgroundColor: "var(--color-card)",
         boxShadow: "var(--shadow-card)",
@@ -254,7 +254,7 @@ function EventCreateForm({
 
   return (
     <div
-      className="rounded-xl p-4 mb-3"
+      className="rounded-md p-4 mb-3"
       style={{
         backgroundColor: "var(--color-surface)",
         border: "1px solid var(--color-border-subtle)",
@@ -414,7 +414,7 @@ function EventCard({
 
   return (
     <div
-      className="rounded-xl overflow-hidden"
+      className="rounded-md overflow-hidden"
       style={{
         backgroundColor: "var(--color-surface)",
         border: `1px solid ${isOrganizer ? "color-mix(in srgb, var(--color-primary) 30%, transparent)" : "var(--color-border-subtle)"}`,

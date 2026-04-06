@@ -104,7 +104,7 @@ export function StepType({
 
   return (
     // 폼 카드 컨테이너 (디자인 시안의 흰색/다크 카드)
-    <div className="bg-[var(--color-card)] p-8 rounded-xl border border-[var(--color-border)] shadow-sm">
+    <div className="bg-[var(--color-card)] p-8 rounded-md border border-[var(--color-border)] shadow-sm">
       <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-6">
         Step 1. Info
       </h2>

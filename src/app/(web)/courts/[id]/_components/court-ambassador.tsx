@@ -78,7 +78,7 @@ export function CourtAmbassador({ courtId, currentUserId }: Props) {
 
   return (
     <div
-      className="rounded-2xl p-5 sm:p-6 mb-4"
+      className="rounded-md p-5 sm:p-6 mb-4"
       style={{
         backgroundColor: "var(--color-card)",
         boxShadow: "var(--shadow-card)",
@@ -279,7 +279,7 @@ function AmbassadorEditModal({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="w-full max-w-md max-h-[80vh] overflow-y-auto rounded-2xl p-5"
+        className="w-full max-w-md max-h-[80vh] overflow-y-auto rounded-md p-5"
         style={{
           backgroundColor: "var(--color-card)",
           boxShadow: "var(--shadow-elevated)",

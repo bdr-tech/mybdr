@@ -295,7 +295,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
       {/* 대회 장소 카드: 아이콘 + 장소명 컴팩트 표시 (지도 placeholder 제거) */}
       {(tournament.city || tournament.venue_name) && (
         <div
-          className="mt-6 rounded-xl border p-4"
+          className="mt-6 rounded-md border p-4"
           style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
         >
           <div className="flex items-center gap-3">
@@ -320,7 +320,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
       {/* 입금 정보 카드 */}
       {tournament.bank_name && tournament.bank_account && (
         <div
-          className="mt-6 rounded-xl border p-6"
+          className="mt-6 rounded-md border p-6"
           style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-elevated)" }}
         >
           <h3 className="mb-4 flex items-center gap-2 text-lg font-bold">
@@ -349,7 +349,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
       {/* 디비전별 현황 카드 */}
       {divisions.length > 0 && (
         <div
-          className="mt-6 rounded-xl border p-6"
+          className="mt-6 rounded-md border p-6"
           style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
         >
           <h3 className="mb-4 flex items-center gap-2 text-lg font-bold">
@@ -494,7 +494,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-2 lg:hidden">
           <Link
             href={`/tournaments/${id}/join`}
-            className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white shadow-lg transition-all hover:opacity-90 active:scale-[0.97]"
+            className="flex w-full items-center justify-center gap-2 rounded-md py-3.5 text-sm font-bold text-white shadow-lg transition-all hover:opacity-90 active:scale-[0.97]"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
             <span className="material-symbols-outlined text-lg">edit_square</span>

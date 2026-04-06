@@ -42,7 +42,7 @@ export function RegistrationSettingsForm({ data, onChange }: Props) {
         {/* 비어있을 때 안내 영역 */}
         {Object.keys(categories).length === 0 && (
           <div
-            className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed py-12 text-center"
+            className="flex flex-col items-center justify-center rounded-md border-2 border-dashed py-12 text-center"
             style={{ borderColor: "var(--color-border)" }}
           >
             <span
@@ -63,7 +63,7 @@ export function RegistrationSettingsForm({ data, onChange }: Props) {
         {Object.entries(categories).map(([cat, divs]) => (
           <div
             key={cat}
-            className="mb-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
+            className="mb-3 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
           >
             {/* 종별 헤더 */}
             <div className="mb-3 flex items-center justify-between">

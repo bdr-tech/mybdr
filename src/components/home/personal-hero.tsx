@@ -171,7 +171,7 @@ function SlideMyTeams({ teams }: { teams: DashboardData["my_teams"] }) {
           const total = t.wins + t.losses;
           const winRate = total > 0 ? Math.round((t.wins / total) * 100) : 0;
           return (
-            <Link key={t.id} href={`/teams/${t.id}`} className="flex items-center gap-3 rounded-xl bg-white/60 px-3 py-2">
+            <Link key={t.id} href={`/teams/${t.id}`} className="flex items-center gap-3 rounded-md bg-white/60 px-3 py-2">
               <div
                 className="h-8 w-8 rounded-full"
                 style={{ backgroundColor: t.color || "#1B3C87" }}
@@ -252,7 +252,7 @@ function SlideRecommended({ games }: { games: DashboardData["recommended_games"]
           <Link
             key={i}
             href={`/games/${g.uuid?.slice(0, 8) ?? ""}`}
-            className="flex items-center justify-between rounded-xl bg-white/60 px-3 py-2"
+            className="flex items-center justify-between rounded-md bg-white/60 px-3 py-2"
           >
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-[#111827]">{g.title}</p>

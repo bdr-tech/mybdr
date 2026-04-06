@@ -71,7 +71,7 @@ function TemplateMockup({
 
   return (
     <div
-      className="overflow-hidden rounded-xl border-2 border-transparent"
+      className="overflow-hidden rounded-md border-2 border-transparent"
       style={{ backgroundColor: template.bg, height: 120 }}
     >
       {/* 네비 */}
@@ -221,7 +221,7 @@ export default function TournamentSitePage() {
         </div>
 
         {/* 발행 중 상태 카드 */}
-        <div className="mb-6 rounded-2xl border border-[var(--color-success)]/30 bg-[var(--color-success)]/5 p-6">
+        <div className="mb-6 rounded-md border border-[var(--color-success)]/30 bg-[var(--color-success)]/5 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-[var(--color-success)]">● 사이트 공개 중</p>
@@ -250,14 +250,14 @@ export default function TournamentSitePage() {
         </div>
 
         {error && (
-          <div className="mb-4 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
+          <div className="mb-4 rounded-md bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
         )}
 
         {/* 수정 버튼들 */}
         <div className="grid gap-3 md:grid-cols-3">
           <button
             onClick={() => setStep(1)}
-            className="rounded-2xl border border-[var(--color-border)] bg-white p-5 text-left shadow-sm transition-shadow hover:shadow-md"
+            className="rounded-md border border-[var(--color-border)] bg-white p-5 text-left shadow-sm transition-shadow hover:shadow-md"
           >
             <p className="text-2xl mb-2">🎨</p>
             <p className="font-semibold text-[var(--color-text-primary)]">템플릿 변경</p>
@@ -267,7 +267,7 @@ export default function TournamentSitePage() {
           </button>
           <button
             onClick={() => setStep(2)}
-            className="rounded-2xl border border-[var(--color-border)] bg-white p-5 text-left shadow-sm transition-shadow hover:shadow-md"
+            className="rounded-md border border-[var(--color-border)] bg-white p-5 text-left shadow-sm transition-shadow hover:shadow-md"
           >
             <div
               className="mb-2 h-8 w-8 rounded-full border-2 border-white shadow"
@@ -278,7 +278,7 @@ export default function TournamentSitePage() {
           </button>
           <Link
             href={`/tournament-admin/tournaments/${id}/site/pages`}
-            className="rounded-2xl border border-[var(--color-border)] bg-white p-5 text-left shadow-sm transition-shadow hover:shadow-md"
+            className="rounded-md border border-[var(--color-border)] bg-white p-5 text-left shadow-sm transition-shadow hover:shadow-md"
           >
             <p className="text-2xl mb-2">📄</p>
             <p className="font-semibold text-[var(--color-text-primary)]">공지 페이지</p>
@@ -352,7 +352,7 @@ export default function TournamentSitePage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
+        <div className="mb-4 rounded-md bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
       )}
 
       {/* 단계별 컨텐츠 */}
@@ -425,7 +425,7 @@ function Step1({
           <button
             key={tpl.slug}
             onClick={() => onChange(tpl.slug)}
-            className={`rounded-2xl border-2 p-4 text-left transition-all ${
+            className={`rounded-md border-2 p-4 text-left transition-all ${
               selected === tpl.slug
                 ? "border-[var(--color-accent)] shadow-[0_0_0_4px_rgba(0,102,255,0.1)]"
                 : "border-[var(--color-border)] hover:border-[var(--color-text-muted)]"
@@ -511,9 +511,9 @@ function Step2({
       </div>
 
       {/* 미리보기 */}
-      <div className="mt-8 rounded-2xl border border-[var(--color-border)] p-4">
+      <div className="mt-8 rounded-md border border-[var(--color-border)] p-4">
         <p className="mb-3 text-xs font-medium text-[var(--color-text-muted)]">미리보기</p>
-        <div className="overflow-hidden rounded-xl" style={{ height: 64 }}>
+        <div className="overflow-hidden rounded-md" style={{ height: 64 }}>
           <div
             className="flex h-10 items-center gap-2 px-4"
             style={{ backgroundColor: selected }}
@@ -582,7 +582,7 @@ function Step3({
       </p>
 
       {/* 요약 */}
-      <div className="mb-6 grid gap-3 rounded-2xl bg-[var(--color-surface)] p-4 md:grid-cols-2">
+      <div className="mb-6 grid gap-3 rounded-md bg-[var(--color-surface)] p-4 md:grid-cols-2">
         <div>
           <p className="text-xs text-[var(--color-text-muted)]">선택한 템플릿</p>
           <p className="mt-1 font-semibold text-[var(--color-text-primary)]">{tplName}</p>
@@ -608,7 +608,7 @@ function Step3({
         </label>
         <div className="flex items-center gap-2">
           <input
-            className="flex-1 rounded-2xl border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
+            className="flex-1 rounded-md border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50"
             value={subdomain}
             onChange={(e) =>
               onChange(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
@@ -628,7 +628,7 @@ function Step3({
       </div>
 
       {error && (
-        <div className="mb-4 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
+        <div className="mb-4 rounded-md bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
       )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">

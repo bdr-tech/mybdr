@@ -34,23 +34,18 @@ export function TossButton({
   fullWidth,
 }: TossButtonProps) {
   /* 변형별 기본 스타일 */
-  const baseStyles = "font-bold transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseStyles = "font-black uppercase tracking-widest transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed";
 
   const variantStyles = {
     /* primary: 풀와이드 CTA
      * h-14 (56px): 토스 표준 CTA 높이
-     * rounded-xl (12px): 토스 버튼 라운딩
+     * rounded-sm: 살짝 둥근 버튼 모서리
      * bg-primary: 토스 블루 배경 */
-    primary: `h-14 rounded-xl bg-[var(--color-primary)] text-white text-base hover:bg-[var(--color-primary-hover)] ${fullWidth !== false ? "w-full" : ""}`,
+    primary: `h-14 rounded-sm bg-[var(--color-primary)] text-white text-sm shadow-glow-primary hover:bg-[var(--color-primary-hover)] ${fullWidth !== false ? "w-full" : ""}`,
 
-    /* secondary: 보조 버튼
-     * surface 배경 + primary 텍스트 */
-    secondary: `h-14 rounded-xl bg-[var(--color-surface)] text-[var(--color-primary)] text-base hover:bg-[var(--color-surface-bright)] ${fullWidth ? "w-full" : ""}`,
+    secondary: `h-14 rounded-sm border border-[var(--color-primary)] bg-[var(--color-surface)] text-[var(--color-primary)] text-sm hover:bg-[var(--color-surface-bright)] ${fullWidth ? "w-full" : ""}`,
 
-    /* small: 인라인 작은 버튼
-     * h-10 (40px): 작은 버튼 높이
-     * rounded-lg (8px) */
-    small: `h-10 rounded-xl px-4 text-sm bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] ${fullWidth ? "w-full" : ""}`,
+    small: `h-10 rounded-sm px-4 bg-[var(--color-primary)] text-[11px] text-white hover:bg-[var(--color-primary-hover)] ${fullWidth ? "w-full" : ""}`,
   };
 
   return (

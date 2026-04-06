@@ -79,7 +79,7 @@ export function ReviewForm({ courtId, onSubmitted, onCancel }: ReviewFormProps) 
 
   return (
     <div
-      className="rounded-xl p-4"
+      className="rounded-md p-4"
       style={{
         backgroundColor: "var(--color-surface)",
         border: "1px solid var(--color-border-subtle)",

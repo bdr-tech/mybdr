@@ -4,6 +4,27 @@
    text-[var(--...)] 같은 문자열이 CSS 클래스로 인식되어 파싱 에러 발생 방지) */
 @source not "../../.claude";
 
+@font-face {
+  font-family: 'GmarketSans';
+  font-weight: 300;
+  font-style: normal;
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansLight.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'GmarketSans';
+  font-weight: 500;
+  font-style: normal;
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'GmarketSans';
+  font-weight: 700;
+  font-style: normal;
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff');
+}
+
 @theme {
   /* --- Breakpoints (Tailwind CSS 4 필수) --- */
   --breakpoint-sm: 640px;
@@ -47,7 +68,7 @@
   /* --- 텍스트 (토스 그레이 스케일) --- */
   --color-text-primary: #191F28;     /* 헤드라인 (가장 진한 검정) */
   --color-text-secondary: #4E5968;   /* 본문 텍스트 */
-  --color-text-muted: #8B95A1;       /* 약한 텍스트 (캡션, 힌트) */
+  --color-text-muted: #7B8894;       /* 약한 텍스트 (캡션, 힌트) — 가독성 위해 +10% 진하게 */
   --color-text-disabled: #B0B8C1;    /* 비활성 텍스트 */
   --color-text-on-primary: #FFFFFF;  /* 브랜드 버튼 위 텍스트 */
 
@@ -72,9 +93,9 @@
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04);
   --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.08);
 
-  /* --- 폰트 (Pretendard 통일, Space Grotesk 제거) --- */
-  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-heading: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  /* --- 폰트 (SUIT를 기본, GmarketSans를 헤딩으로 설정) --- */
+  --font-sans: 'SUIT Variable', 'SUIT', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-heading: 'GmarketSans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 
   /* --- 기존 호환 변수 --- */
   --color-bg-primary: #FFFFFF;       /* background와 동일 */
@@ -138,11 +159,11 @@
 html.dark {
   color-scheme: dark;
 
-  /* 배경/표면 계층 */
-  --color-background: #17171C;       /* 페이지 기본 배경 */
-  --color-card: #1B1B21;             /* 카드 배경 */
-  --color-elevated: #2C2C35;         /* 떠있는 요소 */
-  --color-surface: #1B1B21;          /* 섹션/영역 배경 */
+  /* 배경/표면 계층 (2K Console Dark / Deep Carbon) */
+  --color-background: #0A0A0A;       /* 딥 블랙 배경 */
+  --color-card: #141416;             /* 약간 밝은 카드 */
+  --color-elevated: #1F1F24;         /* 떠있는 요소 */
+  --color-surface: #141416;          /* 섹션 배경 */
 
   --color-surface-lowest: #111116;   /* 입력 필드 배경 */
   --color-surface-low: #1B1B21;      /* surface와 동일 */
@@ -152,14 +173,14 @@ html.dark {
   /* 텍스트 */
   --color-text-primary: #F2F4F6;     /* 헤드라인 텍스트 */
   --color-text-secondary: #B0B8C1;   /* 본문 텍스트 */
-  --color-text-muted: #6B7684;       /* 약한 텍스트 */
+  --color-text-muted: #808B98;       /* 약한 텍스트 — 가독성 위해 +15% 밝게 */
   --color-text-disabled: #4E5968;    /* 비활성 텍스트 */
   --color-text-strong: #D1D6DB;      /* 강조 텍스트 */
   --color-text-tertiary: #8B95A1;    /* 3차 텍스트 */
 
   /* 테두리 */
-  --color-border: #2C2C35;           /* 기본 보더 */
-  --color-border-subtle: #23232B;    /* 미세한 구분선 */
+  --color-border: #1F1F24;           /* 기본 보더 */
+  --color-border-subtle: #141416;    /* 미세한 구분선 */
 
   /* 그림자 (다크모드는 더 진하게) */
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2);
@@ -186,6 +207,10 @@ body {
   background-color: var(--color-background);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
+  font-size: 15px;              /* 14px → 15px: 본문 가독성 향상 */
+  line-height: 1.65;            /* 줄 간격 넉넉하게 */
+  letter-spacing: -0.01em;      /* 한글 자간 미세 조정 */
+  font-weight: 420;             /* Pretendard variable: 기본보다 살짝 굵게 */
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -318,16 +343,19 @@ html.large-text [class*="text-[11px]"] {
   font-size: 0.85rem !important;
 }
 
-/* ====== Typography (토스 스타일: Pretendard 통일, 제목 700 weight) ====== */
-h1, h2, h3,
-[class*="text-xl"],
-[class*="text-2xl"],
-[class*="text-3xl"],
-[class*="text-4xl"] {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  letter-spacing: -0.02em; /* 토스 스타일: 약간 좁은 자간 */
+/* ====== Typography (토스 스타일: SUIT 통일, 제목 GmarketSans) ====== */
+/* ====== Typography (토스/2K 혼합: SUIT 통일, 제목 GmarketSans) ====== */
+@layer base {
+  body {
+    font-family: var(--font-sans);
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.01em;
+  }
 }
+
 
 /* Material Symbols 기본 설정: 아이콘 폰트의 기본 스타일 지정 */
 .material-symbols-outlined {
@@ -395,3 +423,44 @@ a,
 .animate-slide-up {
   animation: slide-up 0.25s ease-out;
 }
+
+/* ========================================
+ * NBA 2K 스타일 커스텀 유틸리티 (Neon & Clip)
+ * ======================================== */
+
+/* 네온 글로우(빛 번짐) 효과 */
+.shadow-glow-primary {
+  box-shadow: 0 0 10px rgba(227, 27, 35, 0.5), 0 0 20px rgba(227, 27, 35, 0.3);
+}
+.shadow-glow-accent {
+  box-shadow: 0 0 10px rgba(27, 60, 135, 0.5), 0 0 20px rgba(27, 60, 135, 0.3);
+}
+
+/* 평행사변형(Skew/Slant) 클리핑 효과 */
+.clip-slant {
+  clip-path: polygon(5% 0, 100% 0, 95% 100%, 0% 100%);
+}
+.clip-slant-reverse {
+  clip-path: polygon(0 0, 95% 0, 100% 100%, 5% 100%);
+}
+.clip-slant-sm {
+  clip-path: polygon(2% 0, 100% 0, 98% 100%, 0% 100%);
+}
+
+/* 카드 내 워터마크 폰트 배치 (대형 넘버링 등) */
+.watermark-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) skew(-8deg);
+  font-size: 8rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.03);
+  pointer-events: none;
+  font-family: var(--font-heading);
+  line-height: 1;
+}
+html.light .watermark-text {
+  color: rgba(0, 0, 0, 0.03);
+}
+

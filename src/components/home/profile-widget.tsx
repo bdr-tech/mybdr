@@ -4,12 +4,13 @@
  * ProfileWidget — 로그인 유저 게이미피케이션 위젯
  *
  * 홈 히어로 상단에 표시되는 프로필 카드.
- * XP 진행률, 스트릭, 체크인, 뱃지 + 오늘의 미션을 보여준다.
+ * XP 진행률, 연속 출석, 체크인, 뱃지 + 오늘의 미션을 보여준다.
  * 비로그인 시에는 home-hero에서 이 컴포넌트를 렌더링하지 않는다.
  * ============================================================ */
 
 import useSWR from "swr";
 import Link from "next/link";
+// DashboardData는 props에서 유지 (home-hero에서 전달) — 컴팩트 뷰에서는 렌더링하지 않음
 import type { DashboardData } from "./home-hero";
 
 // API 응답 타입 — /api/web/profile/gamification
@@ -38,15 +39,6 @@ function getKoreanDateString(date: Date): string {
   return date.toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" }).replace(/\. /g, "-").replace(".", "");
 }
 
-// D-Day 계산 헬퍼 (짧은 형태)
-function getDDayShort(dateStr: string): string {
-  const diff = Math.ceil(
-    (new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-  );
-  if (diff <= 0) return "오늘";
-  return `D-${diff}`;
-}
-
 // 날짜를 간단히 YYYY-MM-DD로 비교하기 위한 헬퍼
 function toDateOnly(isoString: string): string {
   return isoString.split("T")[0];
@@ -57,7 +49,7 @@ interface ProfileWidgetProps {
 }
 
 export function ProfileWidget({ dashboardData }: ProfileWidgetProps) {
-  // 게이미피케이션 데이터 (XP, 레벨, 스트릭, 뱃지)
+  // 게이미피케이션 데이터 (XP, 레벨, 연속 출석, 뱃지)
   const { data: gData, isLoading: gLoading } = useSWR<GamificationData>(
     "/api/web/profile/gamification",
     { dedupingInterval: 30000 }
@@ -71,23 +63,21 @@ export function ProfileWidget({ dashboardData }: ProfileWidgetProps) {
 
   const isLoading = gLoading || meLoading;
 
-  // 로딩 중: 스켈레톤 카드
+  // 로딩 중: 2줄 컴팩트 스켈레톤
   if (isLoading) {
     return (
       <div
-        className="rounded-xl border p-5 animate-pulse"
-        style={{
-          backgroundColor: "var(--color-card)",
-          borderColor: "var(--color-border)",
-        }}
+        className="rounded-md border p-3 animate-pulse bg-[var(--color-card)] border-[var(--color-border)]"
       >
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-full" style={{ backgroundColor: "var(--color-surface)" }} />
-          <div className="space-y-2 flex-1">
-            <div className="h-4 w-24 rounded" style={{ backgroundColor: "var(--color-surface)" }} />
-            <div className="h-3 w-16 rounded" style={{ backgroundColor: "var(--color-surface)" }} />
+        {/* 1줄: 아바타 + 닉네임 스켈레톤 */}
+        <div className="flex items-center gap-2.5 mb-2">
+          <div className="w-10 h-10 rounded-md shrink-0" style={{ backgroundColor: "var(--color-surface)" }} />
+          <div className="space-y-1.5 flex-1">
+            <div className="h-3.5 w-20 rounded" style={{ backgroundColor: "var(--color-surface)" }} />
+            <div className="h-2.5 w-14 rounded" style={{ backgroundColor: "var(--color-surface)" }} />
           </div>
         </div>
+        {/* 2줄: XP 바 스켈레톤 */}
         <div className="h-1.5 rounded-full" style={{ backgroundColor: "var(--color-surface)" }} />
       </div>
     );
@@ -119,215 +109,140 @@ export function ProfileWidget({ dashboardData }: ProfileWidgetProps) {
       missionText = "리뷰 작성하기";
       missionXp = 15;
     } else if (lastDate === yesterdayStr) {
-      // 어제 체크인함 → 스트릭 이어가기
+      // 어제 체크인함 → 연속 출석 이어가기
       missionIcon = "local_fire_department";
-      missionText = "스트릭 이어가기! 체크인";
+      missionText = "연속 출석 이어가기! 체크인";
       missionXp = 10;
     }
   }
 
   return (
     <div
-      className="rounded-xl border p-5"
-      style={{
-        backgroundColor: "var(--color-card)",
-        borderColor: "var(--color-border)",
-      }}
+      className="rounded-md border p-3 bg-[var(--color-card)] border-[var(--color-border)] shadow-sm hover:shadow-glow-primary transition-shadow duration-300"
     >
-      {/* 상단: 아바타 + 닉네임 + 레벨 뱃지 */}
-      <div className="flex items-center gap-3 mb-4">
-        {/* 이니셜 원형 아바타 */}
+      {/* ─── 1줄: 아바타 + 닉네임 + 레벨뱃지 (좌) | 통계 3개 인라인 (우) ─── */}
+      <div className="flex items-center gap-2.5 mb-2">
+        {/* 아바타: 40x40으로 축소 */}
         <div
-          className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold text-white shrink-0"
-          style={{ backgroundColor: "var(--color-primary)" }}
+          className="w-10 h-10 rounded-md flex items-center justify-center text-base font-black text-white shrink-0 shadow-inner"
+          style={{ background: "linear-gradient(135deg, var(--color-primary) 0%, rgba(0,0,0,0.5) 100%)" }}
         >
           {initial}
         </div>
-        <div className="min-w-0 flex-1">
+
+        {/* 닉네임 + 레벨뱃지 */}
+        <div className="min-w-0 flex items-center gap-2 flex-1">
           <p
-            className="text-base font-bold truncate"
+            className="text-base font-black uppercase tracking-wide truncate"
             style={{ color: "var(--color-text-primary)" }}
           >
             {displayName}
           </p>
-          {/* 레벨 뱃지 */}
+          {/* 레벨 뱃지: 크기 축소 */}
           <span
-            className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full"
+            className="inline-flex items-center gap-0.5 text-[10px] font-black uppercase px-1.5 py-0.5 rounded-sm shrink-0"
             style={{
-              backgroundColor: "var(--color-surface)",
-              color: "var(--color-text-secondary)",
+              backgroundColor: "var(--color-surface-bright)",
+              color: "var(--color-text-primary)",
             }}
           >
             {gData.emoji} Lv.{gData.level} {gData.title}
           </span>
         </div>
-      </div>
 
-      {/* XP 진행률 바 */}
-      <div className="mb-4">
-        <div className="flex justify-between text-xs mb-1">
-          <span style={{ color: "var(--color-text-muted)" }}>
-            XP {gData.xp}
-          </span>
-          <span style={{ color: "var(--color-text-muted)" }}>
-            다음 레벨까지 {gData.xp_to_next_level}
-          </span>
-        </div>
-        {/* 배경 바 */}
-        <div
-          className="h-1.5 rounded-full overflow-hidden"
-          style={{ backgroundColor: "var(--color-surface)" }}
-        >
-          {/* 진행률 바: primary 색상, 부드러운 애니메이션 */}
-          <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{
-              backgroundColor: "var(--color-primary)",
-              width: `${Math.min(gData.progress * 100, 100)}%`,
-            }}
-          />
+        {/* 우측 통계 3개: 아이콘+숫자 인라인 */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <StatInline icon="local_fire_department" value={gData.streak} />
+          <StatInline icon="location_on" value={gData.court_stamps.count} />
+          <StatInline icon="military_tech" value={gData.badges.length} />
         </div>
       </div>
 
-      {/* 3칸 통계: 스트릭 / 체크인 / 뱃지 */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        <StatBox icon="local_fire_department" value={gData.streak} label="스트릭" />
-        <StatBox icon="location_on" value={gData.court_stamps.count} label="체크인" />
-        <StatBox icon="military_tech" value={gData.badges.length} label="뱃지" />
-      </div>
-
-      {/* 구분선 */}
-      <div
-        className="border-t mb-3"
-        style={{ borderColor: "var(--color-border)" }}
-      />
-
-      {/* 오늘의 미션 */}
+      {/* ─── 2줄: XP 바 + 미션 ─── */}
       <div className="flex items-center gap-3">
-        <span
-          className="material-symbols-outlined text-xl"
-          style={{ color: "var(--color-primary)" }}
-        >
-          {missionIcon}
-        </span>
+        {/* XP 바 영역: 좌측 절반~2/3 */}
         <div className="flex-1 min-w-0">
-          <p
-            className="text-sm font-medium truncate"
-            style={{ color: "var(--color-text-primary)" }}
+          {/* XP 텍스트 */}
+          <div className="flex justify-between text-[10px] mb-0.5">
+            <span style={{ color: "var(--color-text-muted)" }}>
+              XP {gData.xp}
+            </span>
+            <span style={{ color: "var(--color-text-muted)" }}>
+              {gData.next_level_xp}
+            </span>
+          </div>
+          {/* XP 프로그레스 바: 얇게 */}
+          <div
+            className="h-1.5 rounded-full overflow-hidden"
+            style={{ backgroundColor: "var(--color-surface)" }}
+          >
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                backgroundColor: "var(--color-primary)",
+                width: `${Math.min(gData.progress * 100, 100)}%`,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* 미션: 우측에 한 줄로 */}
+        <Link
+          href="/profile#gamification"
+          className="flex items-center gap-1.5 shrink-0 group"
+        >
+          <span
+            className="material-symbols-outlined text-base"
+            style={{ color: "var(--color-primary)" }}
+          >
+            {missionIcon}
+          </span>
+          <span
+            className="text-[10px] font-black uppercase tracking-wide whitespace-nowrap group-hover:text-[var(--color-primary)] transition-colors"
+            style={{ color: "var(--color-text-secondary)" }}
           >
             {missionText}
-          </p>
-        </div>
-        <span
-          className="text-xs font-bold whitespace-nowrap"
-          style={{ color: "var(--color-primary)" }}
-        >
-          +{missionXp} XP
-        </span>
+          </span>
+          <span
+            className="text-[10px] font-black uppercase whitespace-nowrap"
+            style={{ color: "var(--color-primary)" }}
+          >
+            +{missionXp}XP
+          </span>
+          <span
+            className="material-symbols-outlined text-sm"
+            style={{ color: "var(--color-text-muted)" }}
+          >
+            chevron_right
+          </span>
+        </Link>
       </div>
-
-      {/* ─── 개인화 정보: 자주 가는 코트 + 다음 경기 ─── */}
-      {dashboardData && (dashboardData.frequentCourts?.length > 0 || dashboardData.nextGame) && (
-        <>
-          <div
-            className="border-t mt-3 mb-3"
-            style={{ borderColor: "var(--color-border)" }}
-          />
-          <div className="space-y-2">
-            {/* 자주 가는 코트 */}
-            {dashboardData.frequentCourts.length > 0 && (
-              <Link
-                href={`/courts/${dashboardData.frequentCourts[0].id}`}
-                className="flex items-center gap-2 group"
-              >
-                <span
-                  className="material-symbols-outlined text-base"
-                  style={{ color: "var(--color-text-muted)" }}
-                >
-                  pin_drop
-                </span>
-                <span
-                  className="text-xs truncate flex-1 group-hover:underline"
-                  style={{ color: "var(--color-text-secondary)" }}
-                >
-                  자주 가는 코트: {dashboardData.frequentCourts[0].name}
-                </span>
-                <span
-                  className="text-[10px]"
-                  style={{ color: "var(--color-text-disabled)" }}
-                >
-                  {dashboardData.frequentCourts[0].visitCount}회
-                </span>
-              </Link>
-            )}
-            {/* 다음 경기 */}
-            {dashboardData.nextGame && (
-              <Link
-                href={`/games/${dashboardData.nextGame.uuid}`}
-                className="flex items-center gap-2 group"
-              >
-                <span
-                  className="material-symbols-outlined text-base"
-                  style={{ color: "var(--color-info)" }}
-                >
-                  sports_basketball
-                </span>
-                <span
-                  className="text-xs truncate flex-1 group-hover:underline"
-                  style={{ color: "var(--color-text-secondary)" }}
-                >
-                  다음 경기: {dashboardData.nextGame.title}
-                </span>
-                {dashboardData.nextGame.scheduledAt && (
-                  <span
-                    className="text-[10px] font-bold whitespace-nowrap"
-                    style={{ color: "var(--color-info)" }}
-                  >
-                    {getDDayShort(dashboardData.nextGame.scheduledAt)}
-                  </span>
-                )}
-              </Link>
-            )}
-          </div>
-        </>
-      )}
     </div>
   );
 }
 
-/* 3칸 통계용 작은 박스 컴포넌트 */
-function StatBox({
+/* 인라인 통계: 아이콘(14px) + 숫자를 가로로 나열하는 컴팩트 컴포넌트 */
+function StatInline({
   icon,
   value,
-  label,
 }: {
   icon: string;
   value: number;
-  label: string;
 }) {
   return (
-    <div
-      className="flex flex-col items-center gap-1 py-2 rounded-lg"
-      style={{ backgroundColor: "var(--color-surface)" }}
-    >
+    <span className="inline-flex items-center gap-0.5">
       <span
-        className="material-symbols-outlined text-lg"
-        style={{ color: "var(--color-text-muted)" }}
+        className="material-symbols-outlined text-sm"
+        style={{ color: "var(--color-text-muted)", fontSize: "14px" }}
       >
         {icon}
       </span>
       <span
-        className="text-lg font-bold"
+        className="text-xs font-black"
         style={{ color: "var(--color-text-primary)" }}
       >
         {value}
       </span>
-      <span
-        className="text-[11px]"
-        style={{ color: "var(--color-text-muted)" }}
-      >
-        {label}
-      </span>
-    </div>
+    </span>
   );
 }

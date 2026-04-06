@@ -91,9 +91,10 @@ export function RecommendedTournaments() {
     return (
       <section>
         <Skeleton className="h-6 w-40 mb-4" />
-        <div className="flex gap-4 overflow-hidden">
+        {/* 컴팩트 카드에 맞춰 스켈레톤도 낮은 높이로 */}
+        <div className="flex gap-3 overflow-hidden">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-44 w-56 rounded-2xl shrink-0" />
+            <Skeleton key={i} className="h-[112px] w-[280px] rounded-md shrink-0" />
           ))}
         </div>
       </section>
@@ -102,8 +103,15 @@ export function RecommendedTournaments() {
 
   return (
     <section>
-      {/* 토스 스타일 섹션 헤더: 제목 + "전체보기 >" */}
-      <TossSectionHeader title="추천 대회" actionHref="/tournaments" />
+      {/* 2K 스타일 헤더: 두껍고 기울어짐 */}
+      <div className="flex items-end justify-between mb-4 pb-2 border-b-2 border-[var(--color-border)]">
+        <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter drop-shadow-sm">
+          추천 대회
+        </h2>
+        <Link href="/tournaments" className="text-[10px] font-black text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors uppercase">
+          VIEW ALL &raquo;
+        </Link>
+      </div>
 
       {/* 가로 스크롤 캐러셀: 추천경기와 동일한 패턴 */}
       <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-5 px-5 pb-2">
@@ -115,7 +123,7 @@ export function RecommendedTournaments() {
   );
 }
 
-/* ---- 개별 대회 카드: 토스 스타일 (둥근 모서리, 가벼운 그림자) ---- */
+/* ---- 개별 대회 카드: 컴팩트 가로형 (아이콘 64x64 + 우측 정보) ---- */
 function TournamentCard({ tournament }: { tournament: TournamentItem }) {
   const href = `/tournaments/${tournament.id}`;
   const statusLabel = STATUS_LABEL[tournament.status ?? ""] ?? tournament.status ?? "";
@@ -135,72 +143,72 @@ function TournamentCard({ tournament }: { tournament: TournamentItem }) {
     ? `${tournament.teamCount}/${tournament.maxTeams}팀`
     : `${tournament.teamCount}팀 참가`;
 
+  const locationStr = tournament.venueName ?? tournament.city ?? "";
+
   return (
-    <Link href={href} className="block shrink-0 w-56">
-      {/* 토스 카드: 둥근 모서리(16px) + 가벼운 그림자 + 호버 효과 */}
+    <Link href={href} className="block shrink-0 w-[280px]">
+      {/* 컴팩트 카드: 가로 배치, 네온 호버 효과 유지 */}
       <div
-        className="group rounded-2xl overflow-hidden bg-[var(--color-card)] transition-all duration-200 hover:scale-[1.02] hover:shadow-[var(--shadow-elevated)] h-full"
+        className="group rounded-md overflow-hidden bg-[var(--color-card)] transition-all duration-300 hover:-translate-y-1 hover:shadow-glow-primary border border-transparent hover:border-[var(--color-primary)] flex flex-row relative h-[112px]"
         style={{ boxShadow: "var(--shadow-card)" }}
       >
-        {/* 이미지 영역: 상태별 그라디언트 배경 + 아이콘 */}
+        {/* 좌측 아이콘/그라디언트 영역 (64px 고정) */}
         <div
-          className="relative h-28 flex items-center justify-center"
+          className="relative w-16 h-[112px] shrink-0 flex items-center justify-center"
           style={{ background: gradient }}
         >
-          {/* 대회 아이콘 */}
-          <span className="material-symbols-outlined text-5xl text-white/20">
+          <span className="material-symbols-outlined text-2xl text-white/40">
             emoji_events
           </span>
-
-          {/* 상태 뱃지 (좌상단) */}
-          {statusLabel && (
-            <span
-              className="absolute top-2 left-2 rounded-md px-2 py-0.5 text-xs font-bold"
-              style={{
-                backgroundColor: "rgba(255,255,255,0.9)",
-                color: "var(--color-primary)",
-              }}
-            >
-              {statusLabel}
-            </span>
-          )}
-
-          {/* 포맷 뱃지 (우상단) */}
-          {formatLabel && (
-            <span className="absolute top-2 right-2 rounded-md bg-black/40 px-1.5 py-0.5 text-xs font-bold text-white">
-              {formatLabel}
-            </span>
-          )}
         </div>
 
-        {/* 정보 영역: 토스 스타일 패딩 + 계층적 텍스트 */}
-        <div className="p-3.5">
-          {/* 대회명 */}
-          <h4 className="text-sm font-bold text-[var(--color-text-primary)] line-clamp-1 mb-1.5">
-            {tournament.name}
-          </h4>
-
-          {/* 장소 + 일정 */}
-          <div className="space-y-1">
-            {(tournament.venueName || tournament.city) && (
-              <p className="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
-                <span className="material-symbols-outlined text-xs">location_on</span>
-                <span className="truncate">
-                  {tournament.venueName ?? tournament.city}
-                </span>
-              </p>
+        {/* 우측 정보 영역 */}
+        <div className="flex-1 min-w-0 p-2.5 flex flex-col justify-center gap-1">
+          {/* 1행: 상태 뱃지 + 포맷 뱃지 */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {statusLabel && (
+              <span
+                className="px-1.5 py-0.5 text-[9px] font-black uppercase rounded-sm bg-white/90 leading-none"
+                style={{ color: "var(--color-primary)" }}
+              >
+                {statusLabel}
+              </span>
             )}
-            {startStr && (
-              <p className="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
-                <span className="material-symbols-outlined text-xs">calendar_today</span>
-                {startStr}
-              </p>
+            {formatLabel && (
+              <span className="rounded-sm bg-black/60 px-1.5 py-0.5 text-[9px] font-black text-white leading-none">
+                {formatLabel}
+              </span>
             )}
           </div>
 
-          {/* 참가 현황 */}
-          <p className="mt-2 text-xs font-bold text-[var(--color-primary)]">
-            {capacityText}
+          {/* 2행: 대회명 (1줄 말줄임) */}
+          <h4 className="text-sm font-extrabold text-[var(--color-text-primary)] truncate leading-tight tracking-tight uppercase group-hover:text-[var(--color-primary)] transition-colors">
+            {tournament.name}
+          </h4>
+
+          {/* 3행: 장소 + 일정 (한 줄로 · 구분) */}
+          <p className="text-[11px] text-[var(--color-text-muted)] font-medium truncate flex items-center gap-1">
+            {locationStr && (
+              <>
+                <span className="material-symbols-outlined text-[12px]">location_on</span>
+                <span className="truncate">{locationStr}</span>
+              </>
+            )}
+            {locationStr && startStr && <span className="opacity-40">·</span>}
+            {startStr && (
+              <>
+                <span className="material-symbols-outlined text-[12px]">calendar_today</span>
+                <span className="whitespace-nowrap">{startStr}</span>
+              </>
+            )}
+          </p>
+
+          {/* 4행: 참가 현황 */}
+          <p className="flex items-center gap-1.5">
+            <span className="text-[9px] uppercase font-black tracking-wider text-[var(--color-text-muted)]">ENTRY</span>
+            <span className="text-[11px] font-black text-[var(--color-primary)]">
+              {capacityText}
+            </span>
           </p>
         </div>
       </div>

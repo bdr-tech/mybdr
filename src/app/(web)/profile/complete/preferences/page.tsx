@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { PreferenceForm } from "@/components/shared/preference-form";
 
 /**
- * 온보딩 선호 설정 페이지
+ * 온보딩 맞춤 설정 페이지
  *
  * 프로필 완성(/profile/complete) 후 이동되는 2번째 단계.
  * 관심 종별, 경기 유형, 게시판을 설정하면 맞춤 콘텐츠를 제공한다.

@@ -102,7 +102,7 @@ export function CourtReviews({ courtId, currentUserId }: CourtReviewsProps) {
 
   return (
     <div
-      className="rounded-2xl p-5 sm:p-6 mb-4"
+      className="rounded-md p-5 sm:p-6 mb-4"
       style={{
         backgroundColor: "var(--color-card)",
         boxShadow: "var(--shadow-card)",

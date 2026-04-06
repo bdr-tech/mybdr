@@ -8,15 +8,21 @@ import type { WizardFormData } from "./game-wizard";
  * 디자인 시안 기준으로 카드 스타일 적용, 기존 로직 100% 유지
  */
 
+// 실력 라벨 (7단계 + 전체 + 하위 호환)
 const SKILL_LABELS: Record<string, string> = {
   all: "전체",
   lowest: "최하",
-  beginner: "초급 (하)",
-  intermediate_low: "중하",
-  intermediate: "중급",
-  intermediate_advanced: "중고급 (중상)",
-  advanced: "고급 (상)",
+  low: "하",
+  mid_low: "중하",
+  mid: "중",
+  mid_high: "중상",
+  high: "상",
   highest: "최상",
+  // 하위 호환 (기존 4단계)
+  beginner: "초급",
+  intermediate: "중급",
+  intermediate_advanced: "중상",
+  advanced: "상급",
 };
 
 const RECURRENCE_RULES = [
@@ -59,13 +65,13 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
       )}
 
       {/* 최종 확인 카드 */}
-      <div className="bg-[var(--color-card)] p-8 rounded-xl border border-[var(--color-border)] shadow-sm">
+      <div className="bg-[var(--color-card)] p-8 rounded-md border border-[var(--color-border)] shadow-sm">
         <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-6">
           Step 3. 최종 확인
         </h2>
 
         {/* 미리보기 카드 (네이비 배경) */}
-        <div className="bg-[var(--color-accent)] text-white p-6 rounded-xl mb-6">
+        <div className="bg-[var(--color-accent)] text-white p-6 rounded-md mb-6">
           {/* 타입 배지 */}
           <div className="mb-3">
             <span className="inline-block px-3 py-1 bg-white/10 rounded-full text-xs font-medium">
@@ -136,7 +142,7 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
         </div>
 
         {/* 추가 설정 (접기/펼치기) */}
-        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
+        <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
           <button
             type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}

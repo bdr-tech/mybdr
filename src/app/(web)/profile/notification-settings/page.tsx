@@ -118,7 +118,7 @@ export default function NotificationSettingsPage() {
 
       {/* 알림 유형별 토글 카드 */}
       <div
-        className="overflow-hidden rounded-2xl"
+        className="overflow-hidden rounded-md"
         style={{
           backgroundColor: "var(--color-card)",
           boxShadow: "var(--shadow-card)",
@@ -136,7 +136,7 @@ export default function NotificationSettingsPage() {
             {/* 좌측: 아이콘 + 라벨 + 설명 */}
             <div className="flex items-center gap-4">
               <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md"
                 style={{ backgroundColor: "var(--color-surface)" }}
               >
                 <span

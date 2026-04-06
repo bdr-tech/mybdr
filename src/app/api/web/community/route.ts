@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
     // where 조건 구성 (기존 page.tsx에서 이동)
     const where: Record<string, unknown> = {};
 
-    // prefer=true일 때 로그인 유저의 선호 게시판 카테고리를 필터로 적용
-    // 명시적 category 파라미터가 있으면 그것을 우선하므로 선호 필터는 적용하지 않음
+    // prefer=true일 때 로그인 유저의 맞춤 게시판 카테고리를 필터로 적용
+    // 명시적 category 파라미터가 있으면 그것을 우선하므로 맞춤 필터는 적용하지 않음
     let preferredCategories: string[] | undefined;
     if (prefer && !category) {
       const session = await getWebSession();

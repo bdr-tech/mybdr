@@ -50,8 +50,8 @@ export function DivisionGeneratorModal({ open, onClose, onApply }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div
-        className="mx-4 w-full max-w-md overflow-hidden rounded-2xl"
-        style={{ backgroundColor: "var(--color-card)", boxShadow: "0 25px 50px rgba(0,0,0,0.15)" }}
+        className="mx-4 w-full max-w-md overflow-hidden rounded-md border-l-4 border-[var(--color-primary)]"
+        style={{ backgroundColor: "var(--color-card)", boxShadow: "0 0 30px rgba(0,0,0,0.5)" }}
       >
         {/* 헤더 */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4">
@@ -59,7 +59,7 @@ export function DivisionGeneratorModal({ open, onClose, onApply }: Props) {
             <span className="material-symbols-outlined text-xl" style={{ color: "var(--color-primary)" }}>
               layers
             </span>
-            <h3 className="text-lg font-bold" style={{ color: "var(--color-text-primary)" }}>
+            <h3 className="text-lg font-black uppercase tracking-wider pr-1" style={{ color: "var(--color-text-primary)" }}>
               새 종별 추가
             </h3>
           </div>
@@ -80,7 +80,7 @@ export function DivisionGeneratorModal({ open, onClose, onApply }: Props) {
               STEP 1. 성별 선택
             </p>
             <div
-              className="flex rounded-xl overflow-hidden"
+              className="flex rounded-sm overflow-hidden"
               style={{ backgroundColor: "var(--color-surface)" }}
             >
               {GENDERS_LIST.map((g) => (
@@ -91,7 +91,7 @@ export function DivisionGeneratorModal({ open, onClose, onApply }: Props) {
                     setGender(g.key);
                     setSelectedDivs([]);
                   }}
-                  className="flex-1 py-3 text-sm font-semibold transition-all"
+                  className="flex-1 py-3 text-[12px] font-black uppercase tracking-widest transition-all"
                   style={
                     gender === g.key
                       ? { backgroundColor: "var(--color-primary)", color: "#fff" }
@@ -119,7 +119,7 @@ export function DivisionGeneratorModal({ open, onClose, onApply }: Props) {
                     setCategory(cat.key);
                     setSelectedDivs([]);
                   }}
-                  className="rounded-full px-4 py-2 text-sm font-semibold transition-all"
+                  className="rounded-sm px-4 py-2 text-[11px] font-black uppercase tracking-wider transition-all"
                   style={
                     category === cat.key
                       ? { backgroundColor: "var(--color-primary)", color: "#fff" }
@@ -151,7 +151,7 @@ export function DivisionGeneratorModal({ open, onClose, onApply }: Props) {
                     key={div.key}
                     type="button"
                     onClick={() => toggleDiv(div.key)}
-                    className="flex items-center gap-1 rounded-xl px-4 py-2.5 text-sm font-medium transition-all border"
+                    className="flex items-center gap-1 rounded-sm px-4 py-2.5 text-[11px] font-black uppercase tracking-wider transition-all border"
                     style={
                       active
                         ? {
@@ -182,7 +182,7 @@ export function DivisionGeneratorModal({ open, onClose, onApply }: Props) {
           type="button"
           onClick={handleCreate}
           disabled={selectedDivs.length === 0}
-          className="flex w-full items-center justify-center gap-2 py-4 text-sm font-bold text-white transition-all disabled:opacity-40"
+          className="flex w-full items-center justify-center gap-2 py-4 text-[13px] font-black uppercase tracking-widest text-white transition-all disabled:opacity-40"
           style={{ backgroundColor: selectedDivs.length > 0 ? "var(--color-accent, #191F28)" : "var(--color-text-disabled)" }}
         >
           생성하기

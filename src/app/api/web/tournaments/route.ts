@@ -29,23 +29,36 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") || undefined;
     const prefer = searchParams.get("prefer") === "true";
 
-    // prefer=true일 때 로그인 유저의 city(쉼표 구분)와 preferred_divisions를 조회
+    // prefer=true일 때 로그인 유저의 맞춤 설정(지역, 종별, 성별)을 조회
     let preferredCities: string[] | undefined;
     let preferredDivisions: string[] | undefined;
+    let preferredGender: string[] | undefined;
     if (prefer) {
       const session = await getWebSession();
       if (session) {
         const user = await prisma.user.findUnique({
           where: { id: BigInt(session.sub) },
-          select: { city: true, preferred_divisions: true },  // 종별도 함께 조회
+          select: {
+            city: true,
+            preferred_divisions: true,
+            // 맞춤 지역(17개 광역시/도) — user.city보다 우선 사용
+            preferred_regions: true,
+            // 맞춤 성별 필터 (male/female/mixed 배열)
+            preferred_gender: true,
+          },
         });
-        // user.city는 "서울,경기" 같이 쉼표로 구분된 문자열
-        if (user?.city) {
+
+        // 지역 필터: preferred_regions(맞춤 설정)를 우선, 없으면 user.city(프로필) 사용
+        const regions = user?.preferred_regions as string[] | null;
+        if (Array.isArray(regions) && regions.length > 0) {
+          preferredCities = regions;
+        } else if (user?.city) {
           const cities = user.city.split(",").map((c) => c.trim()).filter(Boolean);
           if (cities.length > 0) {
             preferredCities = cities;
           }
         }
+
         // preferred_divisions는 Json 배열 -- Array.isArray()로 안전하게 검증
         if (user?.preferred_divisions && Array.isArray(user.preferred_divisions)) {
           const divs = user.preferred_divisions as string[];
@@ -53,11 +66,23 @@ export async function GET(request: NextRequest) {
             preferredDivisions = divs;
           }
         }
+
+        // 맞춤 성별 필터 (tournament.gender가 선택한 성별 중 하나와 일치)
+        const genders = user?.preferred_gender as string[] | null;
+        if (Array.isArray(genders) && genders.length > 0) {
+          preferredGender = genders;
+        }
       }
     }
 
-    // 서비스 함수로 DB 조회 (prefer=true이면 cities + divisions 파라미터 전달)
-    const rows = await listTournaments({ status, cities: preferredCities, divisions: preferredDivisions, take: 60 }).catch(() => []);
+    // 서비스 함수로 DB 조회 (prefer=true이면 cities + divisions + gender 파라미터 전달)
+    const rows = await listTournaments({
+      status,
+      cities: preferredCities,
+      divisions: preferredDivisions,
+      gender: preferredGender,
+      take: 60,
+    }).catch(() => []);
 
     // Date, Decimal 필드를 JSON 직렬화 가능하도록 변환
     const tournaments = rows.map((t) => ({

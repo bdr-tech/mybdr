@@ -297,7 +297,7 @@ export default function PaymentsPage() {
           onClick={() => !refunding && setRefundTarget(null)}
         >
           <div
-            className="w-[90%] max-w-[360px] rounded-2xl p-6"
+            className="w-[90%] max-w-[360px] rounded-md p-6"
             style={{ backgroundColor: "var(--color-bg-elevated)" }}
             onClick={(e) => e.stopPropagation()}
           >

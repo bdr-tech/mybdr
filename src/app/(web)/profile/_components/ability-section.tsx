@@ -83,7 +83,7 @@ export function AbilitySection({
 
   return (
     <div
-      className="rounded-xl border p-5"
+      className="rounded-md border p-5"
       style={{
         borderColor: "var(--color-border)",
         backgroundColor: "var(--color-surface)",

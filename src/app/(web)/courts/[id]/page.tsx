@@ -129,7 +129,7 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
 
       {/* 메인 정보 카드 */}
       <div
-        className="rounded-2xl p-5 sm:p-6 mb-4"
+        className="rounded-md p-5 sm:p-6 mb-4"
         style={{
           backgroundColor: "var(--color-card)",
           boxShadow: "var(--shadow-card)",
@@ -359,7 +359,7 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
 
       {/* 이용 현황 카드 */}
       <div
-        className="rounded-2xl p-5 sm:p-6 mb-4"
+        className="rounded-md p-5 sm:p-6 mb-4"
         style={{
           backgroundColor: "var(--color-card)",
           boxShadow: "var(--shadow-card)",
@@ -388,7 +388,7 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
       {/* 근처 경기 섹션 */}
       {relatedGames.length > 0 && (
         <div
-          className="rounded-2xl p-5 sm:p-6 mb-4"
+          className="rounded-md p-5 sm:p-6 mb-4"
           style={{
             backgroundColor: "var(--color-card)",
             boxShadow: "var(--shadow-card)",
@@ -428,7 +428,7 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
       {/* 관련 대회 섹션 */}
       {relatedTournaments.length > 0 && (
         <div
-          className="rounded-2xl p-5 sm:p-6 mb-4"
+          className="rounded-md p-5 sm:p-6 mb-4"
           style={{
             backgroundColor: "var(--color-card)",
             boxShadow: "var(--shadow-card)",
@@ -470,7 +470,7 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
       {/* 최근 체크인 */}
       {court.court_checkins.length > 0 && (
         <div
-          className="rounded-2xl p-5 sm:p-6 mb-4"
+          className="rounded-md p-5 sm:p-6 mb-4"
           style={{
             backgroundColor: "var(--color-card)",
             boxShadow: "var(--shadow-card)",

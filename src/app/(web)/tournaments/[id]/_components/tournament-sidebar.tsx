@@ -73,7 +73,7 @@ export function TournamentSidebar({
 
       {/* ====== 참가비 카드 ====== */}
       <div
-        className="overflow-hidden rounded-xl border"
+        className="overflow-hidden rounded-md border"
         style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
       >
         <div className="p-4">
@@ -181,7 +181,7 @@ export function TournamentSidebar({
 
       {/* ====== 도움이 필요하신가요? 카드 ====== */}
       <div
-        className="rounded-xl border p-4"
+        className="rounded-md border p-4"
         style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
       >
         <h3 className="mb-2.5 text-xs font-bold">도움이 필요하신가요?</h3>

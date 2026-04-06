@@ -36,7 +36,7 @@ export const XP_REWARDS = {
   review: 15,
   // 제보 작성
   report: 5,
-  // 7일 연속 스트릭 보너스
+  // 7일 연속 연속 출석 보너스
   streak_7: 50,
   // 위키 수정 제안이 승인됐을 때 (거절 시 0)
   wiki_edit: 10,

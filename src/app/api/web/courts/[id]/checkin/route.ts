@@ -296,7 +296,7 @@ export async function DELETE(
     },
   });
 
-  // ─── 게이미피케이션: 트랜잭션으로 XP + 스트릭 + 도장깨기 일괄 처리 ───
+  // ─── 게이미피케이션: 트랜잭션으로 XP + 연속 출석 + 도장깨기 일괄 처리 ───
   // completeSession이 $transaction 안에서 3개 함수를 순차 호출
   // 하나라도 실패하면 전체 롤백되어 데이터 불일치 방지
   const gamResult = await completeSession(userId, xp);

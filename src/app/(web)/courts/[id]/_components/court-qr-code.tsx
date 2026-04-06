@@ -117,7 +117,7 @@ export function CourtQrCode({ courtId, courtName }: CourtQrCodeProps) {
         >
           {/* 모달 본체 (클릭 전파 차단) */}
           <div
-            className="relative w-full max-w-sm rounded-2xl p-6"
+            className="relative w-full max-w-sm rounded-md p-6"
             style={{
               backgroundColor: "var(--color-card)",
               boxShadow: "var(--shadow-card)",
@@ -150,7 +150,7 @@ export function CourtQrCode({ courtId, courtName }: CourtQrCodeProps) {
             {/* QR 코드 이미지 */}
             <div className="flex justify-center mb-4">
               <div
-                className="rounded-xl p-4"
+                className="rounded-md p-4"
                 style={{ backgroundColor: "#ffffff" }}
               >
                 {/* crossOrigin으로 canvas 변환 허용 */}

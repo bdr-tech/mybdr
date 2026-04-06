@@ -140,7 +140,7 @@ export function PushPermissionBanner() {
   // 이미 구독됨 → 간단한 상태 표시 (설정에서 해제 가능)
   if (subscribed && permission === "granted") {
     return (
-      <div className="flex items-center justify-between rounded-xl px-4 py-3"
+      <div className="flex items-center justify-between rounded-md px-4 py-3 border-l-4 border-[var(--color-primary)]"
         style={{ backgroundColor: "var(--color-surface)" }}>
         <div className="flex items-center gap-3">
           <span
@@ -150,10 +150,10 @@ export function PushPermissionBanner() {
             notifications_active
           </span>
           <div>
-            <p className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>
+            <p className="text-[12px] font-black uppercase tracking-wider" style={{ color: "var(--color-text-primary)" }}>
               푸시 알림 활성화됨
             </p>
-            <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+            <p className="text-[10px] font-bold mt-0.5" style={{ color: "var(--color-text-muted)" }}>
               경기 결과, 대회 소식을 받고 있습니다
             </p>
           </div>
@@ -161,7 +161,7 @@ export function PushPermissionBanner() {
         <button
           onClick={handleUnsubscribe}
           disabled={loading}
-          className="text-xs px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+          className="text-[10px] font-black uppercase px-3 py-1.5 rounded-sm transition-colors disabled:opacity-50"
           style={{ color: "var(--color-text-muted)", backgroundColor: "var(--color-surface-alt)" }}
         >
           {loading ? "처리 중..." : "해제"}
@@ -173,7 +173,7 @@ export function PushPermissionBanner() {
   // 권한이 차단됨
   if (permission === "denied") {
     return (
-      <div className="flex items-center justify-between rounded-xl px-4 py-3"
+      <div className="flex items-center justify-between rounded-md px-4 py-3 border-l-4 border-red-500"
         style={{ backgroundColor: "var(--color-surface)" }}>
         <div className="flex items-center gap-3">
           <span className="material-symbols-outlined text-xl"
@@ -181,10 +181,10 @@ export function PushPermissionBanner() {
             notifications_off
           </span>
           <div>
-            <p className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>
+            <p className="text-[12px] font-black uppercase tracking-wider" style={{ color: "var(--color-text-primary)" }}>
               알림이 차단되었습니다
             </p>
-            <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+            <p className="text-[10px] font-bold mt-0.5" style={{ color: "var(--color-text-muted)" }}>
               브라우저 설정에서 알림을 허용해주세요
             </p>
           </div>
@@ -202,7 +202,7 @@ export function PushPermissionBanner() {
 
   // 기본 상태: 구독 유도 배너
   return (
-    <div className="flex items-center justify-between rounded-xl px-4 py-3"
+    <div className="flex items-center justify-between rounded-md px-4 py-3 border-l-4 border-[var(--color-primary)] shadow-sm"
       style={{ backgroundColor: "var(--color-surface)" }}>
       <div className="flex items-center gap-3">
         <span className="material-symbols-outlined text-xl"
@@ -210,10 +210,10 @@ export function PushPermissionBanner() {
           notifications
         </span>
         <div>
-          <p className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>
+          <p className="text-[12px] font-black uppercase tracking-wider pr-1" style={{ color: "var(--color-text-primary)" }}>
             알림 받기
           </p>
-          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+          <p className="text-[10px] font-bold mt-0.5" style={{ color: "var(--color-text-muted)" }}>
             경기 결과, 대회 소식을 실시간으로 받아보세요
           </p>
         </div>
@@ -221,7 +221,7 @@ export function PushPermissionBanner() {
       <div className="flex items-center gap-2 shrink-0">
         <button
           onClick={() => setDismissed(true)}
-          className="text-xs px-2 py-1.5 rounded-lg"
+          className="text-[10px] font-black uppercase px-2 py-1.5"
           style={{ color: "var(--color-text-muted)" }}
         >
           나중에
@@ -229,8 +229,8 @@ export function PushPermissionBanner() {
         <button
           onClick={handleSubscribe}
           disabled={loading}
-          className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors disabled:opacity-50"
-          style={{ backgroundColor: "var(--color-primary)", borderRadius: "4px" }}
+          className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white transition-colors disabled:opacity-50 rounded-sm"
+          style={{ backgroundColor: "var(--color-primary)" }}
         >
           {loading ? "요청 중..." : "허용하기"}
         </button>

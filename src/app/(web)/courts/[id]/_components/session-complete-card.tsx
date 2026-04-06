@@ -4,7 +4,7 @@
  * 세션 완료 카드 (체크아웃 후 팝업)
  *
  * 체크아웃 성공 시 표시되는 세션 요약 카드.
- * 운동 시간, 획득 XP, 레벨, 스트릭, 새 뱃지를 보여준다.
+ * 운동 시간, 획득 XP, 레벨, 연속 출석, 새 뱃지를 보여준다.
  * 닫기 버튼으로 사라진다.
  */
 
@@ -44,7 +44,7 @@ export function SessionCompleteCard({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-2xl p-6 space-y-4"
+        className="w-full max-w-sm rounded-md p-6 space-y-4"
         style={{
           backgroundColor: "var(--color-card)",
           boxShadow: "var(--shadow-card)",
@@ -72,7 +72,7 @@ export function SessionCompleteCard({
 
         {/* XP 획득 */}
         <div
-          className="rounded-xl p-4 text-center"
+          className="rounded-md p-4 text-center"
           style={{
             backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)",
           }}
@@ -91,7 +91,7 @@ export function SessionCompleteCard({
         {/* 레벨업 알림 */}
         {gamification.leveled_up && (
           <div
-            className="rounded-xl p-3 text-center"
+            className="rounded-md p-3 text-center"
             style={{
               backgroundColor: "color-mix(in srgb, var(--color-accent) 10%, transparent)",
             }}
@@ -111,7 +111,7 @@ export function SessionCompleteCard({
           </div>
         )}
 
-        {/* 스트릭 */}
+        {/* 연속 출석 */}
         {gamification.streak > 0 && (
           <div className="flex items-center gap-2 justify-center">
             <span

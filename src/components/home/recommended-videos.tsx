@@ -1,19 +1,20 @@
 "use client";
 
 /* ============================================================
- * RecommendedVideos — BDR 추천 영상 섹션 (토스 스타일)
+ * RecommendedVideos — BDR 추천 영상 섹션 (NBA 2K 스타일)
  *
- * 토스 스타일 변경:
- * - TossSectionHeader로 "인기 영상" + "더보기 >" 헤더
- * - TossCard 스타일 카드 (둥근 모서리, 가벼운 그림자)
- * - 가로 스크롤 캐러셀 유지
+ * 2K 스타일 적용:
+ * - 인라인 2K 헤더 "HIGHLIGHTS" (font-black uppercase)
+ * - 카드에 hover:shadow-glow-primary + hover:border-primary 효과
+ * - LIVE 뱃지에 rounded-sm 적용
+ * - 제목 font-extrabold uppercase
  *
  * API/데이터 패칭 로직은 기존과 100% 동일.
  * ============================================================ */
 
 import useSWR from "swr";
+import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TossSectionHeader } from "@/components/toss/toss-section-header";
 
 interface VideoItem {
   video_id: string;
@@ -73,7 +74,7 @@ export function RecommendedVideos() {
         <Skeleton className="h-6 w-32 mb-4" />
         <div className="flex gap-4 overflow-hidden">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="aspect-video w-56 rounded-2xl shrink-0" />
+            <Skeleton key={i} className="aspect-video w-56 rounded-md shrink-0" />
           ))}
         </div>
       </section>
@@ -84,17 +85,25 @@ export function RecommendedVideos() {
 
   return (
     <section>
-      {/* 토스 스타일 섹션 헤더 */}
-      <TossSectionHeader
-        title="인기 영상"
-        actionLabel="더보기"
-        actionHref="https://www.youtube.com/@BDRBASKET"
-      />
+      {/* 2K 스타일 인라인 헤더: font-black uppercase (다른 홈 섹션과 통일) */}
+      <div className="flex items-end justify-between mb-4 pb-2 border-b-2 border-[var(--color-border)]">
+        <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter drop-shadow-sm">
+          HIGHLIGHTS
+        </h2>
+        <Link
+          href="https://www.youtube.com/@BDRBASKET"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] font-black text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors uppercase"
+        >
+          VIEW ALL &raquo;
+        </Link>
+      </div>
 
-      {/* 가로 스크롤 캐러셀: 토스 카드 스타일 */}
+      {/* 가로 스크롤 캐러셀: 2K 카드 스타일 (네온 호버, uppercase) */}
       <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-5 px-5 pb-2">
         {hasApiData
-          ? /* API 영상 카드 */
+          ? /* API 영상 카드 — 2K 스타일 적용 */
             videos.slice(0, 6).map((v) => (
               <a
                 key={v.video_id}
@@ -103,67 +112,84 @@ export function RecommendedVideos() {
                 rel="noopener noreferrer"
                 className="block shrink-0 w-56"
               >
+                {/* 2K 카드: 각진 모서리, 네온 글로우 호버, 프라이머리 보더 호버 */}
                 <div
-                  className="group rounded-2xl overflow-hidden bg-[var(--color-card)] transition-all duration-200 hover:scale-[1.02] hover:shadow-[var(--shadow-elevated)]"
+                  className="group rounded-md overflow-hidden bg-[var(--color-card)] transition-all duration-300 hover:-translate-y-2 hover:shadow-glow-primary border border-transparent hover:border-[var(--color-primary)] h-full flex flex-col relative"
                   style={{ boxShadow: "var(--shadow-card)" }}
                 >
-                  {/* 썸네일 */}
-                  <div className="aspect-video relative overflow-hidden">
+                  {/* 워터마크: 호버 시 재생 아이콘 실루엣 */}
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-5 font-black text-7xl transition-all duration-500 pointer-events-none z-0">
+                    <span className="material-symbols-outlined text-8xl">play_arrow</span>
+                  </div>
+
+                  {/* 썸네일 영역 */}
+                  <div className="aspect-video relative overflow-hidden shrink-0 z-10">
                     <img
                       alt={v.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       src={v.thumbnail}
                     />
+                    {/* 그라디언트 오버레이 (하단 → 카드 배경색) */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-card)] via-transparent to-black/20" />
                     {/* 재생 아이콘 호버 오버레이 */}
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
                       <span className="material-symbols-outlined text-white text-4xl">play_circle</span>
                     </div>
                     {/* LIVE 뱃지 */}
                     {v.is_live && (
-                      <span className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
+                      <span className="absolute top-2 left-2 bg-[var(--color-primary)] text-white text-[10px] px-2.5 py-1 font-black uppercase rounded-sm flex items-center gap-1">
                         <span className="relative flex h-1.5 w-1.5">
                           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
                           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
                         </span>
-                        라이브
+                        LIVE
                       </span>
                     )}
                   </div>
-                  {/* 제목 + 날짜 */}
-                  <div className="p-3">
-                    <h4 className="text-sm font-bold text-[var(--color-text-primary)] line-clamp-1 mb-1">
+                  {/* 정보 영역: gradient 배경 + 2K 폰트 스타일 */}
+                  <div className="p-3 flex flex-col grow z-10 bg-gradient-to-br from-[var(--color-card)] to-[var(--color-surface)]">
+                    <h4 className="text-sm font-extrabold text-[var(--color-text-primary)] line-clamp-1 mb-1 tracking-tight uppercase group-hover:text-[var(--color-primary)] transition-colors">
                       {v.title}
                     </h4>
-                    <p className="text-xs text-[var(--color-text-muted)]">{formatDate(v.published_at)}</p>
+                    <p className="text-[11px] font-bold text-[var(--color-text-muted)] uppercase">
+                      {formatDate(v.published_at)}
+                    </p>
                   </div>
                 </div>
               </a>
             ))
-          : /* 더미 영상 카드 */
+          : /* 더미 영상 카드 — 동일 2K 스타일 적용 */
             DUMMY_VIDEOS.map((v) => (
               <div key={v.video_id} className="shrink-0 w-56">
                 <div
-                  className="group rounded-2xl overflow-hidden bg-[var(--color-card)] transition-all duration-200 hover:scale-[1.02] hover:shadow-[var(--shadow-elevated)]"
+                  className="group rounded-md overflow-hidden bg-[var(--color-card)] transition-all duration-300 hover:-translate-y-2 hover:shadow-glow-primary border border-transparent hover:border-[var(--color-primary)] h-full flex flex-col relative"
                   style={{ boxShadow: "var(--shadow-card)" }}
                 >
-                  <div className="aspect-video relative overflow-hidden">
+                  {/* 워터마크 */}
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-5 font-black text-7xl transition-all duration-500 pointer-events-none z-0">
+                    <span className="material-symbols-outlined text-8xl">play_arrow</span>
+                  </div>
+
+                  <div className="aspect-video relative overflow-hidden shrink-0 z-10">
                     <img
                       alt={v.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       src={v.thumbnail}
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-card)] via-transparent to-black/20" />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
                       <span className="material-symbols-outlined text-white text-4xl">play_circle</span>
                     </div>
-                    <span className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-0.5 rounded-md font-bold">
+                    {/* 재생시간 뱃지 */}
+                    <span className="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] px-2 py-0.5 font-black rounded-sm">
                       {v.duration}
                     </span>
                   </div>
-                  <div className="p-3">
-                    <h4 className="text-sm font-bold text-[var(--color-text-primary)] line-clamp-1 mb-1">
+                  <div className="p-3 flex flex-col grow z-10 bg-gradient-to-br from-[var(--color-card)] to-[var(--color-surface)]">
+                    <h4 className="text-sm font-extrabold text-[var(--color-text-primary)] line-clamp-1 mb-1 tracking-tight uppercase group-hover:text-[var(--color-primary)] transition-colors">
                       {v.title}
                     </h4>
-                    <p className="text-xs text-[var(--color-text-muted)]">
+                    <p className="text-[11px] font-bold text-[var(--color-text-muted)] uppercase">
                       {v.views} · {v.date}
                     </p>
                   </div>

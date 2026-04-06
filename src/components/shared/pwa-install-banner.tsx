@@ -84,15 +84,14 @@ export function PwaInstallBanner() {
 
   return (
     <div
-      className="mb-4 flex items-center gap-3 rounded-2xl px-4 py-3.5"
+      className="mb-4 flex items-center gap-3 rounded-md px-4 py-3.5 shadow-md border-l-4 border-[var(--color-primary)]"
       style={{
         backgroundColor: "var(--color-card)",
-        boxShadow: "var(--shadow-card)",
       }}
     >
       {/* 앱 아이콘 영역 */}
       <div
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md"
         style={{ backgroundColor: "var(--color-primary)" }}
       >
         <span className="material-symbols-outlined text-2xl text-white">
@@ -103,13 +102,13 @@ export function PwaInstallBanner() {
       {/* 텍스트 영역 */}
       <div className="min-w-0 flex-1">
         <p
-          className="text-sm font-semibold"
+          className="text-[13px] font-black uppercase tracking-wider pr-1 truncate"
           style={{ color: "var(--color-text-primary)" }}
         >
           MyBDR 앱 설치
         </p>
         <p
-          className="mt-0.5 text-xs"
+          className="mt-0.5 text-[10px] font-bold truncate"
           style={{ color: "var(--color-text-muted)" }}
         >
           {isIos
@@ -124,10 +123,9 @@ export function PwaInstallBanner() {
         {!isIos && (
           <button
             onClick={handleInstall}
-            className="rounded-lg px-3 py-1.5 text-xs font-bold text-white"
+            className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white rounded-sm hover:brightness-110 transition-all shadow-glow-primary"
             style={{
               backgroundColor: "var(--color-primary)",
-              borderRadius: "4px",
             }}
           >
             설치
@@ -136,7 +134,7 @@ export function PwaInstallBanner() {
         {/* 닫기 버튼 */}
         <button
           onClick={handleDismiss}
-          className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-[var(--color-surface)]"
+          className="flex h-7 w-7 items-center justify-center rounded-sm transition-colors hover:bg-[var(--color-surface)]"
           aria-label="닫기"
         >
           <span

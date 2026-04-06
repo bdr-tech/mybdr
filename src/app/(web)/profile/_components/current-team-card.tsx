@@ -24,7 +24,7 @@ export function CurrentTeamCard({ teams }: CurrentTeamCardProps) {
 
   return (
     <div
-      className="rounded-xl border p-5 flex flex-col items-center justify-center text-center h-full"
+      className="rounded-md border p-5 flex flex-col items-center justify-center text-center h-full"
       style={{
         borderColor: "var(--color-border)",
         backgroundColor: "var(--color-surface)",

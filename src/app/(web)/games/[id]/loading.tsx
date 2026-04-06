@@ -4,7 +4,7 @@ export default function GameDetailLoading() {
   return (
     <div className="space-y-6 animate-pulse">
       {/* 히어로 배너 스켈레톤 */}
-      <div className="h-64 md:h-[400px] rounded-xl bg-[var(--color-border)]" />
+      <div className="h-64 md:h-[400px] rounded-md bg-[var(--color-border)]" />
 
       {/* 배지 스켈레톤 */}
       <div className="flex gap-2">
@@ -20,17 +20,17 @@ export default function GameDetailLoading() {
         {/* 좌측: Amenities + Rules */}
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 h-48 rounded-xl bg-[var(--color-border)]" />
-            <div className="h-48 rounded-xl bg-[var(--color-border)]" />
+            <div className="md:col-span-2 h-48 rounded-md bg-[var(--color-border)]" />
+            <div className="h-48 rounded-md bg-[var(--color-border)]" />
           </div>
           {/* 참여자 스켈레톤 */}
-          <div className="h-32 rounded-xl bg-[var(--color-border)]" />
+          <div className="h-32 rounded-md bg-[var(--color-border)]" />
         </div>
 
         {/* 우측: 가격 카드 */}
         <div className="space-y-6">
-          <div className="h-80 rounded-xl bg-[var(--color-border)]" />
-          <div className="h-32 rounded-xl bg-[var(--color-border)]" />
+          <div className="h-80 rounded-md bg-[var(--color-border)]" />
+          <div className="h-32 rounded-md bg-[var(--color-border)]" />
         </div>
       </div>
     </div>

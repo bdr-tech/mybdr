@@ -31,31 +31,27 @@ export function Footer() {
             </a>
           </nav>
 
-          {/* SNS 링크: YouTube + Instagram */}
+          {/* SNS 링크: YouTube + Instagram (컬러 원본 아이콘) */}
           <div className="flex items-center gap-4">
             <a
               href="https://www.youtube.com/@BDRBASKET"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
-              style={{ color: 'var(--color-text-secondary)' }}
               aria-label="BDR YouTube"
             >
-              {/* YouTube 아이콘: Material Symbols에 없으므로 play_circle 대체 */}
-              <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
-              <span>YouTube</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814Z" fill="#FF0000"/><path d="m9.545 15.568 6.273-3.568-6.273-3.568v7.136Z" fill="#fff"/></svg>
+              <span style={{ color: 'var(--color-text-secondary)' }}>YouTube</span>
             </a>
             <a
               href="https://www.instagram.com/bdr_basket"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
-              style={{ color: 'var(--color-text-secondary)' }}
               aria-label="BDR Instagram"
             >
-              {/* Instagram 아이콘: Material Symbols에 없으므로 photo_camera 대체 */}
-              <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>photo_camera</span>
-              <span>Instagram</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><defs><radialGradient id="ig" cx="30%" cy="107%" r="150%"><stop offset="0%" stopColor="#fdf497"/><stop offset="5%" stopColor="#fdf497"/><stop offset="45%" stopColor="#fd5949"/><stop offset="60%" stopColor="#d6249f"/><stop offset="90%" stopColor="#285AEB"/></radialGradient></defs><rect width="24" height="24" rx="6" fill="url(#ig)"/><circle cx="12" cy="12" r="5" stroke="#fff" strokeWidth="1.5" fill="none"/><circle cx="17.5" cy="6.5" r="1.2" fill="#fff"/></svg>
+              <span style={{ color: 'var(--color-text-secondary)' }}>Instagram</span>
             </a>
           </div>
         </div>

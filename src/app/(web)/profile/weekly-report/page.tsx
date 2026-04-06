@@ -180,7 +180,7 @@ export default function WeeklyReportPage() {
           </p>
           <Link
             href="/profile"
-            className="inline-block rounded-xl px-6 py-2.5 text-sm font-bold text-white"
+            className="inline-block rounded-md px-6 py-2.5 text-sm font-bold text-white"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
             프로필로 돌아가기

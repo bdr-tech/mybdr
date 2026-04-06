@@ -22,13 +22,13 @@ export default function WeeklyReportLoading() {
       </div>
 
       {/* 차트 영역 */}
-      <div className="h-48 rounded-xl bg-[var(--color-border)]" />
+      <div className="h-48 rounded-md bg-[var(--color-border)]" />
 
       {/* 운동 기록 리스트 */}
       <div className="space-y-3">
         <div className="h-5 w-24 rounded bg-[var(--color-border)]" />
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-16 rounded-xl bg-[var(--color-border)]" />
+          <div key={i} className="h-16 rounded-md bg-[var(--color-border)]" />
         ))}
       </div>
     </div>

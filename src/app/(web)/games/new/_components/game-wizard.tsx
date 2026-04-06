@@ -455,7 +455,7 @@ export function GameWizard({ permissions }: { permissions: Permissions }) {
             if (e.target === e.currentTarget) setShowPostcode(false);
           }}
         >
-          <div className="flex w-full max-w-md flex-col overflow-hidden rounded-xl bg-[var(--color-card)] shadow-xl mx-4">
+          <div className="flex w-full max-w-md flex-col overflow-hidden rounded-md bg-[var(--color-card)] shadow-xl mx-4">
             <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
               <span className="font-semibold text-[var(--color-text-primary)]">주소 검색</span>
               <button
@@ -627,7 +627,7 @@ function SummaryCard({
 }) {
   return (
     // sticky로 스크롤 시에도 고정, 네이비 배경
-    <div className="sticky top-24 bg-[var(--color-accent)] text-white p-6 rounded-xl shadow-lg">
+    <div className="sticky top-24 bg-[var(--color-accent)] text-white p-6 rounded-md shadow-lg">
       <h3 className="font-bold text-xl mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
         Summary
       </h3>

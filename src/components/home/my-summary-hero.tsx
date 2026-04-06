@@ -84,7 +84,7 @@ function EmptyCard({
 }) {
   return (
     <div
-      className="flex min-w-[240px] snap-start flex-col justify-between rounded-2xl border p-5"
+      className="flex min-w-[240px] snap-start flex-col justify-between rounded-md border p-5"
       style={{
         backgroundColor: "var(--color-card)",
         borderColor: "var(--color-border)",
@@ -146,7 +146,7 @@ export function MySummaryHero() {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="min-w-[240px] snap-start rounded-2xl border p-5 animate-pulse"
+            className="min-w-[240px] snap-start rounded-md border p-5 animate-pulse"
             style={{
               backgroundColor: "var(--color-card)",
               borderColor: "var(--color-border)",
@@ -196,7 +196,7 @@ export function MySummaryHero() {
       {teams.length > 0 ? (
         <Link
           href={`/teams/${teams[0].id}`}
-          className="flex min-w-[240px] snap-start flex-col rounded-2xl border p-5 transition-all hover:shadow-md active:scale-[0.98]"
+          className="flex min-w-[240px] snap-start flex-col rounded-md border p-5 transition-all hover:shadow-md active:scale-[0.98]"
           style={{
             backgroundColor: "var(--color-card)",
             borderColor: "var(--color-border)",
@@ -233,7 +233,7 @@ export function MySummaryHero() {
       {upcomingGame ? (
         <Link
           href={`/games/${upcomingGame.id}`}
-          className="flex min-w-[240px] snap-start flex-col rounded-2xl border p-5 transition-all hover:shadow-md active:scale-[0.98]"
+          className="flex min-w-[240px] snap-start flex-col rounded-md border p-5 transition-all hover:shadow-md active:scale-[0.98]"
           style={{
             backgroundColor: "var(--color-card)",
             borderColor: "var(--color-border)",
@@ -283,7 +283,7 @@ export function MySummaryHero() {
       {statsData && statsData.total_games > 0 ? (
         <Link
           href="/profile"
-          className="flex min-w-[240px] snap-start flex-col rounded-2xl border p-5 transition-all hover:shadow-md active:scale-[0.98]"
+          className="flex min-w-[240px] snap-start flex-col rounded-md border p-5 transition-all hover:shadow-md active:scale-[0.98]"
           style={{
             backgroundColor: "var(--color-card)",
             borderColor: "var(--color-border)",
@@ -321,7 +321,7 @@ export function MySummaryHero() {
       {nextTournament ? (
         <Link
           href={`/tournaments/${nextTournament.id}`}
-          className="flex min-w-[240px] snap-start flex-col rounded-2xl border p-5 transition-all hover:shadow-md active:scale-[0.98]"
+          className="flex min-w-[240px] snap-start flex-col rounded-md border p-5 transition-all hover:shadow-md active:scale-[0.98]"
           style={{
             backgroundColor: "var(--color-card)",
             borderColor: "var(--color-border)",

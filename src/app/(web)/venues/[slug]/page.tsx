@@ -103,7 +103,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<Page
 
       {/* 히어로 섹션 */}
       <div
-        className="rounded-xl overflow-hidden mb-6"
+        className="rounded-md overflow-hidden mb-6"
         style={{
           background: isIndoor
             ? "linear-gradient(135deg, var(--color-navy, #1B3C87), var(--color-info))"

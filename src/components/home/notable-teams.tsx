@@ -12,6 +12,7 @@
  * ============================================================ */
 
 import useSWR from "swr";
+import Link from "next/link";
 import { TossSectionHeader } from "@/components/toss/toss-section-header";
 import { TossListItem } from "@/components/toss/toss-list-item";
 
@@ -57,12 +58,22 @@ export function NotableTeams({ fallbackData }: NotableTeamsProps = {}) {
 
   return (
     <section>
-      {/* 토스 스타일 섹션 헤더: "주목할 팀" + "전체보기 >" */}
-      <TossSectionHeader title="주목할 팀" actionHref="/teams" />
+      {/* 2K 스타일 헤더 (굵은 이탤릭, 두꺼운 하단 보더) */}
+      <div className="flex items-end justify-between mb-4 pb-2 border-b-2 border-[var(--color-border)]">
+        <h2 className="text-xl font-black uppercase tracking-tighter drop-shadow-sm">
+          NOTABLE TEAMS
+        </h2>
+        <Link
+          href="/teams"
+          className="text-[10px] font-black text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors uppercase"
+        >
+          VIEW ALL &raquo;
+        </Link>
+      </div>
 
-      {/* 팀 리스트: TossListItem으로 통일 (토스 앱 계좌 목록 패턴) */}
-      <div>
-        {teams.map((team) => {
+      {/* 2K 리더보드/대시보드 스타일의 밀도 높은 리스트 */}
+      <div className="flex flex-col gap-1.5">
+        {teams.map((team, index) => {
           const isFallback = team.id === "0";
           /* 팀 색상을 아이콘 배경으로 사용 (없으면 기본 회색) */
           const iconBg = team.primary_color ?? "var(--color-text-muted)";
@@ -75,17 +86,51 @@ export function NotableTeams({ fallbackData }: NotableTeamsProps = {}) {
           ].filter(Boolean).join(" · ");
 
           return (
-            <TossListItem
+            <Link
               key={team.id + team.name}
-              icon="shield"
-              iconBg={iconBg}
-              title={team.name}
-              subtitle={subtitle || undefined}
-              rightText={!isFallback ? `${team.wins}W ${team.losses}L` : undefined}
-              rightSub={team.accepting_members && !isFallback ? "모집중" : undefined}
-              href={!isFallback ? `/teams/${team.id}` : undefined}
-              showArrow={!isFallback}
-            />
+              href={!isFallback ? `/teams/${team.id}` : "#"}
+              className={`flex items-center gap-3 p-2 bg-gradient-to-r from-[var(--color-surface)] to-[var(--color-card)] hover:to-[var(--color-surface-bright)] border-l-4 border-transparent hover:border-[var(--color-primary)] transition-all duration-200 group ${isFallback ? "pointer-events-none opacity-80" : ""}`}
+            >
+              {/* 순위 표기 느낌의 짧은 인덱스 */}
+              <div className="flex-none font-black text-lg text-[var(--color-text-disabled)] group-hover:text-[var(--color-primary)] w-5 text-center leading-none">
+                {index + 1}
+              </div>
+
+              {/* 엠블럼 (평행사변형 컷아웃 박스) */}
+              <div
+                className="w-10 h-10 flex-none flex items-center justify-center rounded-sm shadow-inner"
+                style={{
+                  background: `linear-gradient(135deg, ${iconBg} 0%, rgba(0,0,0,0.5) 100%)`,
+                }}
+              >
+                <span className="material-symbols-outlined text-[20px] text-white opacity-80">
+                  shield
+                </span>
+              </div>
+
+              {/* 중앙 텍스트 정보 */}
+              <div className="grow min-w-0 flex flex-col justify-center">
+                <div className="flex justify-between items-baseline w-full">
+                  <h4 className="text-sm font-extrabold uppercase truncate text-[var(--color-text-primary)] tracking-tight">
+                    {team.name}
+                  </h4>
+                  <span className="text-sm font-black text-[var(--color-primary)] shrink-0 ml-2">
+                    {!isFallback ? `${team.wins}W ${team.losses}L` : "0W 0L"}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center mt-0.5">
+                  <span className="text-[10px] font-bold text-[var(--color-text-muted)] truncate uppercase tracking-wider">
+                    {subtitle || "LOCATION TBD"}
+                  </span>
+                  {team.accepting_members && !isFallback && (
+                    <span className="text-[9px] font-black text-[var(--color-on-primary)] bg-[var(--color-info)] px-2 py-0.5 rounded-sm ml-2 shrink-0">
+                      RECRUIT
+                    </span>
+                  )}
+                </div>
+              </div>
+            </Link>
           );
         })}
       </div>

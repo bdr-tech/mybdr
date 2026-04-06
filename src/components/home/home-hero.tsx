@@ -94,36 +94,39 @@ export function HomeHero() {
   // 비로그인 상태: 소개 히어로 + 퀵 액션 + 소식
   return (
     <div className="space-y-4">
-      {/* 소개 히어로: 그라디언트 배경 */}
+      {/* 소개 히어로: 2K Neon Style Banner */}
       <div
-        className="rounded-xl p-6"
+        className="p-8 relative overflow-hidden rounded-md shadow-glow-accent group"
         style={{
           background:
-            "linear-gradient(135deg, var(--color-info) 0%, var(--color-accent) 100%)",
+            "linear-gradient(135deg, var(--color-info) 0%, var(--color-accent) 80%, black 100%)",
         }}
       >
-        {/* 큰 제목 */}
-        <h1
-          className="text-2xl font-extrabold text-white mb-2"
-          style={{ fontFamily: "var(--font-heading)" }}
-        >
-          BDR BASKET
-        </h1>
-        {/* 부제목 */}
-        <p className="text-white/85 text-sm leading-relaxed mb-5">
-          농구인을 위한 올인원 플랫폼
-        </p>
-        {/* 시작하기 버튼 */}
-        <Link
-          href="/signup"
-          className="inline-block rounded-lg px-6 py-2.5 text-sm font-bold transition-all active:scale-[0.97]"
-          style={{
-            backgroundColor: "#fff",
-            color: "var(--color-info)",
-          }}
-        >
-          시작하기
-        </Link>
+        {/* 2K 스타일 투명 워터마크 배경 텍스트 */}
+        <div className="watermark-text z-0 group-hover:scale-105 transition-transform duration-700 opacity-20 text-[var(--color-text-on-primary)]">
+          2K26
+        </div>
+
+        <div className="relative z-10">
+          {/* 큰 제목 */}
+          <h1
+            className="text-4xl md:text-5xl font-extrabold text-white mb-2 tracking-tighter drop-shadow-xl"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
+            BDR BASKET
+          </h1>
+          {/* 부제목 */}
+          <p className="text-white/85 text-base md:text-lg leading-relaxed mb-6 font-bold tracking-tight drop-shadow-md">
+            농구인을 위한 올인원 매칭 아레나
+          </p>
+          {/* 시작하기 버튼 (2K 버튼 스타일) */}
+          <Link
+            href="/signup"
+            className="inline-block rounded-sm bg-[var(--color-card)] text-[var(--color-text-primary)] px-8 py-3 text-sm font-black uppercase transition-all duration-300 hover:scale-[1.03] hover:bg-[var(--color-primary)] hover:text-white hover:shadow-glow-primary hover:tracking-wide active:scale-95"
+          >
+            PLAY NOW
+          </Link>
+        </div>
       </div>
 
       {/* 퀵 액션 */}

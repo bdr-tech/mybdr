@@ -91,7 +91,7 @@ function TimePicker({ value, onChange, label }: { value: string; onChange: (v: s
         <span>{value ? `${ampm} ${String(display12).padStart(2, "0")}:${displayMin}` : "--:--"}</span>
       </button>
       {open && (
-        <div className="absolute left-1/2 top-12 z-50 w-[220px] -translate-x-1/2 rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-3 shadow-[0_8px_32px_rgba(0,0,0,0.25)]">
+        <div className="absolute left-1/2 top-12 z-50 w-[220px] -translate-x-1/2 rounded-md border border-[var(--color-border)] bg-[var(--color-card)] p-3 shadow-[0_8px_32px_rgba(0,0,0,0.25)]">
           <div className="grid grid-cols-3 gap-1.5 mb-2">
             <div className="flex flex-col gap-1">
               {(["오전", "오후"] as const).map((v) => (
@@ -133,7 +133,7 @@ function AdvancedSettings({ data, updateData }: {
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] overflow-hidden">
+    <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-card)] overflow-hidden">
       <button type="button" onClick={() => setOpen(!open)}
         className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-[var(--color-text-muted)] hover:bg-[var(--color-surface-bright)]">
         <span>추가 설정 (선택)</span>
@@ -256,7 +256,7 @@ export function StepWhenWhere({
   return (
     <div>
       {/* 폼 카드 (디자인 시안의 Step 2 카드) */}
-      <div className="bg-[var(--color-card)] p-8 rounded-xl border border-[var(--color-border)] shadow-sm">
+      <div className="bg-[var(--color-card)] p-8 rounded-md border border-[var(--color-border)] shadow-sm">
         {/* 카드 헤더 + 저장/불러오기 버튼 */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
@@ -396,7 +396,7 @@ export function StepWhenWhere({
       )}
 
       {/* 모집 인원 + 실력 + 추가 설정 (별도 카드) */}
-      <div className="mt-6 bg-[var(--color-card)] p-6 rounded-xl border border-[var(--color-border)] shadow-sm space-y-5">
+      <div className="mt-6 bg-[var(--color-card)] p-6 rounded-md border border-[var(--color-border)] shadow-sm space-y-5">
         {/* 모집 인원 */}
         <div>
           <label className="mb-2 block text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
@@ -457,7 +457,7 @@ export function StepWhenWhere({
       {/* === 저장 모달 === */}
       {showSaveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowSaveModal(false); }}>
-          <div className="w-full max-w-xs rounded-xl bg-[var(--color-card)] p-5 shadow-xl">
+          <div className="w-full max-w-xs rounded-md bg-[var(--color-card)] p-5 shadow-xl">
             <h3 className="mb-3 text-base font-bold text-[var(--color-text-primary)]">경기 설정 저장</h3>
             <input type="text" value={presetName} onChange={(e) => setPresetName(e.target.value)}
               placeholder="저장 이름 (예: 주말 픽업)"
@@ -476,7 +476,7 @@ export function StepWhenWhere({
       {/* === 불러오기 모달 === */}
       {showLoadModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowLoadModal(false); }}>
-          <div className="w-full max-w-xs rounded-xl bg-[var(--color-card)] p-5 shadow-xl">
+          <div className="w-full max-w-xs rounded-md bg-[var(--color-card)] p-5 shadow-xl">
             <h3 className="mb-3 text-base font-bold text-[var(--color-text-primary)]">자주 쓰는 경기</h3>
             {presets.length === 0 ? (
               <p className="py-6 text-center text-sm text-[var(--color-text-secondary)]">저장된 설정이 없습니다.</p>

@@ -81,10 +81,12 @@ export const TOURNAMENT_DETAIL_INCLUDE = {
 
 export interface TournamentListFilters {
   status?: string;
-  /** 선호 지역 필터 -- 여러 도시를 OR 조건으로 검색 (prefer=true 시 사용) */
+  /** 맞춤 지역 필터 -- 여러 도시를 OR 조건으로 검색 (prefer=true 시 사용) */
   cities?: string[];
-  /** 선호 종별 필터 -- Json 배열 교집합 매칭 (prefer=true 시 사용) */
+  /** 맞춤 종별 필터 -- Json 배열 교집합 매칭 (prefer=true 시 사용) */
   divisions?: string[];
+  /** 맞춤 성별 필터 -- tournament.gender IN (...) 조건 (prefer=true 시 사용) */
+  gender?: string[];
   take?: number;
 }
 
@@ -212,30 +214,58 @@ function toMyTournamentItem(
  * 대회 목록 (공개) — tournaments/page.tsx, 홈페이지에서 사용
  */
 export async function listTournaments(filters: TournamentListFilters = {}) {
-  const { status, cities, divisions, take = 60 } = filters;
+  const { status, cities, divisions, gender, take = 60 } = filters;
 
   // where 조건을 동적으로 구성
   const where: Record<string, unknown> = {
     status: status && status !== "all" ? status : { not: "draft" },
   };
 
-  // 선호 지역(cities)이 있으면 OR 조건으로 도시 필터 적용
+  // 맞춤 지역(cities) 필터: 선택한 지역이거나 지역이 아직 미정(null)인 대회도 포함
+  // AND로 감싸서 status 조건과 충돌하지 않도록 한다
   if (cities && cities.length > 0) {
-    where.city = { in: cities, mode: "insensitive" };
+    where.AND = [
+      ...(Array.isArray(where.AND) ? (where.AND as unknown[]) : []),
+      {
+        OR: [
+          // 각 도시명에 대해 부분 매칭 (예: "서울" → "서울특별시" 매칭)
+          ...cities.map(c => ({ city: { contains: c, mode: "insensitive" as const } })),
+          { city: null },
+        ],
+      },
+    ];
   }
 
-  // 선호 종별(divisions) 필터: Json 배열 교집합 매칭
-  // divisions 배열의 각 값에 대해 OR 조건을 만들고, AND로 감싸서
-  // 기존/미래의 다른 OR 조건과 충돌하지 않도록 한다.
-  // 예: divisions = ["챌린저", "비기너스"] 이면
-  //     tournaments.divisions에 "챌린저" OR "비기너스"가 포함된 대회 매칭
+  // 맞춤 종별(divisions) 필터: division_tiers 기준으로 교집합 매칭
+  // preferred_divisions에는 "D3", "D7" 등 코드가 저장되고,
+  // 대회의 division_tiers 필드에도 동일한 코드가 저장됨 (divisions 필드는 한국어 텍스트라 불일치)
+  // division_tiers가 비어있거나 null인 대회도 포함 (아직 설정 안 된 대회)
   if (divisions && divisions.length > 0) {
     where.AND = [
       ...(Array.isArray(where.AND) ? (where.AND as unknown[]) : []),
       {
-        OR: divisions.map((div) => ({
-          divisions: { path: [], array_contains: div },
-        })),
+        OR: [
+          // division_tiers 배열에 선택한 코드 중 하나라도 포함된 대회
+          ...divisions.map((div) => ({
+            division_tiers: { path: [], array_contains: div },
+          })),
+          // division_tiers가 비어있거나 설정되지 않은 대회도 포함
+          { division_tiers: { equals: [] } },
+          { division_tiers: { equals: null } },
+        ],
+      },
+    ];
+  }
+
+  // 맞춤 성별 필터: 선택한 성별이거나 성별이 아직 미정(null)인 대회도 포함
+  if (gender && gender.length > 0) {
+    where.AND = [
+      ...(Array.isArray(where.AND) ? (where.AND as unknown[]) : []),
+      {
+        OR: [
+          { gender: { in: gender, mode: "insensitive" } },
+          { gender: null },
+        ],
       },
     ];
   }

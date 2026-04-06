@@ -59,29 +59,35 @@ export default async function HomePage() {
   const gamesData = gamesResult.status === "fulfilled" ? gamesResult.value : undefined;
 
   return (
-    /* 1열 세로 스택: 각 섹션 사이 넉넉한 간격 (mb-10 = 40px)
-     * 토스 앱처럼 섹션별로 구분감 있게 배치 */
-    <div className="space-y-10">
-
-      {/* [섹션 0] 히어로: 로그인 시 프로필위젯+퀵액션+소식, 비로그인 시 소개+퀵액션+소식 */}
+    /* 메인 피드: 1열 세로 스택 
+     * PC(xl) 환경에서는 layout.tsx에 의해 우측에 독립적인 사이드바가 추가되므로,
+     * 여기서는 전체 컴포넌트를 세로로 자연스럽게 배치합니다. */
+    <div className="flex flex-col space-y-10 pb-10">
+      {/* 히어로 패널 */}
       <HomeHero />
 
-      {/* [섹션 1] 추천/인기 경기: TossSectionHeader + TossCard 가로 스크롤 */}
+      {/* 추천/인기 경기 가로 스크롤 카드팩 */}
       <RecommendedGames fallbackData={gamesData} />
 
-      {/* [섹션 1.5] 추천 대회: 접수중 대회 가로 스크롤 (클라이언트 fetch) */}
+      {/* 추천 대회 */}
       <RecommendedTournaments />
 
-      {/* [섹션 2] 주목할만한 팀: TossListItem으로 리스트 표시 */}
-      <NotableTeams fallbackData={teamsData} />
+      {/* 주목할 팀 (2K 스타일) */}
+      <div className="xl:hidden">
+        {/* xl(PC)에서는 RightSidebar에 동일한 내용이 나오므로, 중복 방지를 위해 숨깁니다. */}
+        <NotableTeams fallbackData={teamsData} />
+      </div>
 
-      {/* [섹션 3] 최근 활동 피드: 경기참가/대회참가/글작성 통합 (클라이언트 fetch) */}
-      <RecentActivity />
+      {/* 최근 활동 피드 */}
+      <div className="xl:hidden">
+        {/* xl(PC)에서는 RightSidebar에 반영되므로 숨김 */}
+        <RecentActivity />
+      </div>
 
-      {/* [섹션 4] 추천 영상 (YouTube — 프리페치 안 함) */}
+      {/* 미디어 / 하이라이트 영상 */}
       <RecommendedVideos />
 
-      {/* [섹션 5] 커뮤니티: 최근 게시글 TossListItem */}
+      {/* 커뮤니티 게시글 최신 요약 */}
       <HomeCommunity fallbackData={communityData} />
     </div>
   );

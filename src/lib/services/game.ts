@@ -14,10 +14,12 @@ export interface GameListFilters {
   q?: string;
   type?: string;
   city?: string;
-  /** 선호 지역 필터 — 여러 도시를 OR 조건으로 검색 (prefer=true 시 사용) */
+  /** 맞춤 지역 필터 — 여러 도시를 OR 조건으로 검색 (prefer=true 시 사용) */
   cities?: string[];
-  /** 선호 경기 유형 필터 — game_type IN (...) 조건 (prefer=true 시 사용) */
+  /** 맞춤 경기 유형 필터 — game_type IN (...) 조건 (prefer=true 시 사용) */
   gameTypes?: number[];
+  /** 맞춤 실력 수준 필터 — skill_level IN (...) 조건 (prefer=true 시 사용) */
+  skillLevels?: string[];
   scheduledAt?: { gte?: Date; lt?: Date };
   take?: number;
 }
@@ -30,27 +32,42 @@ export interface GameListFilters {
  * 경기 목록 조회 (필터 + 페이지네이션)
  */
 export async function listGames(filters: GameListFilters = {}) {
-  const { q, type, city, cities, gameTypes, scheduledAt, take = 60 } = filters;
+  const { q, type, city, cities, gameTypes, skillLevels, scheduledAt, take = 60 } = filters;
 
   const where: Prisma.gamesWhereInput = {
     // 취소(4) 제외
     status: { not: 4 },
   };
   if (q) where.title = { contains: q, mode: "insensitive" };
-  // 명시적 type 파라미터가 우선, 없으면 선호 경기 유형(gameTypes)으로 필터
+  // 명시적 type 파라미터가 우선, 없으면 맞춤 경기 유형(gameTypes)으로 필터
   if (type && type !== "all") {
     where.game_type = parseInt(type);
   } else if (gameTypes && gameTypes.length > 0) {
-    // 선호 경기 유형이 설정되어 있으면 해당 유형만 표시 (city 필터와 AND 결합)
+    // 맞춤 경기 유형이 설정되어 있으면 해당 유형만 표시 (city 필터와 AND 결합)
     where.game_type = { in: gameTypes };
   }
 
-  // 선호 지역(cities) 우선, 단일 도시(city) 차선 — 둘 다 있으면 cities 사용
+  // 맞춤 지역(cities) 우선, 단일 도시(city) 차선 — 둘 다 있으면 cities 사용
   if (cities && cities.length > 0) {
-    // 여러 도시를 OR 조건으로 묶어 검색
-    where.city = { in: cities, mode: "insensitive" };
+    // 선택한 지역이거나 지역이 아직 미정(null)인 경기도 포함
+    // AND로 감싸서 status 등 다른 조건과 충돌하지 않도록 한다
+    where.AND = [
+      ...(Array.isArray(where.AND) ? (where.AND as Prisma.gamesWhereInput[]) : []),
+      {
+        OR: [
+          // 각 도시명에 대해 부분 매칭 (예: "서울" → "서울특별시" 매칭)
+          ...cities.map(c => ({ city: { contains: c, mode: "insensitive" as const } })),
+          { city: null },
+        ],
+      },
+    ];
   } else if (city && city !== "all") {
     where.city = { contains: city, mode: "insensitive" };
+  }
+
+  // 맞춤 실력 수준 필터: skill_level이 선택한 레벨 중 하나와 일치하는 경기만 표시
+  if (skillLevels && skillLevels.length > 0) {
+    where.skill_level = { in: skillLevels };
   }
 
   if (scheduledAt) where.scheduled_at = scheduledAt;

@@ -161,10 +161,10 @@ export function TournamentHero({
             <img
               src={logoUrl}
               alt={name}
-              className="mb-4 h-24 w-24 rounded-2xl object-cover shadow-xl ring-4 ring-white/20"
+              className="mb-4 h-24 w-24 rounded-md object-cover shadow-xl ring-4 ring-white/20"
             />
           ) : (
-            <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-2xl bg-white/20 shadow-xl">
+            <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-md bg-white/20 shadow-xl">
               <span className="material-symbols-outlined text-5xl text-white">emoji_events</span>
             </div>
           )}

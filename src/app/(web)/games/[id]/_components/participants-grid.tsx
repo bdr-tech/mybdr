@@ -24,7 +24,7 @@ export function ParticipantsGrid({ participants, maxParticipants }: Participants
   const emptySlots = max > 0 ? Math.min(max - participants.length, 6) : 0;
 
   return (
-    <section className="bg-[var(--color-card)] p-6 rounded-xl border border-[var(--color-border)] shadow-sm">
+    <section className="bg-[var(--color-card)] p-6 rounded-md border border-[var(--color-border)] shadow-sm">
       {/* 제목 + 현재/최대 인원 */}
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-[var(--color-accent)] dark:text-[var(--color-game-guest)] font-bold text-xl">

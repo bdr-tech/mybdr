@@ -4,7 +4,7 @@ import { useState } from "react";
 import { PlaceAutocomplete, type PlaceSelection } from "@/components/shared/place-autocomplete";
 
 const inputCls =
-  "w-full rounded-xl border-none bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30";
+  "w-full rounded-md border-none bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30";
 const labelCls = "mb-1 block text-xs font-medium text-[var(--color-text-muted)]";
 
 // 경기장 정보 타입 (복수 경기장 지원)
@@ -114,7 +114,7 @@ export function ScheduleForm({ data, onChange }: Props) {
           {places.map((place, i) => (
             <div
               key={i}
-              className="flex items-center gap-3 rounded-xl p-3"
+              className="flex items-center gap-3 rounded-md p-3"
               style={{ backgroundColor: "var(--color-surface)" }}
             >
               <span className="material-symbols-outlined text-lg" style={{ color: "var(--color-primary)" }}>location_on</span>

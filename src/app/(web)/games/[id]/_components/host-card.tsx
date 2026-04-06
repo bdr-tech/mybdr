@@ -7,7 +7,7 @@ interface HostCardProps {
 
 export function HostCard({ organizerName }: HostCardProps) {
   return (
-    <div className="bg-[var(--color-accent)] p-6 rounded-xl text-white">
+    <div className="bg-[var(--color-accent)] p-6 rounded-md text-white">
       <div className="flex items-center gap-4 mb-4">
         {/* 호스트 아바타 placeholder (DB에 이미지 없으므로 이니셜 표시) */}
         <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/20 flex items-center justify-center text-white font-bold text-lg">

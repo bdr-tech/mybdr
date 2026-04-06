@@ -1,16 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
-
-/* Space Grotesk: Kinetic Pulse 헤드라인 폰트
-   - 한글 미지원이므로 Pretendard가 fallback으로 동작
-   - CSS 변수 --font-heading에 연결됨 */
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-heading",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://mybdr.kr"),
@@ -66,7 +55,7 @@ export default function RootLayout({
             __html: `
 (function(){
   var fonts = [
-    'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css',
+    'https://cdn.jsdelivr.net/gh/sunn-us/SUIT/fonts/variable/woff2/SUIT-Variable.css',
     'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap'
   ];
   fonts.forEach(function(href){
@@ -83,7 +72,7 @@ export default function RootLayout({
         />
         {/* JS 비활성화 환경 폴백 */}
         <noscript>
-          <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
+          <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sunn-us/SUIT/fonts/variable/woff2/SUIT-Variable.css" />
           <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap" />
         </noscript>
         {/* 테마 초기화: dark/light 클래스를 html에 추가 (FOUC 방지) */}
@@ -93,7 +82,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${spaceGrotesk.variable} antialiased`}>{children}</body>
+      <body className="antialiased font-sans">{children}</body>
     </html>
   );
 }

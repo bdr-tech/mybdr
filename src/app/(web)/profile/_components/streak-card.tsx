@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * 연속 출석 스트릭 카드
+ * 연속 출석 연속 출석 카드
  *
  * 불꽃 아이콘 + 연속 일수를 크게 표시한다.
  * 7일 달성 시 보너스 XP 안내 메시지를 보여준다.
@@ -14,7 +14,7 @@ interface StreakCardProps {
 }
 
 export function StreakCard({ streak }: StreakCardProps) {
-  // 스트릭이 0이면 시작 유도 메시지
+  // 연속 출석이 0이면 시작 유도 메시지
   if (streak === 0) {
     return (
       <TossCard>
@@ -47,7 +47,7 @@ export function StreakCard({ streak }: StreakCardProps) {
   return (
     <TossCard>
       <div className="flex items-center gap-3">
-        {/* 불꽃 아이콘: 스트릭이 높을수록 강조 */}
+        {/* 불꽃 아이콘: 연속 출석이 높을수록 강조 */}
         <div
           className="flex h-12 w-12 items-center justify-center rounded-full"
           style={{

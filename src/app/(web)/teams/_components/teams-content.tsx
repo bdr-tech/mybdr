@@ -180,7 +180,7 @@ function Pagination({
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="w-10 h-10 flex items-center justify-center rounded-xl transition-colors disabled:opacity-30"
+        className="w-10 h-10 flex items-center justify-center rounded-md transition-colors disabled:opacity-30"
         style={{
           backgroundColor: "var(--color-surface)",
           color: "var(--color-text-muted)",
@@ -202,7 +202,7 @@ function Pagination({
           <button
             key={page}
             onClick={() => onPageChange(page)}
-            className="w-10 h-10 flex items-center justify-center rounded-xl font-bold text-sm transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-md font-bold text-sm transition-colors"
             style={
               page === currentPage
                 ? {
@@ -223,7 +223,7 @@ function Pagination({
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="w-10 h-10 flex items-center justify-center rounded-xl transition-colors disabled:opacity-30"
+        className="w-10 h-10 flex items-center justify-center rounded-md transition-colors disabled:opacity-30"
         style={{
           backgroundColor: "var(--color-surface)",
           color: "var(--color-text-muted)",
@@ -414,7 +414,7 @@ export function TeamsContent({
                 {/* 빈 상태 액션 버튼: 팀 만들기 */}
                 <Link
                   href="/teams/new"
-                  className="inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold text-white transition-all active:scale-[0.97]"
+                  className="inline-flex items-center gap-1.5 rounded-md px-5 py-2.5 text-sm font-bold text-white transition-all active:scale-[0.97]"
                   style={{ backgroundColor: "var(--color-primary)" }}
                 >
                   <span className="material-symbols-outlined text-base">add</span>
@@ -427,7 +427,7 @@ export function TeamsContent({
           {/* 새 팀 만들기: 토스 스타일 하단 CTA */}
           <Link href="/teams/new" className="block mt-6">
             <div
-              className="flex items-center justify-center gap-2 py-4 rounded-2xl border-2 border-dashed transition-all hover:border-[var(--color-primary)] hover:bg-[var(--color-surface)]"
+              className="flex items-center justify-center gap-2 py-4 rounded-md border-2 border-dashed transition-all hover:border-[var(--color-primary)] hover:bg-[var(--color-surface)]"
               style={{ borderColor: "var(--color-border)" }}
             >
               <span className="material-symbols-outlined text-xl text-[var(--color-text-muted)]">

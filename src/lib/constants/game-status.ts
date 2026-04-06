@@ -20,10 +20,27 @@ export const STATUS_LABEL: Record<number, { text: string; color: string }> = {
   4: { text: "취소",   color: "var(--color-status-cancelled)" },
 };
 
-// 실력 수준별 뱃지 (초급~상급)
+// 실력 수준별 뱃지 (7단계: 최하~최상)
+// 기존 4단계(beginner 등)도 하위 호환을 위해 유지
 export const SKILL_BADGE: Record<string, { label: string; color: string; bg: string }> = {
+  // --- 신규 7단계 ---
+  lowest:    { label: "최하", color: "var(--color-badge-green)",  bg: "rgba(22,163,74,0.10)" },
+  low:       { label: "하",   color: "var(--color-badge-green)",  bg: "rgba(22,163,74,0.10)" },
+  mid_low:   { label: "중하", color: "var(--color-badge-blue)",   bg: "rgba(37,99,235,0.10)" },
+  mid:       { label: "중",   color: "var(--color-badge-blue)",   bg: "rgba(37,99,235,0.10)" },
+  mid_high:  { label: "중상", color: "var(--color-badge-amber)",  bg: "rgba(217,119,6,0.10)" },
+  high:      { label: "상",   color: "var(--color-badge-amber)",  bg: "rgba(217,119,6,0.10)" },
+  highest:   { label: "최상", color: "var(--color-badge-red)",    bg: "rgba(220,38,38,0.10)" },
+  // --- 특수값 ---
+  all:       { label: "전체", color: "var(--color-badge-gray)",   bg: "rgba(107,114,128,0.10)" },
+  // --- 하위 호환 (기존 4단계 → 신규 매핑) ---
   beginner:               { label: "초급",   color: "var(--color-badge-green)", bg: "rgba(22,163,74,0.10)" },
   intermediate:           { label: "중급",   color: "var(--color-badge-blue)",  bg: "rgba(37,99,235,0.10)" },
   intermediate_advanced:  { label: "중상",   color: "var(--color-badge-amber)", bg: "rgba(217,119,6,0.10)" },
   advanced:               { label: "상급",   color: "var(--color-badge-red)",   bg: "rgba(220,38,38,0.10)" },
 };
+
+// 실력 라벨 전용 (카드/상세에서 문자열만 필요할 때 사용)
+export const SKILL_LABEL: Record<string, string> = Object.fromEntries(
+  Object.entries(SKILL_BADGE).map(([k, v]) => [k, v.label])
+);

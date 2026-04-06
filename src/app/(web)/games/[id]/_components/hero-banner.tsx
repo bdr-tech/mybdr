@@ -31,7 +31,7 @@ export function HeroBanner({ game }: HeroBannerProps) {
   const badge = STATUS_BADGE[game.status] ?? STATUS_BADGE[1];
 
   return (
-    <section className="relative h-64 md:h-[400px] rounded-xl overflow-hidden shadow-lg group">
+    <section className="relative h-64 md:h-[400px] rounded-md overflow-hidden shadow-lg group">
       {/* 경기장 placeholder 이미지 - DB에 이미지 필드가 없으므로 그라디언트 배경 사용 */}
       <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-surface-lowest)] transition-transform duration-700 group-hover:scale-105" />
 

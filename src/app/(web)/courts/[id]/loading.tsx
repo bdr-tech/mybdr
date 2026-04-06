@@ -3,7 +3,7 @@ export default function CourtDetailLoading() {
   return (
     <div className="space-y-6 animate-pulse">
       {/* 히어로 이미지 스켈레톤 */}
-      <div className="h-48 md:h-64 rounded-xl bg-[var(--color-border)]" />
+      <div className="h-48 md:h-64 rounded-md bg-[var(--color-border)]" />
 
       {/* 코트 이름 + 주소 */}
       <div className="space-y-2">
@@ -20,15 +20,15 @@ export default function CourtDetailLoading() {
 
       {/* 정보 카드 그리드 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="h-40 rounded-xl bg-[var(--color-border)]" />
-        <div className="h-40 rounded-xl bg-[var(--color-border)]" />
+        <div className="h-40 rounded-md bg-[var(--color-border)]" />
+        <div className="h-40 rounded-md bg-[var(--color-border)]" />
       </div>
 
       {/* 리뷰 섹션 스켈레톤 */}
       <div className="space-y-3">
         <div className="h-6 w-24 rounded bg-[var(--color-border)]" />
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-20 rounded-xl bg-[var(--color-border)]" />
+          <div key={i} className="h-20 rounded-md bg-[var(--color-border)]" />
         ))}
       </div>
     </div>

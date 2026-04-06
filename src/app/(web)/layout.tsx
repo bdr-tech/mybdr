@@ -22,6 +22,11 @@ const SlideMenu = dynamic(
   () => import("@/components/shared/slide-menu").then((m) => m.SlideMenu),
   { ssr: false }
 );
+/* ProfileDropdown: 헤더 우측 프로필 아이콘 → 드롭다운 메뉴 */
+const ProfileDropdown = dynamic(
+  () => import("@/components/shared/profile-dropdown").then((m) => m.ProfileDropdown),
+  { ssr: false }
+);
 const ThemeToggle = dynamic(
   () => import("@/components/shared/theme-toggle").then((m) => m.ThemeToggle),
   { ssr: false }
@@ -53,7 +58,6 @@ const sideNavItems = [
   { href: "/courts", label: "코트", icon: "location_on" },
   { href: "/rankings", label: "랭킹", icon: "leaderboard" },
   { href: "/community", label: "커뮤니티", icon: "forum" },
-  { href: "/notifications", label: "알림", icon: "notifications" },
 ];
 
 const bottomNavItems = [
@@ -65,7 +69,7 @@ const bottomNavItems = [
 ];
 
 /* ============================================================
- * PreferFilterToggleButton — 헤더 우측 선호 필터 토글 아이콘 버튼
+ * PreferFilterToggleButton — 헤더 우측 맞춤 필터 토글 아이콘 버튼
  * ON: 파란색 tune 아이콘 / OFF: 회색 tune 아이콘
  * 클릭 시 usePreferFilter()의 togglePreferFilter() 호출
  * ============================================================ */
@@ -251,14 +255,14 @@ function SearchAutocomplete() {
           onKeyDown={(e) => { if (e.key === "Escape") setIsOpen(false); }}
           placeholder="경기, 대회, 팀 검색..."
           autoComplete="off"
-          className="w-full rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none"
+          className="w-full rounded-md py-2.5 pl-10 pr-4 text-sm outline-none"
           style={{ backgroundColor: "var(--color-surface)", color: "var(--color-text-primary)" }}
         />
 
         {/* 최근 검색어 드롭다운: 입력이 비어있고 검색 결과가 없을 때만 표시 */}
         {showRecent && !isOpen && recentSearches.length > 0 && (
           <div
-            className="absolute left-0 top-full mt-2 w-full overflow-hidden rounded-xl border shadow-xl"
+            className="absolute left-0 top-full mt-2 w-full overflow-hidden rounded-md border shadow-xl"
             style={{ backgroundColor: "var(--color-card)", borderColor: "var(--color-border)", zIndex: 100 }}
           >
             <div className="flex items-center justify-between px-4 py-2" style={{ backgroundColor: "var(--color-surface)" }}>
@@ -293,7 +297,7 @@ function SearchAutocomplete() {
         {/* 자동완성 드롭다운 */}
         {isOpen && categories.length > 0 && (
           <div
-            className="absolute left-0 top-full mt-2 w-full overflow-hidden rounded-xl border shadow-xl"
+            className="absolute left-0 top-full mt-2 w-full overflow-hidden rounded-md border shadow-xl"
             style={{ backgroundColor: "var(--color-card)", borderColor: "var(--color-border)", zIndex: 100 }}
           >
             {categories.map((cat) => (
@@ -348,7 +352,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { setLoggedIn } = usePreferFilter();
-  const [user, setUser] = useState<{ name: string; role: string; prefer_filter_enabled?: boolean } | null>(null);
+  const [user, setUser] = useState<{ name: string; role: string; prefer_filter_enabled?: boolean; hidden_menus?: string[] } | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   /* 슬라이드 메뉴 열림/닫힘 상태 ("더보기" 탭용) */
   const [slideMenuOpen, setSlideMenuOpen] = useState(false);
@@ -364,7 +368,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
         .catch(() => null),
     ]).then(([userData, notifData]) => {
       setUser(userData);
-      // DB의 선호 설정 여부를 preferFilter 기본값으로 전달
+      // DB의 맞춤 설정 여부를 preferFilter 기본값으로 전달
       setLoggedIn(!!userData, userData?.prefer_filter_enabled ?? false);
       if (userData && notifData) setUnreadCount(notifData.unreadCount ?? 0);
     });
@@ -414,16 +418,18 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
           <SearchAutocomplete />
         </div>
 
-        {/* 메인 네비게이션 */}
+        {/* 메인 네비게이션 — hidden_menus에 포함된 메뉴는 숨김 */}
         <nav className="flex-1 overflow-y-auto px-3 space-y-1">
-          {sideNavItems.map(item => {
+          {sideNavItems
+            .filter(item => !(user?.hidden_menus ?? []).includes(item.href))
+            .map(item => {
             const active = isActive(item.href);
             return (
               <Link key={item.href} href={item.href} prefetch={true}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
+                className={`flex items-center gap-3 px-4 py-3 text-sm font-black uppercase tracking-wide transition-all rounded-none ${
                   active
-                    ? "bg-[var(--color-surface)] text-[var(--color-primary)] font-semibold"
-                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]"
+                    ? "bg-[var(--color-surface)] text-[var(--color-primary)] border-l-4 border-[var(--color-primary)]"
+                    : "text-[var(--color-text-secondary)] border-l-4 border-transparent hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]"
                 }`}
               >
                 <span className="material-symbols-outlined text-xl"
@@ -435,74 +441,17 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* SNS 링크: YouTube + Instagram (사이드 네비 하단) */}
-        <div className="px-4 pb-2 flex items-center gap-3">
-          <a
-            href="https://www.youtube.com/@BDRBASKET"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--color-surface)]"
-            style={{ color: "var(--color-text-muted)" }}
-            aria-label="BDR YouTube"
-          >
-            <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
-          </a>
-          <a
-            href="https://www.instagram.com/bdr_basket"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--color-surface)]"
-            style={{ color: "var(--color-text-muted)" }}
-            aria-label="BDR Instagram"
-          >
-            <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>photo_camera</span>
-          </a>
-        </div>
-
-        {/* 하단: 역할별 관리 링크 + 프로필 + 로그아웃 */}
-        <div className="border-t border-[var(--color-border)] p-4 space-y-2">
-          {/* 역할별 관리 링크: 해당 역할을 가진 유저에게만 표시 */}
-          {user?.role === "super_admin" && (
-            <Link href="/admin"
-              className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-[var(--color-primary)] hover:bg-[var(--color-surface)] transition-colors">
-              <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
-              관리자
-            </Link>
-          )}
-          {(user?.role === "tournament_admin" || user?.role === "super_admin") && (
-            <Link href="/tournament-admin"
-              className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors">
-              <span className="material-symbols-outlined text-lg">emoji_events</span>
-              대회 관리
-            </Link>
-          )}
-          {user && (
-            <Link href="/partner-admin"
-              className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors">
-              <span className="material-symbols-outlined text-lg">storefront</span>
-              파트너 관리
-            </Link>
-          )}
+        {/* 하단: 관리 링크 (로그인) 또는 로그인 버튼 (비로그인) */}
+        <div className="border-t border-[var(--color-border)] p-3 space-y-2">
           {user ? (
-            <>
-              <Link href="/profile" className="flex items-center gap-3 px-2 py-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-primary)] text-sm font-bold text-white">
-                  {user.name?.trim()?.[0]?.toUpperCase() ?? "U"}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>{user.name || "사용자"}</p>
-                  <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>프로필 보기</p>
-                </div>
-              </Link>
-              <button onClick={async () => { await fetch("/api/web/logout", { method: "POST", credentials: "include" }); window.location.href = "/login"; }}
-                className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] transition-colors"
-              >
-                <span className="material-symbols-outlined text-lg">logout</span>
-                로그아웃
-              </button>
-            </>
+            /* 관리 링크만 표시 (프로필은 헤더 드롭다운으로 이동) */
+            <Link href="/admin"
+              className="flex items-center gap-3 px-3 py-2.5 text-sm font-black uppercase tracking-wide text-[var(--color-primary)] hover:bg-[var(--color-surface)] transition-colors border-l-4 border-transparent hover:border-[var(--color-primary)]">
+              <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
+              ADMIN
+            </Link>
           ) : (
-            <Link href="/login" className="block w-full rounded-xl bg-[var(--color-primary)] py-3 text-center text-sm font-bold text-white">
+            <Link href="/login" className="block w-full bg-[var(--color-primary)] py-3 text-center text-sm font-black uppercase tracking-wider text-white rounded-sm shadow-glow-primary hover:bg-[var(--color-primary-hover)] transition-colors">
               로그인
             </Link>
           )}
@@ -529,7 +478,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-1 shrink-0 ml-auto">
           <ThemeToggle />
           <TextSizeToggle />
-          {/* 선호 필터 토글: 로그인 시에만 표시, ON=파란 아이콘 / OFF=회색 아이콘 */}
+          {/* 맞춤 필터 토글: 로그인 시에만 표시, ON=파란 아이콘 / OFF=회색 아이콘 */}
           {user && <PreferFilterToggleButton />}
           {/* 모바일 검색 아이콘: PC에서는 사이드네비 검색창이 있으므로 lg 이하에서만 표시 */}
           <Link
@@ -551,18 +500,13 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
               )}
             </Link>
           )}
-          {/* 프로필 (PC에서도 유지) */}
+          {/* 프로필: 로그인 시 드롭다운 메뉴, 비로그인 시 로그인 버튼 */}
           {user ? (
-            <Link
-              href="/profile"
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-bold text-white"
-            >
-              {user.name?.trim() ? user.name.trim()[0].toUpperCase() : "U"}
-            </Link>
+            <ProfileDropdown name={user.name} />
           ) : (
             <Link
               href="/login"
-              className="rounded-lg bg-[var(--color-primary)] px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-primary-hover)]"
+              className="bg-[var(--color-primary)] px-3 py-1.5 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-[var(--color-primary-hover)] rounded-sm shadow-glow-primary"
             >
               로그인
             </Link>
@@ -625,7 +569,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
                 className="flex flex-col items-center justify-center gap-0.5 text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-secondary)]"
               >
                 <span className="material-symbols-outlined text-2xl">menu</span>
-                <span className="text-[10px] font-medium">{item.label}</span>
+                <span className="text-[9px] font-black uppercase tracking-widest">{item.label}</span>
               </button>
             );
           }
@@ -648,19 +592,21 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
               >
                 {item.icon}
               </span>
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span className="text-[9px] font-black uppercase tracking-widest">{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
       {/* 슬라이드 메뉴: "더보기" 탭에서 열림 (랭킹, 커뮤니티, 프로필, 설정 등) */}
+      {/* 슬라이드 메뉴에도 hidden_menus 전달하여 동일하게 필터링 */}
       <SlideMenu
         open={slideMenuOpen}
         onClose={() => setSlideMenuOpen(false)}
         isLoggedIn={!!user}
         role={user?.role}
         name={user?.name}
+        hiddenMenus={user?.hidden_menus}
       />
     </div>
   );

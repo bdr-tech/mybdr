@@ -20,7 +20,7 @@ export function RecentGamesSection({ games }: { games: Game[] }) {
 
   return (
     <div
-      className="rounded-xl border overflow-hidden"
+      className="rounded-md border overflow-hidden"
       style={{
         borderColor: "var(--color-border)",
         backgroundColor: "var(--color-surface)",

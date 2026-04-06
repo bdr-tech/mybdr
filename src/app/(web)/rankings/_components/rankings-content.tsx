@@ -274,7 +274,7 @@ function Pagination({
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="w-10 h-10 flex items-center justify-center rounded-xl transition-colors disabled:opacity-30"
+        className="w-10 h-10 flex items-center justify-center rounded-md transition-colors disabled:opacity-30"
         style={{ backgroundColor: "var(--color-surface)", color: "var(--color-text-muted)" }}
       >
         <span className="material-symbols-outlined">chevron_left</span>
@@ -289,7 +289,7 @@ function Pagination({
           <button
             key={page}
             onClick={() => onPageChange(page)}
-            className="w-10 h-10 flex items-center justify-center rounded-xl font-bold text-sm transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-md font-bold text-sm transition-colors"
             style={
               page === currentPage
                 ? { backgroundColor: "var(--color-primary)", color: "#FFFFFF" }
@@ -304,7 +304,7 @@ function Pagination({
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="w-10 h-10 flex items-center justify-center rounded-xl transition-colors disabled:opacity-30"
+        className="w-10 h-10 flex items-center justify-center rounded-md transition-colors disabled:opacity-30"
         style={{ backgroundColor: "var(--color-surface)", color: "var(--color-text-muted)" }}
       >
         <span className="material-symbols-outlined">chevron_right</span>

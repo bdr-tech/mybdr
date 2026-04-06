@@ -14,7 +14,7 @@ export default function UserDetailLoading() {
       {/* 스탯 카드 */}
       <div className="grid grid-cols-3 gap-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-24 rounded-xl bg-[var(--color-border)]" />
+          <div key={i} className="h-24 rounded-md bg-[var(--color-border)]" />
         ))}
       </div>
 
@@ -22,7 +22,7 @@ export default function UserDetailLoading() {
       <div className="space-y-3">
         <div className="h-6 w-28 rounded bg-[var(--color-border)]" />
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-16 rounded-xl bg-[var(--color-border)]" />
+          <div key={i} className="h-16 rounded-md bg-[var(--color-border)]" />
         ))}
       </div>
     </div>

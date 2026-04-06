@@ -157,7 +157,7 @@ export const GET = withWebAuth(async (ctx: WebAuthContext) => {
         .count({ where: { user_id: userId, joined_at: { gte: days30ago } } })
         .catch(() => 0),
 
-      // 10. 선호 설정 — 유저의 preferred_regions, preferred_days
+      // 10. 맞춤 설정 — 유저의 preferred_regions, preferred_days
       prisma.user
         .findUnique({
           where: { id: userId },
@@ -194,7 +194,7 @@ export const GET = withWebAuth(async (ctx: WebAuthContext) => {
     else dominantType = "pickup";
   }
 
-  // 선호 지역 파싱 (Json 타입이므로 배열로 캐스팅)
+  // 맞춤 지역 파싱 (Json 타입이므로 배열로 캐스팅)
   const preferredRegions = Array.isArray(userPrefs?.preferred_regions)
     ? (userPrefs.preferred_regions as string[])
     : [];
@@ -269,7 +269,7 @@ export const GET = withWebAuth(async (ctx: WebAuthContext) => {
       pickupCount: pCount,
     },
 
-    // 선호 설정
+    // 맞춤 설정
     preferredRegions,
     preferredDays,
   });

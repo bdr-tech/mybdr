@@ -7,7 +7,7 @@
  * "완성하기" 클릭 시 /profile/complete로 이동.
  * X 버튼 클릭 시 localStorage에 저장하여 24시간 동안 숨긴다.
  *
- * 토스 스타일: primary 배경 + 흰 텍스트 + rounded-xl
+ * 토스 스타일: primary 배경 + 흰 텍스트 + rounded-md
  */
 
 import { useState, useEffect } from "react";
@@ -49,27 +49,27 @@ export function ProfileCompletionBanner({ userName }: ProfileCompletionBannerPro
 
   return (
     <div
-      className="mb-4 flex items-center justify-between rounded-xl px-4 py-3"
+      className="mb-4 flex items-center justify-between rounded-md px-4 py-3 shadow-glow-primary"
       style={{ backgroundColor: "var(--color-primary)" }}
     >
       {/* 좌측: 안내 텍스트 + 완성하기 링크 */}
       <div className="flex items-center gap-3 text-white">
         <span className="material-symbols-outlined text-xl">person</span>
-        <span className="text-sm font-medium">
+        <span className="text-[12px] font-black uppercase tracking-wide">
           프로필을 완성하고 경기에 참여하세요
         </span>
         <Link
           href="/profile/complete"
-          className="ml-1 rounded-lg px-3 py-1 text-sm font-bold text-white underline underline-offset-2 transition-opacity hover:opacity-80"
+          className="ml-1 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-primary bg-white rounded-sm transition-opacity hover:opacity-80"
         >
-          완성하기 &rarr;
+          완성하기
         </Link>
       </div>
 
       {/* 우측: 닫기 버튼 (24시간 안 보기) */}
       <button
         onClick={handleDismiss}
-        className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+        className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-sm text-white/80 transition-colors hover:bg-white/20 hover:text-white"
         aria-label="배너 닫기"
       >
         <span className="material-symbols-outlined text-lg">close</span>

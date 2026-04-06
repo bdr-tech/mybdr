@@ -419,7 +419,7 @@ function SearchSection({
 }) {
   return (
     <div
-      className="rounded-2xl p-5"
+      className="rounded-md p-5"
       style={{
         backgroundColor: "var(--color-card)",
         boxShadow: "var(--shadow-card)",

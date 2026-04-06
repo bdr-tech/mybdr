@@ -55,7 +55,7 @@ function FeedAdCard({ ad }: { ad: AdData }) {
       href={ad.link_url}
       target="_blank"
       rel="noopener noreferrer sponsored"
-      className="min-w-[280px] snap-start rounded-xl border p-5 flex flex-col justify-between shrink-0 transition-all hover:shadow-md active:scale-[0.98]"
+      className="min-w-[280px] snap-start rounded-md border p-5 flex flex-col justify-between shrink-0 transition-all hover:shadow-md active:scale-[0.98]"
       style={{
         backgroundColor: "var(--color-card)",
         borderColor: "var(--color-border)",
@@ -99,7 +99,7 @@ function SidebarAdCard({ ad }: { ad: AdData }) {
       href={ad.link_url}
       target="_blank"
       rel="noopener noreferrer sponsored"
-      className="block rounded-xl border p-4 transition-all hover:shadow-md"
+      className="block rounded-md border p-4 transition-all hover:shadow-md"
       style={{
         backgroundColor: "var(--color-card)",
         borderColor: "var(--color-border)",
@@ -146,7 +146,7 @@ function ListAdCard({ ad }: { ad: AdData }) {
       href={ad.link_url}
       target="_blank"
       rel="noopener noreferrer sponsored"
-      className="block rounded-xl border p-4 transition-all hover:shadow-md"
+      className="block rounded-md border p-4 transition-all hover:shadow-md"
       style={{
         backgroundColor: "var(--color-card)",
         borderColor: "var(--color-border)",

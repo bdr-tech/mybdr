@@ -32,7 +32,7 @@ export default function TeamsLoading() {
             <div className="px-6 pb-6 pt-4 space-y-4">
               {/* 팀 아이콘 */}
               <div className="flex justify-center -mt-12">
-                <Skeleton className="h-16 w-16 rounded-xl" />
+                <Skeleton className="h-16 w-16 rounded-md" />
               </div>
               {/* 팀명 + 지역 */}
               <div className="flex flex-col items-center gap-2">

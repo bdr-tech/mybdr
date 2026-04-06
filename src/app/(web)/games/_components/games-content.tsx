@@ -79,7 +79,7 @@ function GamesGridSkeleton() {
   return (
     <div className="space-y-6">
       {Array.from({ length: 6 }).map((_, i) => (
-        <Skeleton key={i} className="h-20 rounded-2xl" />
+        <Skeleton key={i} className="h-20 rounded-md" />
       ))}
     </div>
   );
@@ -105,12 +105,12 @@ function GameCard({ game, photoUrl }: { game: GameFromApi; photoUrl?: string | n
     <Link href={href}>
       {/* 토스 카드: 둥근 모서리(16px) + 가벼운 그림자 + 가로 배치 */}
       <div
-        className={`group flex gap-3.5 rounded-2xl p-3.5 bg-[var(--color-card)] transition-all duration-200 hover:scale-[1.01] hover:shadow-[var(--shadow-elevated)] ${isFullyBooked ? "opacity-60" : ""}`}
+        className={`group flex gap-3.5 rounded-md p-3.5 bg-[var(--color-card)] transition-all duration-200 hover:scale-[1.01] hover:shadow-[var(--shadow-elevated)] ${isFullyBooked ? "opacity-60" : ""}`}
         style={{ boxShadow: "var(--shadow-card)" }}
       >
         {/* 좌: 이미지/아이콘 영역 (정사각형 80px, 둥근 모서리) */}
         <div
-          className={`relative w-20 h-20 shrink-0 rounded-xl overflow-hidden flex items-center justify-center bg-cover bg-center ${photoUrl === undefined ? "animate-pulse bg-[var(--color-surface)]" : ""}`}
+          className={`relative w-20 h-20 shrink-0 rounded-md overflow-hidden flex items-center justify-center bg-cover bg-center ${photoUrl === undefined ? "animate-pulse bg-[var(--color-surface)]" : ""}`}
           style={photoUrl
             ? { backgroundImage: `url(${photoUrl})` }
             : photoUrl === null ? { background: badge.gradient } : undefined
@@ -317,7 +317,7 @@ export function GamesContent({
                 {/* 빈 상태 액션 버튼: 경기 만들기 */}
                 <Link
                   href="/games/new"
-                  className="inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold text-white transition-all active:scale-[0.97]"
+                  className="inline-flex items-center gap-1.5 rounded-md px-5 py-2.5 text-sm font-bold text-white transition-all active:scale-[0.97]"
                   style={{ backgroundColor: "var(--color-primary)" }}
                 >
                   <span className="material-symbols-outlined text-base">add</span>

@@ -20,6 +20,10 @@ import { TOURNAMENT_STATUS_LABEL } from "@/lib/constants/tournament-status";
 import { CATEGORIES } from "@/lib/constants/divisions";
 import { usePreferFilter } from "@/contexts/prefer-filter-context";
 import { formatShortDate } from "@/lib/utils/format-date";
+// 캘린더/주간 뷰 관련 import
+import { ViewToggle, type ViewMode } from "./view-toggle";
+import { CalendarView } from "./calendar-view";
+import { WeekView } from "./week-view";
 
 // batch API fetcher (기존과 동일)
 const batchPhotoFetcher = (key: string) => {
@@ -90,7 +94,7 @@ function TournamentGridSkeleton() {
   return (
     <div className="space-y-6">
       {Array.from({ length: 6 }).map((_, i) => (
-        <Skeleton key={i} className="h-24 rounded-2xl" />
+        <Skeleton key={i} className="h-24 rounded-md" />
       ))}
     </div>
   );
@@ -122,12 +126,12 @@ function TournamentCard({ tournament: t, photoUrl }: { tournament: TournamentFro
     <Link href={`/tournaments/${t.id}`} prefetch={true}>
       {/* 토스 카드: 둥근 모서리 + 가벼운 그림자 + 가로 배치 */}
       <div
-        className={`group flex gap-3.5 rounded-2xl p-3.5 bg-[var(--color-card)] transition-all duration-200 hover:scale-[1.01] hover:shadow-[var(--shadow-elevated)] ${isFull ? "opacity-60" : ""}`}
+        className={`group flex gap-3.5 rounded-md p-3.5 bg-[var(--color-card)] transition-all duration-200 hover:scale-[1.01] hover:shadow-[var(--shadow-elevated)] ${isFull ? "opacity-60" : ""}`}
         style={{ boxShadow: "var(--shadow-card)" }}
       >
         {/* 좌: 이미지/아이콘 (정사각형 80px) */}
         <div
-          className={`relative w-20 h-20 shrink-0 rounded-xl overflow-hidden flex items-center justify-center bg-cover bg-center ${photoUrl === undefined ? "animate-pulse bg-[var(--color-surface)]" : ""}`}
+          className={`relative w-20 h-20 shrink-0 rounded-md overflow-hidden flex items-center justify-center bg-cover bg-center ${photoUrl === undefined ? "animate-pulse bg-[var(--color-surface)]" : ""}`}
           style={photoUrl
             ? { backgroundImage: `url(${photoUrl})` }
             : photoUrl === null ? { background: formatStyle.gradient } : undefined
@@ -234,7 +238,7 @@ function Pagination({
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="w-10 h-10 flex items-center justify-center rounded-xl transition-colors disabled:opacity-30 bg-[var(--color-surface)] text-[var(--color-text-muted)]"
+        className="w-10 h-10 flex items-center justify-center rounded-md transition-colors disabled:opacity-30 bg-[var(--color-surface)] text-[var(--color-text-muted)]"
       >
         <span className="material-symbols-outlined">chevron_left</span>
       </button>
@@ -246,7 +250,7 @@ function Pagination({
           <button
             key={page}
             onClick={() => onPageChange(page)}
-            className={`w-10 h-10 flex items-center justify-center rounded-xl font-bold text-sm transition-colors ${
+            className={`w-10 h-10 flex items-center justify-center rounded-md font-bold text-sm transition-colors ${
               page === currentPage
                 ? "bg-[var(--color-primary)] text-white"
                 : "bg-[var(--color-surface)] text-[var(--color-text-secondary)]"
@@ -260,7 +264,7 @@ function Pagination({
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="w-10 h-10 flex items-center justify-center rounded-xl transition-colors disabled:opacity-30 bg-[var(--color-surface)] text-[var(--color-text-muted)]"
+        className="w-10 h-10 flex items-center justify-center rounded-md transition-colors disabled:opacity-30 bg-[var(--color-surface)] text-[var(--color-text-muted)]"
       >
         <span className="material-symbols-outlined">chevron_right</span>
       </button>
@@ -288,6 +292,9 @@ export function TournamentsContent({
   const searchParams = useSearchParams();
   const [tournaments, setTournaments] = useState<TournamentFromApi[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // 뷰 모드: 리스트 / 월간 캘린더 / 주간 (기본값: 리스트)
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   // 필터 상태 (기존과 동일)
   const [searchQuery, setSearchQuery] = useState("");
@@ -417,10 +424,12 @@ export function TournamentsContent({
     <>
       {/* 헤더: 제목 + 필터 */}
       <div className="mb-6">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-xl font-bold text-[var(--color-text-primary)] shrink-0">
             대회 찾기
           </h1>
+          {/* 뷰 모드 전환: 리스트/월간/주간 */}
+          <ViewToggle current={viewMode} onChange={setViewMode} />
           <div className="flex-1" />
           <TournamentsFilterComponent
             onSearchChange={handleSearchChange}
@@ -433,96 +442,110 @@ export function TournamentsContent({
           />
         </div>
 
-        {/* 상태 탭: 4종 통일 (준비중/접수중/진행중/종료) */}
-        <div className="mt-4 flex gap-1 border-b border-[var(--color-border)]">
-          {([
-            { key: "draft" as const, label: "준비중" },
-            { key: "registration" as const, label: "접수중" },
-            { key: "in_progress" as const, label: "진행중" },
-            { key: "completed" as const, label: "종료" },
-          ]).map((tab) => {
-            const isActive = statusTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setStatusTab(tab.key)}
-                className="relative px-4 py-2.5 text-sm font-medium transition-colors"
-                style={{
-                  color: isActive ? "var(--color-text-primary)" : "var(--color-text-muted)",
-                  fontWeight: isActive ? 700 : 500,
-                }}
-              >
-                {tab.label}
-                {/* 토스 스타일 밑줄: primary 대신 진한 텍스트 색상 */}
-                {isActive && (
-                  <span
-                    className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
-                    style={{ backgroundColor: "var(--color-text-primary)" }}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
+        {/* 상태 탭: 리스트 뷰에서만 표시 */}
+        {viewMode === "list" && (
+          <div className="mt-4 flex gap-1 border-b border-[var(--color-border)]">
+            {([
+              { key: "draft" as const, label: "준비중" },
+              { key: "registration" as const, label: "접수중" },
+              { key: "in_progress" as const, label: "진행중" },
+              { key: "completed" as const, label: "종료" },
+            ]).map((tab) => {
+              const isActive = statusTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setStatusTab(tab.key)}
+                  className="relative px-4 py-2.5 text-sm font-medium transition-colors"
+                  style={{
+                    color: isActive ? "var(--color-text-primary)" : "var(--color-text-muted)",
+                    fontWeight: isActive ? 700 : 500,
+                  }}
+                >
+                  {tab.label}
+                  {/* 토스 스타일 밑줄: primary 대신 진한 텍스트 색상 */}
+                  {isActive && (
+                    <span
+                      className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
+                      style={{ backgroundColor: "var(--color-text-primary)" }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* 로딩 */}
-      {loading ? (
-        <TournamentGridSkeleton />
+      {/* 뷰 모드별 콘텐츠 렌더링 */}
+      {viewMode === "calendar" ? (
+        /* 월간 캘린더 뷰: 자체 API 호출, 필터만 전달 */
+        <CalendarView categoryFilter={categoryFilter} genderFilter={genderFilter} />
+      ) : viewMode === "week" ? (
+        /* 주간 뷰: 자체 API 호출, 필터만 전달 */
+        <WeekView categoryFilter={categoryFilter} genderFilter={genderFilter} />
       ) : (
+        /* 기존 리스트 뷰: 아래 코드는 기존과 100% 동일 */
         <>
-          {/* 필터 결과 카운트 */}
-          {hasFilters && (
-            <p className="mb-4 text-sm text-[var(--color-text-muted)]">
-              검색 결과{" "}
-              <span className="font-bold text-[var(--color-text-primary)]">
-                {filteredTournaments.length}개
-              </span>
-            </p>
-          )}
-
-          {/* 대회 리스트: 토스 스타일 세로 스택 */}
-          <div className="space-y-6">
-            {paginatedTournaments.map((t) => (
-              <TournamentCard
-                key={t.id}
-                tournament={t}
-                photoUrl={photoMap === undefined ? undefined : (photoMap[t.venue_name ?? t.city ?? ""] ?? null)}
-              />
-            ))}
-
-            {/* 빈 상태 + CTA */}
-            {filteredTournaments.length === 0 && (
-              <div className="py-20 text-center">
-                <span className="material-symbols-outlined text-5xl text-[var(--color-text-disabled)] mb-3 block">
-                  emoji_events
-                </span>
-                <p className="text-sm text-[var(--color-text-muted)] mb-4">
-                  {hasFilters ? "조건에 맞는 대회가 없습니다." : "등록된 대회가 없습니다."}
+          {/* 로딩 */}
+          {loading ? (
+            <TournamentGridSkeleton />
+          ) : (
+            <>
+              {/* 필터 결과 카운트 */}
+              {hasFilters && (
+                <p className="mb-4 text-sm text-[var(--color-text-muted)]">
+                  검색 결과{" "}
+                  <span className="font-bold text-[var(--color-text-primary)]">
+                    {filteredTournaments.length}개
+                  </span>
                 </p>
-                {/* 빈 상태 액션 버튼: 다른 탭 둘러보기 안내 */}
-                <Link
-                  href="/tournaments"
-                  className="inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold text-white transition-all active:scale-[0.97]"
-                  style={{ backgroundColor: "var(--color-primary)" }}
-                >
-                  <span className="material-symbols-outlined text-base">search</span>
-                  대회 찾아보기
-                </Link>
-              </div>
-            )}
-          </div>
+              )}
 
-          {/* 페이지네이션 */}
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={(page) => {
-              setCurrentPage(page);
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          />
+              {/* 대회 리스트: 토스 스타일 세로 스택 */}
+              <div className="space-y-6">
+                {paginatedTournaments.map((t) => (
+                  <TournamentCard
+                    key={t.id}
+                    tournament={t}
+                    photoUrl={photoMap === undefined ? undefined : (photoMap[t.venue_name ?? t.city ?? ""] ?? null)}
+                  />
+                ))}
+
+                {/* 빈 상태 + CTA */}
+                {filteredTournaments.length === 0 && (
+                  <div className="py-20 text-center">
+                    <span className="material-symbols-outlined text-5xl text-[var(--color-text-disabled)] mb-3 block">
+                      emoji_events
+                    </span>
+                    <p className="text-sm text-[var(--color-text-muted)] mb-4">
+                      {hasFilters ? "조건에 맞는 대회가 없습니다." : "등록된 대회가 없습니다."}
+                    </p>
+                    {/* 빈 상태 액션 버튼: 다른 탭 둘러보기 안내 */}
+                    <Link
+                      href="/tournaments"
+                      className="inline-flex items-center gap-1.5 rounded-md px-5 py-2.5 text-sm font-bold text-white transition-all active:scale-[0.97]"
+                      style={{ backgroundColor: "var(--color-primary)" }}
+                    >
+                      <span className="material-symbols-outlined text-base">search</span>
+                      대회 찾아보기
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* 페이지네이션 */}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) => {
+                  setCurrentPage(page);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              />
+            </>
+          )}
         </>
       )}
     </>

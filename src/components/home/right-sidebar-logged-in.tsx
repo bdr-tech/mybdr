@@ -120,7 +120,7 @@ export function RightSidebarLoggedIn({ fallbackTeams, fallbackCommunity }: Right
   return (
     <div className="space-y-8" style={{ fontSize: '120%' }}>
       {/* === 1. 오늘의 주요 경기 (네이비 배경) === */}
-      <div className="bg-secondary rounded-xl p-6 relative overflow-hidden group border border-border">
+      <div className="bg-secondary rounded-md p-6 relative overflow-hidden group border border-border">
         <div className="relative z-10">
           <h3 className="text-xl font-bold text-white mb-2">오늘의 주요 경기</h3>
           <p className="text-blue-100 text-sm opacity-80 mb-4">
@@ -137,7 +137,7 @@ export function RightSidebarLoggedIn({ fallbackTeams, fallbackCommunity }: Right
       </div>
 
       {/* === 2. 나의 통계 (API: /api/web/profile/stats) === */}
-      <div className="bg-surface rounded-xl p-6 border border-border">
+      <div className="bg-surface rounded-md p-6 border border-border">
         <h4 className="text-sm font-bold text-text-primary mb-6 flex items-center justify-between uppercase tracking-wider">
           나의 통계
           <span className="material-symbols-outlined text-text-muted text-sm">insights</span>
@@ -157,7 +157,7 @@ export function RightSidebarLoggedIn({ fallbackTeams, fallbackCommunity }: Right
       </div>
 
       {/* === 3. 실시간 랭킹 (API: /api/web/teams, wins 상위 3팀) === */}
-      <div className="bg-surface rounded-xl p-6 border border-border">
+      <div className="bg-surface rounded-md p-6 border border-border">
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs font-bold text-primary tracking-widest uppercase">
             실시간 랭킹
@@ -190,7 +190,7 @@ export function RightSidebarLoggedIn({ fallbackTeams, fallbackCommunity }: Right
       </div>
 
       {/* === 4. 커뮤니티 (API: /api/web/community) === */}
-      <div className="bg-surface rounded-xl border border-border flex flex-col">
+      <div className="bg-surface rounded-md border border-border flex flex-col">
         {/* 헤더 */}
         <div className="p-6 border-b border-border">
           <h4 className="text-base font-bold text-text-primary flex items-center justify-between">

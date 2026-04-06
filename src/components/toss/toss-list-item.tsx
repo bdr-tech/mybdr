@@ -14,20 +14,20 @@ import React from "react";
 import Link from "next/link";
 
 interface TossListItemProps {
-  icon?: string;         // Material Symbols 아이콘명 (예: "groups", "sports_basketball")
-  iconBg?: string;       // 아이콘 배경색 (CSS 색상값, 예: "var(--color-primary)")
-  title: string;         // 메인 제목
-  subtitle?: string;     // 부제/설명
-  rightText?: string;    // 우측 값 (예: "42W", "12,000원")
-  rightSub?: string;     // 우측 부가 정보
+  icon?: string;         
+  iconBg?: string;       
+  title: string;         
+  subtitle?: string;     
+  rightText?: string;    
+  rightSub?: string;     
   onClick?: () => void;
-  href?: string;         // 링크가 있으면 <Link>로 래핑
-  showArrow?: boolean;   // 우측 화살표(chevron_right) 표시 여부
+  href?: string;         
+  showArrow?: boolean;   
 }
 
 export function TossListItem({
   icon,
-  iconBg = "var(--color-surface)",
+  iconBg = "var(--color-text-muted)",
   title,
   subtitle,
   rightText,
@@ -36,71 +36,62 @@ export function TossListItem({
   href,
   showArrow = true,
 }: TossListItemProps) {
-  /* 내부 콘텐츠: 아이콘 + 텍스트 + 우측 영역 */
   const content = (
     <div
-      /* py-4 px-1: 토스 리스트 표준 간격
-       * border-b: 하단 구분선 (토스는 매우 연한 보더)
-       * 호버: 배경색 변화 (surface-bright) */
-      className="flex items-center gap-3 py-4 px-5 border-b border-[var(--color-border-subtle)] transition-colors hover:bg-[var(--color-surface-bright)] rounded-lg cursor-pointer"
+      className="flex items-center gap-3 p-2 bg-gradient-to-r from-[var(--color-surface)] to-[var(--color-card)] hover:to-[var(--color-surface-bright)] border-l-4 border-transparent hover:border-[var(--color-primary)] transition-all duration-200 group rounded-none cursor-pointer mb-2"
       onClick={!href ? onClick : undefined}
     >
-      {/* 좌: 원형 아이콘 (40px, 배경색 지정) */}
+      {/* 아바타 아이콘 배경 (기울임 효과 제거, 단정하고 약간의 각진 스타일 유지) */}
       {icon && (
         <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-          style={{ backgroundColor: iconBg }}
+          className="w-10 h-10 flex-none flex items-center justify-center rounded-md shadow-inner"
+          style={{ background: `linear-gradient(135deg, ${iconBg} 0%, rgba(0,0,0,0.5) 100%)` }}
         >
-          <span
-            className="material-symbols-outlined text-xl text-white"
-          >
+          <span className="material-symbols-outlined text-[20px] text-white opacity-90">
             {icon}
           </span>
         </div>
       )}
 
-      {/* 중: 제목 + 부제 */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-[var(--color-text-primary)] truncate">
-          {title}
-        </p>
-        {subtitle && (
-          <p className="text-xs text-[var(--color-text-muted)] mt-0.5 truncate">
-            {subtitle}
+      {/* 중앙 텍스트 영역 (이탤릭, 고밀도) */}
+      <div className="flex-1 min-w-0 flex flex-col justify-center">
+        <div className="flex justify-between items-baseline w-full">
+          {/* 이탤릭체 폰트 우측 잘림 방지를 위해 pr-1 요소 추가 */}
+          <p className="text-sm font-extrabold uppercase truncate text-[var(--color-text-primary)] tracking-tight pr-1">
+            {title}
           </p>
-        )}
+          {rightText && (
+            <p className="text-sm font-black text-[var(--color-primary)] shrink-0 ml-2 pr-1">
+              {rightText}
+            </p>
+          )}
+        </div>
+        <div className="flex justify-between items-center mt-0.5">
+          {subtitle && (
+             <p className="text-[10px] font-bold text-[var(--color-text-muted)] truncate uppercase tracking-wider">
+               {subtitle}
+             </p>
+          )}
+          {/* 부가 정보(우측 하단)는 네온 뱃지로 처리 */}
+          {rightSub && (
+            <span className="text-[9px] font-black text-[var(--color-card)] bg-[var(--color-text-primary)] px-2 py-0.5 rounded-sm ml-2 shrink-0">
+               {rightSub}
+            </span>
+          )}
+        </div>
       </div>
-
-      {/* 우: 값 + 부가 정보 + 화살표 */}
-      <div className="flex items-center gap-2 shrink-0">
-        {(rightText || rightSub) && (
-          <div className="text-right">
-            {rightText && (
-              <p className="text-sm font-bold text-[var(--color-text-primary)]">
-                {rightText}
-              </p>
-            )}
-            {rightSub && (
-              <p className="text-xs text-[var(--color-text-muted)]">
-                {rightSub}
-              </p>
-            )}
-          </div>
-        )}
-        {/* chevron_right: 클릭 가능한 항목이라는 시각적 힌트 */}
-        {showArrow && (
-          <span className="material-symbols-outlined text-lg text-[var(--color-text-disabled)]">
-            chevron_right
-          </span>
-        )}
-      </div>
+      
+      {showArrow && (
+        <div className="flex items-center shrink-0 text-[var(--color-text-disabled)] group-hover:text-[var(--color-primary)] transition-colors">
+          <span className="material-symbols-outlined text-lg font-bold">chevron_right</span>
+        </div>
+      )}
     </div>
   );
 
-  /* href가 있으면 Link로 래핑, 없으면 그대로 반환 */
   if (href) {
     return (
-      <Link href={href} className="block">
+      <Link href={href} className="block w-full">
         {content}
       </Link>
     );

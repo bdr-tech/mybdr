@@ -77,7 +77,7 @@ function CommunityListSkeleton() {
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="bg-[var(--color-card)] rounded-2xl p-5"
+          className="bg-[var(--color-card)] rounded-md p-5"
           style={{ boxShadow: "var(--shadow-card)" }}
         >
           <div className="flex items-center gap-2 mb-3">
@@ -120,7 +120,7 @@ export function CommunityContent({ fallbackPosts }: CommunityContentProps) {
   const [initialLoadDone, setInitialLoadDone] = useState(!!fallbackPosts);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // 전역 선호 필터 Context
+  // 전역 맞춤 필터 Context
   const { preferFilter } = usePreferFilter();
 
   // URL에서 필터 상태 읽기
@@ -233,7 +233,7 @@ export function CommunityContent({ fallbackPosts }: CommunityContentProps) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="게시글, 사용자 검색"
-            className="w-full rounded-xl py-3 pl-11 pr-4 text-sm outline-none"
+            className="w-full rounded-md py-3 pl-11 pr-4 text-sm outline-none"
             style={{
               backgroundColor: "var(--color-surface)",
               color: "var(--color-text-primary)",
@@ -243,35 +243,45 @@ export function CommunityContent({ fallbackPosts }: CommunityContentProps) {
       </form>
 
       {/* 카테고리 탭: 토스 스타일 pill 탭 (가로 스크롤) */}
+      {/* 맞춤 필터 ON + preferredCategories가 있으면 해당 카테고리 탭만 표시 */}
       <div
         className="mb-6 overflow-x-auto"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         <div className="flex gap-2 min-w-max">
-          {categoryTabs.map((tab) => {
-            const isActive = category === tab.key;
-            return (
-              <button
-                key={tab.key ?? "all"}
-                type="button"
-                onClick={() => handleCategoryChange(tab.key)}
-                className="px-4 py-2 text-sm font-semibold rounded-full whitespace-nowrap transition-all"
-                style={
-                  isActive
-                    ? {
-                        backgroundColor: "var(--color-primary)",
-                        color: "#FFFFFF",
-                      }
-                    : {
-                        backgroundColor: "var(--color-surface)",
-                        color: "var(--color-text-muted)",
-                      }
-                }
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+          {categoryTabs
+            .filter((tab) => {
+              // 맞춤 필터가 꺼져있거나 선호 카테고리가 없으면 전체 탭 표시
+              if (!preferFilter || preferredCategories.length === 0) return true;
+              // "전체" 탭(key=null)은 항상 표시
+              if (tab.key === null) return true;
+              // 선호 카테고리에 포함된 탭만 표시
+              return preferredCategories.includes(tab.key);
+            })
+            .map((tab) => {
+              const isActive = category === tab.key;
+              return (
+                <button
+                  key={tab.key ?? "all"}
+                  type="button"
+                  onClick={() => handleCategoryChange(tab.key)}
+                  className="px-4 py-2 text-sm font-semibold rounded-full whitespace-nowrap transition-all"
+                  style={
+                    isActive
+                      ? {
+                          backgroundColor: "var(--color-primary)",
+                          color: "#FFFFFF",
+                        }
+                      : {
+                          backgroundColor: "var(--color-surface)",
+                          color: "var(--color-text-muted)",
+                        }
+                  }
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
         </div>
       </div>
 
@@ -320,7 +330,7 @@ export function CommunityContent({ fallbackPosts }: CommunityContentProps) {
                 {/* 빈 상태 액션 버튼: 글쓰기 */}
                 <Link
                   href="/community/new"
-                  className="inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold text-white transition-all active:scale-[0.97]"
+                  className="inline-flex items-center gap-1.5 rounded-md px-5 py-2.5 text-sm font-bold text-white transition-all active:scale-[0.97]"
                   style={{ backgroundColor: "var(--color-primary)" }}
                 >
                   <span className="material-symbols-outlined text-base">edit</span>
@@ -333,7 +343,7 @@ export function CommunityContent({ fallbackPosts }: CommunityContentProps) {
           {/* 글쓰기 CTA: 토스 스타일 풀와이드 버튼 */}
           <Link
             href="/community/new"
-            className="block mt-6 w-full py-4 text-center text-sm font-bold text-white rounded-xl transition-all active:scale-[0.98]"
+            className="block mt-6 w-full py-4 text-center text-sm font-bold text-white rounded-md transition-all active:scale-[0.98]"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
             글쓰기
@@ -346,7 +356,7 @@ export function CommunityContent({ fallbackPosts }: CommunityContentProps) {
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="w-10 h-10 flex items-center justify-center rounded-xl transition-colors disabled:opacity-30"
+                className="w-10 h-10 flex items-center justify-center rounded-md transition-colors disabled:opacity-30"
                 style={{
                   backgroundColor: "var(--color-surface)",
                   color: "var(--color-text-muted)",
@@ -360,7 +370,7 @@ export function CommunityContent({ fallbackPosts }: CommunityContentProps) {
                   key={page}
                   type="button"
                   onClick={() => setCurrentPage(page)}
-                  className="w-10 h-10 flex items-center justify-center rounded-xl font-bold text-sm transition-colors"
+                  className="w-10 h-10 flex items-center justify-center rounded-md font-bold text-sm transition-colors"
                   style={
                     page === currentPage
                       ? { backgroundColor: "var(--color-primary)", color: "#FFFFFF" }
@@ -378,7 +388,7 @@ export function CommunityContent({ fallbackPosts }: CommunityContentProps) {
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="w-10 h-10 flex items-center justify-center rounded-xl transition-colors disabled:opacity-30"
+                className="w-10 h-10 flex items-center justify-center rounded-md transition-colors disabled:opacity-30"
                 style={{
                   backgroundColor: "var(--color-surface)",
                   color: "var(--color-text-muted)",
@@ -405,7 +415,7 @@ function PostCard({ post }: { post: PostFromApi }) {
   return (
     <Link href={`/community/${post.public_id}`}>
       <div
-        className="bg-[var(--color-card)] rounded-2xl p-5 transition-all duration-200 hover:scale-[1.01] hover:shadow-[var(--shadow-elevated)] cursor-pointer"
+        className="bg-[var(--color-card)] rounded-md p-5 transition-all duration-200 hover:scale-[1.01] hover:shadow-[var(--shadow-elevated)] cursor-pointer"
         style={{ boxShadow: "var(--shadow-card)" }}
       >
         {/* 1행: 카테고리 배지 + 시간 */}

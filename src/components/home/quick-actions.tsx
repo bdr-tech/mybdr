@@ -63,24 +63,25 @@ export function QuickActions({ dashboardData }: QuickActionsProps) {
     ? buildPersonalizedActions(dashboardData)
     : DEFAULT_ACTIONS;
 
+  /* 컴팩트 가로 pill 버튼: 아이콘+텍스트를 한 줄에 배치하여 높이를 절반 이하로 축소 */
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-2">
       {actions.map((action) => (
         <Link
           key={action.label}
           href={action.href}
-          className="flex-1 flex flex-col items-center justify-center gap-2 py-4 rounded-xl text-white transition-opacity hover:opacity-90 active:opacity-80"
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-sm text-white transition-all hover:brightness-110 shadow-glow-primary hover:-translate-y-0.5"
           style={{ backgroundColor: action.bgColor }}
         >
-          {/* Material Symbols 아이콘 (32px) */}
+          {/* 아이콘 — 축소된 20px */}
           <span
             className="material-symbols-outlined"
-            style={{ fontSize: "32px" }}
+            style={{ fontSize: "18px" }}
           >
             {action.icon}
           </span>
-          {/* 버튼 라벨 — 긴 텍스트 잘림 방지 */}
-          <span className="text-sm font-medium text-center leading-tight px-1 truncate max-w-full">
+          {/* 라벨 — 아이콘 옆에 가로 배치 */}
+          <span className="text-[10px] font-black uppercase tracking-wider truncate">
             {action.label}
           </span>
         </Link>

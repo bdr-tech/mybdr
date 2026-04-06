@@ -60,7 +60,7 @@ export function PriceCard({ game, children }: PriceCardProps) {
   const isUrgent = spotsLeft !== null && spotsLeft <= 5 && spotsLeft > 0;
 
   return (
-    <div className="bg-[var(--color-card)] p-6 rounded-xl border border-[var(--color-border)] shadow-lg sticky top-24">
+    <div className="bg-[var(--color-card)] p-6 rounded-md border border-[var(--color-border)] shadow-lg sticky top-24">
       {/* 가격 영역 */}
       <div className="mb-6">
         <span className="text-[var(--color-text-muted)] text-xs font-medium uppercase tracking-widest">

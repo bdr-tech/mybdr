@@ -123,7 +123,7 @@ export default function AdminCampaignsPage() {
             return (
               <div
                 key={c.id}
-                className="rounded-xl border p-4 flex items-start gap-4"
+                className="rounded-md border p-4 flex items-start gap-4"
                 style={{ backgroundColor: "var(--color-card)", borderColor: "var(--color-border)" }}
               >
                 {/* 광고 이미지 미리보기 */}

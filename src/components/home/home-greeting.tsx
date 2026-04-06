@@ -56,7 +56,7 @@ export function HomeGreeting() {
   // 비로그인 상태: 소개 히어로 (파란 그라디언트 배경)
   return (
     <div
-      className="rounded-2xl p-6 mb-2"
+      className="rounded-md p-6 mb-2"
       style={{
         background: "linear-gradient(135deg, var(--color-info) 0%, var(--color-accent) 100%)",
       }}

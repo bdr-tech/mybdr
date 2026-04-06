@@ -61,7 +61,7 @@ export function MyRegistrationStatus({ tournamentId }: Props) {
 
   return (
     <div
-      className="overflow-hidden rounded-xl border"
+      className="overflow-hidden rounded-md border"
       style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
     >
       <div className="p-4">

@@ -2,6 +2,14 @@
 <!-- 담당: planner-architect | 최대 30항목 -->
 <!-- "왜 A 대신 B를 선택했는지" 기술 결정의 배경과 이유를 기록 -->
 
+### [2026-04-02] 맞춤 설정 강화: 실력 7단계 + 메뉴 토글 + 카테고리 분리
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: (1) 실력 구분을 4단계(초급/중급/중상/상급)에서 7단계(최하/하/중하/중/중상/상/최상)로 변경. 코드값: lowest/low/mid_low/mid/mid_high/high/highest. (2) DB 스키마 변경 불필요 -- games.skill_level은 VarChar, User.preferred_skill_levels는 Json 배열이므로 새 코드값 저장 가능. (3) 기존 4단계 코드값(beginner 등)은 SKILL_BADGE에 fallback 유지하여 하위 호환. (4) 메뉴 토글은 User.hidden_menus Json 배열로 구현 -- 숨기고 싶은 메뉴 slug 저장. (5) 맞춤 설정을 프로필 드롭다운/아코디언에서 "내 정보" 하위가 아닌 단독 카테고리로 승격. (6) 파일명/라우트(/profile/preferences)는 변경하지 않음 -- URL 변경 시 기존 북마크/딥링크 깨짐 위험.
+- **이유**: (1) 4단계는 실력 분포가 너무 넓어 "중급"이 범위가 큼. 7단계로 세분화하면 더 정확한 매칭 가능. (2) VarChar/Json이라 DB 마이그레이션 없이 코드만 변경. (3) 인라인 SKILL_LABEL이 4개 파일에 중복 정의되어 있으므로 game-status.ts의 SKILL_BADGE로 통합 권장.
+- **대안 기각**: (A) 파일명을 customization으로 변경 -- 기존 import 경로 대량 수정 필요, 이득 적음. (B) 실력을 숫자(1~10)로 변경 -- 직관성 부족, 라벨 매핑 필요.
+- **참조횟수**: 0
+
 ### [2026-03-29] GPS 밀집도 히트맵: Canvas 오버레이 + simpleheat 방식
 - **분류**: decision
 - **발견자**: planner-architect

@@ -105,7 +105,7 @@ export function RightSidebarGuest({ fallbackTeams, fallbackCommunity, fallbackSt
   return (
     <div className="space-y-8" style={{ fontSize: '120%' }}>
       {/* === 1. 가입 유도 CTA (네이비 배경) === */}
-      <div className="bg-secondary rounded-xl p-8 relative overflow-hidden group border border-border">
+      <div className="bg-secondary rounded-md p-8 relative overflow-hidden group border border-border">
         <div className="relative z-10">
           <h3 className="text-2xl font-bold text-white mb-3">
             지금 바로 시작하세요
@@ -126,7 +126,7 @@ export function RightSidebarGuest({ fallbackTeams, fallbackCommunity, fallbackSt
       </div>
 
       {/* === 2. SERVICE FEATURE === */}
-      <div className="bg-gradient-to-br from-surface to-card rounded-xl p-8 border border-border">
+      <div className="bg-gradient-to-br from-surface to-card rounded-md p-8 border border-border">
         <h4 className="text-sm font-bold text-primary mb-3 uppercase tracking-wider">
           Service Feature
         </h4>
@@ -144,7 +144,7 @@ export function RightSidebarGuest({ fallbackTeams, fallbackCommunity, fallbackSt
       </div>
 
       {/* === 3. 오늘의 주요 경기 (네이비 카드) === */}
-      <div className="bg-secondary rounded-xl p-6 relative overflow-hidden group border border-border">
+      <div className="bg-secondary rounded-md p-6 relative overflow-hidden group border border-border">
         <div className="relative z-10">
           <h3 className="text-xl font-bold text-white mb-2">오늘의 주요 경기</h3>
           <p className="text-blue-100 text-sm opacity-80 mb-4">
@@ -161,7 +161,7 @@ export function RightSidebarGuest({ fallbackTeams, fallbackCommunity, fallbackSt
 
       {/* === 4. BDR과 함께 성장하세요 (통계 + 가입) === */}
       {/* /api/web/stats API에서 실제 팀/매치/유저 수를 가져와 표시 */}
-      <div className="bg-surface rounded-xl p-8 border border-border flex flex-col items-center text-center">
+      <div className="bg-surface rounded-md p-8 border border-border flex flex-col items-center text-center">
         {/* 아이콘 */}
         <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mb-4">
           <span className="material-symbols-outlined text-primary text-3xl">query_stats</span>
@@ -197,7 +197,7 @@ export function RightSidebarGuest({ fallbackTeams, fallbackCommunity, fallbackSt
       </div>
 
       {/* === 5. 실시간 랭킹 (API: /api/web/teams, wins 상위 3팀) === */}
-      <div className="bg-surface rounded-xl p-6 border border-border">
+      <div className="bg-surface rounded-md p-6 border border-border">
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs font-bold text-primary tracking-widest uppercase">
             실시간 랭킹
@@ -230,7 +230,7 @@ export function RightSidebarGuest({ fallbackTeams, fallbackCommunity, fallbackSt
       </div>
 
       {/* === 6. 커뮤니티 미리보기 (API: /api/web/community, 최신글 2개) === */}
-      <div className="bg-surface rounded-xl border border-border flex flex-col">
+      <div className="bg-surface rounded-md border border-border flex flex-col">
         <div className="p-6 border-b border-border">
           <h4 className="text-base font-bold text-text-primary flex items-center justify-between">
             커뮤니티 미리보기

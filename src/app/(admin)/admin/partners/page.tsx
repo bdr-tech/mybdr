@@ -127,7 +127,7 @@ export default function AdminPartnersPage() {
       {showForm && (
         <form
           onSubmit={handleCreate}
-          className="mb-6 rounded-xl border p-5 space-y-3"
+          className="mb-6 rounded-md border p-5 space-y-3"
           style={{ backgroundColor: "var(--color-card)", borderColor: "var(--color-border)" }}
         >
           <h3 className="text-sm font-bold mb-2" style={{ color: "var(--color-text-primary)" }}>
@@ -182,7 +182,7 @@ export default function AdminPartnersPage() {
           등록된 파트너가 없습니다
         </div>
       ) : (
-        <div className="rounded-xl border overflow-hidden"
+        <div className="rounded-md border overflow-hidden"
           style={{ borderColor: "var(--color-border)" }}>
           <table className="w-full text-sm">
             <thead>

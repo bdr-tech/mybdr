@@ -38,9 +38,9 @@ const GENDER_OPTIONS = [
   { value: "female", label: "여성" },
 ];
 
-// 토스 스타일 인풋 — surface 배경, border 없음, rounded-xl
+// 토스 스타일 인풋 — surface 배경, border 없음, rounded-md
 const inputCls =
-  "w-full rounded-xl border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50";
+  "w-full rounded-md border-none bg-[var(--color-border)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50";
 const labelCls = "mb-1 block text-sm text-[var(--color-text-muted)]";
 
 // pill 버튼 — 선택 상태에 따라 accent/border 배경
@@ -381,7 +381,7 @@ export default function NewTournamentWizardPage() {
 
       {/* 에러 메시지 */}
       {error && (
-        <div className="mb-4 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
+        <div className="mb-4 rounded-md bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
       )}
 
       {/* ================================================================
@@ -548,7 +548,7 @@ export default function NewTournamentWizardPage() {
               <button
                 type="button"
                 onClick={() => setShowDivisionGenerator(true)}
-                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition-all hover:opacity-90 active:scale-95"
+                className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-bold text-white transition-all hover:opacity-90 active:scale-95"
                 style={{ backgroundColor: "var(--color-primary)" }}
               >
                 <span className="material-symbols-outlined text-lg">add_circle</span>
@@ -644,7 +644,7 @@ export default function NewTournamentWizardPage() {
                     type="color"
                     value={primaryColor}
                     onChange={(e) => setPrimaryColor(e.target.value)}
-                    className="h-12 w-16 cursor-pointer rounded-xl border-none bg-transparent p-0"
+                    className="h-12 w-16 cursor-pointer rounded-md border-none bg-transparent p-0"
                   />
                   <span className="text-sm text-[var(--color-text-muted)]">{primaryColor}</span>
                 </div>
@@ -656,7 +656,7 @@ export default function NewTournamentWizardPage() {
                     type="color"
                     value={secondaryColor}
                     onChange={(e) => setSecondaryColor(e.target.value)}
-                    className="h-12 w-16 cursor-pointer rounded-xl border-none bg-transparent p-0"
+                    className="h-12 w-16 cursor-pointer rounded-md border-none bg-transparent p-0"
                   />
                   <span className="text-sm text-[var(--color-text-muted)]">{secondaryColor}</span>
                 </div>
@@ -666,7 +666,7 @@ export default function NewTournamentWizardPage() {
             {/* 실시간 미리보기 — 선택한 템플릿에 따라 다르게 표시 */}
             <div>
               <label className={labelCls}>미리보기</label>
-              <div className="overflow-hidden rounded-xl" style={{ aspectRatio: "16/9" }}>
+              <div className="overflow-hidden rounded-md" style={{ aspectRatio: "16/9" }}>
                 {designTemplate === "basic" && (
                   <div
                     className="flex h-full items-end p-6"
@@ -694,9 +694,9 @@ export default function NewTournamentWizardPage() {
                   >
                     {logoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={logoUrl} alt="로고" className="h-16 w-16 rounded-xl object-cover shadow-lg" />
+                      <img src={logoUrl} alt="로고" className="h-16 w-16 rounded-md object-cover shadow-lg" />
                     ) : (
-                      <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-white/20 text-white">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-md bg-white/20 text-white">
                         <span className="material-symbols-outlined text-3xl">emoji_events</span>
                       </div>
                     )}
@@ -743,7 +743,7 @@ export default function NewTournamentWizardPage() {
 
             <div className="mt-4 space-y-3 text-sm">
               {/* 기본 정보 */}
-              <div className="rounded-xl bg-[var(--color-elevated)] p-4 space-y-2">
+              <div className="rounded-md bg-[var(--color-elevated)] p-4 space-y-2">
                 <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">대회 정보</p>
                 <Row label="대회명" value={name || "미입력"} />
                 <Row label="형식" value={FORMAT_OPTIONS.find((f) => f.value === format)?.label ?? format} />
@@ -754,7 +754,7 @@ export default function NewTournamentWizardPage() {
               </div>
 
               {/* 일정/장소 */}
-              <div className="rounded-xl bg-[var(--color-elevated)] p-4 space-y-2">
+              <div className="rounded-md bg-[var(--color-elevated)] p-4 space-y-2">
                 <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">일정 및 장소</p>
                 <Row
                   label="대회 기간"
@@ -784,7 +784,7 @@ export default function NewTournamentWizardPage() {
 
               {/* 경기 설정 */}
               {(gameTime || gameBall || gameMethod) && (
-                <div className="rounded-xl bg-[var(--color-elevated)] p-4 space-y-2">
+                <div className="rounded-md bg-[var(--color-elevated)] p-4 space-y-2">
                   <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">경기 설정</p>
                   {gameTime && <Row label="경기시간" value={gameTime} />}
                   {gameBall && <Row label="경기구" value={gameBall} />}
@@ -793,7 +793,7 @@ export default function NewTournamentWizardPage() {
               )}
 
               {/* 참가 설정 */}
-              <div className="rounded-xl bg-[var(--color-elevated)] p-4 space-y-2">
+              <div className="rounded-md bg-[var(--color-elevated)] p-4 space-y-2">
                 <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">참가 설정</p>
 
                 {/* 부문/디비전 */}
@@ -845,7 +845,7 @@ export default function NewTournamentWizardPage() {
 
               {/* 기타 */}
               {(rules || prizeInfo) && (
-                <div className="rounded-xl bg-[var(--color-elevated)] p-4 space-y-2">
+                <div className="rounded-md bg-[var(--color-elevated)] p-4 space-y-2">
                   <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">기타</p>
                   {rules && <Row label="규칙" value={rules.slice(0, 80) + (rules.length > 80 ? "..." : "")} />}
                   {prizeInfo && <Row label="상금" value={prizeInfo.slice(0, 80) + (prizeInfo.length > 80 ? "..." : "")} />}

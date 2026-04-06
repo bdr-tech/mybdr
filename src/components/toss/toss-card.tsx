@@ -21,20 +21,20 @@ interface TossCardProps {
 export function TossCard({ children, className = "", onClick }: TossCardProps) {
   return (
     <div
-      /* 배경: CSS 변수로 다크모드 자동 대응
-       * rounded-2xl: 토스 스타일 16px 둥근 모서리
-       * p-5: 20px 내부 패딩 (토스 표준 24px보다 약간 좁게, 모바일 최적화)
-       * shadow-card: 매우 가벼운 그림자 (globals.css에서 정의)
-       * border 없음: 토스는 그림자로만 구분
-       * 호버: scale(1.01) + shadow-elevated로 부드러운 인터랙션 */
-      className={`bg-[var(--color-card)] rounded-2xl p-6 transition-all duration-200 hover:scale-[1.01] hover:shadow-[var(--shadow-elevated)] ${onClick ? "cursor-pointer" : ""} ${className}`}
+      className={`bg-[var(--color-card)] rounded-md border border-[var(--color-border)] p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-glow-primary hover:border-[var(--color-primary)] group relative overflow-hidden ${onClick ? "cursor-pointer" : ""} ${className}`}
       style={{ boxShadow: "var(--shadow-card)" }}
       onClick={onClick}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") onClick(); } : undefined}
     >
-      {children}
+      {/* 2K 스타일 오버레이 그라디언트 (기본 투명, 그룹 호버 시 살짝 등장) */}
+      <div className="absolute inset-0 bg-gradient-to-br from-transparent to-[var(--color-surface)] opacity-0 group-hover:opacity-40 transition-opacity pointer-events-none" />
+      
+      {/* 실제 콘텐츠 영역 */}
+      <div className="relative z-10 w-full h-full flex flex-col">
+        {children}
+      </div>
     </div>
   );
 }

@@ -13,6 +13,8 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { TossCard } from "@/components/toss/toss-card";
+// 푸시 알림 구독 배너 — 권한 요청 + 서비스워커 구독 + 서버 저장까지 처리하는 완전한 구현
+import { PushPermissionBanner } from "@/components/shared/push-permission";
 
 // 직렬화된 알림 타입 (서버에서 전달)
 interface SerializedNotification {
@@ -178,6 +180,9 @@ export function NotificationsClient({ notifications: initialNotifications }: Pro
           </button>
         )}
       </div>
+
+      {/* ==== 푸시 알림 구독 배너: 권한 요청 + SW 구독 + 서버 저장 ==== */}
+      <PushPermissionBanner />
 
       {/* ==== pill 탭: 유형별 필터 ==== */}
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">

@@ -43,7 +43,7 @@ function PageSkeleton() {
       {/* 카드 그리드 스켈레톤: 이미지 + 정보 카드 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="rounded-xl bg-[var(--color-card)] border border-[var(--color-border)] overflow-hidden">
+          <div key={i} className="rounded-md bg-[var(--color-card)] border border-[var(--color-border)] overflow-hidden">
             <Skeleton className="h-48 w-full rounded-none" />
             <div className="p-5 space-y-3">
               <Skeleton className="h-3 w-16 rounded" />

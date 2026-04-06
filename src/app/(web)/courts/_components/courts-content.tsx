@@ -686,7 +686,7 @@ export function CourtsContent({ courts, cities }: CourtsContentProps) {
           ) : (
             /* 빈 상태 */
             <div
-              className="rounded-xl p-10 text-center"
+              className="rounded-md p-10 text-center"
               style={{
                 backgroundColor: "var(--color-card)",
                 boxShadow: "var(--shadow-card)",
@@ -719,7 +719,7 @@ export function CourtsContent({ courts, cities }: CourtsContentProps) {
       {nearbyCourt && !proximityDismissed && (
         <div className="fixed bottom-6 left-4 right-4 z-50 animate-slide-up max-w-md mx-auto">
           <div
-            className="rounded-xl p-4"
+            className="rounded-md p-4"
             style={{
               backgroundColor: "var(--color-card)",
               boxShadow: "0 -4px 24px rgba(0,0,0,0.3)",
@@ -811,7 +811,7 @@ function MiniCourtCard({ court, distance }: { court: CourtItem; distance?: numbe
   return (
     <Link href={`/courts/${court.id}`}>
       <div
-        className="rounded-xl p-3 transition-all"
+        className="rounded-md p-3 transition-all"
         style={{
           backgroundColor: "var(--color-card)",
           boxShadow: "0 -2px 16px rgba(0,0,0,0.2)",
@@ -930,7 +930,7 @@ function CourtListCard({
   return (
     <div
       onClick={onSelect}
-      className="cursor-pointer rounded-xl p-3 sm:p-4 transition-all duration-200"
+      className="cursor-pointer rounded-md p-3 sm:p-4 transition-all duration-200"
       style={{
         backgroundColor: "var(--color-card)",
         boxShadow: isSelected ? "var(--shadow-elevated)" : "var(--shadow-card)",

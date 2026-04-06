@@ -106,8 +106,8 @@ export function ActivityRing({ monthlyGames, totalGames, totalTournaments }: Act
 
         {/* 스탯 카드: 테두리/배경 CSS 변수 */}
         <div className="flex flex-1 flex-col gap-2.5">
-          <div className="flex items-center gap-3 rounded-2xl border px-3.5 py-2.5" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-elevated)' }}>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: 'var(--color-accent-light)' }}>
+          <div className="flex items-center gap-3 rounded-md border px-3.5 py-2.5" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-elevated)' }}>
+            <div className="flex h-10 w-10 items-center justify-center rounded-md" style={{ backgroundColor: 'var(--color-accent-light)' }}>
               <span className="material-symbols-outlined text-xl" style={{ color: 'var(--color-accent)' }}>local_fire_department</span>
             </div>
             <div className="flex-1">
@@ -115,8 +115,8 @@ export function ActivityRing({ monthlyGames, totalGames, totalTournaments }: Act
               <p className="text-xl font-black leading-tight" style={{ color: 'var(--color-text-primary)' }}>{totalGames}<span className="ml-0.5 text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>경기</span></p>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-2xl border px-3.5 py-2.5" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-elevated)' }}>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: "rgba(244,162,97,0.1)" }}>
+          <div className="flex items-center gap-3 rounded-md border px-3.5 py-2.5" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-elevated)' }}>
+            <div className="flex h-10 w-10 items-center justify-center rounded-md" style={{ backgroundColor: "rgba(244,162,97,0.1)" }}>
               <span className="material-symbols-outlined text-xl" style={{ color: "var(--color-tier-trophy)" }}>emoji_events</span>
             </div>
             <div className="flex-1">
@@ -166,7 +166,7 @@ export function ActivityRing({ monthlyGames, totalGames, totalTournaments }: Act
       </div>
 
       {/* 동기부여 메시지: 배경 CSS 변수 */}
-      <div className="mt-4 rounded-xl px-4 py-2.5 text-center" style={{ backgroundColor: 'var(--color-elevated)' }}>
+      <div className="mt-4 rounded-md px-4 py-2.5 text-center" style={{ backgroundColor: 'var(--color-elevated)' }}>
         {monthlyGames === 0 && (
           <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
             이번 달 첫 경기에 참가해서 <span className="font-bold text-[var(--color-tier-bronze)]">Bronze</span>에 도전해보세요!

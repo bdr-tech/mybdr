@@ -32,7 +32,7 @@ export function TeamMatchDetail({ game }: TeamMatchDetailProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* 시설 안내 (Amenities) */}
-      <section className="md:col-span-2 bg-[var(--color-card)] p-6 rounded-xl border border-[var(--color-border)] shadow-sm">
+      <section className="md:col-span-2 bg-[var(--color-card)] p-6 rounded-md border border-[var(--color-border)] shadow-sm">
         <h3 className="text-[var(--color-accent)] dark:text-[var(--color-game-guest)] font-bold text-xl mb-6 flex items-center gap-2">
           <span className="material-symbols-outlined">info</span>
           시설 안내 (Amenities)
@@ -89,7 +89,7 @@ export function TeamMatchDetail({ game }: TeamMatchDetailProps) {
       </section>
 
       {/* 경기 규칙 (Rules) */}
-      <section className="bg-[var(--color-card)] p-6 rounded-xl border border-[var(--color-border)] shadow-sm">
+      <section className="bg-[var(--color-card)] p-6 rounded-md border border-[var(--color-border)] shadow-sm">
         <h3 className="text-[var(--color-accent)] dark:text-[var(--color-game-guest)] font-bold text-lg mb-4">
           경기 규칙 (Rules)
         </h3>

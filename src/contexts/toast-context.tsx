@@ -87,7 +87,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           return (
             <div
               key={toast.id}
-              className={`pointer-events-auto flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 ${
+              className={`pointer-events-auto flex items-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 ${
                 toast.exiting
                   ? "translate-y-2 opacity-0"  /* 퇴장: 아래로 이동 + 투명 */
                   : "translate-y-0 opacity-100" /* 등장: 제자리 + 불투명 */

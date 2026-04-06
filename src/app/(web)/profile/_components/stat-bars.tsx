@@ -44,7 +44,7 @@ function StatCard({
 }) {
   return (
     <div
-      className="p-5 rounded-xl border transition-all hover:opacity-90"
+      className="p-5 rounded-md border transition-all hover:opacity-90"
       style={{
         borderColor: "var(--color-border)",
         backgroundColor: "var(--color-surface)",
@@ -81,7 +81,7 @@ export function StatBars({ careerAverages, seasonHighs }: StatBarsProps) {
   if (!careerAverages) {
     return (
       <div
-        className="rounded-xl border p-5"
+        className="rounded-md border p-5"
         style={{
           borderColor: "var(--color-border)",
           backgroundColor: "var(--color-surface)",

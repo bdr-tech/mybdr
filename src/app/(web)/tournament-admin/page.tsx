@@ -99,7 +99,7 @@ export default async function TournamentAdminDashboard() {
         ].map((stat) => (
           <div
             key={stat.label}
-            className="rounded-2xl p-4 text-center"
+            className="rounded-md p-4 text-center"
             style={{ backgroundColor: "var(--color-card)", boxShadow: "var(--shadow-card)" }}
           >
             <span
@@ -143,7 +143,7 @@ export default async function TournamentAdminDashboard() {
         {myTournaments.length === 0 ? (
           /* 대회가 없을 때 빈 상태 */
           <div
-            className="rounded-2xl py-12 text-center"
+            className="rounded-md py-12 text-center"
             style={{ backgroundColor: "var(--color-card)", boxShadow: "var(--shadow-card)" }}
           >
             <span
@@ -185,7 +185,7 @@ export default async function TournamentAdminDashboard() {
               return (
                 <div
                   key={tournament.id}
-                  className="rounded-2xl p-5 transition-all duration-200 hover:scale-[1.01]"
+                  className="rounded-md p-5 transition-all duration-200 hover:scale-[1.01]"
                   style={{ backgroundColor: "var(--color-card)", boxShadow: "var(--shadow-card)" }}
                 >
                   {/* 상단: 대회명 + 상태 뱃지 */}
@@ -221,7 +221,7 @@ export default async function TournamentAdminDashboard() {
 
                   {/* 중간: 참가 현황 3개 지표 */}
                   <div
-                    className="mb-3 grid grid-cols-3 gap-2 rounded-xl p-3"
+                    className="mb-3 grid grid-cols-3 gap-2 rounded-md p-3"
                     style={{ backgroundColor: "var(--color-surface)" }}
                   >
                     {/* 팀수: 승인된 팀 / 최대 팀 */}
@@ -280,7 +280,7 @@ export default async function TournamentAdminDashboard() {
                   {/* 하단: 관리하기 버튼 */}
                   <Link
                     href={`/tournament-admin/tournaments/${tournament.id}`}
-                    className="flex w-full items-center justify-center gap-1 rounded-xl py-2.5 text-sm font-semibold transition-colors"
+                    className="flex w-full items-center justify-center gap-1 rounded-md py-2.5 text-sm font-semibold transition-colors"
                     style={{
                       backgroundColor: "var(--color-surface)",
                       color: "var(--color-primary)",
@@ -313,7 +313,7 @@ export default async function TournamentAdminDashboard() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-col items-center gap-2 rounded-2xl p-5 text-center transition-all duration-200 hover:scale-[1.02]"
+              className="flex flex-col items-center gap-2 rounded-md p-5 text-center transition-all duration-200 hover:scale-[1.02]"
               style={{ backgroundColor: "var(--color-card)", boxShadow: "var(--shadow-card)" }}
             >
               <span
@@ -355,7 +355,7 @@ export default async function TournamentAdminDashboard() {
         {seriesCount > 0 ? (
           <Link
             href="/tournament-admin/series"
-            className="flex items-center justify-between rounded-2xl p-5 transition-all duration-200 hover:scale-[1.01]"
+            className="flex items-center justify-between rounded-md p-5 transition-all duration-200 hover:scale-[1.01]"
             style={{ backgroundColor: "var(--color-card)", boxShadow: "var(--shadow-card)" }}
           >
             <div className="flex items-center gap-3">
@@ -382,7 +382,7 @@ export default async function TournamentAdminDashboard() {
           </Link>
         ) : (
           <div
-            className="rounded-2xl py-8 text-center"
+            className="rounded-md py-8 text-center"
             style={{ backgroundColor: "var(--color-card)", boxShadow: "var(--shadow-card)" }}
           >
             <span

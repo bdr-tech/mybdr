@@ -127,7 +127,7 @@ function TeamAvatar({ name, logoUrl, size = 8 }: { name: string; logoUrl: string
 
 function StatCard({ label, value, primary }: { label: string; value: number; primary: string }) {
   return (
-    <div className="rounded-2xl border border-(--color-border) bg-(--color-card) p-5 text-center shadow-sm">
+    <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-card)] p-5 text-center shadow-sm">
       <p className="text-3xl font-bold" style={{ color: primary }}>
         {value}
       </p>
@@ -150,7 +150,7 @@ function MatchCard({
   const isCompleted = match.status === "completed";
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-(--color-border) bg-(--color-card) shadow-sm">
+    <div className="overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-card)] shadow-md">
       {/* Round label */}
       {match.roundName && (
         <div className="border-b border-(--color-border) px-4 py-2">
@@ -249,7 +249,7 @@ function HomePage({
               전체 보기 →
             </Link>
           </div>
-          <div className="overflow-hidden rounded-2xl border border-(--color-border)">
+          <div className="overflow-hidden rounded-md border border-[var(--color-border)] shadow-md">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-(--color-border) bg-(--color-surface) text-xs font-medium text-(--color-text-muted)">
@@ -367,7 +367,7 @@ function TeamsPage({ teams, primary }: { teams: TeamEntry[]; primary: string }) 
   return (
     <div>
       <h2 className="mb-6 text-xl font-bold text-(--color-text-primary)">참가팀 ({teams.length})</h2>
-      <div className="overflow-hidden rounded-2xl border border-(--color-border)">
+      <div className="overflow-hidden rounded-md border border-[var(--color-border)] shadow-md">
         <table className="w-full">
           <thead>
             <tr className="border-b border-(--color-border) bg-(--color-surface) text-xs font-medium text-(--color-text-muted)">
@@ -532,7 +532,7 @@ function RegistrationPage({
 
       <div className="space-y-4">
         {/* 신청 상태 */}
-        <div className="flex items-center justify-between rounded-2xl border border-(--color-border) bg-(--color-card) p-5 shadow-sm">
+        <div className="flex items-center justify-between rounded-md border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-sm">
           <span className="text-sm font-medium text-(--color-text-muted)">신청 현황</span>
           <span className="text-sm font-bold" style={{ color: statusColor }}>
             ● {statusLabel(tournament.status)}
@@ -540,7 +540,7 @@ function RegistrationPage({
         </div>
 
         {/* 정보 카드 */}
-        <div className="rounded-2xl border border-(--color-border) bg-(--color-card) p-6 shadow-sm">
+        <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-sm">
           <h3 className="mb-4 text-base font-semibold text-(--color-text-primary)">대회 정보</h3>
           <dl className="space-y-3 text-sm">
             {tournament.format && (
@@ -589,13 +589,13 @@ function RegistrationPage({
             href={`https://mybdr.kr/tournaments/${tournament.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full rounded-2xl py-4 text-center text-base font-bold text-white transition-opacity hover:opacity-90"
+            className="block w-full rounded-sm py-4 text-center text-[13px] font-black uppercase tracking-widest text-white transition-opacity hover:opacity-90 shadow-glow-primary"
             style={{ backgroundColor: primary }}
           >
             신청하기 →
           </a>
         ) : (
-          <div className="rounded-2xl bg-(--color-surface) p-4 text-center text-sm text-(--color-text-secondary)">
+          <div className="rounded-sm bg-[var(--color-surface)] p-4 text-center text-[11px] font-black uppercase tracking-widest text-[var(--color-text-secondary)]">
             {tournament.status === "completed"
               ? "대회가 종료되었습니다"
               : "현재 참가 신청을 받지 않습니다"}

@@ -64,7 +64,7 @@ export function ProfileHeader({
       {/* 좌측: 아바타 + 티어 배지 */}
       <div className="relative flex-shrink-0">
         <div
-          className="w-28 h-28 md:w-36 md:h-36 rounded-xl overflow-hidden border-2 shadow-2xl"
+          className="w-28 h-28 md:w-36 md:h-36 rounded-md overflow-hidden border-2 shadow-2xl"
           style={{
             borderColor: "rgba(227, 27, 35, 0.3)",
             backgroundColor: "var(--color-surface-high)",

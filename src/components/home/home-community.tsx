@@ -1,17 +1,15 @@
 "use client";
 
 /* ============================================================
- * HomeCommunity — 홈 페이지 커뮤니티 섹션 (토스 스타일)
+ * HomeCommunity — 홈 페이지 커뮤니티 섹션 (NBA 2K 스타일)
  *
- * 기존 사이드바(RightSidebarGuest/LoggedIn)에 있던 커뮤니티 미리보기를
- * 독립 컴포넌트로 분리하여 1열 레이아웃 메인 영역에 배치.
- *
- * TossSectionHeader + TossListItem 조합으로 토스 앱 스타일 구현.
+ * 기존 사이드바에 있던 커뮤니티 미리보기를 독립 컴포넌트로 분리.
+ * 인라인 2K 헤더 "COMMUNITY" + TossListItem 조합.
  * API/데이터 패칭은 기존과 동일 (/api/web/community).
  * ============================================================ */
 
 import useSWR from "swr";
-import { TossSectionHeader } from "@/components/toss/toss-section-header";
+import Link from "next/link";
 import { TossListItem } from "@/components/toss/toss-list-item";
 
 /* API 응답의 게시글 타입 (snake_case) */
@@ -56,8 +54,15 @@ export function HomeCommunity({ fallbackData }: HomeCommunityProps) {
 
   return (
     <section>
-      {/* 토스 스타일 섹션 헤더: "커뮤니티" + "전체보기 >" */}
-      <TossSectionHeader title="커뮤니티" actionHref="/community" />
+      {/* 2K 스타일 인라인 헤더: "COMMUNITY" (다른 홈 섹션과 동일 패턴) */}
+      <div className="flex items-end justify-between mb-4 pb-2 border-b-2 border-[var(--color-border)]">
+        <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter drop-shadow-sm">
+          COMMUNITY
+        </h2>
+        <Link href="/community" className="text-[10px] font-black text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors uppercase">
+          VIEW ALL &raquo;
+        </Link>
+      </div>
 
       {/* 게시글 리스트: TossListItem으로 통일 */}
       <div>

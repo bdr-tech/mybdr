@@ -91,7 +91,7 @@ export function CourtReports({ courtId, currentUserId }: CourtReportsProps) {
 
   return (
     <div
-      className="rounded-2xl p-5 sm:p-6 mb-4"
+      className="rounded-md p-5 sm:p-6 mb-4"
       style={{
         backgroundColor: "var(--color-card)",
         boxShadow: "var(--shadow-card)",
@@ -162,7 +162,7 @@ export function CourtReports({ courtId, currentUserId }: CourtReportsProps) {
       {/* 제보 작성 폼 */}
       {showForm && (
         <div
-          className="rounded-xl p-4 mb-3"
+          className="rounded-md p-4 mb-3"
           style={{
             backgroundColor: "var(--color-surface)",
             border: "1px solid var(--color-border-subtle)",

@@ -148,7 +148,7 @@ export function ImageUploader({
 
       {/* 이미지가 있으면 미리보기 + 삭제 버튼 */}
       {displayUrl ? (
-        <div className="relative overflow-hidden rounded-2xl border-2 border-dashed border-[var(--color-border)]">
+        <div className="relative overflow-hidden rounded-md border-2 border-dashed border-[var(--color-border)]">
           <div style={{ aspectRatio }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -195,7 +195,7 @@ export function ImageUploader({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-colors ${
+          className={`flex cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed transition-colors ${
             dragOver
               ? "border-[var(--color-accent)] bg-[var(--color-accent)]/5"
               : "border-[var(--color-border)] bg-[var(--color-elevated)] hover:border-[var(--color-border-active)]"

@@ -55,9 +55,9 @@ export default function LivePage() {
   }, [fetchMatches]);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-white">
+    <div className="min-h-screen bg-[var(--color-background)] text-white">
       {/* 헤더 */}
-      <div className="bg-[#111118] border-b border-white/10 px-4 py-4">
+      <div className="bg-[var(--color-surface)] border-b border-white/10 px-4 py-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🏀</span>
@@ -137,7 +137,7 @@ function MatchCard({ match, isLive }: { match: LiveMatch; isLive?: boolean }) {
   return (
     <Link href={`/live/${match.id}`}>
       <div
-        className={`bg-[#111118] rounded-xl p-4 transition-all hover:bg-[#16161F] ${
+        className={`bg-[var(--color-surface)] rounded-md p-4 transition-all hover:bg-[var(--color-elevated)] ${
           isLive ? "ring-1 ring-red-500/30" : ""
         }`}
       >
