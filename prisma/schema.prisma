@@ -533,6 +533,8 @@ model MatchPlayerStat {
   blocks                   Int?                 @default(0)
   turnovers                Int?                 @default(0)
   personal_fouls           Int?                 @default(0)
+  technicalFouls           Int?                 @default(0) @map("technical_fouls")
+  unsportsmanlikeFouls     Int?                 @default(0) @map("unsportsmanlike_fouls")
   plusMinus                Int?                 @default(0) @map("plus_minus")
   efficiency               Decimal?             @default(0.0) @db.Decimal(6, 1)
   true_shooting_percentage Decimal?             @default(0.0) @db.Decimal(5, 1)

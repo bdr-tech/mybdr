@@ -61,12 +61,14 @@ export async function GET(
 
     const homeTeamId = match.homeTeamId;
     const awayTeamId = match.awayTeamId;
-    const isLive = match.status === "in_progress" || match.status === "live";
+    // BUG-01 fix: playerStats가 존재하면(bdr_stat sync 완료) 경기 상태 무관하게 사용.
+    // playerStats 없을 때만 match_events 폴백으로 실시간 집계.
+    const hasPlayerStats = match.playerStats.length > 0;
 
     let homePlayers: PlayerRow[];
     let awayPlayers: PlayerRow[];
 
-    if (isLive || match.playerStats.length === 0) {
+    if (!hasPlayerStats) {
       // 진행 중이거나 playerStats가 없으면 match_events에서 실시간 집계
       const events = await prisma.match_events.findMany({
         where: { matchId: BigInt(matchId), undone: false },

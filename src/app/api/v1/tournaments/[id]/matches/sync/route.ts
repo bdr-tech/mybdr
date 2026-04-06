@@ -74,6 +74,8 @@ const singleMatchSyncSchema = z.object({
     blocks: z.number().int().min(0).default(0),
     turnovers: z.number().int().min(0).default(0),
     personal_fouls: z.number().int().min(0).default(0),
+    technical_fouls: z.number().int().min(0).default(0),
+    unsportsmanlike_fouls: z.number().int().min(0).default(0),
     plus_minus: z.number().int().default(0),
     fouled_out: z.boolean().default(false),
     ejected: z.boolean().default(false),
@@ -116,12 +118,39 @@ async function handler(req: NextRequest, ctx: AuthContext, tournamentId: string)
     const matchId = BigInt(match.server_id);
     const now = new Date();
 
+    // BUG-04 fix: quarterScores 합계와 home_score/away_score 정합성 보정
+    let correctedHomeScore = match.home_score;
+    let correctedAwayScore = match.away_score;
+    if (match.quarter_scores) {
+      const qs = match.quarter_scores as {
+        home?: { q1?: number; q2?: number; q3?: number; q4?: number; ot?: number[] };
+        away?: { q1?: number; q2?: number; q3?: number; q4?: number; ot?: number[] };
+      };
+      if (qs.home && qs.away) {
+        const sumQuarters = (side: { q1?: number; q2?: number; q3?: number; q4?: number; ot?: number[] }) => {
+          const base = (side.q1 ?? 0) + (side.q2 ?? 0) + (side.q3 ?? 0) + (side.q4 ?? 0);
+          const otSum = (side.ot ?? []).reduce((a: number, b: number) => a + b, 0);
+          return base + otSum;
+        };
+        const qsHome = sumQuarters(qs.home);
+        const qsAway = sumQuarters(qs.away);
+        if (qsHome !== match.home_score || qsAway !== match.away_score) {
+          console.warn(
+            `[match-sync] BUG-04: quarterScores mismatch matchId=${match.server_id}` +
+            ` qs=${qsHome}-${qsAway} vs score=${match.home_score}-${match.away_score}. Using quarterScores.`
+          );
+          correctedHomeScore = qsHome;
+          correctedAwayScore = qsAway;
+        }
+      }
+    }
+
     // 1. 경기 정보 업데이트 (트랜잭션 없이 개별 처리 — PgBouncer 타임아웃 방지)
     await prisma.tournamentMatch.update({
       where: { id: matchId },
       data: {
-        homeScore: match.home_score,
-        awayScore: match.away_score,
+        homeScore: correctedHomeScore,
+        awayScore: correctedAwayScore,
         status: match.status,
         // I-01: current_quarter는 sync data에 포함되지만 DB 컬럼 미존재.
         // quarter_scores JSON 내부에 current_quarter 값을 함께 보관한다.
@@ -175,6 +204,8 @@ async function handler(req: NextRequest, ctx: AuthContext, tournamentId: string)
           blocks: stat.blocks,
           turnovers: stat.turnovers,
           personal_fouls: stat.personal_fouls,
+          technicalFouls: stat.technical_fouls,
+          unsportsmanlikeFouls: stat.unsportsmanlike_fouls,
           plusMinus: stat.plus_minus,
           efficiency: eff,
           fouled_out: stat.fouled_out,
