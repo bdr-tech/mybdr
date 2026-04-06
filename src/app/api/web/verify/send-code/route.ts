@@ -3,10 +3,12 @@ import { apiSuccess, apiError } from "@/lib/api/response";
 import { storeCode } from "@/lib/security/verify-store";
 import { SolapiMessageService } from "solapi";
 
-const messageService = new SolapiMessageService(
-  process.env.SOLAPI_API_KEY!,
-  process.env.SOLAPI_API_SECRET!
-);
+function getMessageService() {
+  return new SolapiMessageService(
+    process.env.SOLAPI_API_KEY || "",
+    process.env.SOLAPI_API_SECRET || ""
+  );
+}
 
 /**
  * POST /api/web/verify/send-code
@@ -28,7 +30,7 @@ export const POST = withWebAuth(async (req: Request, ctx: WebAuthContext) => {
 
   // SMS 발송
   try {
-    await messageService.sendOne({
+    await getMessageService().sendOne({
       to: phone,
       from: process.env.SOLAPI_SENDER!,
       text: `[MYBDR] 인증 코드: ${code}`,
