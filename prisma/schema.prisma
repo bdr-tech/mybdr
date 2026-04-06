@@ -537,6 +537,7 @@ model MatchPlayerStat {
   technicalFouls           Int?                 @default(0) @map("technical_fouls")
   unsportsmanlikeFouls     Int?                 @default(0) @map("unsportsmanlike_fouls")
   plusMinus                Int?                 @default(0) @map("plus_minus")
+  quarterStatsJson         String?              @map("quarter_stats_json") @db.Text
   efficiency               Decimal?             @default(0.0) @db.Decimal(6, 1)
   true_shooting_percentage Decimal?             @default(0.0) @db.Decimal(5, 1)
   effective_fg_percentage  Decimal?             @default(0.0) @db.Decimal(5, 1)
