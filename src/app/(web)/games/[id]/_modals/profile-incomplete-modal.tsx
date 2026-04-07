@@ -43,7 +43,7 @@ export function ProfileIncompleteModal({
           </button>
           <Link
             href="/profile/edit"
-            className="flex-1 rounded-[12px] bg-[var(--color-accent)] py-2.5 text-center text-sm font-semibold text-white hover:bg-[var(--color-accent-hover)]"
+            className="flex-1 rounded-[12px] bg-[var(--color-primary)] py-2.5 text-center text-sm font-semibold text-[var(--color-text-on-primary)] border-2 border-[var(--color-primary)] hover:opacity-90"
           >
             프로필 완성하기
           </Link>
