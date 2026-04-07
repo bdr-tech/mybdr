@@ -70,11 +70,11 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
           Step 3. 최종 확인
         </h2>
 
-        {/* 미리보기 카드 (네이비 배경) */}
-        <div className="bg-[var(--color-accent)] text-white p-6 rounded-md mb-6">
+        {/* 미리보기 카드 */}
+        <div className="bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-primary)] p-6 rounded-md mb-6">
           {/* 타입 배지 */}
           <div className="mb-3">
-            <span className="inline-block px-3 py-1 bg-white/10 rounded-full text-xs font-medium">
+            <span className="inline-block px-3 py-1 bg-[var(--color-surface)] rounded-full text-xs font-medium text-[var(--color-text-secondary)]">
               {typeLabel}
             </span>
           </div>
@@ -85,29 +85,29 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
           {/* 상세 정보 */}
           <div className="space-y-2.5">
             {dateDisplay && (
-              <div className="flex items-center gap-2 text-sm text-white/80">
+              <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
                 <span className="material-symbols-outlined text-base">calendar_today</span>
                 <span>{dateDisplay}</span>
               </div>
             )}
             {location && (
-              <div className="flex items-center gap-2 text-sm text-white/80">
+              <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
                 <span className="material-symbols-outlined text-base">location_on</span>
                 <span>{location}</span>
               </div>
             )}
             {data.venueAddress && !location.includes(data.venueAddress) && (
-              <div className="flex items-center gap-2 text-xs text-white/60 pl-7">
+              <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] pl-7">
                 <span>{data.venueAddress}</span>
               </div>
             )}
           </div>
 
           {/* 구분선 */}
-          <div className="my-4 h-px bg-white/10" />
+          <div className="my-4 h-px bg-[var(--color-border)]" />
 
           {/* 요약 정보 */}
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-white/80">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--color-text-secondary)]">
             <span className="flex items-center gap-1">
               <span className="material-symbols-outlined text-base">group</span>
               최대 {data.maxParticipants}명
@@ -124,7 +124,7 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
 
           {data.allowGuests && data.gameType !== "1" && (
             <div className="mt-3">
-              <span className="inline-block rounded-full bg-white/10 px-3 py-1 text-xs">
+              <span className="inline-block rounded-full bg-[var(--color-surface)] px-3 py-1 text-xs text-[var(--color-text-secondary)]">
                 <span className="material-symbols-outlined text-sm align-middle mr-1">person_add</span>
                 게스트 허용
               </span>
@@ -133,7 +133,7 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
 
           {data.contactPhone && (
             <div className="mt-2">
-              <span className="inline-block rounded-full bg-white/10 px-3 py-1 text-xs">
+              <span className="inline-block rounded-full bg-[var(--color-surface)] px-3 py-1 text-xs text-[var(--color-text-secondary)]">
                 <span className="material-symbols-outlined text-sm align-middle mr-1">call</span>
                 {data.contactPhone}
               </span>
