@@ -627,7 +627,7 @@ function SummaryCard({
 }) {
   return (
     // sticky로 스크롤 시에도 고정, 네이비 배경
-    <div className="sticky top-24 bg-[var(--color-accent)] text-white p-6 rounded-md shadow-lg">
+    <div className="sticky top-24 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-primary)] p-6 rounded-md shadow-lg">
       <h3 className="font-bold text-xl mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
         Summary
       </h3>
@@ -635,43 +635,43 @@ function SummaryCard({
       {/* Summary 항목들 */}
       <ul className="space-y-4">
         {/* 게임 타입 */}
-        <li className="flex justify-between items-center border-b border-white/10 pb-3">
-          <span className="text-xs text-white/60">Selected Type</span>
+        <li className="flex justify-between items-center border-b border-[var(--color-border)] pb-3">
+          <span className="text-xs text-[var(--color-text-muted)]">Selected Type</span>
           <span className="text-sm font-bold">{typeLabel}</span>
         </li>
 
         {/* 총 인원 */}
-        <li className="flex justify-between items-center border-b border-white/10 pb-3">
-          <span className="text-xs text-white/60">Total Capacity</span>
+        <li className="flex justify-between items-center border-b border-[var(--color-border)] pb-3">
+          <span className="text-xs text-[var(--color-text-muted)]">Total Capacity</span>
           <span className="text-sm font-bold">{data.maxParticipants} Players</span>
         </li>
 
         {/* 참가비 */}
-        <li className="flex justify-between items-center border-b border-white/10 pb-3">
-          <span className="text-xs text-white/60">Entry Fee</span>
+        <li className="flex justify-between items-center border-b border-[var(--color-border)] pb-3">
+          <span className="text-xs text-[var(--color-text-muted)]">Entry Fee</span>
           <span className="text-sm font-bold">{feeDisplay}</span>
         </li>
 
         {/* 일정 (입력된 경우만 표시) */}
         {data.scheduledDate && (
-          <li className="flex justify-between items-center border-b border-white/10 pb-3">
-            <span className="text-xs text-white/60">Date</span>
+          <li className="flex justify-between items-center border-b border-[var(--color-border)] pb-3">
+            <span className="text-xs text-[var(--color-text-muted)]">Date</span>
             <span className="text-sm font-bold">{data.scheduledDate}</span>
           </li>
         )}
 
         {/* 장소 (입력된 경우만 표시) */}
         {data.venueName && (
-          <li className="flex justify-between items-center border-b border-white/10 pb-3">
-            <span className="text-xs text-white/60">Location</span>
+          <li className="flex justify-between items-center border-b border-[var(--color-border)] pb-3">
+            <span className="text-xs text-[var(--color-text-muted)]">Location</span>
             <span className="text-sm font-bold truncate max-w-[150px]">{data.venueName}</span>
           </li>
         )}
       </ul>
 
       {/* 환불 정책 안내 */}
-      <div className="mt-8 p-4 bg-white/5 rounded border border-white/10">
-        <p className="text-xs text-white/50 leading-relaxed">
+      <div className="mt-8 p-4 bg-[var(--color-surface)] rounded border border-[var(--color-border)]">
+        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
           매치 생성 시 서비스 이용 약관에 동의하게 됩니다. 매치 시작 24시간 전까지 취소 시 100% 환불이 가능합니다.
         </p>
       </div>
