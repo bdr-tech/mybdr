@@ -50,8 +50,19 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
   let dateDisplay = "";
   if (data.scheduledDate && data.scheduledTime) {
     const dt = new Date(`${data.scheduledDate}T${data.scheduledTime}`);
-    dateDisplay = `${dt.toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short", timeZone: "Asia/Seoul" })} ${dt.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Seoul" })}`;
-    if (data.durationHours) dateDisplay += ` · ${data.durationHours}시간`;
+    const y = dt.getFullYear();
+    const mo = String(dt.getMonth() + 1).padStart(2, "0");
+    const d = String(dt.getDate()).padStart(2, "0");
+    const sh = String(dt.getHours()).padStart(2, "0");
+    const sm = String(dt.getMinutes()).padStart(2, "0");
+    if (data.durationHours) {
+      const end = new Date(dt.getTime() + Number(data.durationHours) * 60 * 60 * 1000);
+      const eh = String(end.getHours()).padStart(2, "0");
+      const em = String(end.getMinutes()).padStart(2, "0");
+      dateDisplay = `${y}-${mo}-${d} ${sh}시 ${sm}분 ~ ${eh}시 ${em}분`;
+    } else {
+      dateDisplay = `${y}-${mo}-${d} ${sh}시 ${sm}분`;
+    }
   }
 
   return (
