@@ -9,6 +9,22 @@
 const DAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
 /**
+ * UTC Date를 KST 기준 연/월/일/시/분/요일로 분해
+ * 서버(UTC)에서 실행해도 항상 KST 기준 값 반환
+ */
+function toKST(d: Date) {
+  const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  return {
+    year: kst.getUTCFullYear(),
+    month: kst.getUTCMonth(),
+    date: kst.getUTCDate(),
+    day: kst.getUTCDay(),
+    hours: kst.getUTCHours(),
+    minutes: kst.getUTCMinutes(),
+  };
+}
+
+/**
  * Date 또는 ISO 문자열을 안전하게 Date 객체로 변환
  * null/undefined/빈 문자열이면 null 반환
  */
@@ -26,10 +42,8 @@ function toDate(date: Date | string | null | undefined): Date | null {
 export function formatShortDate(date: Date | string | null | undefined): string {
   const d = toDate(date);
   if (!d) return "";
-  const month = d.getMonth() + 1;
-  const day = d.getDate();
-  const dayName = DAY_NAMES[d.getDay()];
-  return `${month}/${day}(${dayName})`;
+  const k = toKST(d);
+  return `${k.month + 1}/${k.date}(${DAY_NAMES[k.day]})`;
 }
 
 /**
@@ -38,8 +52,9 @@ export function formatShortDate(date: Date | string | null | undefined): string 
 export function formatShortTime(date: Date | string | null | undefined): string {
   const d = toDate(date);
   if (!d) return "--:--";
-  const h = String(d.getHours()).padStart(2, "0");
-  const m = String(d.getMinutes()).padStart(2, "0");
+  const k = toKST(d);
+  const h = String(k.hours).padStart(2, "0");
+  const m = String(k.minutes).padStart(2, "0");
   return `${h}:${m}`;
 }
 
@@ -53,28 +68,28 @@ export function formatRelativeDateTime(date: Date | string | null | undefined): 
 
   const now = new Date();
   const time = formatShortTime(d);
+  const kNow = toKST(now);
+  const kTarget = toKST(d);
 
-  // 오늘/내일 판별: 연-월-일 비교 (시간 무관)
-  const todayStr = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
-  const targetStr = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  // 오늘/내일 판별: KST 기준 연-월-일 비교
+  const todayStr = `${kNow.year}-${kNow.month}-${kNow.date}`;
+  const targetStr = `${kTarget.year}-${kTarget.month}-${kTarget.date}`;
 
   if (todayStr === targetStr) {
     return `오늘 ${time}`;
   }
 
-  // 내일 판별
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = `${tomorrow.getFullYear()}-${tomorrow.getMonth()}-${tomorrow.getDate()}`;
+  // 내일 판별 (KST 기준)
+  const tomorrowDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const kTomorrow = toKST(tomorrowDate);
+  const tomorrowStr = `${kTomorrow.year}-${kTomorrow.month}-${kTomorrow.date}`;
 
   if (targetStr === tomorrowStr) {
     return `내일 ${time}`;
   }
 
-  // 그 외: "3/22 19:00"
-  const month = d.getMonth() + 1;
-  const day = d.getDate();
-  return `${month}/${day} ${time}`;
+  // 그 외: "3/22 19:00" (KST)
+  return `${kTarget.month + 1}/${kTarget.date} ${time}`;
 }
 
 /**
@@ -107,8 +122,6 @@ export function formatDateRange(
 export function formatGroupDate(date: Date | string | null | undefined): string {
   const d = toDate(date);
   if (!d) return "일정 미정";
-  const month = d.getMonth() + 1;
-  const day = d.getDate();
-  const dayName = DAY_NAMES[d.getDay()];
-  return `${month}월 ${day}일 ${dayName}요일`;
+  const k = toKST(d);
+  return `${k.month + 1}월 ${k.date}일 ${DAY_NAMES[k.day]}요일`;
 }

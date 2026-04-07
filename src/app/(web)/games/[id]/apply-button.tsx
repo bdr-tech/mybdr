@@ -90,8 +90,8 @@ export function GameApplyButton({
             {message.text}
           </p>
         )}
-        <Button className="w-full" onClick={handleApply} disabled={loading || applied}>
-          {loading ? "신청 중..." : applied ? "신청 완료" : "참가 신청"}
+        <Button variant={applied ? "secondary" : "cta"} className="w-full text-lg py-3" onClick={handleApply} disabled={loading || applied}>
+          {loading ? "신청 중..." : applied ? "✅ 신청 완료" : "🏀 참가 신청"}
         </Button>
       </div>
     </>

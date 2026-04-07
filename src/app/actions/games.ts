@@ -150,7 +150,7 @@ export async function createGameAction(
         game_id: generateGameId(fields.gameType),
         uuid: crypto.randomUUID(),
         title: fields.title,
-        scheduled_at: new Date(fields.scheduledAt),
+        scheduled_at: new Date(fields.scheduledAt + "+09:00"), // KST 입력 → UTC 저장
         venue_name: fields.venueName,
         max_participants: fields.maxParticipants,
         fee_per_person: fields.feePerPerson,
