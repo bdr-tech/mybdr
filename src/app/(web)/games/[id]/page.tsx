@@ -269,7 +269,7 @@ export default async function GameDetailPage({
           </PriceCard>
 
           {/* 호스트 프로필 카드 */}
-          <HostCard organizerName={null} />
+          <HostCard organizerName={userRecord?.nickname ?? userRecord?.name ?? null} contactPhone={game.contact_phone ?? null} />
         </div>
       </div>
 
