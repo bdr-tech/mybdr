@@ -83,6 +83,9 @@ export default async function GameDetailPage({
 
   if (!game) return notFound();
 
+  // BigInt → Number 변환 (클라이언트 컴포넌트 직렬화 호환)
+  const safeGame = JSON.parse(JSON.stringify(game, (_, v) => typeof v === "bigint" ? Number(v) : v));
+
   // Phase 2: 유저 프로필 + 신청자 목록 병렬 조회 (기존 로직 100% 유지)
   const [userRecord, applications] = await Promise.all([
     session
@@ -148,7 +151,7 @@ export default async function GameDetailPage({
       {showProfileBanner && <ProfileIncompleteBanner />}
 
       {/* 히어로 배너: 경기장 이미지 + 그라디언트 + MATCH DAY 배지 */}
-      <HeroBanner game={game} />
+      <HeroBanner game={safeGame} />
 
       {/* 경기 타입/상태 배지 */}
       <div className="flex flex-wrap items-center gap-2">
@@ -190,9 +193,9 @@ export default async function GameDetailPage({
         {/* 좌측: 메인 콘텐츠 */}
         <div className="space-y-8">
           {/* 게임 타입별 상세 섹션 (Amenities + Rules 스타일) */}
-          {game.game_type === 0 && <PickupDetail game={game} />}
-          {game.game_type === 1 && <GuestDetail game={game} />}
-          {game.game_type === 2 && <TeamMatchDetail game={game} />}
+          {game.game_type === 0 && <PickupDetail game={safeGame} />}
+          {game.game_type === 1 && <GuestDetail game={safeGame} />}
+          {game.game_type === 2 && <TeamMatchDetail game={safeGame} />}
 
           {/* 참여자 아바타 그리드 (호스트 아닌 경우) */}
           {!isHost && (
@@ -233,7 +236,7 @@ export default async function GameDetailPage({
 
         {/* 우측: 가격 카드 + 호스트 카드 (sticky) */}
         <div className="space-y-6">
-          <PriceCard game={game}>
+          <PriceCard game={safeGame}>
             {/* 신청 버튼: 호스트 제외, 미신청자만 */}
             {session && !isHost && !myApplication && (
               <GameApplyButton

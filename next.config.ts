@@ -46,7 +46,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' https://accounts.google.com https://t1.daumcdn.net http://t1.daumcdn.net https://dapi.kakao.com http://dapi.kakao.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://t1.daumcdn.net http://t1.daumcdn.net https://cdn.jsdelivr.net",
       "img-src 'self' data: https: http:",
-      "font-src 'self' data: https://fonts.gstatic.com",
+      "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net",
       "connect-src 'self' https: http:",
       "frame-src https://postcode.map.daum.net http://postcode.map.daum.net https://postcode.map.kakao.com http://postcode.map.kakao.com https://t1.daumcdn.net https://accounts.google.com https://nid.naver.com https://kauth.kakao.com https://www.youtube.com https://www.youtube-nocookie.com", // 카카오 우편번호 + OAuth + YouTube embed
       "frame-ancestors 'none'",
