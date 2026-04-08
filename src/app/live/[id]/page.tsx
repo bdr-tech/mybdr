@@ -49,7 +49,7 @@ interface MatchData {
   away_score: number;
   round_name: string | null;
   tournament_name: string;
-  quarter_scores: {
+  quarterScores: {
     home: { q1: number; q2: number; q3: number; q4: number; ot: number[] };
     away: { q1: number; q2: number; q3: number; q4: number; ot: number[] };
   } | null;
@@ -157,7 +157,7 @@ export default function LiveBoxScorePage() {
     );
   }
 
-  const qs = match.quarter_scores;
+  const qs = match.quarterScores;
   const quarters = [
     { label: "Q1", home: qs?.home.q1 ?? 0, away: qs?.away.q1 ?? 0 },
     { label: "Q2", home: qs?.home.q2 ?? 0, away: qs?.away.q2 ?? 0 },
