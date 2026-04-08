@@ -85,13 +85,13 @@ export async function GET(
         ...(match.homeTeam?.players ?? []).map((p) => ({
           id: Number(p.id),
           jerseyNumber: p.jerseyNumber,
-          name: p.users?.nickname ?? p.users?.name ?? "-",
+          name: p.users?.nickname ?? p.users?.name ?? p.player_name ?? `#${p.jerseyNumber ?? "-"}`,
           teamId: Number(p.tournamentTeamId),
         })),
         ...(match.awayTeam?.players ?? []).map((p) => ({
           id: Number(p.id),
           jerseyNumber: p.jerseyNumber,
-          name: p.users?.nickname ?? p.users?.name ?? "-",
+          name: p.users?.nickname ?? p.users?.name ?? p.player_name ?? `#${p.jerseyNumber ?? "-"}`,
           teamId: Number(p.tournamentTeamId),
         })),
       ];
@@ -196,7 +196,7 @@ export async function GET(
         return {
           id: Number(stat.id),
           jerseyNumber: player.jerseyNumber,
-          name: user?.nickname ?? user?.name ?? "-",
+          name: user?.nickname ?? user?.name ?? player.player_name ?? `#${player.jerseyNumber ?? "-"}`,
           teamId: Number(player.tournamentTeamId),
           min: stat.minutesPlayed ?? 0,
           pts: stat.points ?? 0,

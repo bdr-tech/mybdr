@@ -56,7 +56,7 @@ async function handler(
       id: Number(p.id),
       tournament_team_id: Number(p.tournamentTeamId),
       user_id: p.userId?.toString(),
-      user_name: p.users?.nickname ?? `Player #${p.jerseyNumber ?? p.id}`,
+      user_name: p.users?.nickname ?? p.player_name ?? `#${p.jerseyNumber ?? p.id}`,
       jersey_number: p.jerseyNumber,
       position: p.position,
       role: p.role,
