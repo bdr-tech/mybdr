@@ -41,6 +41,14 @@ async function handler(req: NextRequest, ctx: AuthContext, tournamentId: string)
         });
       });
 
+      // 경기 시작 시 대회 상태 자동 전환 (fire-and-forget)
+      if (match.status === "in_progress") {
+        prisma.tournament.updateMany({
+          where: { id: tournamentId, status: { in: ["draft", "registration_open", "registration_closed"] } },
+          data: { status: "in_progress" },
+        }).catch(() => {});
+      }
+
       // 경기 완료 시 승자 진출 + 전적 업데이트 (fire-and-forget)
       if (match.status === "completed") {
         advanceWinner(BigInt(match.matchId)).catch(() => {});

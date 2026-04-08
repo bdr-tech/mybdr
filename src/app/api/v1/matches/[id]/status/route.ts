@@ -47,6 +47,17 @@ export async function PATCH(
 
     const updated = await updateMatchStatus(matchId, status);
 
+    // 경기가 live(in_progress)되면 대회도 자동으로 in_progress 전환
+    if (status === "in_progress" && match.tournamentId) {
+      prisma.tournament.updateMany({
+        where: {
+          id: match.tournamentId,
+          status: { in: ["draft", "registration_open", "registration_closed"] },
+        },
+        data: { status: "in_progress" },
+      }).catch(() => {}); // fire-and-forget
+    }
+
     // 경기 취소 시 참가자(양 팀 선수)에게 알림 발송 (fire-and-forget)
     if (status === "cancelled") {
       const teamIds = [match.homeTeamId, match.awayTeamId].filter(
