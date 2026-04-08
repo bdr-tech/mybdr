@@ -365,10 +365,14 @@ export async function getMyTournaments(
  * 대회 생성
  */
 export async function createTournament(input: CreateTournamentInput) {
+  const { randomBytes } = await import("crypto");
+  const apiToken = randomBytes(32).toString("hex");
+
   const tournament = await prisma.tournament.create({
     data: {
       name: input.name,
       organizerId: input.organizerId,
+      apiToken,
       format: input.format ?? "single_elimination",
       startDate: input.startDate ?? null,
       endDate: input.endDate ?? null,
