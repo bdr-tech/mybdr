@@ -464,3 +464,18 @@ html.light .watermark-text {
   color: rgba(0, 0, 0, 0.03);
 }
 
+/* 프린트: 박스스코어만 A4 세로 출력 */
+@media print {
+  @page { size: A4 portrait; margin: 12mm; }
+  body { background: white !important; color: black !important; -webkit-print-color-adjust: exact; }
+  body > * { display: none !important; }
+  #box-score-print-area { display: block !important; visibility: visible !important; position: static !important; width: 100% !important; }
+  #box-score-print-area, #box-score-print-area * { visibility: visible !important; color: black !important; background: white !important; border-color: #ccc !important; }
+  #box-score-print-area table { font-size: 9px; border-collapse: collapse; }
+  #box-score-print-area th { color: #555 !important; border-bottom: 1px solid #999 !important; }
+  #box-score-print-area td { border-bottom: 1px solid #ddd !important; }
+  .print\\:hidden { display: none !important; }
+  .print\\:block { display: block !important; }
+  .print\\:table { display: table !important; }
+}
+
