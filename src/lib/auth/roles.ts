@@ -25,7 +25,7 @@ export const MEMBERSHIP_PRICES: Record<MembershipType, string> = {
   3: "₩199,000/월",
 };
 
-export const MAX_SUPER_ADMINS = 4;
+export const MAX_SUPER_ADMINS = 10;
 
 export function canHostPickup(mt: number): boolean {
   return mt >= MEMBERSHIP.PICKUP_HOST;
