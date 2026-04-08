@@ -1,4 +1,4 @@
-import { type ButtonHTMLAttributes, type ReactNode } from "react";
+import React, { type ButtonHTMLAttributes, type ReactNode } from "react";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "cta";
 
@@ -6,21 +6,16 @@ type Variant = "primary" | "secondary" | "ghost" | "danger" | "cta";
 // Phase 4-2: 하드코딩 색상 -> CSS 변수로 전환
 // cta: 웜 오렌지(#F4A261)로 변경 (기존 빨간색 #E31B23에서)
 const variants: Record<Variant, string> = {
-  // primary: 진한 텍스트색 배경 + 흰 텍스트
   primary:
-    "bg-color-text-primary text-color-text-on-primary font-bold hover:opacity-85",
-  // cta(주요 액션): 웜 오렌지 배경 + 흰 텍스트
+    "font-bold hover:opacity-85 text-white",
   cta:
-    "bg-color-accent text-color-text-on-primary font-bold hover:bg-color-accent-hover",
-  // secondary: 카드 배경 + 테두리 스타일
+    "font-bold hover:opacity-90 text-white",
   secondary:
-    "bg-color-card text-color-text-primary border-2 border-color-text-primary font-bold hover:bg-color-card-hover",
-  // ghost: 텍스트만 보이는 버튼 (배경 없음)
+    "font-bold border-2",
   ghost:
-    "text-color-primary font-bold hover:bg-color-primary-light",
-  // danger: 위험 동작용 (삭제, 탈퇴 등)
+    "font-bold",
   danger:
-    "bg-color-error/20 text-color-error font-bold hover:bg-color-error/30",
+    "font-bold",
 };
 
 export function Button({
@@ -35,11 +30,18 @@ export function Button({
   className?: string;
   loading?: boolean;
 } & ButtonHTMLAttributes<HTMLButtonElement>) {
+  const variantStyles: Record<Variant, React.CSSProperties> = {
+    primary: { backgroundColor: 'var(--color-text-primary)', color: '#fff' },
+    cta: { backgroundColor: 'var(--color-accent)', color: '#fff' },
+    secondary: { backgroundColor: 'var(--color-surface)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' },
+    ghost: { backgroundColor: 'transparent', color: 'var(--color-primary)' },
+    danger: { backgroundColor: 'rgba(239,68,68,0.15)', color: 'var(--color-error)' },
+  };
+
   return (
     <button
-      // 공통 스타일 + variant별 스타일 + 커스텀 className
-      // focus-visible: 키보드 접근성 (Tab 키로 포커스 시 링 표시)
-      className={`rounded-[10px] px-6 py-3 text-sm min-h-[44px] transition-all active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-color-primary focus-visible:ring-offset-2 ${variants[variant]} ${className}`}
+      className={`rounded-[10px] px-6 py-3 text-sm min-h-[44px] transition-all active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${variants[variant]} ${className}`}
+      style={variantStyles[variant]}
       disabled={loading || props.disabled}
       {...props}
     >
