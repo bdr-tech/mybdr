@@ -300,8 +300,8 @@ export default function LiveBoxScorePage() {
           <p className="text-xs text-gray-500 mt-0.5">{match.round_name ?? ""} · {STATUS_LABEL[match.status] ?? match.status}</p>
         </div>
 
-        {/* 쿼터별 득점 요약 (화면 + 프린트 공용) */}
-        <div className="bg-[#111118] rounded-xl overflow-hidden">
+        {/* 쿼터별 득점 요약 (프린트 전용 — 화면에서는 상단 스코어보드에 표시) */}
+        <div data-print-show className="hidden">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-white/10 text-gray-500">
@@ -314,18 +314,18 @@ export default function LiveBoxScorePage() {
             </thead>
             <tbody>
               <tr className="border-b border-white/5">
-                <td className="py-2 px-3 font-semibold text-gray-200 truncate max-w-[100px]">{match.home_team.name}</td>
+                <td className="py-2 px-3 font-semibold">{match.home_team.name}</td>
                 {quarters.map((q) => (
-                  <td key={q.label} className="py-2 px-2 text-center text-gray-300">{q.home}</td>
+                  <td key={q.label} className="py-2 px-2 text-center">{q.home}</td>
                 ))}
-                <td className="py-2 px-3 text-center font-bold text-white text-sm">{match.home_score}</td>
+                <td className="py-2 px-3 text-center font-bold text-sm">{match.home_score}</td>
               </tr>
               <tr>
-                <td className="py-2 px-3 font-semibold text-gray-200 truncate max-w-[100px]">{match.away_team.name}</td>
+                <td className="py-2 px-3 font-semibold">{match.away_team.name}</td>
                 {quarters.map((q) => (
-                  <td key={q.label} className="py-2 px-2 text-center text-gray-300">{q.away}</td>
+                  <td key={q.label} className="py-2 px-2 text-center">{q.away}</td>
                 ))}
-                <td className="py-2 px-3 text-center font-bold text-white text-sm">{match.away_score}</td>
+                <td className="py-2 px-3 text-center font-bold text-sm">{match.away_score}</td>
               </tr>
             </tbody>
           </table>
