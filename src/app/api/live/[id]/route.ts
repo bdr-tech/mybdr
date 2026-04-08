@@ -225,14 +225,26 @@ export async function GET(
         .map(toPlayerRow);
     }
 
-    // DB quarterScores가 불완전하면 PBP에서 쿼터별 점수 계산
-    let quarterScores = match.quarterScores as {
-      home: { q1: number; q2: number; q3: number; q4: number; ot: number[] };
-      away: { q1: number; q2: number; q3: number; q4: number; ot: number[] };
-    } | null;
+    // DB quarterScores 파싱 — 앱 포맷({"Q1":{"home":3,"away":3}}) 또는 서버 포맷({"home":{"q1":3},"away":{"q1":3}})
+    type QS = { home: { q1: number; q2: number; q3: number; q4: number; ot: number[] }; away: { q1: number; q2: number; q3: number; q4: number; ot: number[] } };
+    let quarterScores: QS | null = null;
+    const rawQS = match.quarterScores as Record<string, unknown> | null;
 
-    // home/away 구조가 없으면 PBP 기반으로 계산
-    if (!quarterScores?.home || !quarterScores?.away) {
+    if (rawQS?.home && rawQS?.away) {
+      // 서버 포맷 그대로 사용
+      quarterScores = rawQS as unknown as QS;
+    } else if (rawQS?.Q1 || rawQS?.Q2 || rawQS?.Q3 || rawQS?.Q4) {
+      // 앱 포맷 → 서버 포맷 변환
+      const get = (key: string, side: string) => ((rawQS[key] as Record<string, number>)?.[side]) ?? 0;
+      const otKeys = Object.keys(rawQS).filter(k => k.startsWith("OT")).sort();
+      quarterScores = {
+        home: { q1: get("Q1","home"), q2: get("Q2","home"), q3: get("Q3","home"), q4: get("Q4","home"), ot: otKeys.map(k => get(k,"home")) },
+        away: { q1: get("Q1","away"), q2: get("Q2","away"), q3: get("Q3","away"), q4: get("Q4","away"), ot: otKeys.map(k => get(k,"away")) },
+      };
+    }
+
+    // DB에 유효한 쿼터 점수가 없으면 PBP 기반으로 계산
+    if (!quarterScores) {
       const pbpForScores = await prisma.play_by_plays.findMany({
         where: { tournament_match_id: BigInt(matchId), is_made: true, points_scored: { gt: 0 } },
         select: { quarter: true, points_scored: true, tournament_team_id: true },
