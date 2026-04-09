@@ -140,7 +140,7 @@ export default function LiveBoxScorePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[var(--color-background)] flex items-center justify-center text-white">
+      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center text-white">
         <div className="text-center">
           <div className="text-5xl mb-4">🏀</div>
           <p className="text-gray-400">{error}</p>
@@ -151,7 +151,7 @@ export default function LiveBoxScorePage() {
 
   if (!match) {
     return (
-      <div className="min-h-screen bg-[var(--color-background)] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -173,9 +173,9 @@ export default function LiveBoxScorePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[var(--color-background)] text-white">
+    <div className="min-h-screen text-white" style={{ backgroundColor: '#0A0A0F' }}>
       {/* 헤더 */}
-      <div className="bg-[var(--color-surface)] border-b border-white/10 px-4 py-3 flex items-center justify-between">
+      <div className="border-b border-white/10 px-4 py-3 flex items-center justify-between" style={{ backgroundColor: '#141416' }}>
         <div className="flex items-center gap-3 min-w-0">
           <button onClick={() => window.history.back()} className="shrink-0 text-gray-400 hover:text-white transition-colors">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -246,7 +246,7 @@ export default function LiveBoxScorePage() {
 
         {/* 쿼터별 점수 */}
         {quarters.some((q) => q.home > 0 || q.away > 0) && (
-          <div className="mt-4 bg-[var(--color-surface)] rounded-md overflow-hidden">
+          <div className="mt-4 bg-[#141416] rounded-md overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/10">
@@ -360,7 +360,7 @@ export default function LiveBoxScorePage() {
       )}
 
       {/* 하단 갱신 정보 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[var(--color-background)]/90 backdrop-blur border-t border-white/10 px-4 py-2 flex items-center justify-between">
+      <div className="fixed bottom-0 left-0 right-0 bg-[#0A0A0F]/90 backdrop-blur border-t border-white/10 px-4 py-2 flex items-center justify-between">
         <span className="text-xs text-gray-600">
           🏀 BDR Live Score
         </span>
@@ -391,13 +391,13 @@ function BoxScoreTable({
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
         <span className="text-sm font-semibold text-gray-200">{teamName}</span>
       </div>
-      <div className="bg-[var(--color-surface)] rounded-md overflow-hidden">
+      <div className="bg-[#141416] rounded-md overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-white/10 text-gray-500">
-                <th className="py-2 px-3 text-left font-normal sticky left-0 bg-[var(--color-surface)]">#</th>
-                <th className="py-2 px-1 text-left font-normal sticky left-8 bg-[var(--color-surface)] min-w-[70px]">이름</th>
+                <th className="py-2 px-3 text-left font-normal sticky left-0 bg-[#141416]">#</th>
+                <th className="py-2 px-1 text-left font-normal sticky left-8 bg-[#141416] min-w-[70px]">이름</th>
                 <th className="py-2 px-1 text-center font-normal">MIN</th>
                 <th className="py-2 px-1 text-center font-semibold text-gray-300">PTS</th>
                 <th className="py-2 px-1 text-center font-normal">FG</th>
