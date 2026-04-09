@@ -197,6 +197,7 @@ export async function GET(request: NextRequest) {
       maxParticipants: g.max_participants,
       feePerPerson: g.fee_per_person?.toString() ?? null,      // Decimal -> string
       skillLevel: g.skill_level,
+      authorNickname: g.author_nickname ?? null,
     }));
 
     // 30초 캐시: 경기 목록은 자주 변경되므로 짧은 캐시 적용
