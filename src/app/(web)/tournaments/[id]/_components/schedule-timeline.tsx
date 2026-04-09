@@ -8,6 +8,7 @@
  */
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { formatShortTime, formatGroupDate } from "@/lib/utils/format-date";
 
@@ -207,13 +208,13 @@ export function ScheduleTimeline({ matches, teams }: Props) {
                       />
                     </div>
 
-                    {/* 오른쪽: 매치 카드 */}
-                    <div
-                      className="mb-4 flex-1 rounded-[var(--radius-card)] border p-4 transition-all"
+                    {/* 오른쪽: 매치 카드 → 클릭 시 경기 상세(라이브/결과) */}
+                    <Link
+                      href={`/live/${match.id}`}
+                      className="mb-4 flex-1 rounded-[var(--radius-card)] border p-4 transition-all hover:opacity-80 block"
                       style={{
                         borderColor: isHighlighted ? "var(--color-primary)" : "var(--color-border)",
                         backgroundColor: "var(--color-card)",
-                        // 하이라이트된 경기는 왼쪽 보더 강조
                         borderLeftWidth: isHighlighted ? "3px" : undefined,
                         borderLeftColor: isHighlighted ? "var(--color-primary)" : undefined,
                       }}
@@ -309,7 +310,7 @@ export function ScheduleTimeline({ matches, teams }: Props) {
                           </span>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   </div>
                 );
               })}
