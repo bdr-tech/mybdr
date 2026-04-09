@@ -27,14 +27,19 @@ async function handlePost(
     return apiError("세션이 만료되었습니다", 410, "SESSION_EXPIRED");
   }
 
-  // 상태 확인: waiting만 참가 가능
-  if (session.status !== "waiting") {
-    return apiError("이미 참가자가 있는 세션입니다", 409, "SESSION_ALREADY_PAIRED");
-  }
-
   // 호스트가 자기 세션에 참가하는 것 방지
   if (session.hostUserId === guestUserId) {
     return apiError("자신이 생성한 세션에는 참가할 수 없습니다", 400, "SELF_JOIN_NOT_ALLOWED");
+  }
+
+  // 상태 확인:
+  // - waiting: 정상 참가
+  // - paired/active: 같은 게스트면 재참가 허용 (네트워크 끊김 후 재접속), 다른 게스트는 거부
+  if (session.status !== "waiting") {
+    if (session.guestUserId !== null && session.guestUserId !== guestUserId) {
+      return apiError("이미 다른 참가자가 있는 세션입니다", 409, "SESSION_ALREADY_PAIRED");
+    }
+    // 같은 게스트 재참가 → 그대로 통과
   }
 
   // 세션 업데이트: waiting → paired
