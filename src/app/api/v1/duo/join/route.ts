@@ -33,32 +33,35 @@ async function handlePost(
   }
 
   // 상태 확인:
-  // - waiting: 정상 참가
-  // - paired/active: 같은 게스트면 재참가 허용 (네트워크 끊김 후 재접속), 다른 게스트는 거부
-  if (session.status !== "waiting") {
-    if (session.guestUserId !== null && session.guestUserId !== guestUserId) {
-      return apiError("이미 다른 참가자가 있는 세션입니다", 409, "SESSION_ALREADY_PAIRED");
-    }
-    // 같은 게스트 재참가 → 그대로 통과
+  // - waiting: 정상 참가 (waiting → paired)
+  // - paired/active + 같은 게스트: 재접속 (상태 유지)
+  // - paired/active + 다른 게스트: 거부
+  const isReconnect =
+    session.status !== "waiting" &&
+    session.guestUserId !== null &&
+    session.guestUserId === guestUserId;
+
+  if (session.status !== "waiting" && !isReconnect) {
+    return apiError("이미 다른 참가자가 있는 세션입니다", 409, "SESSION_ALREADY_PAIRED");
   }
 
-  // 세션 업데이트: waiting → paired
-  const updated = await prisma.duoSession.update({
-    where: { id: session.id },
-    data: {
-      guestUserId,
-      status: "paired",
-    },
-  });
+  // 신규 참가만 DB 업데이트, 재접속은 그대로 유지
+  if (!isReconnect) {
+    await prisma.duoSession.update({
+      where: { id: session.id },
+      data: { guestUserId, status: "paired" },
+    });
+  }
 
-  const guestTeam = updated.hostTeam === "home" ? "away" : "home";
+  const guestTeam = session.hostTeam === "home" ? "away" : "home";
 
   return apiSuccess({
-    channel_name: updated.channelName,
-    tournament_id: updated.tournamentId,
-    match_id: Number(updated.matchId),
+    channel_name: session.channelName,
+    tournament_id: session.tournamentId,
+    match_id: Number(session.matchId),
     guest_team: guestTeam,
-    host_team: updated.hostTeam,
+    host_team: session.hostTeam,
+    reconnected: isReconnect,
   });
 }
 
