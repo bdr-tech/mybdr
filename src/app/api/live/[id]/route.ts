@@ -197,8 +197,11 @@ export async function GET(
             row.min = Math.round(row.min_seconds / 60);
           } catch {}
         } else if (stat.minutesPlayed && stat.minutesPlayed > 0) {
-          row.min = stat.minutesPlayed;
-          row.min_seconds = stat.minutesPlayed * 60;
+          // minutesPlayed: v0.5.7+부터 초 단위, 이전 버전은 분 단위
+          // 600 이상이면 초 단위로 판단 (10분 이상 = 초 단위)
+          const isSeconds = stat.minutesPlayed >= 60;
+          row.min_seconds = isSeconds ? stat.minutesPlayed : stat.minutesPlayed * 60;
+          row.min = Math.round(row.min_seconds / 60);
         }
         // +/- 보강
         if (stat.plusMinus != null) {
@@ -219,7 +222,9 @@ export async function GET(
             return Object.values(parsed).reduce((sum, q) => sum + (q.min ?? 0), 0);
           } catch {}
         }
-        return (stat.minutesPlayed ?? 0) * 60;
+        // v0.5.7+부터 초 단위, 이전 버전은 분 단위
+        const mp = stat.minutesPlayed ?? 0;
+        return mp >= 60 ? mp : mp * 60;
       };
 
       const toPlayerRow = (stat: (typeof match.playerStats)[number]): PlayerRow => {
