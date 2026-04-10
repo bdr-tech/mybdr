@@ -69,8 +69,22 @@ function ScheduleTabContent({ tournamentId }: { tournamentId: string }) {
 
   if (isLoading) return <TabSkeleton />;
 
-  const matches: ScheduleMatch[] = data?.data?.matches ?? data?.matches ?? [];
-  const teams: ScheduleTeam[] = data?.data?.teams ?? data?.teams ?? [];
+  const rawMatches = data?.data?.matches ?? data?.matches ?? [];
+  const matches: ScheduleMatch[] = rawMatches.map((m: Record<string, unknown>) => ({
+    id: String(m.id ?? m.Id ?? ''),
+    homeTeamName: (m.homeTeamName ?? m.home_team_name ?? null) as string | null,
+    awayTeamName: (m.awayTeamName ?? m.away_team_name ?? null) as string | null,
+    homeScore: (m.homeScore ?? m.home_score ?? 0) as number,
+    awayScore: (m.awayScore ?? m.away_score ?? 0) as number,
+    status: (m.status ?? null) as string | null,
+    roundName: (m.roundName ?? m.round_name ?? null) as string | null,
+    scheduledAt: (m.scheduledAt ?? m.scheduled_at ?? null) as string | null,
+    courtNumber: (m.courtNumber ?? m.court_number ?? null) as string | null,
+  }));
+  const teams: ScheduleTeam[] = (data?.data?.teams ?? data?.teams ?? []).map((t: Record<string, unknown>) => ({
+    id: String(t.id ?? ''),
+    name: (t.name ?? '') as string,
+  }));
 
   return (
     <div>
