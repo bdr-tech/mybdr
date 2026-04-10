@@ -9,6 +9,7 @@ interface PlayerRow {
   name: string;
   team_id: number;
   min: number;
+  min_seconds?: number;
   pts: number;
   fgm: number;
   fga: number;
@@ -426,7 +427,7 @@ function BoxScoreTable({
                   <td className="py-2 px-1 text-gray-200 sticky left-8 bg-inherit min-w-[70px] truncate max-w-[70px]">
                     {p.name}
                   </td>
-                  <td className="py-2 px-1 text-center text-gray-500">{p.min}</td>
+                  <td className="py-2 px-1 text-center text-gray-500">{formatGameClock(p.min_seconds ?? p.min * 60)}</td>
                   <td className="py-2 px-1 text-center font-bold" style={{ color }}>
                     {p.pts}
                   </td>
@@ -457,6 +458,7 @@ function BoxScoreTable({
                 const total = players.reduce(
                   (acc, p) => ({
                     min: acc.min + p.min,
+                    min_seconds: acc.min_seconds + (p.min_seconds ?? p.min * 60),
                     pts: acc.pts + p.pts,
                     fgm: acc.fgm + p.fgm,
                     fga: acc.fga + p.fga,
@@ -473,13 +475,13 @@ function BoxScoreTable({
                     to: acc.to + p.to,
                     fouls: acc.fouls + p.fouls,
                   }),
-                  { min: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fouls: 0 }
+                  { min: 0, min_seconds: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fouls: 0 }
                 );
                 return (
                   <tr className="border-t border-white/20 bg-white/[0.04] font-semibold">
                     <td className="py-2 px-3 text-gray-400 sticky left-0 bg-[#111118]" />
                     <td className="py-2 px-1 text-gray-200 sticky left-8 bg-[#111118]">TOTAL</td>
-                    <td className="py-2 px-1 text-center text-gray-400">{total.min}</td>
+                    <td className="py-2 px-1 text-center text-gray-400">{formatGameClock(total.min_seconds)}</td>
                     <td className="py-2 px-1 text-center" style={{ color }}>{total.pts}</td>
                     <td className="py-2 px-1 text-center text-gray-300">{total.fgm}/{total.fga}</td>
                     <td className="py-2 px-1 text-center text-gray-300">{total.tpm}/{total.tpa}</td>

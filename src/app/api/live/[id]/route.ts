@@ -104,7 +104,7 @@ export async function GET(
           jerseyNumber: p.jerseyNumber,
           name: p.name,
           teamId: p.teamId,
-          min: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0,
+          min: 0, min_seconds: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0,
           oreb: 0, dreb: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fouls: 0, plus_minus: 0,
         });
       }
@@ -190,6 +190,17 @@ export async function GET(
       awayPlayers = allStats.filter((s) => s.teamId === Number(awayTeamId));
     } else {
       // 종료된 경기 — playerStats 테이블 사용
+      // quarter_stats_json에서 초 단위 MIN 합계 계산 (없으면 minutesPlayed * 60 fallback)
+      const getSecondsPlayed = (stat: (typeof match.playerStats)[number]): number => {
+        if (stat.quarterStatsJson) {
+          try {
+            const parsed = JSON.parse(stat.quarterStatsJson) as Record<string, { min?: number; pm?: number }>;
+            return Object.values(parsed).reduce((sum, q) => sum + (q.min ?? 0), 0);
+          } catch {}
+        }
+        return (stat.minutesPlayed ?? 0) * 60;
+      };
+
       const toPlayerRow = (stat: (typeof match.playerStats)[number]): PlayerRow => {
         const player = stat.tournamentTeamPlayer;
         const user = player.users;
@@ -199,6 +210,7 @@ export async function GET(
           name: user?.nickname ?? user?.name ?? player.player_name ?? `#${player.jerseyNumber ?? "-"}`,
           teamId: Number(player.tournamentTeamId),
           min: stat.minutesPlayed ?? 0,
+          min_seconds: getSecondsPlayed(stat),
           pts: stat.points ?? 0,
           fgm: stat.fieldGoalsMade ?? 0,
           fga: stat.fieldGoalsAttempted ?? 0,
@@ -336,6 +348,7 @@ interface PlayerRow {
   name: string;
   teamId: number;
   min: number;
+  min_seconds?: number;
   pts: number;
   fgm: number;
   fga: number;
