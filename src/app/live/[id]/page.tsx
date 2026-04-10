@@ -375,6 +375,8 @@ function BoxScoreTable({
 }) {
   if (!players || players.length === 0) return null;
 
+  const sorted = [...players].sort((a, b) => b.pts - a.pts);
+
   return (
     <div className="print-team-table-wrap">
       <div className="flex items-center gap-2 mb-2 print:hidden">
@@ -405,7 +407,7 @@ function BoxScoreTable({
               </tr>
             </thead>
             <tbody>
-              {players.map((p, i) => (
+              {sorted.map((p, i) => (
                 <tr
                   key={p.id}
                   className={`border-b border-white/5 ${i % 2 === 0 ? "" : "bg-white/[0.02]"}`}
