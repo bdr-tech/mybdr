@@ -69,8 +69,8 @@ function ScheduleTabContent({ tournamentId }: { tournamentId: string }) {
 
   if (isLoading) return <TabSkeleton />;
 
-  const matches: ScheduleMatch[] = data?.data?.matches ?? [];
-  const teams: ScheduleTeam[] = data?.data?.teams ?? [];
+  const matches: ScheduleMatch[] = data?.data?.matches ?? data?.matches ?? [];
+  const teams: ScheduleTeam[] = data?.data?.teams ?? data?.teams ?? [];
 
   return (
     <div>
