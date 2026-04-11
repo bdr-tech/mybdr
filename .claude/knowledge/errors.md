@@ -2,6 +2,21 @@
 <!-- 담당: debugger, tester | 최대 30항목 -->
 <!-- 이 프로젝트에서 반복되는 에러 패턴, 함정, 주의사항을 기록 -->
 
+### [2026-04-12] Prisma schema drift — users.gender 컬럼 누락 (db push 시 파괴적 DROP 예고)
+- **분류**: error / trap
+- **발견자**: developer (Commit 1 dry-run 중)
+- **내용**: `prisma/schema.prisma`의 User 모델에 `gender` 필드가 없는데, 실제 DB(`users` 테이블)에는 `gender character varying nullable` 컬럼이 존재하는 drift 상태. 이 상태에서 `prisma db push`를 실행하면 Prisma가 "schema가 진리"라고 판단해 `ALTER TABLE "users" DROP COLUMN "gender"`를 자동 생성 → 운영/개발 DB에서 컬럼과 데이터가 파괴됨.
+- **원인 추정**: Rails → Next.js 마이그레이션 당시 `prisma db pull`이 누락했거나 이후 수동 삭제된 필드. schema는 쓰지 않지만 DB에는 legacy 컬럼이 남아 있음.
+- **해결 방법 (이번 적용)**:
+  1. 신규 모델 추가 후 **반드시 `prisma migrate diff --from-schema-datasource ... --to-schema-datamodel ... --script`로 전체 SQL 미리보기**
+  2. 기존 테이블에 대한 `ALTER TABLE`/`DROP`이 발견되면 **즉시 중단**
+  3. `information_schema.columns`에서 해당 컬럼의 정확한 타입/nullable/default 조회
+  4. Prisma 타입으로 역매핑하여 schema에 해당 필드 1줄 복원 (예: `gender String? @db.VarChar`)
+  5. 재 dry-run으로 기존 테이블 변경 0건 확인 후 push
+- **예방**: 신규 테이블만 추가하는 작업에서도 **항상 dry-run 전체를 눈으로 검토**. `CREATE TABLE`만 있을 것이라는 가정 금지. 브랜치 격리 DB 전략 하에서는 특히 중요 (다른 worktree/원본과 DB 공유).
+- **참조**: decisions.md "심판 v2 최종확정 - TournamentMatch 단독 FK" 직전 항목들
+- **참조횟수**: 0
+
 ### [2026-03-23] YouTube Search API order=viewCount 정렬 부정확
 - **분류**: error
 - **발견자**: pm (디버깅 과정에서)

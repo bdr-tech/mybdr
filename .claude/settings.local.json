@@ -218,7 +218,8 @@
       "Bash(rm -rf /tmp/myclaude-staging)",
       "Bash(git fetch:*)",
       "Bash(git rev-list:*)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(tee /tmp/drift-diag.sql)"
     ]
   }
 }

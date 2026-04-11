@@ -2,6 +2,18 @@
 <!-- 담당: planner-architect, developer | 최대 30항목 -->
 <!-- 프로젝트의 폴더 구조, 파일 역할, 핵심 패턴을 기록 -->
 
+### [2026-04-12] 심판 플랫폼 재설계 v2: Association 계층 + 배정/정산 조회 포함
+- **분류**: architecture
+- **발견자**: planner-architect
+- **내용**: MVP 1차 범위 확장. (1) Prisma 신규 모델 6개: Association(계층형 self-relation, 20개 시드=KBA 1 + 시도 17 + KBL/WKBL 2), AssociationAdmin(매핑 테이블, user_id unique), Referee, RefereeCertificate(file_url 제거 + cert_number 추가 + verified_by_admin_id), RefereeAssignment(tournament_match_id/game_id FK 2개, 관계 선언 없이 컬럼만 → 기존 games/TournamentMatch 0수정), RefereeSettlement(assignment_id unique). (2) ALTER TABLE 0건 — users 0수정(옵션 B: AssociationAdmin 매핑 테이블 채택), CREATE TABLE 6건만. (3) 라우트: (referee)/referee/{layout, page, profile, certificates, assignments, settlements, admin/{layout, page, members, bulk-verify}}. 심판 공개 목록 제거(registry 삭제). admin layout에서 admin_role=association_admin + AssociationAdmin 행 존재 이중 가드. (4) API 17개: 본인 Referee CRUD 4 + 본인 Certificate CRUD 4 + Association 공개 목록 1 + 본인 배정/정산 조회 2 + Admin 6(소속 심판 목록/상세/개별검증토글/Excel preview/Excel confirm/대시보드). (5) Excel 업로드 2단계 UX: preview(파싱+매칭, DB미변경) → confirm(트랜잭션 일괄 verified=true). 컬럼 표준 9열(협회코드/실명/생년월일/전화/종류/등급/번호/발급일/갱신일). xlsx 패키지 기존 존재. (6) 경기 엔티티는 3종(games 소문자 BigInt, TournamentMatch BigInt, pickup_games) — 배정 대상은 tournament_match_id/game_id 2개 FK로 분리. (7) Association 시드는 prisma/seed.ts + package.json prisma.seed 스크립트, REGIONS(src/lib/constants/regions.ts) 키 17개 재사용. (8) 이전 v1(단일 Referee+Certificate 2모델, 공개 목록, 파일업로드)에서 6모델/조회전용배정정산/Excel검증/공개제거로 확장.
+- **참조횟수**: 0
+
+### [2026-04-12] 심판 플랫폼 라우트 그룹 (referee) 설계
+- **분류**: architecture
+- **발견자**: planner-architect
+- **내용**: 심판/경기원 플랫폼 MVP 1차를 `src/app/(referee)/` 신규 라우트 그룹으로 분리. (1) 라우트 트리: `(referee)/referee/layout.tsx`(독자 셸: 상단 BDR 로고+"심판 플랫폼" 타이틀+테마토글, 좌측 사이드네비[대시보드/목록/자격증], 모바일 하단탭) + `page.tsx`(대시보드, 서버, getWebSession) + `registry/[page|new|[id]/[page|edit]]` + `certificates/[page|[id]]`. (2) 각 페이지 유형: 목록=Client(SWR fetch), 상세=Server(prisma 직접), 폼=Client. (3) (web) layout.tsx는 거대한 "use client" 파일이라 재사용 불가 — referee는 globals.css/CSS 변수/테마토글/Material Symbols만 공유하고 셸은 자체 구현. (4) 신규 컴포넌트 6종(referee-shell/referee-card/referee-form/certificate-card/certificate-form/empty-state)은 (referee)/referee/_components/ 하위에 격리. (5) API: `src/app/api/web/referees/*`(GET/POST + [id] GET/PUT/DELETE) + `src/app/api/web/referee-certificates/*`(동일). 모두 withWebAuth + zod + prisma 직접 패턴. (6) 기존 (web)/(admin)/(site) 코드는 건드리지 않음 (읽기만).
+- **참조횟수**: 0
+
 ### [2026-04-05] 홈 페이지 NBA 2K 스타일 적용 현황 분석
 - **분류**: architecture
 - **발견자**: planner-architect
