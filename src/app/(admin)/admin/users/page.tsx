@@ -93,7 +93,8 @@ export default async function AdminUsersPage({
             placeholder="닉네임/이메일 검색"
             className="rounded-full border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] outline-none focus:border-[var(--color-accent)]"
           />
-          <button type="submit" className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white">검색</button>
+          {/* accent 배경은 테마 반응형이므로 글씨 색상도 on-accent 변수로 자동 전환 */}
+          <button type="submit" className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold" style={{ color: "var(--color-on-accent)" }}>검색</button>
         </form>
       </div>
 

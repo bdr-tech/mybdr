@@ -64,8 +64,9 @@ export function CurrentTeamCard({ teams }: CurrentTeamCardProps) {
           {/* CTA 버튼 */}
           <Link
             href={`/teams/${mainTeam.id}`}
-            className="w-full py-2.5 rounded text-center text-xs font-bold text-white transition-all hover:opacity-90"
-            style={{ backgroundColor: "var(--color-accent)" }}
+            className="w-full py-2.5 rounded text-center text-xs font-bold transition-all hover:opacity-90"
+            // accent 배경은 테마 반응형이므로 글씨도 on-accent로 자동 전환
+            style={{ backgroundColor: "var(--color-accent)", color: "var(--color-on-accent)" }}
           >
             팀 상세 정보
           </Link>

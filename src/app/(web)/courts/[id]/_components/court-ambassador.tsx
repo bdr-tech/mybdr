@@ -106,9 +106,11 @@ export function CourtAmbassador({ courtId, currentUserId }: Props) {
         >
           {/* 프로필 아바타 */}
           <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold"
             style={{
               backgroundColor: "var(--color-accent)",
+              // 다크/라이트 테마에서 accent 배경 대비가 유지되도록 on-accent 변수 사용
+              color: "var(--color-on-accent)",
             }}
           >
             {ambassador.profile_image ? (
@@ -148,8 +150,9 @@ export function CourtAmbassador({ courtId, currentUserId }: Props) {
           {isMyAmbassador && (
             <button
               onClick={() => setEditOpen(true)}
-              className="shrink-0 rounded-[4px] px-3 py-1.5 text-xs font-semibold text-white transition-colors"
-              style={{ backgroundColor: "var(--color-accent)" }}
+              className="shrink-0 rounded-[4px] px-3 py-1.5 text-xs font-semibold transition-colors"
+              // accent 배경은 테마 반응형이므로 텍스트도 on-accent로 자동 전환
+              style={{ backgroundColor: "var(--color-accent)", color: "var(--color-on-accent)" }}
             >
               <span className="material-symbols-outlined align-middle mr-0.5" style={{ fontSize: "14px" }}>
                 edit
@@ -192,8 +195,9 @@ export function CourtAmbassador({ courtId, currentUserId }: Props) {
             <button
               onClick={handleApply}
               disabled={applying}
-              className="rounded-[4px] px-4 py-2 text-xs font-semibold text-white transition-colors disabled:opacity-50"
-              style={{ backgroundColor: "var(--color-accent)" }}
+              className="rounded-[4px] px-4 py-2 text-xs font-semibold transition-colors disabled:opacity-50"
+              // accent 배경에서 글씨 대비가 다크/라이트 자동 전환되도록 on-accent 사용
+              style={{ backgroundColor: "var(--color-accent)", color: "var(--color-on-accent)" }}
             >
               {applying ? "신청 중..." : "앰배서더 신청하기"}
             </button>
@@ -418,8 +422,9 @@ function AmbassadorEditModal({
           <button
             onClick={handleSave}
             disabled={saving || Object.keys(changes).length === 0}
-            className="flex-1 rounded-[4px] py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50"
-            style={{ backgroundColor: "var(--color-accent)" }}
+            className="flex-1 rounded-[4px] py-2.5 text-sm font-semibold transition-colors disabled:opacity-50"
+            // accent 배경 위 글씨가 테마 대비를 자동 유지하도록 on-accent 변수 사용
+            style={{ backgroundColor: "var(--color-accent)", color: "var(--color-on-accent)" }}
           >
             {saving ? "저장 중..." : `수정 반영 (${Object.keys(changes).length}개 항목)`}
           </button>
