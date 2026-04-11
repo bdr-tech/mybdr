@@ -213,7 +213,12 @@
       "Bash(ls \"C:\\\\0.programing\\\\my-bdr-subin-main\\\\src\\\\app\\\\\\(web\\)\")",
       "Bash(node:*)",
       "Bash(echo \"수정: $f\")",
-      "Bash(tasklist //fi \"pid eq 106908\" //v)"
+      "Bash(tasklist //fi \"pid eq 106908\" //v)",
+      "Bash(cygpath:*)",
+      "Bash(rm -rf /tmp/myclaude-staging)",
+      "Bash(git fetch:*)",
+      "Bash(git rev-list:*)",
+      "Bash(git check-ignore:*)"
     ]
   }
 }

@@ -1,5 +1,56 @@
 # MyBDR - Basketball Tournament Platform
 
+## 🚦 브랜치 / 워크플로우 규칙 (최우선)
+
+### 브랜치 구조
+- `main` — 보호 브랜치, 운영. **직접 push 절대 금지**. `dev → main` 머지는 원영이 담당
+- `dev` — 통합 브랜치. 팀원 브랜치 PR이 모이는 곳
+- `subin` — 수빈 개인 작업 브랜치
+- `wonyoung` — 원영 개인 작업 브랜치
+
+### 하루 작업 루틴
+```bash
+# 1) dev 최신화
+git checkout dev && git pull origin dev
+
+# 2) 내 브랜치로 돌아와 dev 머지
+git checkout subin
+git merge dev
+
+# 3) 작업 → 커밋 → 푸시
+git add .
+git commit -m "feat: 기능명"
+git push origin subin
+
+# 4) GitHub에서 subin → dev PR 생성
+```
+
+### 🚨 절대 금지
+1. `main` 브랜치에 직접 push (운영 사이트 즉시 영향)
+2. `.env`에 **운영 DB URL** 사용 (사용자 데이터 파괴 위험)
+3. 운영 DB 대상 `prisma db push` / 마이그레이션 실행
+
+### 개발 환경 구성
+- **개발 DB**: Supabase 개발 전용 인스턴스 (운영과 분리)
+- **개발 프리뷰**: https://mybdr-git-dev-mybdr.vercel.app/ (Vercel, `dev` 브랜치 연동)
+- **로컬 포트**: `http://localhost:3001` (`package.json`의 `dev` 스크립트에 `--port 3001` 고정)
+- **.env**: 개발 DB URL + localhost 주소. **운영 DB URL 사용 금지**
+- **.env.local**: 로컬 port 3001용 auth/CORS/APP_URL 오버라이드 (gitignored)
+
+### "오늘 작업 시작하자" 체크리스트
+사용자가 **"오늘 작업 시작하자"** 또는 유사한 말(작업 시작 / 세팅 확인)을 하면, 본 작업 전에 아래를 점검하고 사용자 승인을 받은 뒤에만 진행한다.
+
+1. `git remote -v` → `github.com/bdr-tech/mybdr.git` 가리키는지
+2. `git fetch origin --prune` 후 `main` / `dev` / `subin`의 원격-로컬 차이
+3. 현재 브랜치가 `subin`인지 (아니면 전환 제안)
+4. `.env` 존재 여부 + `DATABASE_URL`이 개발 DB인지 (값 노출 금지, "개발 DB로 보입니다" 수준만 보고)
+5. `.env.local`에 localhost:3001 오버라이드가 있는지
+6. 결과를 요약 보고 후 "이대로 작업 시작해도 될까요?" 명시적 승인 요청
+
+승인 전에는 임의로 파일 수정, 브랜치 전환, 머지, 커밋을 **하지 않는다**.
+
+---
+
 ## 프로젝트 개요
 Rails 8.0 기반 BDR Platform을 Next.js 15로 전환한 프로젝트.
 보안 최우선, Flutter 앱(bdr_stat) API 100% 호환.
