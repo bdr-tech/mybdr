@@ -219,7 +219,8 @@
       "Bash(git fetch:*)",
       "Bash(git rev-list:*)",
       "Bash(git check-ignore:*)",
-      "Bash(tee /tmp/drift-diag.sql)"
+      "Bash(tee /tmp/drift-diag.sql)",
+      "Bash(echo \"EXIT=$?\")"
     ]
   }
 }
