@@ -203,11 +203,10 @@ export async function GET(
             }
           } catch {}
         }
-        // 2) fallback: minutesPlayed (1인 모드 — 초 단위 저장)
+        // 2) fallback: minutesPlayed (초 단위)
         if (!resolved && stat.minutesPlayed && stat.minutesPlayed > 0) {
-          const mp = stat.minutesPlayed;
-          row.min_seconds = mp >= 60 ? mp : mp * 60;
-          row.min = Math.round(row.min_seconds / 60);
+          row.min_seconds = stat.minutesPlayed;
+          row.min = Math.round(stat.minutesPlayed / 60);
         }
         // +/- 보강
         if (stat.plusMinus != null) {
@@ -230,9 +229,8 @@ export async function GET(
             if (total > 0) return total;
           } catch {}
         }
-        // 2) fallback: minutesPlayed (1인 모드 — 초 단위 저장)
-        const mp = stat.minutesPlayed ?? 0;
-        return mp >= 60 ? mp : mp * 60;
+        // 2) fallback: minutesPlayed (초 단위)
+        return stat.minutesPlayed ?? 0;
       };
 
       const toPlayerRow = (stat: (typeof match.playerStats)[number]): PlayerRow => {
