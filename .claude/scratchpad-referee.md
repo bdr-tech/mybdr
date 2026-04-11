@@ -1,5 +1,150 @@
 # 심판/경기원 플랫폼 구축 스크래치패드 (subin-referee 브랜치)
 
+---
+
+## 📌 이어서 시작하기 (세션 전환 가이드) — 2026-04-12 중단 지점
+
+> **이 문서를 새로 여는 AI 어시스턴트에게**: 아래 블록이 최우선. 이 섹션 읽고 나서 "✅ 최종 확정 (2026-04-12)" 섹션으로 가세요.
+
+### 🔖 중단 시점 상태 스냅샷
+- **브랜치**: `subin-referee` (worktree는 `C:\0. Programing\mybdr-referee`)
+- **원격 동기화**: ✅ 완전 푸시 완료 (`git status` = clean)
+- **로컬 working tree**: clean
+- **main 대비**: 3 커밋 앞섬
+
+### 📦 커밋 히스토리 (최근)
+| 해시 | 메시지 | 상태 |
+|------|-------|------|
+| `e7e8d95` | feat(referee): 본인 API 4개 + 본인 페이지 7개 + 독자 셸 (Commit 2/4) | ✅ pushed |
+| `eb3ea55` | feat(referee): Prisma 6모델 + 협회 20 시드 + users.gender drift 복원 (Commit 1/4) | ✅ pushed |
+| `f45a4b6` | chore: 브랜치/DB 워크플로우 규칙 + 허용 명령어 추가 | ✅ pushed (기존) |
+
+### 🗄 DB 상태 (Supabase 개발 DB `bwoor…krcvs`)
+- ✅ 신규 6 테이블 존재: `associations`, `association_admins`, `referees`, `referee_certificates`, `referee_assignments`, `referee_settlements`
+- ✅ `associations` 20행 시드됨 (KBA 1 + 시도 17 + KBL + WKBL)
+- ✅ `referees` / `certificates` / `assignments` / `settlements` 0행
+- ✅ `users.gender` drift 복원 완료 (schema에 `gender String? @db.VarChar` 추가됨)
+
+### 🧭 진행 현황표 (Commit 단위)
+| # | 범위 | 상태 | 커밋 |
+|---|------|------|------|
+| 1/4 | Prisma 6모델 + 협회 20시드 + drift 복원 | ✅ 완료 | eb3ea55 |
+| 2/4 | 본인 API 4개 + 본인 페이지 7개 + 독자 셸 | ✅ 완료 (warning 2건 별도 이슈) | e7e8d95 |
+| **3/4** | **배정/정산 조회 API + 본인 열람 페이지** | ⏳ **다음 작업** | — |
+| 4/4 | Admin 페이지 + Excel 업로드 + 개별 검증 | ⏸ 대기 | — |
+
+---
+
+### 🆕 다른 노트북에서 처음 세팅하기
+
+**가정**: 새 노트북에는 mybdr 프로젝트가 아직 없거나, 있어도 subin-referee 브랜치/worktree가 없음.
+
+#### 1) 저장소 받기
+```bash
+# 방법 A: 새로 clone (권장 — worktree 없이 단순하게)
+git clone https://github.com/bdr-tech/mybdr.git mybdr-referee
+cd mybdr-referee
+git checkout subin-referee
+git pull origin subin-referee
+
+# 방법 B: 기존 mybdr이 이미 있으면 worktree 추가
+cd mybdr
+git fetch origin
+git worktree add ../mybdr-referee subin-referee
+cd ../mybdr-referee
+```
+
+#### 2) 환경 파일 복사 (**매우 중요**)
+`.env`, `.env.local`은 **gitignored**라 원격에 없음. 원본 mybdr에서 복사하거나 사용자에게 받아야 함.
+```bash
+# 원본 mybdr이 같은 노트북에 있으면:
+cp ../mybdr/.env .env
+cp ../mybdr/.env.local .env.local
+```
+- `.env`의 `DATABASE_URL`은 공유 Supabase 개발 DB를 가리켜야 함 (`@aws-1-ap-northeast-2.pooler.supabase.com`, 프로젝트 `bwoorsgoijvlgutkrcvs`)
+- `.env.local`은 `NEXTAUTH_URL/CORS_ORIGIN/NEXT_PUBLIC_APP_URL` 3개가 **`http://localhost:3002`**로 설정되어야 함 (원본 mybdr은 3001, 이 worktree는 3002)
+
+#### 3) 의존성 설치 + Prisma 준비
+```bash
+npm install
+npx prisma generate
+```
+
+**주의**: `prisma db push` / `prisma migrate` 는 **절대 실행하지 말 것**. DB는 이미 반영되어 있고 잘못 실행하면 drift(users.gender 등)가 다시 감지될 수 있음. 확인만 원하면:
+```bash
+node -e "const{PrismaClient}=require('@prisma/client');const p=new PrismaClient();p.association.count().then(c=>{console.log('assoc:',c);return p.\$disconnect()})"
+# 기대 출력: assoc: 20
+```
+
+#### 4) dev 서버 (필요 시)
+```bash
+npm run dev
+# → http://localhost:3002  ← 3001 아님!
+# 로그인 후 http://localhost:3002/referee 로 접근
+```
+
+#### 5) AI 어시스턴트 시작 프롬프트 (새 세션에 붙여넣기)
+```
+C:\0. Programing\mybdr-referee 폴더에서 심판 플랫폼 작업을 이어서 해줘.
+.claude/scratchpad-referee.md 의 "📌 이어서 시작하기" 섹션과
+"✅ 최종 확정 (2026-04-12)" 섹션을 먼저 읽고 상황 파악해줘.
+지난번 Commit 2까지 완료했고, 이번엔 Commit 3/4 (배정/정산 조회) 진행할 차례야.
+```
+
+---
+
+### 🎯 다음 작업: Commit 3/4 — 배정/정산 조회
+
+**범위** (이번 커밋에서 할 것):
+- **스키마는 이미 있음** (Commit 1에서 `referee_assignments`, `referee_settlements` 테이블 생성 완료)
+- **생성 로직은 2차 범위**라 만들지 않음. 대신 테스트용 시드 데이터를 DB에 수동 insert 하거나 `prisma/seed.js`에 테스트 데이터 추가.
+- **API 2개** (본인 조회 전용):
+  - `GET /api/web/referee-assignments?mine=1` — 본인 배정 기록 (tournament_match 별도 조회로 조인)
+  - `GET /api/web/referee-settlements?mine=1` — 본인 정산 기록
+- **페이지 2개**:
+  - `src/app/(referee)/referee/assignments/page.tsx` — 내 배정 목록 (테이블 형태, 상태별 필터, 최신순)
+  - `src/app/(referee)/referee/settlements/page.tsx` — 내 정산 목록 (금액 합계, 상태별 필터, 최신순)
+- **사이드바 링크 활성화**: Commit 2에서 placeholder였던 `/referee/assignments`, `/referee/settlements` 링크를 활성화
+
+**제외** (Commit 4에서 할 것):
+- Admin 페이지, Excel 업로드, 개별 검증 토글, 협회 관리자 대시보드
+
+**참고 위치** (scratchpad 내):
+- "🔄 갱신" 섹션의 4-11 (Assignment 조회 API)과 4-12 (Settlement 조회 API) 스펙
+- Prisma 모델 5번(RefereeAssignment), 6번(RefereeSettlement) 필드 정의
+- 구현 순서 Commit 3 라인
+
+---
+
+### ⚠️ 미해결 warning 2건 (Commit 2 잔재 — 별도 이슈)
+1. **로그인 후 복귀 미동작**: `(referee)/referee/layout.tsx`가 `/login?redirect=/referee`로 보내지만 기존 `(web)/login/page.tsx`와 `loginAction`이 해당 파라미터를 안 읽음. 수정하려면 `(web)` 페이지 수정이 필요해 이번 작업 범위 밖. 로그인 후 사용자가 `/referee` 수동 재진입 필요.
+2. **하드코딩 `#fff` 9곳**: `_components/empty-state.tsx:55`, `certificates/page.tsx:181,221,355,413`, `certificates/[id]/page.tsx:232,405`, `profile/edit/page.tsx:248,391`. 전부 `var(--color-primary)` 배경 위 흰색 텍스트. 시각적 문제 없으나 CLAUDE.md "하드코딩 색상 금지" 위반. `var(--color-text-inverse)` 같은 토큰이 있는지 확인 후 교체 또는 Tailwind `text-white` 유틸로 대체 권장.
+
+### 📝 Reviewer nit 6건 (작은 개선 제안, 기능 영향 없음)
+- `referees/me/route.ts` POST의 P2002 에러 메시지 오해(license_number vs user_id unique)
+- `referees/me/route.ts` GET의 404 vs 200+null 관례
+- `profile/edit` 페이지의 Association 타입 `parent_id` 불일치
+- `certificates` 페이지의 에러+empty UI 중복 표시
+- `associations/route.ts` catch에서 error 로깅 누락
+- `certificates/[id]` 페이지의 `verified_at` Date 포맷 방어 미흡
+
+### 🔍 검증 결과 상세 위치
+- "테스트 결과 (tester)" 섹션 — Test 1~8 결과표
+- "리뷰 결과 (reviewer)" 섹션 — 섹션별 체크리스트 + nit 테이블
+- "수정 요청 (tester)" 섹션 — warning 2건 테이블
+
+### 🛑 절대 지킬 원칙 (이어받은 AI도 반드시)
+1. 기존 `(web)`/`(admin)`/`(site)` 페이지·레이아웃·공통 컴포넌트·`globals.css` **수정 금지**
+2. 기존 Prisma 모델 수정 금지 (Referee 관련 신규 모델 및 User `referee Referee?`, `gender` 제외)
+3. `prisma db push`/`migrate reset`/`--force-reset` 등 파괴적 명령 금지 — 실행 전엔 반드시 dry-run으로 전체 SQL 확인
+4. `main` 브랜치 직접 push 금지
+5. `lucide-react` 금지, Material Symbols Outlined만 사용
+6. 하드코딩 색상 금지 — CSS 변수 사용
+7. 포트 3002 고정 (원본 mybdr이 3001 사용 중)
+8. 작업 단위마다 tester + reviewer 병렬 검증 후 PM 직접 커밋
+
+---
+
 ## 🎯 프로젝트 비전
 심판/경기원 관리 플랫폼. 시도/시군구 협회 수준까지 확장하며 관리 수수료 비즈니스 모델.
 MyBDR의 독자 영역으로 구축 후 추후 통합/연동 예정.
@@ -106,9 +251,11 @@ model RefereeCertificate {
 4. dev 서버 띄울 때는 `next dev --port 3002` (포트 충돌 방지)
 
 ## 현재 작업
-- **요청**: 심판/경기원 MVP 1차 (등록 + 자격증 CRUD)
-- **상태**: 대기 (환경 세팅 → planner-architect 호출 예정)
-- **현재 담당**: pm
+- **요청**: 심판/경기원 MVP 1차 (협회 계층 + 등록 + 자격증 CRUD + 배정/정산 조회 + Admin/Excel)
+- **상태**: ⏸ **세션 중단 (노트북 전환)** — Commit 2/4 완료·푸시됨, Commit 3/4 대기
+- **현재 담당**: — (재개 시 pm이 이어받음)
+- **재개 방법**: 위 "📌 이어서 시작하기" 섹션 참고. 새 세션 시작 시 해당 블록 먼저 읽을 것.
+- **다음 단계**: Commit 3/4 — 배정/정산 조회 API 2개 + 본인 열람 페이지 2개
 
 ## 기획설계 (planner-architect)
 
@@ -1051,3 +1198,5 @@ src/app/(referee)/
 | 2026-04-12 | tester | Commit 2 검증 (8개 테스트) | PASS with warnings — tsc 0, 파일 14/14, IDOR/verified 삼중 방어 확인, DB 20/0/0, critical 0, warning 2(redirect 불일치, #fff 9건) |
 | 2026-04-12 | reviewer | Commit 2 코드 리뷰 (13파일) | APPROVE with comments — critical 0, warning 1(redirect 복귀 불가), nit 6, IDOR 교과서적/디자인 시스템 100% 준수 |
 | 2026-04-12 | pm | Commit 2 커밋 결정 | A안 채택 — 두 warning 모두 기능 정상, redirect는 (web) 수정 필요해 별도 이슈 롤링, #fff 9건은 수정 요청 테이블에 등록 후 커밋 |
+| 2026-04-12 | pm | Commit 2 커밋(e7e8d95) + 푸시 완료 | 16 files, +3001/-2. main 대비 3 앞섬. working tree clean |
+| 2026-04-12 | pm | 세션 중단 (노트북 전환) — 이어서 시작 가이드 작성 | scratchpad 최상단 "📌 이어서 시작하기" 블록 추가, 새 노트북 세팅 절차·다음 작업 범위·미해결 warning 전부 기록 |
