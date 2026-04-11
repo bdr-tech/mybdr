@@ -97,7 +97,7 @@ export default function NewPostPage() {
                 <button
                   type="button"
                   onClick={addImage}
-                  className="shrink-0 rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-accent-hover,#142D6B)]"
+                  className="shrink-0 rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover,#142D6B)]"
                 >
                   <span className="material-symbols-outlined text-base">add_photo_alternate</span>
                 </button>

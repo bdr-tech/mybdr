@@ -7,7 +7,7 @@ interface HostCardProps {
 
 export function HostCard({ organizerName, contactPhone }: HostCardProps) {
   return (
-    <div className="bg-[var(--color-accent)] p-6 rounded-md text-white">
+    <div className="bg-[var(--color-accent)] p-6 rounded-md text-[var(--color-on-accent)]">
       <div className="flex items-center gap-4 mb-4">
         <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/20 flex items-center justify-center text-white font-bold text-lg">
           {organizerName ? organizerName.charAt(0).toUpperCase() : "H"}

@@ -47,7 +47,7 @@ const labelCls = "mb-1 block text-sm text-[var(--color-text-muted)]";
 const pillCls = (active: boolean) =>
   `rounded-[4px] px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer ${
     active
-      ? "bg-[var(--color-accent)] text-white"
+      ? "bg-[var(--color-accent)] text-[var(--color-on-accent)]"
       : "bg-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border-active)]"
   }`;
 
@@ -242,7 +242,7 @@ export default function NewTournamentWizardPage() {
         </p>
         <Link
           href="/tournaments"
-          className="mt-2 rounded-[4px] bg-[var(--color-accent)] px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-accent-hover)]"
+          className="mt-2 rounded-[4px] bg-[var(--color-accent)] px-6 py-2 text-sm font-semibold text-[var(--color-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)]"
         >
           대회 목록으로 돌아가기
         </Link>
@@ -363,7 +363,7 @@ export default function NewTournamentWizardPage() {
             }}
             className={`flex flex-1 items-center justify-center gap-2 rounded-[4px] py-3 text-sm font-semibold transition-colors ${
               i === currentStep
-                ? "bg-[var(--color-accent)] text-white"
+                ? "bg-[var(--color-accent)] text-[var(--color-on-accent)]"
                 : i < currentStep
                   ? "cursor-pointer bg-[rgba(74,222,128,0.15)] text-[var(--color-success)]"
                   : "cursor-not-allowed bg-[var(--color-elevated)] text-[var(--color-text-muted)]"
@@ -863,7 +863,7 @@ export default function NewTournamentWizardPage() {
           <button
             onClick={handleCreate}
             disabled={loading}
-            className="w-full rounded-[4px] bg-[var(--color-accent)] py-4 text-base font-bold text-white transition-colors hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
+            className="w-full rounded-[4px] bg-[var(--color-accent)] py-4 text-base font-bold text-[var(--color-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
           >
             {loading ? "생성 중..." : "대회 생성하기"}
           </button>
@@ -885,7 +885,7 @@ export default function NewTournamentWizardPage() {
           </button>
           <button
             onClick={goNext}
-            className="rounded-[4px] bg-[var(--color-accent)] px-6 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-accent-hover)]"
+            className="rounded-[4px] bg-[var(--color-accent)] px-6 py-2.5 text-sm font-bold text-[var(--color-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)]"
           >
             다음
           </button>

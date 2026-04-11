@@ -294,7 +294,7 @@ export default function TournamentJoinPage() {
                 <div
                   className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
                     isActive
-                      ? "bg-[var(--color-accent)] text-white"
+                      ? "bg-[var(--color-accent)] text-[var(--color-on-accent)]"
                       : isDone
                         ? "bg-[color-mix(in_srgb,var(--color-accent)_20%,transparent)] text-[var(--color-accent)]"
                         : "bg-[var(--color-border)] text-[var(--color-text-muted)]"
@@ -430,7 +430,7 @@ export default function TournamentJoinPage() {
                     }}
                     className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                       selectedCategory === cat
-                        ? "bg-[var(--color-accent)] text-white"
+                        ? "bg-[var(--color-accent)] text-[var(--color-on-accent)]"
                         : "border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-bright)]"
                     }`}
                   >

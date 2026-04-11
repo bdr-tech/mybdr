@@ -237,7 +237,7 @@ export function AdminUsersTable({ users, updateUserRoleAction, updateUserStatusA
                           <option value={2}>팀장</option>
                           <option value={3}>대회관리자</option>
                         </select>
-                        <button type="submit" className="rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-accent)]">변경</button>
+                        <button type="submit" className="rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-[var(--color-on-accent)] hover:bg-[var(--color-accent)]">변경</button>
                       </form>
                     </div>
 

@@ -135,7 +135,7 @@ export default function VerifyPage() {
               <button
                 onClick={handleSubmit}
                 disabled={sending || !phone}
-                className="w-full rounded-[12px] bg-[var(--color-accent)] py-3 text-sm font-semibold text-white transition-all hover:bg-[var(--color-accent-hover)] active:scale-[0.98] disabled:opacity-50"
+                className="w-full rounded-[12px] bg-[var(--color-accent)] py-3 text-sm font-semibold text-[var(--color-on-accent)] transition-all hover:bg-[var(--color-accent-hover)] active:scale-[0.98] disabled:opacity-50"
               >
                 {sending ? "발송 중..." : "인증 코드 받기"}
               </button>
@@ -165,7 +165,7 @@ export default function VerifyPage() {
               <button
                 onClick={handleSubmit}
                 disabled={saving || verifyCode.length !== 6}
-                className="w-full rounded-[12px] bg-[var(--color-accent)] py-3 text-sm font-semibold text-white transition-all hover:bg-[var(--color-accent-hover)] active:scale-[0.98] disabled:opacity-50"
+                className="w-full rounded-[12px] bg-[var(--color-accent)] py-3 text-sm font-semibold text-[var(--color-on-accent)] transition-all hover:bg-[var(--color-accent-hover)] active:scale-[0.98] disabled:opacity-50"
               >
                 {saving ? "확인 중..." : "인증 완료"}
               </button>
@@ -194,7 +194,7 @@ export default function VerifyPage() {
               <button
                 onClick={handleSubmit}
                 disabled={saving || !email}
-                className="w-full rounded-[12px] bg-[var(--color-accent)] py-3 text-sm font-semibold text-white transition-all hover:bg-[var(--color-accent-hover)] active:scale-[0.98] disabled:opacity-50"
+                className="w-full rounded-[12px] bg-[var(--color-accent)] py-3 text-sm font-semibold text-[var(--color-on-accent)] transition-all hover:bg-[var(--color-accent-hover)] active:scale-[0.98] disabled:opacity-50"
               >
                 {saving ? "저장 중..." : "완료"}
               </button>

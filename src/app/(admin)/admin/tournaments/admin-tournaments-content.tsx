@@ -207,7 +207,7 @@ export function AdminTournamentsContent({
                 </select>
                 <button
                   type="submit"
-                  className="rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-accent-hover)]"
+                  className="rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]"
                 >
                   적용
                 </button>

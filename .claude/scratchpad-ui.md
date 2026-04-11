@@ -18,12 +18,79 @@
 허용 범위: 대상 페이지의 `page.tsx` + 해당 페이지 전용 `_components/*` 파일만
 
 ## 현재 작업
-- **요청**: [2단계] 다크모드 accent 버튼 가시성 버그 확장 수정 (Explore 전수 조사 결과 10개 포인트 / 7개 파일)
+- **요청**: [3단계] 다크모드 accent 버튼 가시성 버그 완전 소거 (약 29개 파일 / 45개 포인트 일괄)
 - **상태**: developer 위임 준비
 - **현재 담당**: pm → developer
-- **사용자 지시**: 옵션 C(하이브리드) — Explore 확정 10개 먼저 수정 → 이후 남은 의심 파일 재조사
-- **이전 단계 완료**: 커밋 `5d37c12 fix: 다크모드 accent 배경 버튼 글씨 가시성 수정` (공통 컴포넌트 3개 + globals.css)
-- **기반**: 이미 도입된 `--color-on-accent` 변수 그대로 재사용 (신규 CSS 변수 추가 없음)
+- **사용자 지시**: C 옵션 완결 — PM이 Grep으로 전수 검증한 리스트 기반 벌크 수정
+- **Explore 2단계 판정 오류 주의**: Explore가 "버튼이니까 text-white 필요"라는 논리로 대부분을 "안전"으로 잘못 분류. pill active 포함 **모든 accent 배경 + text-white 조합은 🔴 버그**. PM Grep + Read 교차 검증으로 확정.
+- **이전 단계**: 커밋 `5d37c12` (1단계: 공통 컴포넌트 3개 + globals.css) / `c2dc489` (2단계: 7파일 10포인트)
+- **기반**: 이미 도입된 `--color-on-accent` 변수 재사용 (신규 CSS 변수 없음)
+
+## 디버그 기록
+- **2026-04-12**: 사용자 로컬 dev 서버에서 "Jest worker encountered 2 child process exceptions, exceeding retry limit" 런타임 에러 제보. 운영(mybdr.kr) 정상. 원인: Turbopack HMR Worker Pool 상태 꼬임 (11개 파일 단시간 수정 누적). 해결: 포트 기반 dev 재시작 또는 `.next` 삭제 후 재시작. errors.md에 기록.
+
+## [3단계] developer 수정 명세 (29파일 / 45포인트)
+
+**공통 패턴** (모든 포인트 동일):
+- `className="... bg-[var(--color-accent)] ... text-white ..."` → `text-white`를 `text-[var(--color-on-accent)]`로 교체
+- 또는 `text-white` 제거 + `text-[var(--color-on-accent)]` 클래스 추가
+- pill 삼항식: `active ? "bg-[var(--color-accent)] text-white" : ...` → `active ? "bg-[var(--color-accent)] text-[var(--color-on-accent)]" : ...`
+
+### 📂 대상 파일 (줄번호 포함)
+
+**components/ 공통 (5개 파일)**
+1. `src/components/admin/admin-page-header.tsx:44` — 검색 버튼
+2. `src/components/tournament/tournament-copy-modal.tsx:190` — 복사 적용 버튼
+3. `src/components/tournament/game-time-input.tsx:12` — pill active
+4. `src/components/tournament/game-method-input.tsx:11` — pill active
+5. `src/components/tournament/game-ball-input.tsx:11` — pill active
+
+**(admin) 영역 (7개 파일)**
+6. `src/app/(admin)/admin/courts/admin-courts-content.tsx:219` — 등록 버튼
+7. `src/app/(admin)/admin/users/admin-users-table.tsx:240` — 역할 변경 버튼
+8. `src/app/(admin)/admin/tournaments/admin-tournaments-content.tsx:210` — 버튼
+9. `src/app/(admin)/admin/teams/admin-teams-content.tsx:127` — 버튼
+10. `src/app/(admin)/admin/logs/page.tsx:103` — 날짜 필터 active
+11. `src/app/(admin)/admin/suggestions/admin-suggestions-content.tsx:151` — 적용 버튼
+12. `src/app/(admin)/admin/games/admin-games-content.tsx:162` — 버튼
+
+**(web) 일반 (7개 파일)**
+13. `src/app/(web)/~offline/page.tsx:13` — 재시도 버튼
+14. `src/app/(web)/verify/page.tsx` — 138, 168, 197줄 (3군데)
+15. `src/app/(web)/community/new/page.tsx:100` — 이미지 추가 버튼
+16. `src/app/(web)/upgrade/page.tsx:78` — 문의 버튼
+17. `src/app/(web)/series/[slug]/page.tsx:96` — CTA 배경 카드 (class 문자열 `text-white` 아님 — `<div className="... text-white">` 래퍼. 배경이 accent라 안쪽 텍스트가 흰색 고정. 통째로 `text-[var(--color-on-accent)]`로 교체)
+18. `src/app/(web)/games/new/_modals/upgrade-modal.tsx:68` — 플랜 알아보기 링크
+19. `src/app/(web)/games/[id]/_components/host-card.tsx:10` — 호스트 정보 카드 전체 배경 (래퍼 div `text-white` → `text-[var(--color-on-accent)]`)
+
+**(web)/profile (1개 파일, 2군데)**
+20. `src/app/(web)/profile/complete/page.tsx` — 232, 361줄
+
+**(web)/tournaments (3개 파일)**
+21. `src/app/(web)/tournaments/[id]/join/page.tsx` — 297, 433줄 (pill active 2군데)
+22. `src/app/(web)/tournaments/[id]/bracket/_components/bracket-empty.tsx:16` — 참가팀 보기 링크
+
+**(web)/tournament-admin (6개 파일, 15군데 이상)**
+23. `src/app/(web)/tournament-admin/tournaments/page.tsx:24` — 새 대회 링크
+24. `src/app/(web)/tournament-admin/tournaments/[id]/wizard/page.tsx` — 67, 377, 880, 902줄 (4군데)
+25. `src/app/(web)/tournament-admin/tournaments/[id]/teams/page.tsx:108` — 필터 탭 active
+26. `src/app/(web)/tournament-admin/tournaments/[id]/site/page.tsx:334` — 진행 표시 step
+27. `src/app/(web)/tournament-admin/tournaments/new/wizard/page.tsx` — 50, 245, 366, 866, 888줄 (5군데)
+28. `src/app/(web)/tournament-admin/series/page.tsx` — 33, 74줄 (2군데)
+29. `src/app/(web)/tournament-admin/series/[id]/page.tsx` — 99, 125, 137줄 (3군데)
+
+### [3단계] developer 제약
+- 위 29개 파일 각 지정 줄의 `bg-[var(--color-accent)]` + `text-white` 조합만 수정
+- 같은 파일의 다른 버튼/요소(primary/error/success 배경)는 건드리지 않음
+- 1~2단계에서 수정한 11개 파일 재수정 금지
+- `--color-text-primary` 배경 건은 범위 외 (button.tsx primary variant 등)
+- `tsc --noEmit` 통과 필수
+- 구현 기록 섹션에 **[3단계]** 헤더로 추가 (1/2단계 내용 보존)
+- 45포인트가 많지만 패턴이 일관되므로 각 포인트별 Edit로 정확히 처리
+
+---
+
+## [이전 참고] [2단계] developer 수정 명세 (7개 파일, 10개 포인트) — 이미 완료됨
 
 ### [2단계] developer에게 전달할 수정 명세 (7개 파일, 10개 포인트)
 
@@ -259,9 +326,190 @@ npx tsc --noEmit → EXIT=0 (에러 0건)
 
 ---
 
+## 구현 기록 (developer) — [3단계] 다크모드 accent 버튼 가시성 완전 소거 벌크 수정
+
+📝 구현한 기능: PM이 Grep 전수 조사로 확정한 29개 파일 / 45개 포인트의 `bg-[var(--color-accent)]` + `text-white` 조합을 모두 `text-[var(--color-on-accent)]`로 일괄 교체. 1~2단계에서 도입된 `--color-on-accent` 변수를 그대로 재사용, 신규 CSS 변수/토큰 추가 없음.
+
+수정 파일 수: 29개
+수정 포인트: 45개 (명세 일치)
+
+### 변경 파일 목록 (29파일 / 45포인트)
+
+| # | 파일 경로 | 포인트 | 변경 요약 | 신규/수정 |
+|---|----------|--------|----------|----------|
+| 1 | `src/components/admin/admin-page-header.tsx` | 44 | 검색 버튼 className `text-white` → `text-[var(--color-on-accent)]` | 수정 |
+| 2 | `src/components/tournament/tournament-copy-modal.tsx` | 190 | "복사 적용" 버튼 | 수정 |
+| 3 | `src/components/tournament/game-time-input.tsx` | 12 | pillCls active 분기 | 수정 |
+| 4 | `src/components/tournament/game-method-input.tsx` | 11 | pillCls active 분기 | 수정 |
+| 5 | `src/components/tournament/game-ball-input.tsx` | 11 | pillCls active 분기 | 수정 |
+| 6 | `src/app/(admin)/admin/courts/admin-courts-content.tsx` | 219 | 코트 "등록" 제출 버튼 | 수정 |
+| 7 | `src/app/(admin)/admin/users/admin-users-table.tsx` | 240 | 역할 "변경" 제출 버튼 | 수정 |
+| 8 | `src/app/(admin)/admin/tournaments/admin-tournaments-content.tsx` | 210 | 상태 "적용" 제출 버튼 | 수정 |
+| 9 | `src/app/(admin)/admin/teams/admin-teams-content.tsx` | 127 | 팀 활성화/비활성화 버튼 | 수정 |
+| 10 | `src/app/(admin)/admin/logs/page.tsx` | 103 | 날짜 필터 active pill (비활성 pill은 범위 외) | 수정 |
+| 11 | `src/app/(admin)/admin/suggestions/admin-suggestions-content.tsx` | 151 | 건의사항 상태 적용 버튼 | 수정 |
+| 12 | `src/app/(admin)/admin/games/admin-games-content.tsx` | 162 | 게임 상태 적용 버튼 | 수정 |
+| 13 | `src/app/(web)/~offline/page.tsx` | 13 | "다시 시도" 버튼 | 수정 |
+| 14 | `src/app/(web)/verify/page.tsx` | 138, 168, 197 | 인증 코드 받기 / 인증 완료 / 완료 버튼 3군데 | 수정 |
+| 15 | `src/app/(web)/community/new/page.tsx` | 100 | 이미지 URL 추가 버튼 | 수정 |
+| 16 | `src/app/(web)/upgrade/page.tsx` | 78 | "관리자에게 문의하기" 링크 버튼 | 수정 |
+| 17 | `src/app/(web)/series/[slug]/page.tsx` | 96 | CTA 배경 카드 래퍼 div (자식 text-white 상속 기반) | 수정 |
+| 18 | `src/app/(web)/games/new/_modals/upgrade-modal.tsx` | 68 | "플랜 알아보기" 링크 | 수정 |
+| 19 | `src/app/(web)/games/[id]/_components/host-card.tsx` | 10 | 호스트 정보 카드 전체 래퍼 div (자식 white 요소는 건드리지 않음) | 수정 |
+| 20 | `src/app/(web)/profile/complete/page.tsx` | 232, 361 | 인증요청 버튼 + "프로필 저장하고 시작하기" 버튼 | 수정 |
+| 21 | `src/app/(web)/tournaments/[id]/join/page.tsx` | 297, 433 | 스텝 인디케이터 active + 카테고리 선택 pill active | 수정 |
+| 22 | `src/app/(web)/tournaments/[id]/bracket/_components/bracket-empty.tsx` | 16 | "참가팀 보러가기" CTA | 수정 |
+| 23 | `src/app/(web)/tournament-admin/tournaments/page.tsx` | 24 | "새 대회" 링크 버튼 | 수정 |
+| 24 | `src/app/(web)/tournament-admin/tournaments/[id]/wizard/page.tsx` | 67, 377, 880, 902 | pillCls + 스텝 active + 풀와이드 저장 CTA + 다음 버튼 (4군데) | 수정 |
+| 25 | `src/app/(web)/tournament-admin/tournaments/[id]/teams/page.tsx` | 108 | 상태 필터 탭 active | 수정 |
+| 26 | `src/app/(web)/tournament-admin/tournaments/[id]/site/page.tsx` | 334 | 진행 스텝 active (success 배경 분기는 범위 외 유지) | 수정 |
+| 27 | `src/app/(web)/tournament-admin/tournaments/new/wizard/page.tsx` | 50, 245, 366, 866, 888 | pillCls + 권한 없음 안내 버튼 + 스텝 active + 풀와이드 생성 CTA + 다음 버튼 (5군데) | 수정 |
+| 28 | `src/app/(web)/tournament-admin/series/page.tsx` | 33, 74 | "새 시리즈 만들기" + "첫 시리즈 만들기" (2군데) | 수정 |
+| 29 | `src/app/(web)/tournament-admin/series/[id]/page.tsx` | 99, 125, 137 | 회차 번호 원형 뱃지 + "첫 번째 회차 추가하기" + 모바일 플로팅 "N회 추가" (3군데) | 수정 |
+
+### 주요 구현 포인트
+
+**래퍼 div 케이스 2건 (host-card.tsx / series/[slug])**
+- 둘 다 `<div className="... bg-[var(--color-accent)] ... text-white">` 패턴으로, 래퍼 단 한 곳의 text-white만 `text-[var(--color-on-accent)]`로 교체
+- host-card.tsx의 경우 자식 요소들의 `text-white/60` `text-white` 등은 의도적으로 유지 (아바타 이니셜, 테두리 대비용 고정 white). 상속 색상만 테마 반응으로 교체됨
+
+**pill active 삼항식 4건 (game-time/method/ball-input, tournament-admin wizard 2종)**
+- pill 비활성 분기(`bg-[var(--color-border)] text-[var(--color-text-secondary)]`)는 건드리지 않음
+- active 분기의 `text-white`만 정확히 치환
+
+**site/page.tsx:334 주의 케이스**
+- 334줄 accent(step===s) 분기만 수정
+- 336줄의 `bg-[var(--color-success)] text-white` (step>s 완료 분기)는 success 배경 건으로 범위 외, 건드리지 않음
+
+### 작업 원칙 준수 체크
+- ✅ 명시된 29개 파일만 수정 (그 외 파일 0건)
+- ✅ 각 포인트별 개별 Edit 사용, `replace_all` 미사용
+- ✅ 같은 파일의 primary/error/success/warning 배경 계열 건드리지 않음
+- ✅ 1~2단계 수정 파일 재수정 없음 (`admin-courts-content.tsx`는 2단계에서 639~642줄을 수정했고, 이번에는 219줄 등록 버튼만 수정 — 겹치지 않음. `admin-page-header.tsx` 등 나머지는 1~2단계와 무관)
+- ✅ 신규 CSS 변수 추가 없음, `--color-on-accent` 재사용만
+- ✅ API/데이터 패칭 변경 없음
+
+### 타입 체크 결과
+```
+npx tsc --noEmit → EXIT=0 (에러 0건)
+```
+
+### Grep 재검증 결과 (기대 효과 달성 확인)
+```
+grep "bg-\[var\(--color-accent\)\][^\"\`]*text-white" → 0 matches
+grep "text-white[^\"\`]*bg-\[var\(--color-accent\)\]" → 0 matches
+```
+프로젝트 전체에서 `bg-[var(--color-accent)]` + `text-white` 조합 **완전 소거 확인**. (button.tsx primary variant의 `bg-[var(--color-text-primary)] + text-white`는 별개 패턴, 범위 외)
+
+### 💡 tester 참고
+
+**테스트 방법 (다크 / 라이트 양쪽)**
+다음 주요 화면을 열어서 accent 배경 버튼/배지/스텝의 글씨가 배경과 분리되어 또렷이 읽히는지 확인:
+
+1. **관리자**: `/admin/users`, `/admin/courts`, `/admin/tournaments`, `/admin/teams`, `/admin/suggestions`, `/admin/games`, `/admin/logs` — 각 페이지의 "검색/등록/적용/변경" 버튼 및 로그 페이지 날짜 필터 활성 상태
+2. **로그인/프로필**: `/verify` (3단계 모두), `/profile/complete` (인증요청 + 저장 버튼)
+3. **커뮤니티**: `/community/new` 이미지 URL 추가 버튼
+4. **오프라인**: PWA 오프라인 페이지 (`/~offline`) 다시 시도 버튼
+5. **업그레이드**: `/upgrade` 관리자 문의 버튼
+6. **시리즈**: `/series/[slug]` 상단 CTA 카드 (자식 요소 포함 전체 색상 상속 확인)
+7. **게임 상세**: `/games/[id]` 호스트 정보 카드 (아바타 이니셜 / 전화 연결 버튼)
+8. **게임 생성 모달**: `/games/new`에서 권한 없을 때 뜨는 업그레이드 모달의 "플랜 알아보기"
+9. **대회 참가**: `/tournaments/[id]/join` 스텝 인디케이터 + 카테고리 pill
+10. **대진표 비어있음**: `/tournaments/[id]/bracket` 에서 "참가팀 보러가기"
+11. **대회 관리 (가장 중요)**:
+    - `/tournament-admin/tournaments` — 상단 "새 대회"
+    - `/tournament-admin/tournaments/new/wizard` — pill / 스텝 / 생성 CTA / 이전·다음 (5곳)
+    - `/tournament-admin/tournaments/[id]/wizard` — pill / 스텝 / 저장 CTA / 이전·다음 (4곳)
+    - `/tournament-admin/tournaments/[id]/teams` — 상태 필터 탭
+    - `/tournament-admin/tournaments/[id]/site` — 진행 표시 스텝
+    - `/tournament-admin/series` + `/tournament-admin/series/[id]` — 회차 번호 뱃지 + 추가 버튼들
+12. **공통 컴포넌트 파생**: `admin-page-header.tsx`의 검색 버튼을 사용하는 모든 admin 페이지 상단
+
+**정상 동작 기준**
+- 다크모드(기본): accent 배경(밝은 쿨 그레이) 위에 진한 검정(#191F28) 글씨 → 또렷하게 가독
+- 라이트모드: accent 배경(진한 검정) 위에 흰(#FFFFFF) 글씨 → 또렷하게 가독
+- 테마 토글 시 즉시 반영
+- 비활성 pill, success 배경(예: site/page.tsx 완료 스텝), primary 버튼은 **전혀 변화 없음**
+
+**주의할 입력**
+- `/admin/logs`는 `availableDates`가 1개 이상일 때만 pill이 보임
+- `/tournaments/[id]/join`의 카테고리 pill은 대회에 등록된 카테고리가 2개 이상일 때만 의미 있음 (1개면 자동 선택)
+- wizard 페이지는 대회 관리자 권한 없으면 "권한 없음" 화면으로 라우팅 — 이 화면의 "대회 목록으로 돌아가기" 버튼이 new/wizard:245 포인트
+
+### ⚠️ reviewer 참고
+
+**특별히 봐줬으면 하는 부분**
+1. **host-card.tsx** — 래퍼만 바꾸고 자식 `text-white/60`, `text-white`를 유지한 결정. 자식 white 요소들은 "aria+이니셜 표기"이므로 상속 색상이 아니라 고정 white가 의도된 것. 이 결정이 디자인상 올바른지 확인 필요
+2. **tournament-admin wizard 2종 (new + [id])** — 같은 파일 내 여러 군데(4~5곳)를 각각 개별 Edit로 처리. 혹시 같은 줄 반복 치환 누락이 없는지 Grep으로 재확인 권장
+3. **site/page.tsx:334** — 바로 아래 336줄의 `bg-[var(--color-success)] text-white`는 의도적으로 범위 외로 유지. 만약 "완료 스텝의 가독성도 같이 고쳐야 한다"는 판단이 되면 별도 작업으로 처리 필요 (이번 범위 아님)
+4. **logs/page.tsx:103** — pill active 단독 수정, 비활성 분기는 원래부터 `text-[var(--color-text-muted)]`이라 변경 없음
+
+**범위 외 (의도적으로 안 건드린 것)**
+- button.tsx primary variant (`bg-[var(--color-text-primary)] + text-white`) — 별개 패턴
+- 각 파일의 다른 primary/error/success/warning 배경 버튼
+- 1~2단계 수정 파일의 이미 처리된 영역
+- 자식 요소의 독립 `text-white` (host-card.tsx 내부 등) — 상속이 아닌 고정색 의도가 명확한 경우
+
+---
+
 ## 테스트 결과 (tester)
 
-🧪 검증 방식: 실제 브라우저 구동 없이 **정적 코드 검증 + tsc + git diff** 기반으로 판정 (바이브 코더 환경 특성 상 dev 서버 실행/스크린샷 불가).
+🧪 검증 방식: 실제 브라우저 구동 없이 **정적 코드 검증 + tsc + git diff + Grep 전수 재조사** 기반 판정 (바이브 코더 환경 특성 상 dev 서버/스크린샷 불가).
+
+---
+
+### [3단계] 테스트 결과 (tester) — 29파일 / 45포인트 벌크 수정 검증
+
+검증 대상: developer가 `[3단계]` 명세에 따라 29개 파일 / 45개 포인트의 `bg-[var(--color-accent)]` + `text-white` 조합을 `text-[var(--color-on-accent)]`로 일괄 치환한 작업.
+
+#### 3단계 테스트 항목
+
+| # | 테스트 항목 | 결과 | 비고 |
+|---|------------|------|------|
+| 1 | `npx tsc --noEmit` 에러 0건 | ✅ 통과 | EXIT=0 (기존 lucide-react 건도 이번엔 안 잡힘 — 깨끗) |
+| 2 | git status 수정 소스 파일 수 = 29 | ✅ 통과 | `git status --short \| grep "^ M src/" \| wc -l` = **29** 정확히 일치 |
+| 3 | 29개 파일이 [3단계] 명세 목록과 완전 일치 | ✅ 통과 | components/ 5 + (admin) 7 + (web) 7 + profile 1 + tournaments 2 + tournament-admin 7 = **29**. 누락/추가 0 |
+| 4 | **Grep 전수 재검증**: `bg-[var(--color-accent)]`와 `text-white`가 같은 className 내 공존하는 조합 **0건** | ✅ 통과 | `bg-\[var\(--color-accent\)\][^"`]*text-white\|text-white[^"`]*bg-\[var\(--color-accent\)\]` → **No matches found**. 프로젝트 전체 완전 소거 확인 |
+| 5 | 1/2단계 수정 파일 재수정 없음 (11개 중 `admin-courts-content.tsx`만 219줄 신규 포인트로 등장 — 2단계 639~642줄 영역과 겹치지 않음) | ✅ 통과 | `git diff` 확인: admin-courts-content.tsx의 변경 hunk는 216~222줄 한 곳뿐. 2단계 처리 라인 미터치. 나머지 10개 파일(button.tsx, globals.css, games-content.tsx, floating-filter-panel.tsx, court-ambassador.tsx, session-complete-card.tsx, current-team-card.tsx, tournaments-filter.tsx, success-overlay.tsx, admin/users/page.tsx)은 git status에 **없음** |
+| 6 | 샘플: `game-time-input.tsx:12` pill active 삼항식 치환 | ✅ 통과 | `active ? "bg-[var(--color-accent)] text-[var(--color-on-accent)]"` 확인 |
+| 7 | 샘플: `tournament-admin/tournaments/new/wizard/page.tsx` 5군데(50/245/366/866/888) 모두 치환 | ✅ 통과 | Grep으로 `bg-[var(--color-accent)]` 5개 전부 `text-[var(--color-on-accent)]` 동반. diff stat `+5/-5` |
+| 8 | 샘플: `host-card.tsx:10` 래퍼 div `text-white` → `text-[var(--color-on-accent)]` (자식 고정 white 유지) | ✅ 통과 | 10행 수정, 12~25행의 `text-white`, `text-white/60`, `bg-white/20`, `border-white/20` **모두 유지** — 명세대로 상속 색상만 테마 반응, 고정 white는 보존 |
+| 9 | 샘플: `series/[slug]/page.tsx:96` CTA 래퍼 div 치환 | ✅ 통과 | 래퍼에 `text-[var(--color-on-accent)]`, 자식의 `opacity-80` 등은 상속받음 |
+| 10 | 샘플: `admin-page-header.tsx:44` 검색 버튼 치환 | ✅ 통과 | `text-[var(--color-on-accent)]` 확인 |
+| 11 | **회귀 방지 A**: `button.tsx` primary variant (className `text-white` + style `color: '#fff'`) 그대로 유지 | ✅ 통과 | 10행 `text-white` 유지, 35행 `color: '#fff'` 유지. git status에 `button.tsx` **없음** — 미터치 확인 |
+| 12 | **회귀 방지 B**: primary / error / success / warning 배경 + text-white 조합 보존 | ✅ 통과 | Grep으로 `organizations/page.tsx`, `admin-users-table.tsx:252`, `toss-button.tsx`, `layout.tsx` 등 수십 개 여전히 존재 — 범위 외로 **의도대로 유지** |
+| 13 | **회귀 방지 C**: 같은 파일 내 범위 외 색상 잔존 — `site/page.tsx:336` 완료 스텝 `bg-[var(--color-success)] text-white` 유지 | ✅ 통과 | diff 확인: 334줄만 수정, 336줄 success 분기 한 글자도 안 변함 |
+| 14 | 소스 파일 외 오염 없음 (수정 외 파일/디렉토리 추가 없음) | ✅ 통과 | git status에 scratchpad-ui.md / errors.md / settings.local.json만 비소스 변경. 신규 파일 0 |
+
+#### 3단계 변경 라인 수 검증 (git diff --stat 샘플)
+- `admin-page-header.tsx`: +1 / -1
+- `game-time-input.tsx`: +1 / -1
+- `host-card.tsx`: +1 / -1
+- `series/[slug]/page.tsx`: +1 / -1
+- `tournament-admin/.../new/wizard/page.tsx`: +5 / -5
+
+모든 샘플이 "정확히 한 줄 치환" 형태로, 불필요한 리팩토링이나 스캐닝 변경 없음.
+
+#### 3단계 종합
+
+📊 **14개 항목 중 14개 통과 / 0개 실패 / 0개 수정 요청**
+
+🎯 **코드 정합성 관점에서 결함 없음**:
+- 명세 45포인트 100% 정확 치환 (Grep 0건으로 증명)
+- 1/2단계 회귀 없음, 범위 외 색상(primary/error/success/warning) 회귀 없음
+- host-card.tsx의 "자식 고정 white 유지" 같은 디자인 의도 사항도 보존
+- tsc 타입 에러 0
+
+⚠️ **실제 브라우저 렌더링 테스트는 수행 불가** — 다음 항목은 사용자가 dev 서버 또는 Vercel 프리뷰에서 확인 필요:
+- 다크모드에서 `/verify`, `/profile/complete`, `/tournament-admin/tournaments/new/wizard`, `/community/new`, `/~offline` 등 accent 배경 버튼/pill/스텝 글씨가 또렷이 읽히는지
+- 라이트모드 전환 시 동일 요소가 흰 글씨로 정상 전환되는지
+- `host-card`의 고정 white 자식 요소(이니셜, 전화 연결 링크)가 디자인상 어색하지 않은지 (developer가 "고정 white 의도"라고 밝혔지만 시각적 확인 필요)
+
+✅ **판정: 커밋 진행 가능**. 정적 검증 전체 통과, Grep 재조사로 "프로젝트 전체에서 `bg-[var(--color-accent)] + text-white` 조합 완전 소거" 증명됨.
+
+---
+
+### [1단계] 테스트 결과 (tester)
 
 ### 테스트 항목
 
@@ -481,6 +729,107 @@ git status --short src/app/globals.css \
 ### 📌 최종 판정
 **조건부 승인.** 2단계 명세 범위 내에서는 결함 0건이므로 PM은 **즉시 커밋 진행 가능**. 단, 리뷰 중 발견한 `admin-courts-content.tsx:219 "등록" 버튼`은 **3단계(남은 의심 파일 재조사) 작업 목록에 반드시 추가**해야 동일 버그가 완전히 제거됨. 이 포인트는 2단계 developer의 책임이 아니라 **Explore 조사 단계의 누락**이다.
 
+---
+
+## 리뷰 결과 (reviewer) — [3단계] 다크모드 accent 가시성 벌크 수정 (29파일 / 45포인트)
+
+📊 **종합 판정: 조건부 승인**
+
+45개 포인트 전수 검증 결과 className 치환은 모두 정확하고, 범위 외 파일 회귀 없음, tsc 0 에러. 벌크 수정임에도 품질이 1/2단계와 동등 이상이다. 다만 리뷰 중 **host-card.tsx 내부 자식 요소들의 하드코딩 white 잔존**이 실질 가독성 버그로 그대로 남아있는 것을 확인했다. developer의 "고정 white 의도" 판단을 존중하되, 실제 다크모드에서 **래퍼 배경(#F2F4F6) 위에 자식 text-white / bg-white/20 / border-white/20이 거의 안 보인다**는 구조적 문제가 있어 **3b단계 분리 처리**를 제안한다.
+
+### ✅ 잘된 점
+1. **패턴 일관성 완벽 (45/45)**: 모든 포인트가 동일한 className 치환 패턴(`text-white` → `text-[var(--color-on-accent)]`)으로 교체. 1/2단계가 쓰던 "className 제거 + style.color 추가" 방식과 달리 **순수 className 방식**을 통일되게 사용 — 벌크 처리 시 검색/치환 정확도가 높고 Tailwind JIT와 호환성도 좋아 **더 적합한 선택**. 두 방식이 동일 효과를 내므로 불일치가 기술적 문제는 아님.
+2. **pill 삼항식 처리 완벽**: game-time/method/ball-input(3파일), logs/page:103, tournaments/[id]/join:297&433, tournament-admin wizard 2종 스텝 인디케이터 — 모두 **active 분기만 정확히 수정**되고 비활성 분기(`bg-[var(--color-border)] text-[var(--color-text-secondary)]` / `text-[var(--color-text-muted)]`)는 그대로. Read로 개별 검증 완료.
+3. **site/page.tsx:334 절제된 수정**: 바로 아래 336줄 `bg-[var(--color-success)] text-white`(완료 스텝 success 분기)는 **범위 외**로 정확히 유지. 같은 삼항식 내부에서 accent 분기만 수정하는 정밀도 우수.
+4. **series/[slug]/page.tsx 래퍼 처리 정확**: 96줄 래퍼 div가 `text-[var(--color-on-accent)]` 교체, 내부 자식들은 `opacity-80`만 쓰므로 상속 색상이 정상 작동 → 자식 수정 불필요 판단 정확.
+5. **button.tsx primary variant 회귀 없음**: 10줄 `"font-bold hover:opacity-85 text-white"`, 35줄 `{ backgroundColor: 'var(--color-text-primary)', color: '#fff' }` 원본 그대로 유지. 1/2단계 파일 11개도 git 로그상 재수정 없음(grep으로 jar한 패턴 0건 확인).
+6. **같은 파일 내 다른 배경 계열 보존**: site/page.tsx:336의 success, admin-games-content의 primary/error 버튼, community-content.tsx의 카테고리 bg(primary/success/warning/ai-purple/info/error/tier-trophy) 등 accent가 아닌 모든 배경은 원본 유지. 혼동 없음.
+7. **주석 품질**: 패턴이 명확(동일 치환 45회)해서 개별 주석이 불필요하다는 판단 타당. 구현 기록 테이블과 주요 포인트 설명이 주석 역할을 대체.
+8. **Grep 최종 재확인 통과**: `bg-[var(--color-accent)][^"`]*text-white` 0건, `text-white[^"`]*bg-[var(--color-accent)]` 0건. **프로젝트 전체에서 className 기반 accent+white 조합 완전 소거 확인**.
+9. **인라인 style 잔존 없음**: `backgroundColor: "var(--color-accent)"`와 `color: "#fff"`/`"#FFFFFF"` 조합도 전수 검사 — 1~2단계에서 처리된 5개 파일(button.tsx cta / floating-filter-panel / games-content / court-ambassador 4곳 / session-complete-card / current-team-card / admin-courts-content:642)만 남아있고 모두 이미 `color: "var(--color-on-accent)"`로 교체됨. **새 누락 0건**.
+10. **tsc 통과**: `npx tsc --noEmit` EXIT=0.
+
+### 🔴 필수 수정
+없음 (3단계 명세 45포인트 범위 내에서는).
+
+### 🟡 권장 수정 (→ 3b단계 이관 제안)
+
+**발견 1. host-card.tsx 자식 요소 하드코딩 white 잔존 (10줄 래퍼만 수정, 내부 4곳 미수정)**
+
+developer가 "자식 요소들의 text-white는 고정 white 의도"라고 판단했지만, 실제 코드를 보면:
+
+```tsx
+// 10줄 — 수정됨
+<div className="bg-[var(--color-accent)] p-6 rounded-md text-[var(--color-on-accent)]">
+  // 12줄 — 아바타 이니셜 (자식)
+  <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/20 ... text-white font-bold text-lg">
+  // 16줄 — Managed by 라벨
+  <div className="text-xs text-white/60">Managed by</div>
+  // 23줄 — 전화 연결 버튼
+  <a className="... border border-white/20 ... hover:bg-white/10 ...">
+  // 30줄 — 연락처 미등록 버튼
+  <button className="... border border-white/20 ...">
+```
+
+**다크모드 실측 문제**: accent 배경이 `#F2F4F6`(거의 흰색)이 되면
+- `bg-white/20` 아바타 배경 → 거의 안 보임 (흰색 위 20% 흰색 오버레이)
+- `text-white` 이니셜 → 거의 안 보임
+- `text-white/60` "Managed by" → 거의 안 보임
+- `border-white/20` 테두리 → 거의 안 보임
+
+즉 **래퍼만 수정하면 다크모드에서 호스트 카드 자체가 "비어 보이는" 상태**가 된다. 10줄의 `text-[var(--color-on-accent)]`는 상속 채널을 통해 "연락처 미등록" 버튼의 기본 텍스트 색에만 영향을 주고, 명시적 `text-white` / `bg-white/20` / `border-white/20`은 상속을 덮어쓴다.
+
+**3b단계 제안 수정**:
+- 12줄 `bg-white/20` `border-white/20` `text-white` → accent 대비 유지되는 대안(예: `bg-[var(--color-on-accent)]/20`, `border-[var(--color-on-accent)]/20`, `text-[var(--color-on-accent)]`) 또는 자식 클래스 제거 후 상속에 맡김
+- 16줄 `text-white/60` → `text-[var(--color-on-accent)]/60` 또는 `opacity-70` + 상속
+- 23/30줄 `border-white/20` / `hover:bg-white/10` → 동일하게 on-accent 기반으로 전환
+
+이 판단은 디자인 의도 검토가 필요하므로 **3단계 범위에서 제외**하고 3b단계 분리 이관이 타당. 3단계 작업 자체(래퍼 text 교체)는 명세대로 수행되었으므로 명세 미달 아님.
+
+**발견 2. (정보성) pricing 페이지의 text-black 하드코딩**
+
+`pricing/page.tsx:114,121`, `pricing/fail/page.tsx:20`, `pricing/checkout/page.tsx:124`는 `bg-[var(--color-accent)]` + **`text-black`** 조합. 라이트모드(accent=#191F28=검정)에서 **검정 배경 위 검정 글씨**로 완전히 안 보이는 버그. 3단계 명세 범위 밖(`text-white` 패턴만 대상)이라 이번 리뷰 대상은 아니지만, 동일 가시성 버그 계열이므로 **3b단계 또는 별도 작업으로 처리 필요**. 기존부터 존재하던 버그이므로 이번 작업의 회귀는 아님.
+
+### 🎯 패턴 일관성 체크 (3단계)
+| 항목 | 결과 |
+|------|------|
+| 45개 포인트 모두 동일 className 치환 패턴 적용 | ✅ |
+| pill 삼항식에서 active 분기만 수정, 비활성 유지 | ✅ |
+| site/page.tsx:334 accent 분기만 수정, 336 success 분기 유지 | ✅ |
+| 래퍼 div 케이스(series/[slug], host-card) 래퍼 단 수정 | ✅ (host-card 내부 자식은 🟡 3b 이관) |
+| 1/2단계 패턴(className 제거 + style.color 추가)과의 불일치 | 의도적 차이, 벌크 처리엔 className 치환 방식이 더 적합 — **문제 없음** |
+| 주석 부재 | 패턴이 일관되어 주석 불필요, 구현 기록으로 대체 — **문제 없음** |
+
+### 🛡️ 회귀 방지 체크
+| 항목 | 결과 |
+|------|------|
+| `bg-[var(--color-accent)] ... text-white` className 조합 grep 0건 | ✅ |
+| `text-white ... bg-[var(--color-accent)]` 역순 grep 0건 | ✅ |
+| `backgroundColor: "var(--color-accent)"` + `color: "#fff"` 인라인 조합 0건 (1/2단계 처리분 외) | ✅ |
+| button.tsx primary variant 10/35줄 원본 유지 | ✅ |
+| 1/2단계 수정 파일 11개 재수정 없음 | ✅ |
+| 같은 파일 내 primary/error/success/warning/ai-purple 배경 + text-white 유지 | ✅ |
+| site/page.tsx:336 `bg-[var(--color-success)] text-white` 유지 | ✅ |
+| community-content.tsx 카테고리 bg 매핑(primary/success/warning/...) 유지 | ✅ |
+| admin-courts-content.tsx 467/666줄 success 승인 버튼 유지 | ✅ |
+| tsc 0 에러 | ✅ |
+| API/데이터 패칭 변경 없음 | ✅ (className/style prop만) |
+
+### 🔧 tournament-admin wizard 2종 중복 치환 누락 재검증
+4~5곳씩 포함된 wizard 2파일의 잠재 누락 여부 확인:
+- `tournament-admin/tournaments/[id]/wizard/page.tsx`: 67, 377, 880, 902 — grep 결과 4곳 모두 `text-[var(--color-on-accent)]` 교체 확인, 잔존 `text-white` 없음
+- `tournament-admin/tournaments/new/wizard/page.tsx`: 50, 245, 366, 866, 888 — grep 결과 5곳 모두 교체 확인, 잔존 `text-white` 없음
+→ **중복 치환 누락 0건**.
+
+### 📌 최종 판정
+
+**조건부 승인.** 3단계 명세 45포인트는 결함 0건으로 PM은 **즉시 커밋 진행 가능**. 단:
+
+1. **host-card.tsx 자식 요소 4곳의 하드코딩 white** → 다크모드에서 실질 가독성 버그가 래퍼 수정만으로는 해결되지 않음. **3b단계로 분리 이관 권장**. 디자인 의도 확인(자식 투명도 계열이 고정 white여야 하는가 vs on-accent 기반이어야 하는가) 후 일괄 처리.
+2. **pricing 3파일의 `bg-accent + text-black`** → 라이트모드 완전 안 보이는 버그. 이번 범위 외이지만 동일 계열이므로 3b/별도 작업으로 병합 처리 권장.
+
+이 두 건은 3단계 developer의 책임이 아니라 **Explore 단계의 스코프 설정** 이슈다(명세가 `text-white` 패턴 한정이었고 `white/20`, `white/60`, `text-black` 파생 패턴이 범위에 포함되지 않았음). 3단계 자체는 명세 100% 준수이며 커밋을 막을 수준의 이슈는 **0건**.
+
 ## 작업 로그
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
@@ -489,3 +838,5 @@ git status --short src/app/globals.css \
 | 2026-04-12 | developer | [2단계] accent 버튼 가시성 확장 수정 (7파일 10포인트, --color-on-accent 재사용) | tsc 0 에러, git status 정확히 7파일만 변경 |
 | 2026-04-12 | reviewer | [2단계] 리뷰 — 패턴 일관성/분기/범위/주석 전수 검증 | 조건부 승인. 명세 10/10 완벽, admin-courts-content.tsx:219 Explore 누락 1건 발견 → 3단계 이관 |
 | 2026-04-12 | tester | [2단계] 정적 검증 (tsc + git diff 7파일 + 1단계 회귀 체크) | 14/14 통과, 1단계 파일 미수정, 커밋 가능 |
+| 2026-04-12 | reviewer | [3단계] 벌크 리뷰 (29파일 45포인트 전수 grep + 개별 Read 교차 검증) | 조건부 승인. className 치환 45/45 정확, tsc 0, primary/success/다른 배경 회귀 없음. host-card.tsx 자식 white 잔존 + pricing text-black 2건 3b 이관 제안 |
+| 2026-04-12 | tester | [3단계] 정적 검증 (tsc + git status 29 + Grep 전수 재조사 0건 + 샘플 5파일 Read + 회귀 3종) | 14/14 통과, 1/2단계 파일 재수정 없음, 프로젝트 전체 accent+text-white 조합 완전 소거 확인, 커밋 가능 |

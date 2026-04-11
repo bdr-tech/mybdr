@@ -93,7 +93,7 @@ export default async function SeriesHubPage({
       {/* CTA — 모집 중인 회차 강조 */}
       {latestActive && (
         <Link href={`/tournaments/${latestActive.id}`}>
-          <div className="mb-6 rounded-[16px] bg-[var(--color-accent)] px-6 py-4 text-white">
+          <div className="mb-6 rounded-[16px] bg-[var(--color-accent)] px-6 py-4 text-[var(--color-on-accent)]">
             <p className="text-xs opacity-80">현재 신청 가능</p>
             <p className="mt-0.5 text-lg font-bold">{latestActive.name}</p>
             {latestActive.startDate && (
