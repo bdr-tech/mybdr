@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 
 interface PlayerRow {
@@ -107,7 +107,7 @@ function getQuarterLabel(q: number): string {
   return `OT${q - 4}`;
 }
 
-const POLL_INTERVAL = 5_000; // 5초
+const POLL_INTERVAL = 3_000; // 3초
 
 export default function LiveBoxScorePage() {
   const { id } = useParams<{ id: string }>();
@@ -115,6 +115,9 @@ export default function LiveBoxScorePage() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isLive, setIsLive] = useState(false);
+  const [homeFlash, setHomeFlash] = useState(false);
+  const [awayFlash, setAwayFlash] = useState(false);
+  const prevScoreRef = useRef<{ home: number; away: number } | null>(null);
 
   const fetchMatch = useCallback(async () => {
     try {
@@ -124,9 +127,24 @@ export default function LiveBoxScorePage() {
         return;
       }
       const data = await res.json();
-      setMatch(data.match);
+      const m = data.match as MatchData;
+
+      // 점수 변경 감지 → 플래시 효과
+      if (prevScoreRef.current) {
+        if (m.home_score !== prevScoreRef.current.home) {
+          setHomeFlash(true);
+          setTimeout(() => setHomeFlash(false), 800);
+        }
+        if (m.away_score !== prevScoreRef.current.away) {
+          setAwayFlash(true);
+          setTimeout(() => setAwayFlash(false), 800);
+        }
+      }
+      prevScoreRef.current = { home: m.home_score, away: m.away_score };
+
+      setMatch(m);
       setLastUpdated(new Date());
-      setIsLive(data.match.status === "live" || data.match.status === "in_progress");
+      setIsLive(m.status === "live" || m.status === "in_progress");
       setError(null);
     } catch {
       setError("데이터를 불러오는 중 오류가 발생했습니다");
@@ -212,7 +230,7 @@ export default function LiveBoxScorePage() {
               {match.home_team.name}
             </p>
             <p
-              className="text-6xl font-black mt-1"
+              className={`text-6xl font-black mt-1 transition-all duration-300 ${homeFlash ? "scale-125 brightness-150" : "scale-100"}`}
               style={{ color: match.home_team.color }}
             >
               {match.home_score}
@@ -237,7 +255,7 @@ export default function LiveBoxScorePage() {
               {match.away_team.name}
             </p>
             <p
-              className="text-6xl font-black mt-1"
+              className={`text-6xl font-black mt-1 transition-all duration-300 ${awayFlash ? "scale-125 brightness-150" : "scale-100"}`}
               style={{ color: match.away_team.color }}
             >
               {match.away_score}

@@ -25,7 +25,7 @@ const STATUS_LABEL: Record<string, string> = {
   completed: "종료",
 };
 
-const POLL_INTERVAL = 5_000;
+const POLL_INTERVAL = 3_000;
 
 export default function LivePage() {
   const [live, setLive] = useState<LiveMatch[]>([]);
