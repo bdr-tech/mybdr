@@ -316,33 +316,6 @@ export async function GET(
       }
     }
 
-    // PBP 로그 조회 — 시간 역순, 최대 200건
-    const pbpRows = await prisma.play_by_plays.findMany({
-      where: { tournament_match_id: BigInt(matchId) },
-      orderBy: [{ quarter: "desc" }, { game_clock_seconds: "asc" }],
-      take: 200,
-      include: {
-        tournament_team_players: {
-          select: { jerseyNumber: true, users: { select: { name: true, nickname: true } } },
-        },
-      },
-    });
-
-    const playByPlays = pbpRows.map((p) => ({
-      id: Number(p.id),
-      quarter: p.quarter,
-      gameClockSeconds: p.game_clock_seconds,
-      teamId: Number(p.tournament_team_id),
-      jerseyNumber: p.tournament_team_players.jerseyNumber,
-      playerName: p.tournament_team_players.users?.nickname ?? p.tournament_team_players.users?.name ?? "-",
-      actionType: p.action_type,
-      actionSubtype: p.action_subtype,
-      isMade: p.is_made,
-      pointsScored: p.points_scored ?? 0,
-      homeScoreAtTime: p.home_score_at_time,
-      awayScoreAtTime: p.away_score_at_time,
-    }));
-
     return apiSuccess({
       match: {
         id: Number(match.id),
@@ -364,7 +337,7 @@ export async function GET(
         },
         homePlayers,
         awayPlayers,
-        playByPlays,
+        playByPlays: [],
         updatedAt: match.updatedAt.toISOString(),
       },
     });
