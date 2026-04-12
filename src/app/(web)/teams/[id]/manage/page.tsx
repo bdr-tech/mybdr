@@ -287,24 +287,26 @@ export default function TeamManagePage({ params }: { params: Promise<{ id: strin
       <div className="mb-6 flex gap-1 rounded-lg bg-[var(--color-surface)] p-1">
         <button
           onClick={() => setTab("members")}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
             tab === "members"
               ? "bg-[var(--color-card)] text-[var(--color-text-primary)] shadow-sm"
               : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
           }`}
         >
-          <span className="material-symbols-outlined text-base">group</span>
+          {/* 모바일에서 아이콘 숨김 — 공간 절약 */}
+          <span className="material-symbols-outlined text-base hidden sm:inline">group</span>
           멤버 관리
         </button>
         <button
           onClick={() => setTab("settings")}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
             tab === "settings"
               ? "bg-[var(--color-card)] text-[var(--color-text-primary)] shadow-sm"
               : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
           }`}
         >
-          <span className="material-symbols-outlined text-base">settings</span>
+          {/* 모바일에서 아이콘 숨김 — 공간 절약 */}
+          <span className="material-symbols-outlined text-base hidden sm:inline">settings</span>
           팀 설정
         </button>
       </div>
