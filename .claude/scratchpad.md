@@ -23,6 +23,23 @@
 
 ## 구현 기록 (developer)
 
+### 순위표 API - 경기 결과 직접 집계 방식 수정 (2026-04-13)
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/app/api/web/tournaments/[id]/public-standings/route.ts | tournament_teams.wins/losses 읽기 → tournament_matches 경기 결과 집계로 변경 | 수정 |
+
+tester 참고:
+- 테스트 방법: 경기 결과가 입력된 대회의 순위 탭 확인
+- 정상 동작: 완료된 경기의 스코어에 따라 승/패/무가 계산되어 표시
+- 추가 필드: pointsFor, pointsAgainst, pointDifference가 응답에 포함
+- 주의: 경기 status가 "completed"인 것만 승패 집계, "in_progress"는 득점만 반영
+
+reviewer 참고:
+- tournament_teams.wins/losses 컬럼은 더 이상 읽지 않음 (갱신 안 되는 문제 우회)
+- Promise.all로 팀+경기 병렬 조회하여 DB 왕복 최소화
+- 정렬: 승수 내림차순 → 패수 오름차순 → 득실차 내림차순
+
 ### 대회 탭 데이터 표시 버그 수정 (2026-04-13)
 
 | 파일 경로 | 변경 내용 | 신규/수정 |
