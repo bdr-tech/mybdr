@@ -31,7 +31,41 @@
 | 1/4 | Prisma 6모델 + 협회 20시드 + drift 복원 | ✅ 완료 | eb3ea55 |
 | 2/4 | 본인 API 4개 + 본인 페이지 7개 + 독자 셸 | ✅ 완료 (warning 2건 별도 이슈) | e7e8d95 |
 | **3/4** | **배정/정산 조회 API + 본인 열람 페이지** | ⏳ **다음 작업** | — |
-| 4/4 | Admin 페이지 + Excel 업로드 + 개별 검증 | ⏸ 대기 | — |
+| 4/4 | Admin API 6개 + admin 페이지 5개 + Excel 업로드 + 개별 검증 | ✅ 구현 완료 (developer) | — |
+
+---
+
+## 구현 기록 (developer) — Commit 4/4
+
+구현한 기능: 협회 관리자 Admin API 6개 + Admin 페이지 5개 + Excel 일괄 검증 + 개별 자격증 검증 + referee-shell 관리자 메뉴 추가
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/lib/auth/admin-guard.ts | 협회 관리자 인증 유틸 (getAssociationAdmin) | 신규 |
+| src/app/api/web/admin/dashboard/route.ts | 대시보드 통계 API (심판수/검증율/미정산/배정) | 신규 |
+| src/app/api/web/admin/associations/members/route.ts | 소속 심판 목록 API (필터/페이지네이션) | 신규 |
+| src/app/api/web/admin/associations/members/[id]/route.ts | 심판 상세 API (IDOR 방지) | 신규 |
+| src/app/api/web/admin/referee-certificates/[id]/verify/route.ts | 자격증 검증 토글 PATCH API | 신규 |
+| src/app/api/web/admin/bulk-verify/preview/route.ts | Excel 업로드 미리보기 API (XLSX 파싱) | 신규 |
+| src/app/api/web/admin/bulk-verify/confirm/route.ts | Excel 일괄 검증 확정 API ($transaction) | 신규 |
+| src/app/(referee)/referee/admin/layout.tsx | 관리자 권한 체크 서버 레이아웃 | 신규 |
+| src/app/(referee)/referee/admin/page.tsx | 관리자 대시보드 (서버 컴포넌트, 직접 Prisma) | 신규 |
+| src/app/(referee)/referee/admin/members/page.tsx | 심판 관리 목록 (필터/테이블/카드/페이지네이션) | 신규 |
+| src/app/(referee)/referee/admin/members/[id]/page.tsx | 심판 상세 + 자격증 검증 토글 | 신규 |
+| src/app/(referee)/referee/admin/bulk-verify/page.tsx | Excel 2단계 UX (업로드->미리보기->확정) | 신규 |
+| src/app/(referee)/referee/_components/referee-shell.tsx | NAV_ITEMS에 관리자 항목 추가 | 수정 |
+
+tester 참고:
+- 테스트 방법: 관리자 권한 유저 필요 (User.admin_role="association_admin" + association_admins 매핑)
+- /referee/admin 접근 시 비관리자는 "접근 권한 없음" 화면 표시
+- Excel 업로드는 xlsx 파일 필요 (헤더: 이름, 생년월일, 전화번호, 자격증종류, 자격등급)
+- tsc --noEmit 결과: .next/dev/types/ 자동생성 파일 에러만 있음 (소스 코드 에러 0건)
+
+reviewer 참고:
+- admin-guard.ts: getWebSession → User.admin_role → AssociationAdmin 3단계 인증
+- 모든 admin API에서 IDOR 방지 (association_id 강제 확인)
+- bulk-verify/confirm에서 $transaction + TOCTOU 방지 (각 cert의 association_id 재확인)
+- Excel 파싱: XLSX.read 사용, 5MB/500행 제한, 생년월일 다중 포맷 지원
 
 ---
 
@@ -132,6 +166,63 @@ C:\0. Programing\mybdr-referee 폴더에서 심판 플랫폼 작업을 이어서
 - "테스트 결과 (tester)" 섹션 — Test 1~8 결과표
 - "리뷰 결과 (reviewer)" 섹션 — 섹션별 체크리스트 + nit 테이블
 - "수정 요청 (tester)" 섹션 — warning 2건 테이블
+
+---
+
+## 리뷰 결과 (reviewer) — Commit 4/4
+
+종합 판정: **APPROVE with comments**
+
+대상: Admin API 6개 + admin 페이지 5개 + admin-guard.ts + referee-shell.tsx 수정 (총 13파일)
+
+### 잘된 점
+
+1. **보안 설계 우수**: admin-guard.ts에서 세션 -> admin_role -> AssociationAdmin 매핑 3단계 인증 체인이 깔끔하고, 모든 API에서 일관되게 사용됨
+2. **IDOR 방지 철저**: 6개 API 모두 associationId를 세션 기반으로 가져오고, 개별 리소스 접근 시 association_id 일치 재확인
+3. **TOCTOU 방지**: bulk-verify/confirm에서 $transaction 내부에서 각 자격증의 소속 협회를 재확인. preview 시점과 confirm 시점 사이의 데이터 변경에 대비
+4. **Excel 처리 안전**: 5MB/500행 제한, 필수 헤더 검증, 생년월일 다중 포맷 지원, N+1 방지를 위한 사전 일괄 조회
+5. **UI 패턴 일관성**: Commit 2의 데스크톱 테이블 + 모바일 카드 패턴을 그대로 따름
+6. **디자인 시스템 준수**: 하드코딩 색상 없음, lucide-react 없음, Material Symbols 사용, var(--color-*) CSS 변수만 사용
+7. **서버/클라이언트 분리 적절**: 대시보드(page.tsx)는 서버 컴포넌트로 직접 Prisma, 인터랙션 필요한 페이지는 "use client"
+8. **admin layout 권한 체크**: 서버 레이아웃에서 권한 사전 체크하여 비관리자에게 AccessDenied UI 표시
+
+### 필수 수정 (critical) — 0건
+
+없음. 보안/동작 관점에서 차단 사유 없음.
+
+### 권장 수정 (warning) — 2건
+
+| # | 파일 | 라인 | 분류 | 설명 |
+|---|------|------|------|------|
+| W1 | bulk-verify/confirm/route.ts | 49 | warning | `certificate_ids` 배열 원소의 타입 검증 누락. 클라이언트가 `[1, "abc", null]` 같은 배열을 보내면 `BigInt("abc")`에서 catch로 빠져 500 에러 발생. `certificate_ids.every(id => typeof id === "number" && Number.isInteger(id))` 검증 추가 권장 |
+| W2 | bulk-verify/confirm/route.ts | 49-89 | warning | 500건을 for 루프로 개별 findUnique + update 처리. DB 왕복이 최대 1000회(500 read + 500 write). 현재 규모에서는 문제없으나, 향후 성능 이슈 시 `WHERE id IN (...) AND referee.association_id = ?` 일괄 조회 + `updateMany` 패턴으로 개선 가능 |
+
+### 참고 사항 (nit) — 5건
+
+| # | 파일 | 라인 | 설명 |
+|---|------|------|------|
+| N1 | admin/page.tsx | 14-58 | 대시보드 페이지에서 adminMapping + 4개 통계를 직접 Prisma로 조회하는데, dashboard API와 로직이 중복됨. 현재 구조에서 문제는 아니지만, 향후 유지보수 시 한쪽만 수정하고 다른 쪽을 빠뜨릴 수 있음. API를 페이지에서도 재사용하거나, 공통 함수로 추출하는 것을 고려 |
+| N2 | members/page.tsx | 54-55 | VERIFY_BADGE의 fallback 색상에 `#22c55e`, `#0079B9` 하드코딩. `var(--color-success, #22c55e)` 형태로 CSS 변수 우선이라 실질적 문제 없으나, 프로젝트 규칙 "하드코딩 색상 금지"의 경계선. CSS 변수가 정의되어 있으면 fallback 제거 가능 |
+| N3 | members/[id]/page.tsx | 155 | 검증 토글 실패 시 `alert()` 사용. 다른 곳에서는 인라인 에러 배너 패턴을 쓰고 있어 일관성 면에서 차이. 기능적 문제 없음 |
+| N4 | associations/members/route.ts | 39-40 | `where: any` 타입 사용 + eslint-disable. Prisma의 `Prisma.RefereeWhereInput` 타입을 쓰면 타입 안전성 확보 가능 |
+| N5 | referee-shell.tsx | 30 | 관리자 메뉴가 모든 유저에게 사이드바에 노출됨. 비관리자가 클릭하면 admin layout에서 차단되긴 하지만, 불필요한 메뉴 노출. 향후 세션 기반 조건부 렌더링 고려 |
+
+### 프로젝트 규칙 준수 확인
+
+| 항목 | 결과 |
+|------|------|
+| 기존 (web)/(admin)/(site) 미수정 | PASS |
+| schema.prisma 미수정 | PASS |
+| 하드코딩 색상 (#) 없음 | PASS (CSS 변수 fallback만 존재) |
+| lucide-react 없음 | PASS |
+| Material Symbols 사용 | PASS |
+| var(--color-*) CSS 변수만 | PASS |
+| apiSuccess/apiError 헬퍼 사용 | PASS |
+| IDOR 방지 | PASS (전 API) |
+
+### 결론
+
+Commit 4/4는 보안 설계가 견고하고, Commit 2의 UI/코드 패턴을 일관되게 따르고 있음. critical 이슈 없이 APPROVE. W1(배열 원소 타입 검증)은 방어적 프로그래밍 차원에서 추가하면 좋고, W2(성능)는 현재 규모에서 문제없으므로 향후 과제로 남겨도 됨.
 
 ### 🛑 절대 지킬 원칙 (이어받은 AI도 반드시)
 1. 기존 `(web)`/`(admin)`/`(site)` 페이지·레이아웃·공통 컴포넌트·`globals.css` **수정 금지**
@@ -1289,3 +1380,45 @@ nit (선택적, 커밋 차단 아님):
 3. [settlements/page.tsx] formatDate 함수도 assignments와 동일 코드 중복. 유틸로 추출 가능하나 현 규모에서 불필요.
 
 수정 요청: 없음 (critical/warning 이슈 0건)
+
+---
+
+### 테스트 결과 (tester) — Commit 4/4 (2026-04-12)
+
+| # | 테스트 항목 | 결과 | 비고 |
+|---|-----------|------|------|
+| 1 | tsc --noEmit | PASS | 소스 에러 0건 |
+| 2 | 파일 존재 확인 (13개) | PASS | admin-guard 1 + API 6 + page 5 + shell 1 모두 존재 |
+| 3a | admin-guard: getWebSession 사용 | PASS | 25행 getWebSession() 호출 |
+| 3b | admin-guard: admin_role 확인 | PASS | 35행 user.admin_role !== "association_admin" 검증 |
+| 3c | admin-guard: AssociationAdmin 조회 | PASS | 38행 findUnique({ where: { user_id } }) |
+| 3d | admin-guard: 반환 구조 | PASS | { userId, associationId } 반환 (44-47행) |
+| 4a | IDOR: dashboard API | PASS | associationId를 세션 기반 admin-guard에서만 가져옴, URL 파라미터 미사용 |
+| 4b | IDOR: members API | PASS | where에 association_id: associationId 조건 (41행) |
+| 4c | IDOR: members/[id] API | PASS | referee.association_id !== admin.associationId 검증 (52행) |
+| 4d | IDOR: certificates/[id]/verify API | PASS | cert -> referee -> association_id 체인 확인 (44-58행) |
+| 4e | IDOR: bulk-verify confirm | PASS | $transaction 내 각 cert마다 association_id 재확인 (53-69행) |
+| 5a | Excel preview: xlsx import | PASS | import * as XLSX from "xlsx" (4행) |
+| 5b | Excel preview: formData 처리 | PASS | req.formData() + file instanceof File 검증 (49-57행) |
+| 5c | Excel preview: 파일 크기/행 제한 | PASS | 5MB (60행), 500행 (91행) 제한 |
+| 5d | Excel preview: 헤더 검증 | PASS | REQUIRED_HEADERS 5개 필수 검증 (81-88행) |
+| 5e | Excel confirm: $transaction | PASS | prisma.$transaction 사용 (44행) |
+| 5f | Excel confirm: TOCTOU 방지 | PASS | transaction 내 각 cert에 대해 소속 협회 재확인 (53-69행) |
+| 6a | "use client" 선언 | PASS | members, members/[id], bulk-verify 페이지 모두 1행에 선언 |
+| 6b | admin/layout.tsx 서버 컴포넌트 | PASS | "use client" 없음, getWebSession + Prisma 직접 호출 |
+| 6c | admin/layout.tsx 권한 가드 | PASS | 세션 + admin_role + AssociationAdmin 매핑 3단계 확인 |
+| 6d | lucide-react 미사용 | PASS | admin 폴더 전체 검색 0건 |
+| 6e | Material Symbols 사용 | PASS | material-symbols-outlined span 태그 전반 사용 |
+| 6f | 하드코딩 색상 | WARNING | #fff + CSS fallback(#22c55e, #0079B9) 사용 — 기존 이슈 연장 |
+| 7 | 기존 코드 미수정 | PASS | (web)/(admin)/(site)/prisma/globals.css 변경 없음 |
+| 8 | referee-shell admin 메뉴 추가 | PASS | NAV_ITEMS 30행에 admin_panel_settings 아이콘 관리자 항목 추가 |
+
+종합: 25개 중 24개 PASS / 0개 FAIL / 1개 WARNING (info 수준)
+
+### WARNING 상세
+
+**[WARNING-info] #fff 하드코딩 + CSS fallback 색상 (기존 이슈 연장)**
+- 위치: members/page.tsx (55-58행 뱃지 color, 173행 탭 active), members/[id]/page.tsx (298, 320행), bulk-verify/page.tsx (50-53행, 245, 263-264, 333, 373, 401행)
+- 내용: #fff는 흰색 텍스트용, #22c55e/#0079B9는 var() fallback으로 사용. CSS 변수 var(--color-text-on-primary) 토큰 부재로 대안 없음.
+- 판정: Commit 2/3과 동일 패턴. 기능 영향 없음. 디자인 토큰 추가 시 일괄 교체 대상.
+- 심각도: info (커밋 차단 사유 아님)
