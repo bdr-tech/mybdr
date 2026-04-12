@@ -2,6 +2,14 @@
 <!-- 담당: planner-architect | 최대 30항목 -->
 <!-- "왜 A 대신 B를 선택했는지" 기술 결정의 배경과 이유를 기록 -->
 
+### [2026-04-13] 대진표 탭: format 기반 조건부 렌더링 + 조별 전적 경기결과 집계
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: (1) public-bracket API에서 tournament.format을 반환하여 프론트에서 대회 형식별 UI 분기. (2) 조별 경기(group_name 있는 경기)를 별도로 조회하여 groupMatches로 반환. (3) GroupStandings의 wins/losses를 tournament_teams 테이블에서 읽지 않고 경기 결과에서 직접 집계 (public-standings와 동일 패턴). (4) format 분기: round_robin=조편성+경기결과만, single_elimination/double_elimination=토너먼트 트리만, group_stage=조별리그+토너먼트 트리 둘 다.
+- **이유**: (1) tournament_teams.wins/losses가 갱신되지 않는 문제를 public-standings에서 이미 경기결과 집계로 우회함 → 동일 패턴 적용. (2) 현재 API가 format을 안 읽어서 프론트가 대회 형식을 모름 → 리그전/토너먼트 구분 불가. (3) 조별 경기는 group_name만 있고 round_number/bracket_position이 없어서 현재 bracketOnlyMatches 필터에서 제외됨.
+- **대안 기각**: (A) tournament_teams.wins/losses를 경기 완료 시 자동 갱신하도록 수정 — DB 트리거 또는 API 후처리 필요, 기존 Flutter 앱과의 호환성 문제. (B) 별도 API 엔드포인트 신설 — 기존 public-bracket을 확장하는 것이 더 단순.
+- **참조횟수**: 0
+
 ### [2026-04-02] 맞춤 설정 강화: 실력 7단계 + 메뉴 토글 + 카테고리 분리
 - **분류**: decision
 - **발견자**: planner-architect

@@ -15,13 +15,50 @@
 
 ## 기획설계 (planner-architect)
 
-### 음성인식 경기 기록 입력 - 기술 조사 보고서 (2026-04-13)
-- 상세 보고서는 PM에게 텍스트로 전달 완료
-- 핵심: Web Speech API(무료) + 규칙 기반 파싱(MVP) → 기존 events API 연동
-- 난이도: 중 / MVP 2~3주 / 풀버전 5~7주
-- 리스크: 경기장 소음, 브라우저 호환성(Chrome 필수), 한국어 농구 용어 인식률
+### 대진표 탭 기능 개선 계획 (2026-04-13)
+
+목표: 대회 format에 따라 리그전 조편성 + 토너먼트 대진표를 올바르게 표시
+
+만들 위치와 구조:
+| 파일 경로 | 역할 | 신규/수정 |
+|----------|------|----------|
+| src/app/api/web/tournaments/[id]/public-bracket/route.ts | format 필드 추가 + 조별 경기 데이터 반환 + 조별 전적 집계 | 수정 |
+| src/app/(web)/tournaments/[id]/_components/tournament-tabs.tsx | format에 따른 조건부 렌더링 | 수정 |
+| src/app/(web)/tournaments/[id]/bracket/_components/group-standings.tsx | 조별 전적을 경기 결과에서 직접 집계하도록 변경 | 수정 |
+| src/app/(web)/tournaments/[id]/bracket/_components/group-schedule.tsx | 조별 경기 일정/결과 카드 | 신규 |
+
+기존 코드 연결:
+- public-bracket API가 tournament.format을 안 읽고 있음 → format 추가 필요
+- groupTeams의 wins/losses가 tournament_teams 테이블에서 직접 읽는데, 이 값이 갱신 안 됨 (순위 탭과 동일 문제)
+- bracket-builder.ts는 round_number + bracket_position이 있는 경기만 처리 → 조별 리그 경기(group_name 있는)는 빠짐
+
+실행 계획:
+| 순서 | 작업 | 담당 | 선행 조건 |
+|------|------|------|----------|
+| 1 | API 수정: format 반환 + 조별 경기 데이터 추가 + 조별 전적 집계 | developer | 없음 |
+| 2 | GroupStandings: 경기 결과 기반 전적 표시로 변경 | developer | 1 |
+| 3 | GroupSchedule 신규: 조별 경기 카드 컴포넌트 | developer | 1 |
+| 4 | BracketTabContent: format별 조건부 렌더링 | developer | 2,3 |
+| 5 | 테스트 | tester + reviewer (병렬) | 4 |
+
+developer 주의사항:
+- tournament_teams.wins/losses는 갱신이 안 되는 필드 → 순위 탭처럼 경기 결과에서 직접 집계해야 함
+- 조별 경기는 group_name이 있고 round_number/bracket_position이 null → 현재 bracketOnlyMatches 필터에서 제외됨
+- format이 "round_robin"이면 토너먼트 대진표 트리 없이 조편성+경기 결과만 표시
+- format이 "group_stage"면 조별리그 + 결승 토너먼트 둘 다 표시
 
 ## 구현 기록 (developer)
+
+### 개요 탭 최근 경기 + 순위 섹션 삭제 (2026-04-13)
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/app/(web)/tournaments/[id]/page.tsx | MatchesStandingsSkeleton, MatchesAndStandings 함수 삭제 + Suspense 블록 삭제 + 미사용 import(Suspense, Skeleton) 제거 | 수정 |
+
+tester 참고:
+- 테스트 방법: 대회 상세 페이지 개요 탭 확인
+- 정상 동작: 대회 소개/장소/입금정보/디비전 현황은 그대로, 최근 경기+순위 미리보기만 사라짐
+- tsc --noEmit 통과 확인 완료
 
 ### 일정 경기 카드 UI 리디자인 + 경기 상태 수정 (2026-04-13)
 

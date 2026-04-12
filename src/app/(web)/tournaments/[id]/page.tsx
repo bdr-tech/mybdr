@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { prisma } from "@/lib/db/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
 // 디자인 시안 컴포넌트: 히어로(배너) + About(대회 소개) + 사이드바(참가비/도움말) + 탭
@@ -47,133 +45,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       description,
     },
   };
-}
-
-// -- Skeleton: 개요 탭 내부 최근 경기 + 순위 미리보기 로딩 --
-function MatchesStandingsSkeleton() {
-  return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <div>
-        <Skeleton className="mb-3 h-5 w-20" />
-        <div className="space-y-2">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-14 rounded-[var(--radius-card)]" />
-          ))}
-        </div>
-      </div>
-      <div>
-        <Skeleton className="mb-3 h-5 w-12" />
-        <Skeleton className="h-48 rounded-[var(--radius-card)]" />
-      </div>
-    </div>
-  );
-}
-
-// -- Async: 개요 탭의 최근 경기 + 순위 미리보기 (기존 prisma 쿼리 100% 유지) --
-async function MatchesAndStandings({ tournamentId }: { tournamentId: string }) {
-  const [matches, teams] = await Promise.all([
-    prisma.tournamentMatch.findMany({
-      where: { tournamentId },
-      orderBy: { scheduledAt: "asc" },
-      take: 10,
-      select: {
-        id: true,
-        homeScore: true,
-        awayScore: true,
-        homeTeam: { select: { team: { select: { name: true } } } },
-        awayTeam: { select: { team: { select: { name: true } } } },
-      },
-    }),
-    prisma.tournamentTeam.findMany({
-      where: { tournamentId },
-      orderBy: [{ wins: "desc" }],
-      select: {
-        id: true,
-        wins: true,
-        losses: true,
-        team: { select: { name: true } },
-      },
-    }),
-  ]);
-
-  if (matches.length === 0 && teams.length === 0) return null;
-
-  return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      {/* 최근 경기 */}
-      {matches.length > 0 && (
-        <div>
-          <h2
-            className="mb-3 flex items-center gap-2 font-semibold uppercase tracking-wide"
-            style={{ fontFamily: "var(--font-heading)" }}
-          >
-            <span className="material-symbols-outlined text-lg" style={{ color: "var(--color-primary)" }}>sports_score</span>
-            최근 경기
-          </h2>
-          <div className="space-y-2">
-            {matches.map((m) => (
-              <div
-                key={m.id.toString()}
-                className="flex items-center justify-between rounded-[var(--radius-card)] border p-3"
-                style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
-              >
-                <span className="text-sm font-medium">{m.homeTeam?.team.name ?? "TBD"}</span>
-                <span
-                  className="rounded-full px-3 py-1 text-sm font-bold"
-                  style={{ backgroundColor: "var(--color-elevated)" }}
-                >
-                  {m.homeScore}:{m.awayScore}
-                </span>
-                <span className="text-sm font-medium">{m.awayTeam?.team.name ?? "TBD"}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 순위 테이블: 미니멀 플랫 스타일 */}
-      {teams.length > 0 && (
-        <div>
-          <h2
-            className="mb-3 flex items-center gap-2 font-semibold uppercase tracking-wide"
-            style={{ fontFamily: "var(--font-heading)" }}
-          >
-            <span className="material-symbols-outlined text-lg" style={{ color: "var(--color-primary)" }}>leaderboard</span>
-            순위
-          </h2>
-          <table className="w-full text-sm">
-            <thead>
-              <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: "var(--color-text-tertiary)" }}>#</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: "var(--color-text-tertiary)" }}>팀</th>
-                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: "var(--color-text-tertiary)" }}>승</th>
-                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: "var(--color-text-tertiary)" }}>패</th>
-              </tr>
-            </thead>
-            <tbody>
-              {teams.map((t, i) => {
-                const isTop3 = i < 3;
-                return (
-                  <tr
-                    key={t.id.toString()}
-                    style={{
-                      borderBottom: "1px solid var(--color-border)",
-                      borderLeft: isTop3 ? "3px solid var(--color-primary)" : "3px solid transparent",
-                    }}
-                  >
-                    <td className="px-3 py-2 font-bold" style={{ color: "var(--color-primary)" }}>{i + 1}</td>
-                    <td className="px-3 py-2">{t.team.name}</td>
-                    <td className="px-3 py-2 text-center">{t.wins ?? 0}</td>
-                    <td className="px-3 py-2 text-center">{t.losses ?? 0}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
 }
 
 // -- 메인 페이지 --
@@ -394,12 +265,6 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         </div>
       )}
 
-      {/* 최근 경기 + 순위 미리보기: Suspense 스트리밍 */}
-      <div className="mt-6">
-        <Suspense fallback={<MatchesStandingsSkeleton />}>
-          <MatchesAndStandings tournamentId={id} />
-        </Suspense>
-      </div>
     </>
   );
 
