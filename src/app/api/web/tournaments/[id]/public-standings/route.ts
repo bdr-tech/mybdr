@@ -17,8 +17,13 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     return apiError("Invalid tournament ID", 400);
   }
 
-  // 1) 참가팀 + 완료/진행중 경기를 병렬로 조회 (DB 왕복 1회로 최적화)
-  const [teams, matches] = await Promise.all([
+  // 1) 대회 상태 + 참가팀 + 완료/진행중 경기를 병렬로 조회 (DB 왕복 1회로 최적화)
+  const [tournament, teams, matches] = await Promise.all([
+    // 대회 상태 조회 (진행 중 vs 종료에 따라 프론트에서 공동순위 로직이 달라짐)
+    prisma.tournament.findUnique({
+      where: { id },
+      select: { status: true },
+    }),
     prisma.tournamentTeam.findMany({
       where: { tournamentId: id },
       include: { team: { select: { name: true } } },
@@ -118,5 +123,6 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
       return b.pointsFor - a.pointsFor;
     });
 
-  return apiSuccess({ teams: serialized });
+  // 대회 상태를 함께 반환 (프론트에서 공동순위 판단에 사용)
+  return apiSuccess({ teams: serialized, tournamentStatus: tournament?.status ?? "draft" });
 }

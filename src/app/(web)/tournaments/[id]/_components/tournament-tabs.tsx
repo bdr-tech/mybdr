@@ -114,19 +114,33 @@ function StandingsTabContent({ tournamentId }: { tournamentId: string }) {
   };
   const teams: StandingsTeam[] = data?.teams ?? [];
 
-  // 공동 순위 계산: 승률+득실차+다득점이 모두 같으면 같은 순위 번호
+  // 대회 상태에 따라 공동순위 판단 기준이 달라짐
+  // - 진행 중: 승률만 같으면 공동순위 (세부 기준은 아직 의미 없음)
+  // - 종료: 승률+득실차+다득점 모두 같아야 공동순위 (최종 확정 순위)
+  const isCompleted = data?.tournamentStatus === "completed";
+
   let rank = 1;
   const ranks = teams.map((t, i) => {
     if (i > 0) {
       const prev = teams[i - 1];
-      if (
-        t.winRate === prev.winRate &&
-        t.pointDifference === prev.pointDifference &&
-        t.pointsFor === prev.pointsFor
-      ) {
-        // 동일 조건 → 같은 순위 유지
+      if (isCompleted) {
+        // 종료된 대회: 모든 세부 기준까지 같아야 공동순위 (거의 발생 안 함)
+        if (
+          t.winRate === prev.winRate &&
+          t.pointDifference === prev.pointDifference &&
+          t.pointsFor === prev.pointsFor
+        ) {
+          // 공동순위 유지
+        } else {
+          rank = i + 1;
+        }
       } else {
-        rank = i + 1;
+        // 진행 중 대회: 승률만 같으면 공동순위
+        if (t.winRate === prev.winRate) {
+          // 공동순위 유지
+        } else {
+          rank = i + 1;
+        }
       }
     }
     return rank;

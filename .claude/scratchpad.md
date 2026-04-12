@@ -56,6 +56,18 @@ reviewer 참고:
 - 기존 응답 필드(wins/losses/draws/pointsFor/pointsAgainst/pointDifference) 유지 (하위호환)
 - 공동순위: 승률+득실차+다득점 모두 같을 때만 동일 번호
 
+### 공동순위 로직 분기: 진행 중 vs 종료 대회 (2026-04-13)
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/app/api/web/tournaments/[id]/public-standings/route.ts | tournament.status 조회 추가 + 응답에 tournamentStatus 포함 | 수정 |
+| src/app/(web)/tournaments/[id]/_components/tournament-tabs.tsx | 공동순위 판단을 대회 상태별 분기 (진행중=승률만, 종료=승률+득실차+다득점) | 수정 |
+
+tester 참고:
+- 테스트 방법: 진행 중 대회 순위 탭에서 승률이 같은 팀이 같은 순위 번호인지 확인
+- 종료된 대회에서는 승률+득실차+다득점까지 같아야 공동순위
+- 정렬 순서(승률>득실차>다득점)는 양쪽 모두 동일하게 유지됨
+
 ### 순위표 API - 경기 결과 직접 집계 방식 수정 (2026-04-13)
 
 | 파일 경로 | 변경 내용 | 신규/수정 |
