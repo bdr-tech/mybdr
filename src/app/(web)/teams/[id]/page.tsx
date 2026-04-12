@@ -193,13 +193,12 @@ export default async function TeamDetailPage({
             <Link
               key={t.key}
               href={`/teams/${id}?tab=${t.key}`}
-              className={`flex flex-1 items-center justify-center gap-1.5 py-3 text-xs sm:text-sm whitespace-nowrap font-medium transition-colors border-b-2 ${
+              className={`flex flex-1 items-center justify-center py-3 text-xs sm:text-sm whitespace-nowrap font-medium transition-colors border-b-2 ${
                 currentTab === t.key
                   ? "border-[var(--color-primary)] text-[var(--color-primary)] font-bold"
                   : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
               }`}
             >
-              <span className="material-symbols-outlined text-base hidden sm:inline">{t.icon}</span>
               {t.label}
             </Link>
           ))}

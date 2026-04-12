@@ -68,15 +68,15 @@ export async function OverviewTab({ teamId, accent, team }: OverviewTabProps) {
       <div className="col-span-12 lg:col-span-8 space-y-6">
 
         {/* 통계 카드 3칸 (grid-cols-3) */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
           {/* 시즌 승률 — 큰 숫자 + 전적 텍스트 */}
-          <div className="col-span-2 rounded border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-sm">
+          <div className="col-span-2 rounded border border-[var(--color-border)] bg-[var(--color-card)] p-4 sm:p-6 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-4">
               시즌 승률
             </p>
             <div className="flex items-end justify-between">
               <span
-                className="text-4xl font-black text-[var(--color-primary)]"
+                className="text-2xl sm:text-4xl font-black text-[var(--color-primary)]"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
                 {team.winRate !== null ? `${team.winRate}%` : "-"}
@@ -107,7 +107,7 @@ export async function OverviewTab({ teamId, accent, team }: OverviewTabProps) {
                 경기 수
               </p>
               <span
-                className="text-3xl font-black text-[var(--color-text-primary)]"
+                className="text-xl sm:text-3xl font-black text-[var(--color-text-primary)]"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
                 {total}
@@ -119,7 +119,7 @@ export async function OverviewTab({ teamId, accent, team }: OverviewTabProps) {
                 멤버
               </p>
               <span
-                className="text-3xl font-black text-[var(--color-text-primary)]"
+                className="text-xl sm:text-3xl font-black text-[var(--color-text-primary)]"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
                 {team.memberCount}명
