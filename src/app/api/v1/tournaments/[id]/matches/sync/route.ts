@@ -10,8 +10,8 @@ import { SYNC_ALLOWED_STATUSES } from "@/lib/constants/match-status";
 // 단일 경기 동기화 스키마 (Flutter bdr_stat 앱용)
 const playByPlaySchema = z.object({
   local_id: z.string().min(1),
-  tournament_team_player_id: z.number().int().positive(),
-  tournament_team_id: z.number().int().positive(),
+  tournament_team_player_id: z.number().int().min(0),
+  tournament_team_id: z.number().int().min(0),
   quarter: z.number().int().min(1).max(8),
   game_clock_seconds: z.number().int().min(0),
   shot_clock_seconds: z.number().int().min(0).optional().nullable(),
@@ -237,8 +237,8 @@ async function handler(req: NextRequest, ctx: AuthContext, tournamentId: string)
       const pbpPromises = play_by_plays.map((pbp) => {
         const pbpData = {
           tournament_match_id: matchId,
-          tournament_team_player_id: BigInt(pbp.tournament_team_player_id),
-          tournament_team_id: BigInt(pbp.tournament_team_id),
+          tournament_team_player_id: pbp.tournament_team_player_id ? BigInt(pbp.tournament_team_player_id) : null,
+          tournament_team_id: pbp.tournament_team_id ? BigInt(pbp.tournament_team_id) : null,
           quarter: pbp.quarter,
           game_clock_seconds: pbp.game_clock_seconds,
           shot_clock_seconds: pbp.shot_clock_seconds ?? null,
