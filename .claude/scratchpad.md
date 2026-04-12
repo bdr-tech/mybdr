@@ -23,6 +23,25 @@
 
 ## 구현 기록 (developer)
 
+### KBL 순위 방식 적용 + 승률 표시 통일 + 공동 순위 (2026-04-13)
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/app/api/web/tournaments/[id]/public-standings/route.ts | gamesPlayed/winRate 필드 추가 + 정렬을 KBL방식(승률→득실차→다득점)으로 변경 | 수정 |
+| src/app/(web)/tournaments/[id]/_components/tournament-tabs.tsx | 공동순위 계산 + KBL 승률표시(.XXX) + 경기/득실차 컬럼 추가 | 수정 |
+
+tester 참고:
+- 테스트 방법: 경기 결과가 있는 대회의 순위 탭 확인
+- 정상 동작: 승률 기준 정렬, .XXX 형식 표시, 동률 팀은 같은 순위 번호
+- 테이블 컬럼: #, 팀, 경기, 승, 패, 승률, 득실차(PC만)
+- 승률 표시: 전승=1.000, 일반=.667, 0경기="-"
+- 득실차 컬럼은 모바일에서 숨김 (sm:table-cell)
+
+reviewer 참고:
+- winRate는 서버에서 Math.round로 소수3자리 계산 (부동소수점 안전)
+- 기존 응답 필드(wins/losses/draws/pointsFor/pointsAgainst/pointDifference) 유지 (하위호환)
+- 공동순위: 승률+득실차+다득점 모두 같을 때만 동일 번호
+
 ### 순위표 API - 경기 결과 직접 집계 방식 수정 (2026-04-13)
 
 | 파일 경로 | 변경 내용 | 신규/수정 |

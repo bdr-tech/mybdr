@@ -101,7 +101,43 @@ function StandingsTabContent({ tournamentId }: { tournamentId: string }) {
   if (isLoading) return <TabSkeleton />;
 
   // apiSuccess()는 .data 래핑 없이 직접 반환
-  const teams = data?.teams ?? [];
+  // 순위표 팀 타입 (API에서 gamesPlayed, winRate, pointDifference, pointsFor 추가됨)
+  type StandingsTeam = {
+    id: string;
+    teamName: string;
+    wins: number;
+    losses: number;
+    gamesPlayed: number;
+    winRate: number;
+    pointDifference: number;
+    pointsFor: number;
+  };
+  const teams: StandingsTeam[] = data?.teams ?? [];
+
+  // 공동 순위 계산: 승률+득실차+다득점이 모두 같으면 같은 순위 번호
+  let rank = 1;
+  const ranks = teams.map((t, i) => {
+    if (i > 0) {
+      const prev = teams[i - 1];
+      if (
+        t.winRate === prev.winRate &&
+        t.pointDifference === prev.pointDifference &&
+        t.pointsFor === prev.pointsFor
+      ) {
+        // 동일 조건 → 같은 순위 유지
+      } else {
+        rank = i + 1;
+      }
+    }
+    return rank;
+  });
+
+  // KBL 승률 표시: .XXX 형식 (전승만 1.000, 0경기는 "-")
+  const formatWinRate = (t: StandingsTeam) => {
+    if (t.gamesPlayed === 0) return "-";
+    if (t.winRate === 1) return "1.000";
+    return t.winRate.toFixed(3).replace(/^0/, "");
+  };
 
   return (
     <div>
@@ -109,18 +145,18 @@ function StandingsTabContent({ tournamentId }: { tournamentId: string }) {
       <table className="w-full text-sm">
         <thead>
           <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
-            <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: "var(--color-text-tertiary)" }}>#</th>
-            <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: "var(--color-text-tertiary)" }}>팀</th>
-            <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: "var(--color-text-tertiary)" }}>승</th>
-            <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: "var(--color-text-tertiary)" }}>패</th>
-            <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: "var(--color-text-tertiary)" }}>승률</th>
+            <th className="px-2 py-2 text-left text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>#</th>
+            <th className="px-2 py-2 text-left text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>팀</th>
+            <th className="px-2 py-2 text-center text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>경기</th>
+            <th className="px-2 py-2 text-center text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>승</th>
+            <th className="px-2 py-2 text-center text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>패</th>
+            <th className="px-2 py-2 text-center text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>승률</th>
+            <th className="hidden px-2 py-2 text-center text-xs font-medium sm:table-cell sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>득실차</th>
           </tr>
         </thead>
         <tbody>
-          {teams.map((t: { id: string; teamName: string; wins: number; losses: number }, i: number) => {
-            const total = t.wins + t.losses;
-            const pct = total > 0 ? (t.wins / total).toFixed(3) : ".000";
-            const isTop3 = i < 3;
+          {teams.map((t, i) => {
+            const isTop3 = ranks[i] <= 3;
             return (
               <tr
                 key={t.id}
@@ -129,11 +165,15 @@ function StandingsTabContent({ tournamentId }: { tournamentId: string }) {
                   borderLeft: isTop3 ? "3px solid var(--color-primary)" : "3px solid transparent",
                 }}
               >
-                <td className="px-3 py-2.5 text-sm font-bold" style={{ color: "var(--color-primary)" }}>{i + 1}</td>
-                <td className="px-3 py-2.5 font-medium">{t.teamName}</td>
-                <td className="px-3 py-2.5 text-center">{t.wins}</td>
-                <td className="px-3 py-2.5 text-center">{t.losses}</td>
-                <td className="px-3 py-2.5 text-center">{pct}</td>
+                <td className="px-2 py-2.5 text-sm font-bold sm:px-3" style={{ color: "var(--color-primary)" }}>{ranks[i]}</td>
+                <td className="px-2 py-2.5 font-medium sm:px-3">{t.teamName}</td>
+                <td className="px-2 py-2.5 text-center sm:px-3">{t.gamesPlayed}</td>
+                <td className="px-2 py-2.5 text-center sm:px-3">{t.wins}</td>
+                <td className="px-2 py-2.5 text-center sm:px-3">{t.losses}</td>
+                <td className="px-2 py-2.5 text-center font-mono sm:px-3">{formatWinRate(t)}</td>
+                <td className="hidden px-2 py-2.5 text-center sm:table-cell sm:px-3">
+                  {t.pointDifference > 0 ? `+${t.pointDifference}` : t.pointDifference}
+                </td>
               </tr>
             );
           })}

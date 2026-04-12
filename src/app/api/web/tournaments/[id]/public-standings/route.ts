@@ -80,7 +80,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     }
   }
 
-  // 3) 직렬화 + 정렬 (승수 내림차순 → 패수 오름차순 → 득실차 내림차순)
+  // 3) 직렬화 + KBL 방식 정렬 (승률 → 득실차 → 다득점)
   const serialized = teams
     .map((t) => {
       const tid = t.id.toString();
@@ -91,12 +91,20 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
         pointsFor: 0,
         pointsAgainst: 0,
       };
+      // 경기 수 = 승 + 패 + 무
+      const gamesPlayed = stats.wins + stats.losses + stats.draws;
+      // 승률 = 승 / 경기수 (소수 3자리, 0경기면 0)
+      const winRate = gamesPlayed > 0
+        ? Math.round((stats.wins / gamesPlayed) * 1000) / 1000
+        : 0;
       return {
         id: tid,
         teamName: t.team.name,
         wins: stats.wins,
         losses: stats.losses,
         draws: stats.draws,
+        gamesPlayed,       // 총 경기 수
+        winRate,           // 승률 (0~1, 소수 3자리)
         groupName: t.groupName,
         pointsFor: stats.pointsFor,
         pointsAgainst: stats.pointsAgainst,
@@ -104,9 +112,10 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
       };
     })
     .sort((a, b) => {
-      if (b.wins !== a.wins) return b.wins - a.wins; // 승수 많은 순
-      if (a.losses !== b.losses) return a.losses - b.losses; // 패수 적은 순
-      return b.pointDifference - a.pointDifference; // 득실차 높은 순
+      // KBL 순위 결정: 1) 승률 높은 순 → 2) 득실차 높은 순 → 3) 다득점 순
+      if (b.winRate !== a.winRate) return b.winRate - a.winRate;
+      if (b.pointDifference !== a.pointDifference) return b.pointDifference - a.pointDifference;
+      return b.pointsFor - a.pointsFor;
     });
 
   return apiSuccess({ teams: serialized });
