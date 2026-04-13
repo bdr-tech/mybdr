@@ -82,14 +82,39 @@ export default async function TeamDetailPage({
   }).catch(() => null);
   if (!team) return notFound();
 
-  // 기존 데이터 변환 로직 100% 유지
+  // 기존 데이터 변환 로직
   const accent = resolveAccent(team.primaryColor, team.secondaryColor);
   const memberCount = team.teamMembers.length;
   const location = [team.city, team.district].filter(Boolean).join(" ");
-  const wins = team.wins ?? 0;
-  const losses = team.losses ?? 0;
-  const draws = team.draws ?? 0;
-  const total = wins + losses + draws;
+
+  // 이 팀의 모든 TournamentTeam ID를 조회 (대회 참가 이력)
+  const tournamentTeamIds = await prisma.tournamentTeam.findMany({
+    where: { teamId: BigInt(id) },
+    select: { id: true },
+  });
+  const ttIds = tournamentTeamIds.map(t => t.id);
+
+  // 해당 TournamentTeam이 참여한 완료/라이브 경기에서 스코어 조회
+  const completedMatches = ttIds.length > 0 ? await prisma.tournamentMatch.findMany({
+    where: {
+      OR: [{ homeTeamId: { in: ttIds } }, { awayTeamId: { in: ttIds } }],
+      status: { in: ["completed", "live"] },
+      homeTeamId: { not: null },
+      awayTeamId: { not: null },
+    },
+    select: { homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true },
+  }) : [];
+
+  // 승/패 집계 (농구는 무승부 없음)
+  let wins = 0, losses = 0;
+  for (const m of completedMatches) {
+    const isHome = ttIds.some(ttId => ttId === m.homeTeamId);
+    const myScore = isHome ? (m.homeScore ?? 0) : (m.awayScore ?? 0);
+    const oppScore = isHome ? (m.awayScore ?? 0) : (m.homeScore ?? 0);
+    if (myScore > oppScore) wins++;
+    else losses++;
+  }
+  const total = wins + losses;
   const winRate = total > 0 ? Math.round((wins / total) * 100) : null;
   const division = computeDivision(wins);
 
@@ -217,7 +242,6 @@ export default async function TeamDetailPage({
                 description: team.description,
                 wins,
                 losses,
-                draws,
                 winRate,
                 memberCount,
                 location,

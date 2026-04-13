@@ -10,7 +10,6 @@ interface OverviewTabProps {
     description: string | null;
     wins: number;
     losses: number;
-    draws: number;
     winRate: number | null;
     memberCount: number;
     location: string;
@@ -59,7 +58,7 @@ export async function OverviewTab({ teamId, accent, team }: OverviewTabProps) {
   const STATUS_LABEL: Record<number, string> = { 0: "임시", 1: "모집중", 2: "확정", 3: "완료", 4: "취소" };
   const GAME_TYPE_LABEL: Record<number, string> = { 0: "픽업", 1: "게스트", 2: "팀대결" };
 
-  const total = team.wins + team.losses + team.draws;
+  const total = team.wins + team.losses;
 
   return (
     <div className="grid grid-cols-12 gap-6">
@@ -83,7 +82,7 @@ export async function OverviewTab({ teamId, accent, team }: OverviewTabProps) {
               </span>
               <div className="text-right">
                 <p className="text-xs font-bold text-[var(--color-text-primary)]">
-                  {team.wins}승 {team.draws > 0 ? `${team.draws}무 ` : ""}{team.losses}패
+                  {team.wins}승 {team.losses}패
                 </p>
                 <p className="text-xs text-[var(--color-text-muted)] mt-1">
                   총 {total}경기
@@ -308,7 +307,7 @@ export async function OverviewTab({ teamId, accent, team }: OverviewTabProps) {
             {[
               { icon: "location_on", label: "지역", value: team.location || "-" },
               { icon: "groups", label: "멤버", value: `${team.memberCount}명` },
-              { icon: "sports_score", label: "전적", value: `${team.wins}승 ${team.draws > 0 ? `${team.draws}무 ` : ""}${team.losses}패` },
+              { icon: "sports_score", label: "전적", value: `${team.wins}승 ${team.losses}패` },
               { icon: "percent", label: "승률", value: team.winRate !== null ? `${team.winRate}%` : "-" },
             ].map((item) => (
               <div key={item.label} className="flex items-center justify-between">

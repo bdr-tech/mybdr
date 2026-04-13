@@ -191,6 +191,20 @@ tester 참고:
 - 주의: userId가 null인 선수는 Link 없이 텍스트만 표시됨 (정상)
 - schedule-timeline은 경기 카드 전체가 Link로 감싸져 있어 건너뜀 (중첩 Link 방지)
 
+### 팀 전적 tournament_matches 집계 + draws 제거 (2026-04-13)
+
+구현한 기능: 팀 상세 페이지에서 Team.wins/losses 대신 tournament_matches 스코어에서 실제 승/패 집계, draws(무승부) 관련 로직 전부 제거
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/app/(web)/teams/[id]/page.tsx | TournamentTeam + TournamentMatch에서 승/패 집계, draws 제거 | 수정 |
+| src/app/(web)/teams/[id]/_tabs/overview-tab.tsx | OverviewTabProps에서 draws 제거, 전적 텍스트/계산에서 draws 제거 | 수정 |
+
+tester 참고:
+- 테스트 방법: 대회 경기 기록이 있는 팀 상세 페이지에서 전적이 표시되는지 확인
+- 정상 동작: tournament_matches에서 completed/live 경기의 스코어 비교로 승/패 표시
+- 주의: Team.wins/losses가 아닌 실제 경기 결과 기반이므로, 대회 경기가 없는 팀은 0승 0패로 표시
+
 ## 수정 요청
 | 요청자 | 대상 파일 | 문제 설명 | 상태 |
 |--------|----------|----------|------|
@@ -198,6 +212,7 @@ tester 참고:
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-13 | developer | 팀 전적 tournament_matches 집계 + draws 제거 (2파일) | 완료 |
 | 04-13 | developer | 팀명/선수명 Link 추가 (9파일, API 3곳 + UI 6곳) | 완료 |
 | 04-13 | developer | 대회 선수 userId 자동 연결 구현 (시나리오 A+D, 3파일) | 완료 |
 | 04-13 | planner-architect | 대회 기록 자동 연결 시스템 계획 수립 (4시나리오 분석+5파일 설계) | 기획완료 |
