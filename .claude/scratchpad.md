@@ -282,6 +282,21 @@ Phase 3 (확장): 와일드카드 로직 + 미달 팀 자동 재배분 제안 UI
 
 ## 구현 기록 (developer)
 
+### 사이드바 제거 + 히어로 통합 + 1열 레이아웃 (2026-04-13)
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/app/(web)/tournaments/[id]/page.tsx | 2열 그리드→1열 변경, TournamentSidebar 2곳 삭제, import 제거, 히어로에 entryFee/isRegistrationOpen/tournamentId props 추가 | 수정 |
+| src/app/(web)/tournaments/[id]/_components/tournament-hero.tsx | entryFee/isRegistrationOpen/tournamentId props 추가, 메타바에 참가비 표시, 4개 템플릿(poster/logo/photo/basic)에 참가 신청 Link 추가 | 수정 |
+
+tester 참고:
+- 테스트 방법: 대회 상세 페이지 접속하여 레이아웃 확인
+- 정상 동작: 우측 사이드바 없이 탭 콘텐츠가 전체 너비로 표시, 히어로에 참가비+참가신청 버튼 표시
+- 접수 중인 대회: 히어로에 "참가 신청" 버튼 + 모바일 플로팅 CTA 둘 다 표시
+- 접수 안 하는 대회: 참가 신청 버튼 미표시
+- TournamentSidebar 파일 자체는 삭제하지 않음 (나중 재사용 가능)
+- tsc --noEmit 통과 확인 완료
+
 ### 개요 탭 최근 경기 + 순위 섹션 삭제 (2026-04-13)
 
 | 파일 경로 | 변경 내용 | 신규/수정 |

@@ -4,10 +4,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
-// 디자인 시안 컴포넌트: 히어로(배너) + About(대회 소개) + 사이드바(참가비/도움말) + 탭
+// 디자인 시안 컴포넌트: 히어로(배너) + About(대회 소개) + 탭
 import { TournamentHero } from "./_components/tournament-hero";
 import { TournamentAbout } from "./_components/tournament-about";
-import { TournamentSidebar } from "./_components/tournament-sidebar";
 import { Breadcrumb } from "@/components/shared/breadcrumb";
 
 // 탭 전환 컴포넌트 (클라이언트) — lazy loading 방식으로 변경
@@ -276,7 +275,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         { label: tournament.name },
       ]} />
 
-      {/* 히어로 배너 */}
+      {/* 히어로 배너: 사이드바 정보(참가비/참가신청)를 히어로에 통합 */}
       <TournamentHero
         name={tournament.name}
         format={tournament.format}
@@ -292,49 +291,18 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         bannerUrl={tournament.banner_url}
         primaryColor={tournament.primary_color}
         secondaryColor={tournament.secondary_color}
+        entryFee={tournament.entry_fee ? Number(tournament.entry_fee) : null}
+        isRegistrationOpen={isRegistrationOpen}
+        tournamentId={id}
       />
 
-      {/* 2열 레이아웃: 좌측 콘텐츠 + 우측 사이드바 */}
+      {/* 1열 레이아웃: 탭 콘텐츠 전체 너비 (사이드바 제거됨) */}
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
-          <div className="min-w-0">
-            {/* 탭: 개요는 서버 렌더링, 나머지는 클라이언트 lazy loading */}
-            <TournamentTabs
-              tournamentId={id}
-              overviewContent={overviewContent}
-            />
-          </div>
-
-          <aside className="hidden lg:block">
-            <TournamentSidebar
-              tournamentId={id}
-              name={tournament.name}
-              entryFee={tournament.entry_fee ? Number(tournament.entry_fee) : null}
-              teamCount={tournament._count.tournamentTeams}
-              maxTeams={tournament.maxTeams}
-              isRegistrationOpen={isRegistrationOpen}
-              isRegistrationSoon={isRegistrationSoon ?? false}
-              regClose={regClose}
-              startDate={tournament.startDate}
-              endDate={tournament.endDate}
-              venue={[tournament.city, tournament.venue_name].filter(Boolean).join(" ")}
-            />
-          </aside>
-        </div>
-
-        <div className="mt-8 lg:hidden">
-          <TournamentSidebar
+        <div>
+          {/* 탭: 개요는 서버 렌더링, 나머지는 클라이언트 lazy loading */}
+          <TournamentTabs
             tournamentId={id}
-            name={tournament.name}
-            entryFee={tournament.entry_fee ? Number(tournament.entry_fee) : null}
-            teamCount={tournament._count.tournamentTeams}
-            maxTeams={tournament.maxTeams}
-            isRegistrationOpen={isRegistrationOpen}
-            isRegistrationSoon={isRegistrationSoon ?? false}
-            regClose={regClose}
-            startDate={tournament.startDate}
-            endDate={tournament.endDate}
-            venue={[tournament.city, tournament.venue_name].filter(Boolean).join(" ")}
+            overviewContent={overviewContent}
           />
         </div>
 
@@ -353,7 +321,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
       {/* ========================================
        * 모바일 플로팅 CTA: 접수중일 때만 하단 고정 표시
        * bottom-16 = 하단 네비(h-14) 위, z-40으로 콘텐츠 위에 뜸
-       * lg 이상에서는 사이드바에 CTA가 있으므로 숨김
+       * 히어로에도 참가 신청 버튼이 있지만, 스크롤 후 접근성을 위해 모바일에서 유지
        * ======================================== */}
       {isRegistrationOpen && (
         <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-2 lg:hidden">

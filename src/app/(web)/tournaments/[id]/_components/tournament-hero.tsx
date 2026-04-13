@@ -8,6 +8,7 @@
  * - photo: banner_url 배경 사진 + 어둡게 + 제목 오버레이
  */
 
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { formatDateRange } from "@/lib/utils/format-date";
 import {
@@ -32,6 +33,10 @@ interface TournamentHeroProps {
   bannerUrl?: string | null;
   primaryColor?: string | null;
   secondaryColor?: string | null;
+  // 사이드바에서 이동한 props (참가비 + 참가 신청)
+  entryFee?: number | null;
+  isRegistrationOpen?: boolean;
+  tournamentId?: string;
 }
 
 export function TournamentHero({
@@ -49,6 +54,9 @@ export function TournamentHero({
   bannerUrl,
   primaryColor,
   secondaryColor,
+  entryFee,
+  isRegistrationOpen,
+  tournamentId,
 }: TournamentHeroProps) {
   // 공통 상수에서 상태 라벨과 뱃지 variant를 가져옴
   const statusLabel = TOURNAMENT_STATUS_LABEL[status ?? "draft"] ?? (status ?? "draft");
@@ -73,6 +81,9 @@ export function TournamentHero({
   const template = designTemplate ?? "basic";
 
   // --- 공통 메타 정보 바 (모든 템플릿에서 동일하게 사용) ---
+  // 참가비 표시 문자열
+  const feeStr = entryFee && entryFee > 0 ? `${entryFee.toLocaleString()}원` : "무료";
+
   const metaBar = (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm" style={{ color: "rgba(255,255,255,0.8)" }}>
       {dateStr && (
@@ -91,8 +102,27 @@ export function TournamentHero({
         <span className="material-symbols-outlined text-base text-white/70">groups</span>
         {teamsStr}{formatLabel && ` · ${formatLabel}`}
       </span>
+      {/* 참가비: 사이드바에서 히어로로 이동 */}
+      <span className="flex items-center gap-1.5">
+        <span className="material-symbols-outlined text-base text-white/70">payments</span>
+        {feeStr}
+      </span>
     </div>
   );
+
+  // --- 액션 바: 참가 신청 버튼 (접수 중일 때만, 서버 컴포넌트에서 Link 사용) ---
+  const actionBar = isRegistrationOpen && tournamentId ? (
+    <div className="mt-3">
+      <Link
+        href={`/tournaments/${tournamentId}/join`}
+        className="inline-flex items-center gap-1.5 rounded px-4 py-2 text-sm font-bold text-white transition-all hover:opacity-90"
+        style={{ backgroundColor: pColor }}
+      >
+        <span className="material-symbols-outlined text-base">edit_square</span>
+        참가 신청
+      </Link>
+    </div>
+  ) : null;
 
   // --- 공통 배지 그룹 ---
   const badges = (
@@ -137,6 +167,7 @@ export function TournamentHero({
           {badges}
           {title}
           {metaBar}
+          {actionBar}
         </div>
       </section>
     );
@@ -171,6 +202,7 @@ export function TournamentHero({
           {badges}
           {title}
           {metaBar}
+          {actionBar}
         </div>
       </section>
     );
@@ -194,6 +226,7 @@ export function TournamentHero({
           {badges}
           {title}
           {metaBar}
+          {actionBar}
         </div>
       </section>
     );
@@ -261,7 +294,26 @@ export function TournamentHero({
             <span className="material-symbols-outlined text-base" style={{ color: pColor }}>groups</span>
             {teamsStr}{formatLabel && ` · ${formatLabel}`}
           </span>
+          {/* 참가비: 사이드바에서 히어로로 이동 */}
+          <span className="flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-base" style={{ color: pColor }}>payments</span>
+            {feeStr}
+          </span>
         </div>
+
+        {/* 참가 신청 버튼 (basic 템플릿용: 테마 색상 사용) */}
+        {isRegistrationOpen && tournamentId && (
+          <div className="mt-3">
+            <Link
+              href={`/tournaments/${tournamentId}/join`}
+              className="inline-flex items-center gap-1.5 rounded px-4 py-2 text-sm font-bold text-white transition-all hover:opacity-90"
+              style={{ backgroundColor: pColor }}
+            >
+              <span className="material-symbols-outlined text-base">edit_square</span>
+              참가 신청
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );
