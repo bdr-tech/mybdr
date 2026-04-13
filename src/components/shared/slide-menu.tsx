@@ -26,6 +26,7 @@ export function SlideMenu({
   role,
   name,
   hiddenMenus,
+  isReferee,
 }: {
   open: boolean;
   onClose: () => void;
@@ -34,6 +35,7 @@ export function SlideMenu({
   name?: string;
   email?: string; /* header.tsx 호환용: 현재 UI에서는 미사용 */
   hiddenMenus?: string[]; /* 숨긴 메뉴 slug 배열 — 맞춤 설정에서 지정 */
+  isReferee?: boolean; /* Referee 매칭 유저에게 심판 플랫폼 바로가기 표시 */
 }) {
   const pathname = usePathname();
 
@@ -138,6 +140,30 @@ export function SlideMenu({
               </Link>
             );
           })}
+
+          {/* 심판 플랫폼 바로가기: Referee 매칭 유저에게만 조건부 표시 */}
+          {isReferee && (
+            <>
+              <div className="my-2 border-t border-[var(--color-border)]" />
+              <Link
+                href="/referee"
+                onClick={onClose}
+                className={`flex items-center gap-4 rounded-lg px-4 py-3 text-sm transition-colors ${
+                  isActive("/referee")
+                    ? "bg-[var(--color-primary-light)] font-bold text-[var(--color-primary)]"
+                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-elevated)]"
+                }`}
+              >
+                <span
+                  className="material-symbols-outlined text-xl"
+                  style={isActive("/referee") ? { fontVariationSettings: "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24" } : undefined}
+                >
+                  sports
+                </span>
+                <span>심판 플랫폼</span>
+              </Link>
+            </>
+          )}
         </nav>
 
       </div>

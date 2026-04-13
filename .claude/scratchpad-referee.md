@@ -176,6 +176,7 @@ reviewer 참고:
 | 04-13 | developer | v3 1차: 스키마+매칭+암호화+권한+API수정 (7파일) | ✅ tsc 통과 |
 | 04-13 | reviewer | v3 1차 리뷰: critical 0, warning 2 (VarChar 제한+동명이인) | ✅ APPROVE |
 | 04-13 | tester | v3 2차: API 3개 + 페이지 3개 검증 (7개 중 5통과/2실패) | ❌ 수정 필요 |
+| 04-13 | developer | 메인사이트 심판 바로가기: me API is_referee + PC사이드바 + 모바일슬라이드 | ✅ tsc 통과 |
 
 ---
 
