@@ -410,7 +410,6 @@ function BoxScoreTable({
               <tr className="border-b border-white/10 text-gray-500">
                 <th className="py-2 px-3 text-left font-normal sticky left-0 bg-[#141416] print:static print:bg-transparent">#</th>
                 <th className="py-2 px-1 text-left font-normal sticky left-8 bg-[#141416] min-w-[70px] print:static print:bg-transparent">이름</th>
-                <th className="py-2 px-1 text-center font-normal">MIN</th>
                 <th className="py-2 px-1 text-center font-semibold text-gray-300">PTS</th>
                 <th className="py-2 px-1 text-center font-normal">FG</th>
                 <th className="py-2 px-1 text-center font-normal">FG%</th>
@@ -441,7 +440,6 @@ function BoxScoreTable({
                   <td className="py-2 px-1 text-gray-200 sticky left-8 bg-inherit min-w-[70px] truncate max-w-[70px] print:static print:bg-transparent print:max-w-none">
                     {p.name}
                   </td>
-                  <td className="py-2 px-1 text-center text-gray-500">{formatGameClock(p.min_seconds ?? p.min * 60)}</td>
                   <td className="py-2 px-1 text-center font-bold" style={{ color }}>
                     {p.pts}
                   </td>
@@ -504,7 +502,6 @@ function BoxScoreTable({
                   <tr className="border-t border-white/20 bg-white/[0.04] font-semibold print-total-row">
                     <td className="py-2 px-3 text-gray-400 sticky left-0 bg-[#111118] print:static print:bg-transparent" />
                     <td className="py-2 px-1 text-gray-200 sticky left-8 bg-[#111118] print:static print:bg-transparent">TOTAL</td>
-                    <td className="py-2 px-1 text-center text-gray-400">{formatGameClock(total.min_seconds)}</td>
                     <td className="py-2 px-1 text-center" style={{ color }}>{total.pts}</td>
                     <td className="py-2 px-1 text-center text-gray-300">{total.fgm}/{total.fga}</td>
                     <td className="py-2 px-1 text-center text-gray-300">{pct(total.fgm, total.fga)}%</td>
