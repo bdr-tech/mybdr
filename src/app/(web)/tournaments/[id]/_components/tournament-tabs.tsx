@@ -235,14 +235,14 @@ function OverviewWithDashboard({ tournamentId, overviewContent }: { tournamentId
 
   return (
     <div>
-      {/* 대시보드 헤더 (대진표 탭에서 이동) */}
+      {/* 대시보드 헤더: 진행률/LIVE/핫팀 3카드 */}
       {data && (
         <div className="mb-6">
           <TournamentDashboardHeader
-            tournamentName={d.tournamentName ?? ""}
-            totalTeams={d.totalTeams ?? 0}
+            totalMatches={d.totalMatches ?? 0}
+            completedMatches={d.completedMatches ?? 0}
             liveMatchCount={d.liveMatchCount ?? 0}
-            finalsDate={d.finalsDate ?? null}
+            hotTeam={d.hotTeam ?? null}
           />
         </div>
       )}

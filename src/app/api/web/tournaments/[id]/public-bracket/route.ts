@@ -58,6 +58,64 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
 
   const liveMatchCount = matches.filter((m) => m.status === "in_progress").length;
 
+  // 전체/완료 경기 수 (대시보드 진행률 카드용)
+  const totalMatchCount = matches.length;
+  const completedMatchCount = matches.filter((m) => m.status === "completed").length;
+
+  // 핫팀 계산: 경기 결과 기반 승률→득실차→다득점 1위 팀
+  const teamStats: Record<string, {
+    wins: number; losses: number;
+    pointsFor: number; pointsAgainst: number;
+    teamId: bigint; teamName: string;
+  }> = {};
+
+  for (const t of tournamentTeams) {
+    teamStats[t.id.toString()] = {
+      wins: 0, losses: 0,
+      pointsFor: 0, pointsAgainst: 0,
+      teamId: t.teamId, teamName: t.team.name,
+    };
+  }
+
+  for (const m of matches) {
+    if (!m.homeTeamId || !m.awayTeamId) continue;
+    if (m.status !== "completed" && m.status !== "live") continue;
+    const hid = m.homeTeamId.toString();
+    const aid = m.awayTeamId.toString();
+    const hs = m.homeScore ?? 0;
+    const as_ = m.awayScore ?? 0;
+
+    if (teamStats[hid]) { teamStats[hid].pointsFor += hs; teamStats[hid].pointsAgainst += as_; }
+    if (teamStats[aid]) { teamStats[aid].pointsFor += as_; teamStats[aid].pointsAgainst += hs; }
+
+    if (m.status === "completed" || m.status === "live") {
+      if (hs > as_) {
+        if (teamStats[hid]) teamStats[hid].wins++;
+        if (teamStats[aid]) teamStats[aid].losses++;
+      } else if (as_ > hs) {
+        if (teamStats[aid]) teamStats[aid].wins++;
+        if (teamStats[hid]) teamStats[hid].losses++;
+      }
+    }
+  }
+
+  // 경기 1개 이상 한 팀 중 승률→득실차→다득점 순 정렬
+  const ranked = Object.values(teamStats)
+    .filter((t) => (t.wins + t.losses) > 0)
+    .sort((a, b) => {
+      const aRate = a.wins / (a.wins + a.losses);
+      const bRate = b.wins / (b.wins + b.losses);
+      if (bRate !== aRate) return bRate - aRate;
+      const aDiff = a.pointsFor - a.pointsAgainst;
+      const bDiff = b.pointsFor - b.pointsAgainst;
+      if (bDiff !== aDiff) return bDiff - aDiff;
+      return b.pointsFor - a.pointsFor;
+    });
+
+  const hotTeam = ranked[0]
+    ? { teamId: ranked[0].teamId.toString(), teamName: ranked[0].teamName }
+    : null;
+
   const bracketOnlyMatches = matches.filter(
     (m) => m.round_number != null && m.bracket_position != null
   );
@@ -93,6 +151,9 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     totalTeams: tournamentTeams.length,
     liveMatchCount,
     finalsDate,
+    totalMatches: totalMatchCount,
+    completedMatches: completedMatchCount,
+    hotTeam,
     groupTeams,
     rounds,
     venueName: tournament.venue_name,

@@ -68,6 +68,51 @@ export default async function BracketPage({
     (m) => m.status === "in_progress"
   ).length;
 
+  // 대시보드 진행률 카드용: 전체/완료 경기 수
+  const totalMatches = matches.length;
+  const completedMatches = matches.filter((m) => m.status === "completed").length;
+
+  // 핫팀 계산: 경기 결과 기반 승률→득실차→다득점 1위 팀
+  const teamStats: Record<string, {
+    wins: number; losses: number;
+    pointsFor: number; pointsAgainst: number;
+    teamId: bigint; teamName: string;
+  }> = {};
+  for (const t of tournamentTeams) {
+    teamStats[t.id.toString()] = {
+      wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0,
+      teamId: t.teamId, teamName: t.team.name,
+    };
+  }
+  for (const m of matches) {
+    if (!m.homeTeamId || !m.awayTeamId) continue;
+    if (m.status !== "completed" && m.status !== "live") continue;
+    const hid = m.homeTeamId.toString();
+    const aid = m.awayTeamId.toString();
+    const hs = m.homeScore ?? 0;
+    const as_ = m.awayScore ?? 0;
+    if (teamStats[hid]) { teamStats[hid].pointsFor += hs; teamStats[hid].pointsAgainst += as_; }
+    if (teamStats[aid]) { teamStats[aid].pointsFor += as_; teamStats[aid].pointsAgainst += hs; }
+    if (m.status === "completed" || m.status === "live") {
+      if (hs > as_) { if (teamStats[hid]) teamStats[hid].wins++; if (teamStats[aid]) teamStats[aid].losses++; }
+      else if (as_ > hs) { if (teamStats[aid]) teamStats[aid].wins++; if (teamStats[hid]) teamStats[hid].losses++; }
+    }
+  }
+  const rankedTeams = Object.values(teamStats)
+    .filter((t) => (t.wins + t.losses) > 0)
+    .sort((a, b) => {
+      const aRate = a.wins / (a.wins + a.losses);
+      const bRate = b.wins / (b.wins + b.losses);
+      if (bRate !== aRate) return bRate - aRate;
+      const aDiff = a.pointsFor - a.pointsAgainst;
+      const bDiff = b.pointsFor - b.pointsAgainst;
+      if (bDiff !== aDiff) return bDiff - aDiff;
+      return b.pointsFor - a.pointsFor;
+    });
+  const hotTeam = rankedTeams[0]
+    ? { teamId: rankedTeams[0].teamId.toString(), teamName: rankedTeams[0].teamName }
+    : null;
+
   // 결승전 예정일 계산 (마지막 라운드의 scheduledAt)
   const bracketMatchesAll = matches.filter(
     (m) => m.round_number != null && m.bracket_position != null
@@ -105,10 +150,10 @@ export default async function BracketPage({
       <div>
         {/* 대시보드 헤더는 항상 표시 */}
         <TournamentDashboardHeader
-          tournamentName={tournament.name}
-          totalTeams={tournamentTeams.length}
+          totalMatches={totalMatches}
+          completedMatches={completedMatches}
           liveMatchCount={0}
-          finalsDate={null}
+          hotTeam={hotTeam}
         />
 
         {/* 조별리그 순위표 (데이터가 있으면 표시) */}
@@ -129,10 +174,10 @@ export default async function BracketPage({
     return (
       <div>
         <TournamentDashboardHeader
-          tournamentName={tournament.name}
-          totalTeams={tournamentTeams.length}
+          totalMatches={totalMatches}
+          completedMatches={completedMatches}
           liveMatchCount={liveMatchCount}
-          finalsDate={null}
+          hotTeam={hotTeam}
         />
 
         {groupTeams.length > 0 && <GroupStandings teams={groupTeams} />}
@@ -149,10 +194,10 @@ export default async function BracketPage({
     <div>
       {/* 대시보드 헤더: 대형 제목 + 통계 4칸 */}
       <TournamentDashboardHeader
-        tournamentName={tournament.name}
-        totalTeams={tournamentTeams.length}
+        totalMatches={totalMatches}
+        completedMatches={completedMatches}
         liveMatchCount={liveMatchCount}
-        finalsDate={finalsDate}
+        hotTeam={hotTeam}
       />
 
       {/* 2열 레이아웃: 좌측 본문(조별리그+대진표) + 우측 사이드바 */}

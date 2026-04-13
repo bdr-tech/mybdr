@@ -433,6 +433,22 @@ tester 참고:
 
 tester 참고: CSS 클래스만 변경, 375px 뷰포트에서 각 페이지 여백/텍스트 크기 확인
 
+### 대시보드 3카드 리디자인: 진행률/LIVE/핫팀 (2026-04-13)
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| tournament-dashboard-header.tsx | 4칸→3카드(진행률+LIVE+핫팀) 완전 재작성, tournamentName/totalTeams/finalsDate prop 제거, totalMatches/completedMatches/hotTeam prop 추가, Link import, 프로그레스바 추가 | 수정 |
+| public-bracket/route.ts | totalMatches/completedMatches/hotTeam 응답 필드 추가, 팀별 전적 집계+승률 정렬 로직 추가 | 수정 |
+| tournament-tabs.tsx | OverviewWithDashboard의 대시보드 props를 새 필드로 변경 | 수정 |
+| bracket/page.tsx | 서버 컴포넌트에 핫팀 계산 로직 추가, 대시보드 props 3곳 변경 | 수정 |
+
+tester 참고:
+- 테스트 방법: 대회 상세 > 대회정보 탭에서 대시보드 3카드 확인
+- 정상 동작: 진행률(프로그레스바+%), LIVE(경기수 또는 -), HOT(승률1위 팀명) 3칸 표시
+- 핫팀 카드 클릭 시 /teams/{teamId} 이동
+- 경기 없는 대회: 진행률 0%, LIVE "-", HOT "-"
+- tsc --noEmit 통과 확인 완료
+
 ## 테스트 결과 (tester)
 
 ### 대회 탭 데이터 표시 버그 수정 검증 (2026-04-13)
