@@ -87,44 +87,54 @@ export function TournamentHero({
   // 참가비 표시 문자열
   const feeStr = entryFee && entryFee > 0 ? `${entryFee.toLocaleString()}원` : "무료";
 
-  // --- 메타 인디케이터 (poster/logo/photo 템플릿용 - 흰색 칩) ---
-  const metaIndicators = (
-    <div className="flex flex-wrap items-center gap-2 text-sm">
-      {dateStr && (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-white">
-          <span className="material-symbols-outlined text-sm">calendar_today</span>
-          {dateStr}
+  // --- 메타 정보 2줄 (poster/logo/photo 템플릿용) ---
+  const progressPct = maxTeams ? Math.min((teamCount / maxTeams) * 100, 100) : null;
+
+  const metaInfo = (
+    <div className="space-y-1.5 text-sm text-white/80">
+      {/* 1줄: 날짜 + 장소 */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        {dateStr && (
+          <span className="flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-base text-white/70">calendar_today</span>
+            {dateStr}
+          </span>
+        )}
+        {venueStr && (
+          <span className="flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-base text-white/70">location_on</span>
+            {venueStr}
+          </span>
+        )}
+      </div>
+      {/* 2줄: 참가비 + 참가팀수 */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <span className="flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-base text-white/70">payments</span>
+          {feeStr}
         </span>
-      )}
-      {venueStr && (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-white">
-          <span className="material-symbols-outlined text-sm">location_on</span>
-          {venueStr}
+        <span className="flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-base text-white/70">groups</span>
+          {teamsStr}
         </span>
+      </div>
+      {/* 참가 현황 프로그레스바 (maxTeams 있을 때만) */}
+      {progressPct !== null && (
+        <div className="pt-1">
+          <p className="mb-1 text-xs text-white/60">참가 현황</p>
+          <div className="h-2 overflow-hidden rounded-full bg-white/20" style={{ maxWidth: "240px" }}>
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${progressPct}%`,
+                backgroundColor: progressPct >= 90 ? "#EF4444" : "#FFFFFF",
+              }}
+            />
+          </div>
+        </div>
       )}
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-white">
-        <span className="material-symbols-outlined text-sm">payments</span>
-        {feeStr}
-      </span>
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-white">
-        <span className="material-symbols-outlined text-sm">groups</span>
-        {teamsStr}
-      </span>
     </div>
   );
-
-  // --- 참가팀 현황 프로그레스바 (maxTeams가 있을 때만 표시) ---
-  const teamProgressBar = maxTeams ? (
-    <div className="mt-2 flex items-center gap-2">
-      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/20" style={{ maxWidth: "200px" }}>
-        <div
-          className="h-full rounded-full bg-white transition-all"
-          style={{ width: `${Math.min((teamCount / maxTeams) * 100, 100)}%` }}
-        />
-      </div>
-      <span className="text-xs text-white/70">{teamCount}/{maxTeams}팀</span>
-    </div>
-  ) : null;
 
   // --- 문의 전화 아이콘 (poster/logo/photo 템플릿용 - 흰색 계열) ---
   const contactIcon = contactPhone ? (
@@ -224,8 +234,7 @@ export function TournamentHero({
           <div className="flex flex-col justify-end">
             {badges}
             {title}
-            {metaIndicators}
-            {teamProgressBar}
+            {metaInfo}
             {actionBar}
           </div>
           {contactIcon}
@@ -263,8 +272,7 @@ export function TournamentHero({
             )}
             {badges}
             {title}
-            {metaIndicators}
-            {teamProgressBar}
+            {metaInfo}
             {actionBar}
           </div>
           {contactIcon}
@@ -291,8 +299,7 @@ export function TournamentHero({
           <div className="flex flex-col justify-end">
             {badges}
             {title}
-            {metaIndicators}
-            {teamProgressBar}
+            {metaInfo}
             {actionBar}
           </div>
           {contactIcon}
@@ -346,54 +353,47 @@ export function TournamentHero({
             {name}
           </h1>
 
-          {/* 메타 인디케이터 칩 (basic용 - surface 배경) */}
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            {dateStr && (
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1"
-                style={{ backgroundColor: "var(--color-surface)", color: "var(--color-text-secondary)" }}
-              >
-                <span className="material-symbols-outlined text-sm" style={{ color: pColor }}>calendar_today</span>
-                {dateStr}
-              </span>
-            )}
-            {venueStr && (
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1"
-                style={{ backgroundColor: "var(--color-surface)", color: "var(--color-text-secondary)" }}
-              >
-                <span className="material-symbols-outlined text-sm" style={{ color: pColor }}>location_on</span>
-                {venueStr}
-              </span>
-            )}
-            <span
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1"
-              style={{ backgroundColor: "var(--color-surface)", color: "var(--color-text-secondary)" }}
-            >
-              <span className="material-symbols-outlined text-sm" style={{ color: pColor }}>payments</span>
-              {feeStr}
-            </span>
-            <span
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1"
-              style={{ backgroundColor: "var(--color-surface)", color: "var(--color-text-secondary)" }}
-            >
-              <span className="material-symbols-outlined text-sm" style={{ color: pColor }}>groups</span>
-              {teamsStr}
-            </span>
-          </div>
-
-          {/* 참가팀 현황 프로그레스바 (basic용 - 테마 색상) */}
-          {maxTeams && (
-            <div className="mt-2 flex items-center gap-2">
-              <div className="h-1.5 flex-1 overflow-hidden rounded-full" style={{ maxWidth: "200px", backgroundColor: "var(--color-surface)" }}>
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{ width: `${Math.min((teamCount / maxTeams) * 100, 100)}%`, backgroundColor: pColor }}
-                />
-              </div>
-              <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{teamCount}/{maxTeams}팀</span>
+          {/* 메타 정보 2줄 (basic용 - 테마 색상) */}
+          <div className="space-y-1.5 text-sm" style={{ color: "var(--color-text-secondary)" }}>
+            {/* 1줄: 날짜 + 장소 */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              {dateStr && (
+                <span className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-base" style={{ color: pColor }}>calendar_today</span>
+                  {dateStr}
+                </span>
+              )}
+              {venueStr && (
+                <span className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-base" style={{ color: pColor }}>location_on</span>
+                  {venueStr}
+                </span>
+              )}
             </div>
-          )}
+            {/* 2줄: 참가비 + 참가팀수 */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-base" style={{ color: pColor }}>payments</span>
+                {feeStr}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-base" style={{ color: pColor }}>groups</span>
+                {teamsStr}
+              </span>
+            </div>
+            {/* 참가 현황 프로그레스바 */}
+            {progressPct !== null && (
+              <div className="pt-1">
+                <p className="mb-1 text-xs" style={{ color: "var(--color-text-muted)" }}>참가 현황</p>
+                <div className="h-2 overflow-hidden rounded-full" style={{ maxWidth: "240px", backgroundColor: "var(--color-surface)" }}>
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${progressPct}%`, backgroundColor: progressPct >= 90 ? "#EF4444" : pColor }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* 액션 바: 참가 신청만 (basic용) */}
           {actionBarBasic}
