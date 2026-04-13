@@ -110,19 +110,84 @@ export function TournamentHero({
     </div>
   );
 
-  // --- 액션 바: 참가 신청 버튼 (접수 중일 때만, 서버 컴포넌트에서 Link 사용) ---
-  const actionBar = isRegistrationOpen && tournamentId ? (
-    <div className="mt-3">
-      <Link
-        href={`/tournaments/${tournamentId}/join`}
-        className="inline-flex items-center gap-1.5 rounded px-4 py-2 text-sm font-bold text-white transition-all hover:opacity-90"
-        style={{ backgroundColor: pColor }}
+  // --- Google 캘린더 URL 빌더 (서버 컴포넌트이므로 <a> 태그로 연결) ---
+  const calendarUrl = (() => {
+    const base = "https://calendar.google.com/calendar/render?action=TEMPLATE";
+    const text = encodeURIComponent(name);
+    const formatD = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, "");
+    const dates = startDate ? `${formatD(startDate)}/${endDate ? formatD(endDate) : formatD(startDate)}` : "";
+    const loc = venueStr ? encodeURIComponent(venueStr) : "";
+    return `${base}&text=${text}${dates ? `&dates=${dates}` : ""}${loc ? `&location=${loc}` : ""}`;
+  })();
+
+  // --- 액션 바: 참가 신청 + 캘린더/문의 (poster/logo/photo 템플릿용 - 흰색 계열) ---
+  const actionBar = (
+    <div className="mt-3 flex flex-wrap items-center gap-2">
+      {/* 참가 신청 (접수 중일 때만) */}
+      {isRegistrationOpen && tournamentId && (
+        <Link
+          href={`/tournaments/${tournamentId}/join`}
+          className="inline-flex items-center gap-1.5 rounded px-4 py-2 text-sm font-bold text-white transition-all hover:opacity-90"
+          style={{ backgroundColor: pColor }}
+        >
+          <span className="material-symbols-outlined text-base">edit_square</span>
+          참가 신청
+        </Link>
+      )}
+      {/* 캘린더 추가 (아웃라인 스타일) */}
+      <a
+        href={calendarUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 rounded border border-white/30 px-3 py-2 text-xs font-medium text-white/80 transition-colors hover:bg-white/10"
       >
-        <span className="material-symbols-outlined text-base">edit_square</span>
-        참가 신청
-      </Link>
+        <span className="material-symbols-outlined text-sm">calendar_today</span>
+        캘린더
+      </a>
+      {/* 문의 (이메일 링크) */}
+      <a
+        href="mailto:support@bdrbasket.com"
+        className="inline-flex items-center gap-1 rounded border border-white/30 px-3 py-2 text-xs font-medium text-white/80 transition-colors hover:bg-white/10"
+      >
+        <span className="material-symbols-outlined text-sm">mail</span>
+        문의
+      </a>
     </div>
-  ) : null;
+  );
+
+  // --- 액션 바: basic 템플릿용 (밝은 배경이므로 테마 색상 사용) ---
+  const actionBarBasic = (
+    <div className="mt-3 flex flex-wrap items-center gap-2">
+      {isRegistrationOpen && tournamentId && (
+        <Link
+          href={`/tournaments/${tournamentId}/join`}
+          className="inline-flex items-center gap-1.5 rounded px-4 py-2 text-sm font-bold text-white transition-all hover:opacity-90"
+          style={{ backgroundColor: pColor }}
+        >
+          <span className="material-symbols-outlined text-base">edit_square</span>
+          참가 신청
+        </Link>
+      )}
+      <a
+        href={calendarUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 rounded border px-3 py-2 text-xs font-medium transition-colors hover:opacity-80"
+        style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
+      >
+        <span className="material-symbols-outlined text-sm" style={{ color: pColor }}>calendar_today</span>
+        캘린더
+      </a>
+      <a
+        href="mailto:support@bdrbasket.com"
+        className="inline-flex items-center gap-1 rounded border px-3 py-2 text-xs font-medium transition-colors hover:opacity-80"
+        style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
+      >
+        <span className="material-symbols-outlined text-sm" style={{ color: pColor }}>mail</span>
+        문의
+      </a>
+    </div>
+  );
 
   // --- 공통 배지 그룹 ---
   const badges = (
@@ -301,19 +366,8 @@ export function TournamentHero({
           </span>
         </div>
 
-        {/* 참가 신청 버튼 (basic 템플릿용: 테마 색상 사용) */}
-        {isRegistrationOpen && tournamentId && (
-          <div className="mt-3">
-            <Link
-              href={`/tournaments/${tournamentId}/join`}
-              className="inline-flex items-center gap-1.5 rounded px-4 py-2 text-sm font-bold text-white transition-all hover:opacity-90"
-              style={{ backgroundColor: pColor }}
-            >
-              <span className="material-symbols-outlined text-base">edit_square</span>
-              참가 신청
-            </Link>
-          </div>
-        )}
+        {/* 액션 바: 참가 신청 + 캘린더/문의 (basic용 밝은 배경 스타일) */}
+        {actionBarBasic}
       </div>
     </section>
   );

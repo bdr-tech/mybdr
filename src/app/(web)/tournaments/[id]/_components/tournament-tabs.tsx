@@ -34,7 +34,7 @@ export type TabKey = "overview" | "schedule" | "standings" | "bracket" | "teams"
 
 // 탭 메타 정보
 const TAB_META: { key: TabKey; label: string; icon: string }[] = [
-  { key: "overview", label: "개요", icon: "info" },
+  { key: "overview", label: "대회정보", icon: "info" },
   { key: "schedule", label: "일정", icon: "calendar_month" },
   { key: "standings", label: "순위", icon: "leaderboard" },
   { key: "bracket", label: "대진표", icon: "account_tree" },
@@ -210,6 +210,35 @@ function StandingsTabContent({ tournamentId }: { tournamentId: string }) {
   );
 }
 
+// -- 대회정보 탭: 대시보드 헤더 + 서버 렌더링 개요 콘텐츠 --
+function OverviewWithDashboard({ tournamentId, overviewContent }: { tournamentId: string; overviewContent: ReactNode }) {
+  // 대진표 API에서 대시보드 데이터(총 팀수, 라이브 경기, 결승 일정)를 가져옴
+  const { data } = useSWR(
+    `/api/web/tournaments/${tournamentId}/public-bracket`,
+    fetcher,
+    { revalidateOnFocus: false }
+  );
+  const d = data ?? {};
+
+  return (
+    <div>
+      {/* 대시보드 헤더 (대진표 탭에서 이동) */}
+      {data && (
+        <div className="mb-6">
+          <TournamentDashboardHeader
+            tournamentName={d.tournamentName ?? ""}
+            totalTeams={d.totalTeams ?? 0}
+            liveMatchCount={d.liveMatchCount ?? 0}
+            finalsDate={d.finalsDate ?? null}
+          />
+        </div>
+      )}
+      {/* 기존 서버 렌더링 개요 콘텐츠 */}
+      {overviewContent}
+    </div>
+  );
+}
+
 // -- 대진표 탭 콘텐츠 (API로 lazy load) --
 function BracketTabContent({ tournamentId }: { tournamentId: string }) {
   const { data, isLoading } = useSWR(
@@ -227,12 +256,6 @@ function BracketTabContent({ tournamentId }: { tournamentId: string }) {
 
   return (
     <div>
-      <TournamentDashboardHeader
-        tournamentName={d.tournamentName ?? ""}
-        totalTeams={d.totalTeams ?? 0}
-        liveMatchCount={d.liveMatchCount ?? 0}
-        finalsDate={d.finalsDate ?? null}
-      />
       {groupTeams.length > 0 && <GroupStandings teams={groupTeams} />}
       {rounds.length > 0 ? (
         <div className="grid grid-cols-12 gap-8">
@@ -326,11 +349,11 @@ export function TournamentTabs({
 
   return (
     <div>
-      {/* 밑줄 탭 네비게이션 */}
+      {/* 탭 네비게이션: 배경색 카드 스타일 (구분감 있는 세그먼트 디자인) */}
       <div
-        className="mb-6 flex gap-4 overflow-x-auto border-b sm:mb-8 sm:gap-8 [&::-webkit-scrollbar]:hidden"
+        className="mb-6 flex gap-1 overflow-x-auto rounded-lg p-1 sm:mb-8 [&::-webkit-scrollbar]:hidden"
         style={{
-          borderColor: "var(--color-border)",
+          backgroundColor: "var(--color-surface)",
           scrollbarWidth: "none",
           msOverflowStyle: "none",
         }}
@@ -341,17 +364,11 @@ export function TournamentTabs({
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className="whitespace-nowrap pb-3 text-sm font-medium transition-colors sm:pb-4 sm:text-base"
-              style={
+              className={`flex-1 whitespace-nowrap rounded-md px-3 py-2.5 text-sm font-medium transition-all sm:px-4 ${
                 isActive
-                  ? {
-                      color: "var(--color-primary)",
-                      fontWeight: 700,
-                      borderBottom: "2px solid var(--color-primary)",
-                      marginBottom: "-1px",
-                    }
-                  : { color: "var(--color-text-secondary)" }
-              }
+                  ? "bg-[var(--color-card)] text-[var(--color-text-primary)] shadow-sm font-bold"
+                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+              }`}
             >
               {tab.label}
             </button>
@@ -361,7 +378,7 @@ export function TournamentTabs({
 
       {/* 탭 콘텐츠: 개요는 서버 렌더링, 나머지는 lazy loading */}
       <div>
-        {activeTab === "overview" && overviewContent}
+        {activeTab === "overview" && <OverviewWithDashboard tournamentId={tournamentId} overviewContent={overviewContent} />}
         {activeTab === "schedule" && <ScheduleTabContent tournamentId={tournamentId} />}
         {activeTab === "standings" && <StandingsTabContent tournamentId={tournamentId} />}
         {activeTab === "bracket" && <BracketTabContent tournamentId={tournamentId} />}
