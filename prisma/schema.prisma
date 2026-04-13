@@ -2241,12 +2241,18 @@ model Referee {
   registered_by_admin_id BigInt?  // 사전 등록한 관리자의 User.id
   // ── 사전 등록 필드 끝 ──────────────────────────────────
 
+  // ── 정산 서류용 계좌 정보 ──
+  bank_name    String? @db.VarChar  // 은행명 (예: "국민은행")
+  bank_account String?              // 계좌번호 (암호화 저장)
+  bank_holder  String? @db.VarChar  // 예금주
+
   // v3: User optional — 사전 등록 시 user_id null 허용. onDelete: Cascade 유지.
   user         User?                @relation(fields: [user_id], references: [id], onDelete: Cascade)
   association  Association?         @relation(fields: [association_id], references: [id], onDelete: SetNull)
   certificates RefereeCertificate[]
   assignments  RefereeAssignment[]
   settlements  RefereeSettlement[]
+  documents    RefereeDocument[]
 
   @@index([user_id])
   @@index([association_id])
@@ -2327,4 +2333,27 @@ model RefereeSettlement {
   @@index([referee_id])
   @@index([status])
   @@map("referee_settlements")
+}
+
+// ── 심판 정산 서류(RefereeDocument): 자격증/신분증/통장 사본 등 정산에 필요한 서류 ──
+// 이미지는 AES-256-GCM 암호화 후 DB에 base64로 저장. 파일 시스템/외부 스토리지 미사용.
+// 1심판당 서류 종류별 1장만 허용 (@@unique).
+model RefereeDocument {
+  id             BigInt   @id @default(autoincrement())
+  referee_id     BigInt
+  doc_type       String   @db.VarChar  // "certificate" | "id_card" | "bankbook"
+  encrypted_data String                // AES-256-GCM 암호화된 이미지 (base64)
+  file_size      Int                   // 원본 바이트 수
+  file_type      String   @db.VarChar  // "image/jpeg" | "image/png" | "application/pdf"
+  ocr_status     String   @default("pending") @db.VarChar  // pending/completed/failed/skipped
+  ocr_result     Json?                 // OCR 추출 결과 원본
+  uploaded_by    BigInt                // 업로드한 User.id (본인 또는 관리자)
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+  updated_at     DateTime @updatedAt @db.Timestamp(6)
+
+  referee Referee @relation(fields: [referee_id], references: [id], onDelete: Cascade)
+
+  @@unique([referee_id, doc_type])  // 1심판당 서류 종류별 1장
+  @@index([referee_id])
+  @@map("referee_documents")
 }

@@ -464,6 +464,55 @@ export default function AdminMemberDetailPage() {
         )}
       </section>
 
+      {/* 서류 관리 링크 */}
+      <section
+        className="p-5"
+        style={{
+          backgroundColor: "var(--color-card)",
+          border: "1px solid var(--color-border)",
+          borderRadius: 4,
+        }}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span
+              className="material-symbols-outlined text-2xl"
+              style={{ color: "var(--color-text-muted)" }}
+            >
+              description
+            </span>
+            <div>
+              <h3
+                className="text-sm font-bold"
+                style={{ color: "var(--color-text-primary)" }}
+              >
+                정산 서류
+              </h3>
+              <p
+                className="text-xs"
+                style={{ color: "var(--color-text-muted)" }}
+              >
+                자격증/신분증/통장 사본을 대리 업로드하거나 상태를 확인합니다.
+              </p>
+            </div>
+          </div>
+          <Link
+            href={`/referee/admin/members/${id}/documents`}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold"
+            style={{
+              color: "var(--color-primary)",
+              border: "1px solid var(--color-primary)",
+              borderRadius: 4,
+            }}
+          >
+            서류 관리
+            <span className="material-symbols-outlined text-base">
+              arrow_forward
+            </span>
+          </Link>
+        </div>
+      </section>
+
       {/* 자격증 목록 */}
       <section>
         <h3

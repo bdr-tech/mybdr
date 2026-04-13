@@ -40,7 +40,9 @@ export type Permission =
   | "settlement_view"
   | "excel_upload"
   | "admin_manage"
-  | "resident_id_view";
+  | "resident_id_view"
+  | "document_manage"
+  | "document_print";
 
 // ── 권한 매트릭스 ──
 // 각 권한 그룹에 접근 가능한 역할 목록
@@ -94,6 +96,10 @@ const PERMISSIONS: Record<Permission, string[]> = {
   admin_manage: ["secretary_general"],
   // 주민번호 열람 — 회장 + 사무국장만
   resident_id_view: ["president", "secretary_general"],
+  // 정산 서류 관리 (업로드/삭제) — 사무국장 + 직원
+  document_manage: ["secretary_general", "staff"],
+  // 정산 서류 인쇄/다운로드 — 사무국장만
+  document_print: ["secretary_general"],
 };
 
 // ── 임원 역할 목록 (열람 전용) ──

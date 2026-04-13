@@ -177,6 +177,63 @@ reviewer 참고:
 | 04-13 | reviewer | v3 1차 리뷰: critical 0, warning 2 (VarChar 제한+동명이인) | ✅ APPROVE |
 | 04-13 | tester | v3 2차: API 3개 + 페이지 3개 검증 (7개 중 5통과/2실패) | ❌ 수정 필요 |
 | 04-13 | developer | 메인사이트 심판 바로가기: me API is_referee + PC사이드바 + 모바일슬라이드 | ✅ tsc 통과 |
+| 04-13 | developer | 서류 1차: Prisma모델+sharp+암호화+API4개+페이지2개+셸+상세링크 (13파일) | ✅ tsc 통과 |
+
+---
+
+## 구현 기록 (developer) — 서류 1차
+
+구현한 기능: 정산 서류 관리 — DB 모델 + 이미지 최적화/암호화 + 본인 업로드 API/UI + 관리자 대리 업로드
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| prisma/schema.prisma | RefereeDocument 모델 신규 + Referee에 bank_name/bank_account/bank_holder 3필드 + documents relation | 수정 |
+| src/lib/services/image-processor.ts | sharp 리사이즈(1500px)+그레이스케일+JPEG70% + MIME/크기/매직바이트 검증 | 신규 |
+| src/lib/security/document-encryption.ts | AES-256-GCM 서류 전용 암호화/복호화 (DOCUMENT_ENCRYPTION_KEY 별도 키) | 신규 |
+| src/lib/auth/admin-guard.ts | Permission 타입에 document_manage/document_print 추가, PERMISSIONS에 역할 매핑 | 수정 |
+| src/app/api/web/referee-documents/route.ts | GET(내 서류 목록) + POST(업로드, multipart/form-data, upsert) | 신규 |
+| src/app/api/web/referee-documents/[id]/route.ts | DELETE(본인 서류 삭제, IDOR 방지) | 신규 |
+| src/app/api/web/referee-admin/documents/route.ts | GET(심판 서류 목록) + POST(관리자 대리 업로드, IDOR 방지) | 신규 |
+| src/app/(referee)/referee/documents/page.tsx | 본인용 3종 서류 카드(업로드/교체/삭제), 보안 안내 배너 | 신규 |
+| src/app/(referee)/referee/admin/members/[id]/documents/page.tsx | 관리자 대리 업로드 3종 카드 | 신규 |
+| src/app/(referee)/referee/_components/referee-shell.tsx | NAV_ITEMS에 "서류" 항목 추가 (자격증 아래) | 수정 |
+| src/app/(referee)/referee/admin/members/[id]/page.tsx | "정산 서류" 섹션 + "서류 관리" 링크 추가 | 수정 |
+| package.json / package-lock.json | sharp 패키지 설치 | 수정 |
+
+tester 참고:
+- tsc --noEmit 에러 0건 확인
+- prisma generate 성공 (db push는 아직 안 함 — PM이 별도 진행)
+- .env에 DOCUMENT_ENCRYPTION_KEY 추가 필요 (64자 hex, node -e "console.log(require('crypto').randomBytes(32).toString('hex'))" 로 생성)
+- sharp는 Vercel에서 기본 지원됨 (별도 설정 불필요)
+- 개발서버는 prisma generate 위해 종료함 (재시작 필요: npm run dev)
+- encrypted_data는 모든 API 응답에서 select로 제외됨
+- 이미지 미리보기/썸네일은 어디에도 없음 (텍스트 상태만 표시)
+
+reviewer 참고:
+- 서류 암호화 키(DOCUMENT_ENCRYPTION_KEY)는 주민번호 키(RESIDENT_ID_ENCRYPTION_KEY)와 분리 (키 격리 원칙)
+- 본인 DELETE API: referee.user_id === session.userId 체크로 IDOR 방지
+- 관리자 API: referee.association_id === admin.associationId 체크로 IDOR 방지
+- Prisma Json 필드 null 대입: Prisma.DbNull 사용 (TypeScript 호환)
+- PDF는 sharp로 처리 불가하므로 optimizeDocumentImage에서 원본 그대로 반환
+
+---
+
+## 테스트 결과 (tester) -- 서류 1차
+
+| 테스트 항목 | 결과 | 비고 |
+|-----------|------|------|
+| Test 1: tsc --noEmit | PASS | 소스 코드 에러 0건 |
+| Test 2: Prisma validate + 모델 확인 | PASS | RefereeDocument 8필드 정상, @@unique([referee_id, doc_type]) 확인, Referee에 bank_name/bank_account/bank_holder + documents relation 확인 |
+| Test 3: DB 상태 | PASS | referee_documents 테이블 존재, count=0 (정상) |
+| Test 4: image-processor.ts | PASS | sharp import, resize 1500px+grayscale+jpeg quality 70, MIME 체크(jpeg/png/pdf), 10MB 제한, 매직 바이트 검증(FF D8 FF/89 50 4E 47/%PDF) |
+| Test 5: document-encryption.ts | PASS | DOCUMENT_ENCRYPTION_KEY 사용, AES-256-GCM, IV 12바이트+authTag 16바이트, encryptDocument/decryptDocument 존재, RESIDENT_ID_ENCRYPTION_KEY와 별도 키 (키 격리 확인) |
+| Test 6: 본인 API | PASS | GET: 세션 확인+encrypted_data select 제외, POST: formData+validateImageFile+optimizeDocumentImage+encryptDocument+upsert, DELETE: /^\d+$/ 검증+referee.user_id===userId IDOR 방지 |
+| Test 7: 관리자 API | PASS | getAssociationAdmin+requirePermission('document_manage'), IDOR: referee.association_id===admin.associationId, encrypted_data select 제외, BigInt 입력값 /^\d+$/ 검증 |
+| Test 8: 본인 페이지 | PASS | "use client", 3종 카드(certificate/id_card/bankbook), 이미지 미리보기 없음(텍스트 상태만), accept="image/jpeg,image/png,application/pdf", 보안 안내 배너("AES-256 암호화") |
+| Test 9: admin-guard 권한 | PASS | document_manage: secretary_general+staff, document_print: secretary_general만 |
+| Test 10: referee-shell 메뉴 | PASS | "서류" 항목, 아이콘 description, href /referee/documents (자격증 아래 배치) |
+
+종합: 10개 중 10개 통과 / 0개 실패 -- 전체 PASS
 
 ---
 
@@ -300,3 +357,31 @@ reviewer 참고:
 - tryAutoMatch에서 user.name이 null이면 즉시 return — 이름 없는 유저는 매칭 미시도. 의도된 동작 (프로필 완성 후 다음 로그인에서 매칭)
 - auth.ts의 tryAutoMatch는 loginAction() try-catch 내에서 호출되나, 자체 try-catch가 있으므로 예외 전파 없음 — 이중 안전
 - 설정 페이지 유저 추가가 "ID 숫자 입력" 방식 — UX 개선 여지 있으나 1차 범위에서 OK
+
+---
+
+## 리뷰 결과 (reviewer) — 서류 1차
+
+종합 판정: **APPROVE** (critical 0건, warning 1건)
+
+잘된 점:
+- **encrypted_data 유출 완벽 차단**: 4개 API 전부 Prisma select에서 encrypted_data를 명시적으로 제외. findMany/upsert 반환값 모두 메타데이터만 포함
+- **암호화 구현 견고함**: AES-256-GCM + 12바이트 랜덤 IV + authTag 검증. DOCUMENT_ENCRYPTION_KEY가 RESIDENT_ID_ENCRYPTION_KEY와 완전 분리 (키 격리 원칙). 키 미설정/길이 불일치 시 명확한 에러
+- **파일 검증 순서 정확**: validateImageFile(MIME+크기+매직바이트) -> optimizeDocumentImage(sharp) -> encryptDocument(AES). 검증이 sharp 처리보다 먼저 수행되어 악성 파일이 sharp에 도달하지 않음
+- **매직 바이트 검증**: JPEG(FF D8 FF), PNG(89 50 4E 47), PDF(%PDF) 시그니처로 Content-Type 위조 방지
+- **접근 제어 완벽**: 본인 API는 Referee.user_id=session.userId 검증, 관리자 API는 getAssociationAdmin()+requirePermission('document_manage')+referee.association_id=admin.associationId IDOR 방지
+- **DELETE의 IDOR 방지**: document.referee.user_id !== userId 비교로 타인 서류 삭제 차단. id 파라미터 /^\d+$/ 정규식 검증도 적용됨
+- **프론트엔드 이미지 미노출**: 두 페이지 모두 텍스트 상태(등록완료/미등록)만 표시. createObjectURL/blob/img src 태그 전무. 보안 안내 배너로 사용자에게 암호화 저장 안내
+- **PDF 예외 처리**: sharp가 PDF를 처리하지 못하므로 optimizeDocumentImage에서 원본 그대로 반환. 올바른 판단
+- **upsert 패턴**: 같은 doc_type 재업로드 시 교체+OCR 결과 초기화(Prisma.DbNull). @@unique([referee_id, doc_type]) 제약과 일치
+- **관리자 페이지에 삭제 버튼 미제공**: 관리자는 대리 업로드/교체만 가능, 삭제는 본인만. 적절한 권한 분리
+- **admin-guard 권한 추가**: document_manage/document_print 2개 Permission 추가가 기존 권한 매트릭스에 영향 없음 (추가만, 기존 수정 없음)
+- **디자인 규칙 준수**: CSS 변수 사용, Material Symbols 아이콘, borderRadius 4, 하드코딩 색상 없음 (#fff 버튼 텍스트 제외)
+
+[WARNING] 권장 수정 1건:
+1. [referee/documents/page.tsx:62-64, admin/members/[id]/documents/page.tsx:68-70] API 응답 파싱에서 `res.json()`을 바로 `setDocuments(json)`으로 저장. apiSuccess()가 배열을 직접 반환하므로 현재는 동작하지만, 향후 API 응답 구조가 `{ data: [...] }` 형태로 바뀌면 깨질 수 있음. `json.data ?? json` 같은 방어 코드 권장 (즉시 수정 불필요, 참고 수준)
+
+[INFO] 참고:
+- decryptDocument() 함수가 정의되어 있으나 현재 어디서도 import/사용되지 않음. OCR 또는 인쇄 기능에서 사용할 예정으로 보임 — 미사용 자체는 문제 아님
+- Referee 모델에 bank_name/bank_account/bank_holder 3필드 추가. 기존 API에서 select를 명시하는 패턴이므로 새 필드가 자동으로 노출될 위험 없음
+- sharp 패키지가 Vercel에서 기본 지원되므로 배포 환경 호환성 문제 없음

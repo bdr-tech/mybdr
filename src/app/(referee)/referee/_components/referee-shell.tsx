@@ -25,6 +25,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/referee", label: "대시보드", icon: "dashboard" },
   { href: "/referee/profile", label: "내 프로필", icon: "badge" },
   { href: "/referee/certificates", label: "내 자격증", icon: "verified" },
+  { href: "/referee/documents", label: "서류", icon: "description" },
   { href: "/referee/assignments", label: "내 배정", icon: "event" },
   { href: "/referee/settlements", label: "내 정산", icon: "payments" },
   { href: "/referee/admin", label: "관리자", icon: "admin_panel_settings" },
