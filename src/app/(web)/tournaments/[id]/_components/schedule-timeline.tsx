@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * 일정 타임라인 뷰 + 팀별 필터
+ * 일정 카드 뷰 + 팀별 필터
  * - 상단: 팀 필터 버튼 가로 스크롤
- * - 본문: 날짜별 그룹 > 타임라인 (왼쪽 시간, 가운데 점+선, 오른쪽 매치 카드)
+ * - 본문: 날짜별 그룹 > 카드 목록 (시간+라운드명+상태 | 홈팀 스코어 어웨이팀)
  * - 선택 팀 경기 하이라이트 (왼쪽 primary 보더)
  */
 
@@ -158,9 +158,9 @@ export function ScheduleTimeline({ matches, teams }: Props) {
               </span>
             </div>
 
-            {/* 타임라인 목록 */}
-            <div className="relative ml-2">
-              {dayMatches.map((match, idx) => {
+            {/* 경기 카드 목록 — 타임라인 제거, 시간을 카드 내부로 이동 */}
+            <div className="space-y-3">
+              {dayMatches.map((match) => {
                 // 이 경기에 선택된 팀이 참여하는지 확인 (하이라이트용)
                 const isHighlighted =
                   selectedTeamName !== null &&
@@ -172,146 +172,120 @@ export function ScheduleTimeline({ matches, teams }: Props) {
                 const awayWins = isCompleted && (match.awayScore ?? 0) > (match.homeScore ?? 0);
 
                 return (
-                  <div key={match.id} className="flex gap-4">
-                    {/* 왼쪽: 시간 표시 */}
-                    <div
-                      className="w-14 flex-shrink-0 pt-4 text-right text-sm font-medium"
-                      style={{ color: "var(--color-text-secondary)", fontFamily: "var(--font-heading)" }}
-                    >
-                      {formatShortTime(match.scheduledAt)}
+                  <Link
+                    key={match.id}
+                    href={`/live/${match.id}`}
+                    className="block rounded-lg border p-4 transition-all hover:opacity-80"
+                    style={{
+                      borderColor: isHighlighted ? "var(--color-primary)" : "var(--color-border)",
+                      backgroundColor: "var(--color-card)",
+                      borderLeftWidth: isHighlighted ? "3px" : undefined,
+                      borderLeftColor: isHighlighted ? "var(--color-primary)" : undefined,
+                    }}
+                  >
+                    {/* 카드 상단: 시간 + 라운드명 + 코트 + 상태 배지 */}
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {/* 시간 표시 — 기존 왼쪽 타임라인에서 카드 내부로 이동 */}
+                        <span
+                          className="text-xs font-bold"
+                          style={{ color: "var(--color-text-secondary)", fontFamily: "var(--font-heading)" }}
+                        >
+                          {formatShortTime(match.scheduledAt)}
+                        </span>
+                        {/* 시간과 라운드명 사이 구분선 */}
+                        {(match.roundName || match.courtNumber) && (
+                          <span className="text-xs" style={{ color: "var(--color-border)" }}>|</span>
+                        )}
+                        {match.roundName && (
+                          <span
+                            className="text-xs font-medium"
+                            style={{ color: "var(--color-text-tertiary)" }}
+                          >
+                            {match.roundName}
+                          </span>
+                        )}
+                        {match.courtNumber && (
+                          <span
+                            className="text-xs"
+                            style={{ color: "var(--color-text-tertiary)" }}
+                          >
+                            {match.courtNumber}코트
+                          </span>
+                        )}
+                      </div>
+                      <StatusBadge status={match.status} />
                     </div>
 
-                    {/* 가운데: 타임라인 점 + 선 */}
-                    <div className="relative flex flex-col items-center">
-                      {/* 세로 라인 (마지막 항목 제외) */}
-                      {idx < dayMatches.length - 1 && (
-                        <div
-                          className="absolute left-1/2 top-6 h-full w-px -translate-x-1/2"
-                          style={{ backgroundColor: "var(--color-border)" }}
-                        />
-                      )}
-                      {/* 점 */}
-                      <div
-                        className="relative z-10 mt-4 h-3 w-3 flex-shrink-0 rounded-full border-2"
-                        style={{
-                          borderColor: match.status === "live" || match.status === "in_progress"
-                            ? "var(--color-error)"
-                            : isHighlighted
-                            ? "var(--color-primary)"
-                            : "var(--color-border)",
-                          backgroundColor: match.status === "live" || match.status === "in_progress"
-                            ? "var(--color-error)"
-                            : isHighlighted
-                            ? "var(--color-primary)"
-                            : "var(--color-card)",
-                        }}
-                      />
+                    {/* 카드 하단: 팀 VS 팀 + 스코어 (기존 로직 유지) */}
+                    <div className="flex items-center justify-between">
+                      {/* 홈팀 */}
+                      <div className="flex-1 text-left">
+                        <span
+                          className="text-sm font-bold"
+                          style={{
+                            color: homeWins
+                              ? "var(--color-text-primary)"
+                              : isCompleted
+                              ? "var(--color-text-secondary)"
+                              : "var(--color-text-primary)",
+                          }}
+                        >
+                          {match.homeTeamName ?? "TBD"}
+                        </span>
+                      </div>
+
+                      {/* 스코어 or VS */}
+                      <div className="mx-3 flex-shrink-0">
+                        {isCompleted || match.status === "live" || match.status === "in_progress" ? (
+                          <div
+                            className="flex items-center gap-1 rounded-full px-3 py-1"
+                            style={{ backgroundColor: "var(--color-elevated)" }}
+                          >
+                            <span
+                              className="text-sm font-bold"
+                              style={{ fontFamily: "var(--font-heading)", color: homeWins ? "var(--color-primary)" : "var(--color-text-secondary)" }}
+                            >
+                              {match.homeScore ?? 0}
+                            </span>
+                            <span className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>:</span>
+                            <span
+                              className="text-sm font-bold"
+                              style={{ fontFamily: "var(--font-heading)", color: awayWins ? "var(--color-primary)" : "var(--color-text-secondary)" }}
+                            >
+                              {match.awayScore ?? 0}
+                            </span>
+                          </div>
+                        ) : (
+                          <span
+                            className="rounded-full px-3 py-1 text-xs font-bold"
+                            style={{
+                              backgroundColor: "var(--color-primary)",
+                              color: "white",
+                            }}
+                          >
+                            VS
+                          </span>
+                        )}
+                      </div>
+
+                      {/* 어웨이팀 */}
+                      <div className="flex-1 text-right">
+                        <span
+                          className="text-sm font-bold"
+                          style={{
+                            color: awayWins
+                              ? "var(--color-text-primary)"
+                              : isCompleted
+                              ? "var(--color-text-secondary)"
+                              : "var(--color-text-primary)",
+                          }}
+                        >
+                          {match.awayTeamName ?? "TBD"}
+                        </span>
+                      </div>
                     </div>
-
-                    {/* 오른쪽: 매치 카드 → 클릭 시 경기 상세(라이브/결과) */}
-                    <Link
-                      href={`/live/${match.id}`}
-                      className="mb-4 flex-1 rounded-[var(--radius-card)] border p-4 transition-all hover:opacity-80 block"
-                      style={{
-                        borderColor: isHighlighted ? "var(--color-primary)" : "var(--color-border)",
-                        backgroundColor: "var(--color-card)",
-                        borderLeftWidth: isHighlighted ? "3px" : undefined,
-                        borderLeftColor: isHighlighted ? "var(--color-primary)" : undefined,
-                      }}
-                    >
-                      {/* 라운드명 + 상태 배지 */}
-                      <div className="mb-3 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {match.roundName && (
-                            <span
-                              className="text-xs font-medium"
-                              style={{ color: "var(--color-text-tertiary)" }}
-                            >
-                              {match.roundName}
-                            </span>
-                          )}
-                          {match.courtNumber && (
-                            <span
-                              className="text-xs"
-                              style={{ color: "var(--color-text-tertiary)" }}
-                            >
-                              {match.courtNumber}코트
-                            </span>
-                          )}
-                        </div>
-                        <StatusBadge status={match.status} />
-                      </div>
-
-                      {/* 팀 VS 팀 + 스코어 */}
-                      <div className="flex items-center justify-between">
-                        {/* 홈팀 */}
-                        <div className="flex-1 text-left">
-                          <span
-                            className="text-sm font-bold"
-                            style={{
-                              color: homeWins
-                                ? "var(--color-text-primary)"
-                                : isCompleted
-                                ? "var(--color-text-secondary)"
-                                : "var(--color-text-primary)",
-                            }}
-                          >
-                            {match.homeTeamName ?? "TBD"}
-                          </span>
-                        </div>
-
-                        {/* 스코어 or VS */}
-                        <div className="mx-3 flex-shrink-0">
-                          {isCompleted || match.status === "live" || match.status === "in_progress" ? (
-                            <div
-                              className="flex items-center gap-1 rounded-full px-3 py-1"
-                              style={{ backgroundColor: "var(--color-elevated)" }}
-                            >
-                              <span
-                                className="text-sm font-bold"
-                                style={{ fontFamily: "var(--font-heading)", color: homeWins ? "var(--color-primary)" : "var(--color-text-secondary)" }}
-                              >
-                                {match.homeScore ?? 0}
-                              </span>
-                              <span className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>:</span>
-                              <span
-                                className="text-sm font-bold"
-                                style={{ fontFamily: "var(--font-heading)", color: awayWins ? "var(--color-primary)" : "var(--color-text-secondary)" }}
-                              >
-                                {match.awayScore ?? 0}
-                              </span>
-                            </div>
-                          ) : (
-                            <span
-                              className="rounded-full px-3 py-1 text-xs font-bold"
-                              style={{
-                                backgroundColor: "var(--color-primary)",
-                                color: "white",
-                              }}
-                            >
-                              VS
-                            </span>
-                          )}
-                        </div>
-
-                        {/* 어웨이팀 */}
-                        <div className="flex-1 text-right">
-                          <span
-                            className="text-sm font-bold"
-                            style={{
-                              color: awayWins
-                                ? "var(--color-text-primary)"
-                                : isCompleted
-                                ? "var(--color-text-secondary)"
-                                : "var(--color-text-primary)",
-                            }}
-                          >
-                            {match.awayTeamName ?? "TBD"}
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

@@ -11,11 +11,11 @@ import { PreferenceForm } from "@/components/shared/preference-form";
  */
 export default function PreferencesPage() {
   return (
-    <div className="min-h-screen bg-(--color-background) text-(--color-text-primary)">
+    <div className="min-h-screen bg-[var(--color-background)] text-[var(--color-text-primary)]">
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* 페이지 헤더 */}
         <h1 className="text-2xl font-bold mb-2">맞춤 설정</h1>
-        <p className="text-(--color-text-secondary) mb-8">
+        <p className="text-[var(--color-text-secondary)] mb-8">
           관심 종별, 경기 유형, 게시판을 설정하면 맞춤 콘텐츠를 받아볼 수 있습니다
         </p>
 

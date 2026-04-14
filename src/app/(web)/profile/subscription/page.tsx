@@ -191,7 +191,7 @@ export default function SubscriptionPage() {
 
                 {/* 상세 정보 */}
                 <div
-                  className="space-y-2 text-xs"
+                  className="space-y-2 text-xs sm:text-sm"
                   style={{ color: "var(--color-text-muted)" }}
                 >
                   <div className="flex justify-between">

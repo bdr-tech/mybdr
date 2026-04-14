@@ -216,7 +216,7 @@ export function AdminCourtsContent({
           </div>
           <button
             type="submit"
-            className="rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-accent-hover)]"
+            className="rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]"
           >
             등록
           </button>
@@ -637,8 +637,9 @@ function AmbassadorsTab({ ambassadors }: { ambassadors: SerializedAmbassador[] }
           {/* 신청자 정보 */}
           <div className="flex items-center gap-2 mb-3">
             <div
-              className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white"
-              style={{ backgroundColor: "var(--color-accent)" }}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold"
+              // accent 배경 대비가 다크/라이트 자동 유지되도록 on-accent 변수 사용
+              style={{ backgroundColor: "var(--color-accent)", color: "var(--color-on-accent)" }}
             >
               {(a.nickname ?? "?")[0]}
             </div>

@@ -17,7 +17,7 @@ export default function PaymentFailPage({
       <div className="flex flex-col gap-3 sm:flex-row">
         <Link
           href="/pricing"
-          className="rounded-[12px] bg-[var(--color-accent)] px-6 py-3 font-semibold text-black transition-colors hover:bg-[var(--color-accent-hover)]"
+          className="rounded-[12px] bg-[var(--color-accent)] px-6 py-3 font-semibold text-[var(--color-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)]"
         >
           요금제 다시 보기
         </Link>

@@ -75,7 +75,7 @@ export default async function UpgradePage({
 
         <a
           href="mailto:bdr.wonyoung@gmail.com?subject=플랜 신청 문의"
-          className="mb-3 flex w-full items-center justify-center rounded-[12px] bg-[var(--color-accent)] px-6 py-3 font-semibold text-white transition-colors hover:bg-[var(--color-accent-hover)]"
+          className="mb-3 flex w-full items-center justify-center rounded-[12px] bg-[var(--color-accent)] px-6 py-3 font-semibold text-[var(--color-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)]"
         >
           관리자에게 문의하기
         </a>

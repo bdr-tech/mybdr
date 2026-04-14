@@ -100,7 +100,7 @@ export default async function AdminLogsPage({
               href={`?date=${d}`}
               className={`rounded-[10px] px-3 py-1.5 text-xs transition-colors ${
                 dateFilter === d
-                  ? "bg-[var(--color-accent)] text-white"
+                  ? "bg-[var(--color-accent)] text-[var(--color-on-accent)]"
                   : "border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-elevated)]"
               }`}
             >

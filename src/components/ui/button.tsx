@@ -7,9 +7,9 @@ type Variant = "primary" | "secondary" | "ghost" | "danger" | "cta";
 // cta: 웜 오렌지(#F4A261)로 변경 (기존 빨간색 #E31B23에서)
 const variants: Record<Variant, string> = {
   primary:
-    "font-bold hover:opacity-85 text-white",
+    "font-bold hover:opacity-85",
   cta:
-    "font-bold hover:opacity-90 text-white",
+    "font-bold hover:opacity-90",
   secondary:
     "font-bold border-2",
   ghost:
@@ -31,8 +31,8 @@ export function Button({
   loading?: boolean;
 } & ButtonHTMLAttributes<HTMLButtonElement>) {
   const variantStyles: Record<Variant, React.CSSProperties> = {
-    primary: { backgroundColor: 'var(--color-text-primary)', color: '#fff' },
-    cta: { backgroundColor: 'var(--color-accent)', color: '#fff' },
+    primary: { backgroundColor: 'var(--color-text-primary)', color: 'var(--color-on-text-primary)' },
+    cta: { backgroundColor: 'var(--color-accent)', color: 'var(--color-on-accent)' },
     secondary: { backgroundColor: 'var(--color-surface)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' },
     ghost: { backgroundColor: 'transparent', color: 'var(--color-primary)' },
     danger: { backgroundColor: 'rgba(239,68,68,0.15)', color: 'var(--color-error)' },

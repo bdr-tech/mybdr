@@ -1,6 +1,12 @@
 # 코딩 규칙 및 스타일
 <!-- 담당: developer, reviewer | 최대 30항목 -->
 
+### [2026-04-12] 테마 반응형 배경 위 텍스트는 `--color-on-*` 변수 사용 (text-white 금지)
+- **분류**: convention
+- **발견자**: pm
+- **내용**: CSS 변수가 라이트/다크 테마마다 값이 바뀌는 배경색(`var(--color-accent)`, `var(--color-primary)` 등) 위에 올라가는 텍스트는 **절대 `text-white` / `color: '#fff'` 같은 고정 색상을 쓰지 않는다**. 반드시 대응하는 `--color-on-*` 변수를 사용해 테마 전환 시 자동으로 대비가 유지되도록 한다. 이미 정의된 변수: `--color-on-primary` (primary 배경용), `--color-on-accent` (accent 배경용 — 2026-04-12 추가). 새로운 테마 반응형 배경 변수를 추가할 때는 동시에 `--color-on-*` 쌍 변수를 globals.css의 `:root`(라이트)와 `html.dark`(다크) 양쪽에 정의한다. **금지 패턴**: `bg-[var(--color-accent)] text-white`, `{ backgroundColor: 'var(--color-accent)', color: '#fff' }`. **올바른 패턴**: `bg-[var(--color-accent)]` + `style={{ color: 'var(--color-on-accent)' }}`. 이 규칙을 어기면 다크모드에서 "흰 배경 + 흰 글씨"가 되어 버튼이 안 보이게 된다 (실제 발생한 버그).
+- **참조횟수**: 0
+
 ### [2026-03-22] 디자인 시스템 색상 체계
 - **분류**: convention
 - **발견자**: planner-architect

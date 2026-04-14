@@ -190,7 +190,36 @@ export async function GET(
         }
       }
 
-      // 0414: DNP 플래그 부여
+      // 진행 중 경기에서도 match_player_stats의 quarter_stats_json에서 MIN 보강 (dev)
+      for (const stat of match.playerStats) {
+        const pid = Number(stat.tournamentTeamPlayerId);
+        const row = statsMap.get(pid);
+        if (!row) continue;
+        // 1) quarterStatsJson에서 초 합산 (2인 모드)
+        let resolved = false;
+        if (stat.quarterStatsJson) {
+          try {
+            const parsed = JSON.parse(stat.quarterStatsJson) as Record<string, { min?: number; pm?: number }>;
+            const total = Object.values(parsed).reduce((sum, q) => sum + (q.min ?? 0), 0);
+            if (total > 0) {
+              row.min_seconds = total;
+              row.min = Math.round(total / 60);
+              resolved = true;
+            }
+          } catch {}
+        }
+        // 2) fallback: minutesPlayed (초 단위)
+        if (!resolved && stat.minutesPlayed && stat.minutesPlayed > 0) {
+          row.min_seconds = stat.minutesPlayed;
+          row.min = Math.round(stat.minutesPlayed / 60);
+        }
+        // +/- 보강
+        if (stat.plusMinus != null) {
+          row.plus_minus = stat.plusMinus;
+        }
+      }
+
+      // 0414: DNP 플래그 부여 (MIN 보강 후에 판정해야 정확)
       for (const stat of statsMap.values()) {
         stat.dnp = isDnpRow(stat);
       }
@@ -208,13 +237,16 @@ export async function GET(
       // 종료된 경기 — playerStats 테이블 사용
       // quarter_stats_json에서 초 단위 MIN 합계 계산 (없으면 minutesPlayed * 60 fallback)
       const getSecondsPlayed = (stat: (typeof match.playerStats)[number]): number => {
+        // 1) quarterStatsJson에서 초 합산 (2인 모드)
         if (stat.quarterStatsJson) {
           try {
             const parsed = JSON.parse(stat.quarterStatsJson) as Record<string, { min?: number; pm?: number }>;
-            return Object.values(parsed).reduce((sum, q) => sum + (q.min ?? 0), 0);
+            const total = Object.values(parsed).reduce((sum, q) => sum + (q.min ?? 0), 0);
+            if (total > 0) return total;
           } catch {}
         }
-        return (stat.minutesPlayed ?? 0) * 60;
+        // 2) fallback: minutesPlayed (초 단위)
+        return stat.minutesPlayed ?? 0;
       };
 
       const toPlayerRow = (stat: (typeof match.playerStats)[number]): PlayerRow => {
@@ -323,33 +355,6 @@ export async function GET(
       }
     }
 
-    // PBP 로그 조회 — 시간 역순, 최대 200건
-    const pbpRows = await prisma.play_by_plays.findMany({
-      where: { tournament_match_id: BigInt(matchId) },
-      orderBy: [{ quarter: "desc" }, { game_clock_seconds: "asc" }],
-      take: 200,
-      include: {
-        tournament_team_players: {
-          select: { jerseyNumber: true, users: { select: { name: true, nickname: true } } },
-        },
-      },
-    });
-
-    const playByPlays = pbpRows.map((p) => ({
-      id: Number(p.id),
-      quarter: p.quarter,
-      gameClockSeconds: p.game_clock_seconds,
-      teamId: Number(p.tournament_team_id),
-      jerseyNumber: p.tournament_team_players.jerseyNumber,
-      playerName: p.tournament_team_players.users?.nickname ?? p.tournament_team_players.users?.name ?? "-",
-      actionType: p.action_type,
-      actionSubtype: p.action_subtype,
-      isMade: p.is_made,
-      pointsScored: p.points_scored ?? 0,
-      homeScoreAtTime: p.home_score_at_time,
-      awayScoreAtTime: p.away_score_at_time,
-    }));
-
     return apiSuccess({
       match: {
         id: Number(match.id),
@@ -371,7 +376,7 @@ export async function GET(
         },
         homePlayers,
         awayPlayers,
-        playByPlays,
+        playByPlays: [],
         updatedAt: match.updatedAt.toISOString(),
       },
     });

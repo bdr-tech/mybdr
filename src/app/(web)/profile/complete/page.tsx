@@ -229,7 +229,7 @@ export default function ProfileCompletePage() {
                   type="button"
                   onClick={handleSendCode}
                   disabled={sendingCode || stripPhone(form.phone).length < 10}
-                  className="flex-shrink-0 rounded-[10px] bg-[var(--color-accent)] px-4 py-3 text-sm font-medium text-white hover:bg-[var(--color-accent-hover,#142D6B)] disabled:opacity-50"
+                  className="flex-shrink-0 rounded-[10px] bg-[var(--color-accent)] px-4 py-3 text-sm font-medium text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover,#142D6B)] disabled:opacity-50"
                 >
                   {sendingCode ? "발송 중..." : verifyStep === "sent" ? "재발송" : "인증요청"}
                 </button>
@@ -358,7 +358,7 @@ export default function ProfileCompletePage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full rounded-[10px] bg-[var(--color-accent)] py-4 text-sm font-semibold text-white hover:bg-[var(--color-accent-hover,#142D6B)] disabled:opacity-60"
+          className="w-full rounded-[10px] bg-[var(--color-accent)] py-4 text-sm font-semibold text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover,#142D6B)] disabled:opacity-60"
         >
           {saving ? "저장 중..." : "프로필 저장하고 시작하기"}
         </button>

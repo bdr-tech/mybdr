@@ -121,7 +121,7 @@ function CheckoutContent() {
       <button
         onClick={handlePay}
         disabled={paying}
-        className="w-full rounded-[14px] bg-[var(--color-accent)] py-4 font-semibold text-black transition-colors hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
+        className="w-full rounded-[14px] bg-[var(--color-accent)] py-4 font-semibold text-[var(--color-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
       >
         {paying ? "결제 진행 중..." : `${plan.price.toLocaleString()}원 결제하기`}
       </button>

@@ -8,7 +8,7 @@ import { useState } from "react";
 const pillCls = (active: boolean) =>
   `rounded-[4px] px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer ${
     active
-      ? "bg-[var(--color-accent)] text-white"
+      ? "bg-[var(--color-accent)] text-[var(--color-on-accent)]"
       : "bg-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border-active)]"
   }`;
 

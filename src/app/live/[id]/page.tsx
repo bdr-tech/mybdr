@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 
 interface PlayerRow {
@@ -109,7 +109,7 @@ function getQuarterLabel(q: number): string {
   return `OT${q - 4}`;
 }
 
-const POLL_INTERVAL = 5_000; // 5초
+const POLL_INTERVAL = 3_000; // 3초
 
 export default function LiveBoxScorePage() {
   const { id } = useParams<{ id: string }>();
@@ -117,6 +117,9 @@ export default function LiveBoxScorePage() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isLive, setIsLive] = useState(false);
+  const [homeFlash, setHomeFlash] = useState(false);
+  const [awayFlash, setAwayFlash] = useState(false);
+  const prevScoreRef = useRef<{ home: number; away: number } | null>(null);
 
   const fetchMatch = useCallback(async () => {
     try {
@@ -126,9 +129,24 @@ export default function LiveBoxScorePage() {
         return;
       }
       const data = await res.json();
-      setMatch(data.match);
+      const m = data.match as MatchData;
+
+      // 점수 변경 감지 → 플래시 효과
+      if (prevScoreRef.current) {
+        if (m.home_score !== prevScoreRef.current.home) {
+          setHomeFlash(true);
+          setTimeout(() => setHomeFlash(false), 800);
+        }
+        if (m.away_score !== prevScoreRef.current.away) {
+          setAwayFlash(true);
+          setTimeout(() => setAwayFlash(false), 800);
+        }
+      }
+      prevScoreRef.current = { home: m.home_score, away: m.away_score };
+
+      setMatch(m);
       setLastUpdated(new Date());
-      setIsLive(data.match.status === "live" || data.match.status === "in_progress");
+      setIsLive(m.status === "live" || m.status === "in_progress");
       setError(null);
     } catch {
       setError("데이터를 불러오는 중 오류가 발생했습니다");
@@ -214,7 +232,7 @@ export default function LiveBoxScorePage() {
               {match.home_team.name}
             </p>
             <p
-              className="text-6xl font-black mt-1"
+              className={`text-6xl font-black mt-1 transition-all duration-300 ${homeFlash ? "scale-125 brightness-150" : "scale-100"}`}
               style={{ color: match.home_team.color }}
             >
               {match.home_score}
@@ -239,7 +257,7 @@ export default function LiveBoxScorePage() {
               {match.away_team.name}
             </p>
             <p
-              className="text-6xl font-black mt-1"
+              className={`text-6xl font-black mt-1 transition-all duration-300 ${awayFlash ? "scale-125 brightness-150" : "scale-100"}`}
               style={{ color: match.away_team.color }}
             >
               {match.away_score}
@@ -380,6 +398,10 @@ function BoxScoreTable({
   // 0414: DNP(NBA: Did Not Play) 분리 — 테이블 본체는 출전 선수만, 하단에 DNP 리스트
   const activePlayers = players.filter((p) => !p.dnp);
   const dnpPlayers = players.filter((p) => p.dnp);
+  // dev: 득점 내림차순 정렬 + FG/3P/FT 퍼센트 헬퍼
+  const sorted = [...activePlayers].sort((a, b) => b.pts - a.pts);
+  const pct = (made: number, attempted: number) =>
+    attempted > 0 ? Math.round((made / attempted) * 100) : 0;
 
   return (
     <div className="print-team-table-wrap">
@@ -394,11 +416,13 @@ function BoxScoreTable({
               <tr className="border-b border-white/10 text-gray-500">
                 <th className="py-2 px-3 text-left font-normal sticky left-0 bg-[#141416] print:static print:bg-transparent">#</th>
                 <th className="py-2 px-1 text-left font-normal sticky left-8 bg-[#141416] min-w-[70px] print:static print:bg-transparent">이름</th>
-                <th className="py-2 px-1 text-center font-normal">MIN</th>
                 <th className="py-2 px-1 text-center font-semibold text-gray-300">PTS</th>
                 <th className="py-2 px-1 text-center font-normal">FG</th>
+                <th className="py-2 px-1 text-center font-normal">FG%</th>
                 <th className="py-2 px-1 text-center font-normal">3P</th>
+                <th className="py-2 px-1 text-center font-normal">3P%</th>
                 <th className="py-2 px-1 text-center font-normal">FT</th>
+                <th className="py-2 px-1 text-center font-normal">FT%</th>
                 <th className="py-2 px-1 text-center font-normal">OR</th>
                 <th className="py-2 px-1 text-center font-normal">DR</th>
                 <th className="py-2 px-1 text-center font-normal">REB</th>
@@ -411,7 +435,7 @@ function BoxScoreTable({
               </tr>
             </thead>
             <tbody>
-              {activePlayers.map((p, i) => (
+              {sorted.map((p, i) => (
                 <tr
                   key={p.id}
                   className={`border-b border-white/5 ${i % 2 === 0 ? "" : "bg-white/[0.02]"}`}
@@ -422,7 +446,6 @@ function BoxScoreTable({
                   <td className="py-2 px-1 text-gray-200 sticky left-8 bg-inherit min-w-[70px] truncate max-w-[70px] print:static print:bg-transparent print:max-w-none">
                     {p.name}
                   </td>
-                  <td className="py-2 px-1 text-center text-gray-500">{formatGameClock(p.min_seconds ?? p.min * 60)}</td>
                   <td className="py-2 px-1 text-center font-bold" style={{ color }}>
                     {p.pts}
                   </td>
@@ -430,10 +453,19 @@ function BoxScoreTable({
                     {p.fgm}/{p.fga}
                   </td>
                   <td className="py-2 px-1 text-center text-gray-400">
+                    {pct(p.fgm, p.fga)}%
+                  </td>
+                  <td className="py-2 px-1 text-center text-gray-400">
                     {p.tpm}/{p.tpa}
                   </td>
                   <td className="py-2 px-1 text-center text-gray-400">
+                    {pct(p.tpm, p.tpa)}%
+                  </td>
+                  <td className="py-2 px-1 text-center text-gray-400">
                     {p.ftm}/{p.fta}
+                  </td>
+                  <td className="py-2 px-1 text-center text-gray-400">
+                    {pct(p.ftm, p.fta)}%
                   </td>
                   <td className="py-2 px-1 text-center text-gray-300">{p.oreb}</td>
                   <td className="py-2 px-1 text-center text-gray-300">{p.dreb}</td>
@@ -476,11 +508,13 @@ function BoxScoreTable({
                   <tr className="border-t border-white/20 bg-white/[0.04] font-semibold print-total-row">
                     <td className="py-2 px-3 text-gray-400 sticky left-0 bg-[#111118] print:static print:bg-transparent" />
                     <td className="py-2 px-1 text-gray-200 sticky left-8 bg-[#111118] print:static print:bg-transparent">TOTAL</td>
-                    <td className="py-2 px-1 text-center text-gray-400">{formatGameClock(total.min_seconds)}</td>
                     <td className="py-2 px-1 text-center" style={{ color }}>{total.pts}</td>
                     <td className="py-2 px-1 text-center text-gray-300">{total.fgm}/{total.fga}</td>
+                    <td className="py-2 px-1 text-center text-gray-300">{pct(total.fgm, total.fga)}%</td>
                     <td className="py-2 px-1 text-center text-gray-300">{total.tpm}/{total.tpa}</td>
+                    <td className="py-2 px-1 text-center text-gray-300">{pct(total.tpm, total.tpa)}%</td>
                     <td className="py-2 px-1 text-center text-gray-300">{total.ftm}/{total.fta}</td>
+                    <td className="py-2 px-1 text-center text-gray-300">{pct(total.ftm, total.fta)}%</td>
                     <td className="py-2 px-1 text-center text-gray-300">{total.oreb}</td>
                     <td className="py-2 px-1 text-center text-gray-300">{total.dreb}</td>
                     <td className="py-2 px-1 text-center text-gray-300">{total.reb}</td>

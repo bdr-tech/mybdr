@@ -177,18 +177,18 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
       </nav>
 
       {/* 2열 레이아웃: 좌측 본문+댓글 / 우측 사이드바 */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
         {/* 좌측: 본문 + 댓글 */}
         <div className="lg:col-span-8">
           {/* 게시글 본문 카드 */}
           <article
-            className="rounded-lg p-6 md:p-8 border overflow-hidden"
+            className="rounded-lg p-4 sm:p-6 md:p-8 border overflow-hidden"
             style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
           >
             {/* 제목 */}
-            <header className="mb-8">
+            <header className="mb-6 sm:mb-8">
               <h2
-                className="text-2xl md:text-3xl font-bold mb-6 leading-tight"
+                className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 leading-tight"
                 style={{ color: "var(--color-text-primary)" }}
               >
                 {post.title}
@@ -291,9 +291,9 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
             className="mt-8 rounded-lg border overflow-hidden"
             style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
           >
-            <div className="p-6 md:p-8">
+            <div className="p-4 sm:p-6 md:p-8">
               {/* 댓글 수 헤더 (DB 댓글 + 카페 댓글 합산) */}
-              <div className="flex items-center gap-2 mb-8">
+              <div className="flex items-center gap-2 mb-6 sm:mb-8">
                 <span className="text-lg font-bold" style={{ color: "var(--color-text-primary)" }}>
                   댓글
                 </span>

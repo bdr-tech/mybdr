@@ -104,7 +104,7 @@ export default async function TeamDetailPage({
 
       {/* ===== 히어로 배너 ===== */}
       {/* 팀 고유색 그라디언트 배경 + 어두운 오버레이 */}
-      <section className="relative w-full overflow-hidden" style={{ height: "280px" }}>
+      <section className="relative w-full overflow-hidden h-[220px] sm:h-[280px]">
         {/* 팀 고유색 그라디언트 배경 (이미지 대신) */}
         <div
           className="absolute inset-0"
@@ -116,14 +116,14 @@ export default async function TeamDetailPage({
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-background)] via-[var(--color-background)]/40 to-transparent" />
 
         {/* 히어로 콘텐츠 — 좌측 팀 정보 + 우측 CTA 버튼 */}
-        <div className="absolute bottom-0 left-0 w-full px-8 pb-8 lg:px-12">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="absolute bottom-0 left-0 w-full px-4 pb-6 sm:px-8 sm:pb-8 lg:px-12">
+          <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-end lg:justify-between">
             {/* 좌측: 팀 로고 + 정보 */}
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3 sm:gap-6">
               {/* 팀 이니셜 아이콘 (w-24 h-24) */}
               <div className="relative flex-shrink-0">
                 <div
-                  className="flex h-24 w-24 items-center justify-center rounded border-4 border-[var(--color-background)] text-4xl font-black text-white shadow-xl"
+                  className="flex h-16 w-16 sm:h-24 sm:w-24 items-center justify-center rounded border-4 border-[var(--color-background)] text-2xl sm:text-4xl font-black text-white shadow-xl"
                   style={{ backgroundColor: accent }}
                 >
                   {team.name.charAt(0).toUpperCase()}
@@ -142,7 +142,7 @@ export default async function TeamDetailPage({
               <div>
                 <div className="flex flex-wrap items-center gap-3 mb-1">
                   <h1
-                    className="text-3xl font-bold text-white lg:text-4xl"
+                    className="text-xl sm:text-3xl font-bold text-white lg:text-4xl"
                     style={{ fontFamily: "var(--font-heading)" }}
                   >
                     {team.name}
@@ -156,7 +156,7 @@ export default async function TeamDetailPage({
                 </div>
 
                 {/* 메타 정보: 지역 / 멤버수 / 창단일 */}
-                <div className="flex flex-wrap items-center gap-4 text-sm text-white/70">
+                <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-white/70">
                   {location && (
                     <span className="flex items-center gap-1">
                       <span className="material-symbols-outlined text-sm">location_on</span>
@@ -187,19 +187,18 @@ export default async function TeamDetailPage({
 
       {/* ===== 탭 네비게이션 ===== */}
       {/* 활성 탭: text-primary + 빨간 하단 밑줄, 비활성: text-muted */}
-      <nav className="sticky top-16 z-30 border-b border-[var(--color-border)] bg-[var(--color-background)]/95 backdrop-blur-sm px-8 lg:px-12">
-        <div className="flex gap-8">
+      <nav className="sticky top-14 z-30 border-b border-[var(--color-border)] bg-[var(--color-background)]/95 backdrop-blur-sm px-4 sm:px-8 lg:px-12">
+        <div className="flex gap-0">
           {TABS.map((t) => (
             <Link
               key={t.key}
               href={`/teams/${id}?tab=${t.key}`}
-              className={`flex items-center gap-1.5 py-4 text-sm font-medium transition-colors border-b-2 ${
+              className={`flex flex-1 items-center justify-center py-3 text-xs sm:text-sm whitespace-nowrap font-medium transition-colors border-b-2 ${
                 currentTab === t.key
                   ? "border-[var(--color-primary)] text-[var(--color-primary)] font-bold"
                   : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
               }`}
             >
-              <span className="material-symbols-outlined text-base">{t.icon}</span>
               {t.label}
             </Link>
           ))}
@@ -207,7 +206,7 @@ export default async function TeamDetailPage({
       </nav>
 
       {/* ===== 탭 컨텐츠 ===== */}
-      <div className="px-8 py-8 lg:px-12">
+      <div className="px-4 py-6 sm:px-8 sm:py-8 lg:px-12">
         <Suspense fallback={<div className="h-32 rounded bg-[var(--color-card)]" />}>
           {currentTab === "overview" && (
             <OverviewTab
@@ -233,7 +232,7 @@ export default async function TeamDetailPage({
       </div>
 
       {/* 다음 액션 유도: 다른 팀 탐색 */}
-      <div className="px-8 pb-8 lg:px-12">
+      <div className="px-4 pb-6 sm:px-8 sm:pb-8 lg:px-12">
         <div className="flex flex-wrap gap-3">
           <Link
             href="/teams"

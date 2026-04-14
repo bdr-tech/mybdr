@@ -128,7 +128,8 @@ export function SessionCompleteCard({
                 className="text-xs font-bold px-2 py-0.5 rounded-full"
                 style={{
                   backgroundColor: "var(--color-accent)",
-                  color: "#FFFFFF",
+                  // 다크/라이트 모드에서 accent 배경 대비가 유지되도록 on-accent 변수 사용
+                  color: "var(--color-on-accent)",
                 }}
               >
                 +{gamification.streak_bonus_xp} XP

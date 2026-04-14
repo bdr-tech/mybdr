@@ -304,13 +304,13 @@ export default function ProfileEditPage() {
         <div className="space-y-4">
           <div>
             <label className={lbl}>포지션 <span className="text-xs text-[var(--color-text-secondary)]">(복수 선택 가능)</span></label>
-            <div className="flex gap-2">
+            <div className="flex gap-1.5 sm:gap-2">
               {POSITIONS.map((pos) => (
                 <button
                   key={pos}
                   type="button"
                   onClick={() => togglePosition(pos)}
-                  className={`flex-1 rounded-full border py-2 text-sm font-medium transition-colors ${
+                  className={`flex-1 rounded-full border py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
                     selectedPositions.includes(pos)
                       ? "border-[var(--color-accent)] bg-[rgba(27,60,135,0.12)] text-[var(--color-accent)]"
                       : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-accent)]"
@@ -539,14 +539,14 @@ export default function ProfileEditPage() {
           onClick={(e) => { if (e.target === e.currentTarget) { setShowWithdrawModal(false); setWithdrawError(""); setWithdrawPassword(""); } }}
         >
           <div
-            className="mx-4 w-full max-w-sm rounded-[20px] p-6"
+            className="mx-3 w-full max-w-sm rounded-[20px] p-6"
             style={{ backgroundColor: "var(--color-card)", boxShadow: "var(--shadow-elevated)" }}
           >
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl" style={{ color: "var(--color-error, #EF4444)" }}>
                 warning
               </span>
-              <h3 className="text-lg font-bold" style={{ color: "var(--color-text-primary)" }}>
+              <h3 className="text-base sm:text-lg font-bold" style={{ color: "var(--color-text-primary)" }}>
                 정말 탈퇴하시겠습니까?
               </h3>
             </div>

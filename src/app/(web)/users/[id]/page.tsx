@@ -193,7 +193,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
   return (
     <div className="space-y-6 max-w-7xl">
       {/* ===== 프로필 헤더 섹션 (2열: 프로필 정보 + MVP 카드) ===== */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
         {/* 좌측: 프로필 정보 카드 */}
         <div
           className="lg:col-span-8 rounded-lg p-6 relative overflow-hidden border"

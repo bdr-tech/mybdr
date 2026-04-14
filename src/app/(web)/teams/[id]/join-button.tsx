@@ -63,7 +63,7 @@ export function TeamJoinButton({ teamId }: { teamId: string }) {
         {/* 매치 제안 버튼 (아웃라인 스타일) */}
         <button
           type="button"
-          className="rounded border border-[var(--color-primary)] px-6 py-2.5 text-sm font-bold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-primary)]/10"
+          className="rounded border border-[var(--color-primary)] px-3 sm:px-6 py-2 sm:py-2.5 text-sm font-bold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-primary)]/10 whitespace-nowrap"
         >
           매치 제안
         </button>
@@ -73,7 +73,7 @@ export function TeamJoinButton({ teamId }: { teamId: string }) {
           type="button"
           onClick={handleJoin}
           disabled={loading}
-          className="flex items-center gap-2 rounded bg-[var(--color-primary)] px-6 py-2.5 text-sm font-bold text-white shadow-lg transition-all hover:bg-[var(--color-primary-hover)] disabled:opacity-50"
+          className="flex items-center gap-2 rounded bg-[var(--color-primary)] px-3 sm:px-6 py-2 sm:py-2.5 text-sm font-bold text-white shadow-lg transition-all hover:bg-[var(--color-primary-hover)] disabled:opacity-50 whitespace-nowrap"
           style={{ boxShadow: "0 4px 14px var(--color-primary-light)" }}
         >
           <span className="material-symbols-outlined text-lg">person_add</span>

@@ -228,7 +228,8 @@ export function TournamentsFilter({
         className="flex h-9 w-9 items-center justify-center rounded-full transition-colors"
         style={{
           backgroundColor: showSearch ? "var(--color-primary)" : "var(--color-accent)",
-          color: "#fff",
+          // 배경이 테마에 따라 바뀌므로, 텍스트 색상도 대응하는 on-* 변수로 자동 전환
+          color: showSearch ? "var(--color-on-primary)" : "var(--color-on-accent)",
         }}
         title="검색"
       >

@@ -134,7 +134,7 @@ export default function NotificationSettingsPage() {
             }`}
           >
             {/* 좌측: 아이콘 + 라벨 + 설명 */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <div
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md"
                 style={{ backgroundColor: "var(--color-surface)" }}

@@ -265,7 +265,9 @@ export function GamesContent({
             <Link
               href="/games/my-games"
               prefetch={true}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-black transition-colors bg-[var(--color-accent)] text-white shrink-0"
+              // text-white 제거 + style의 color를 --color-on-accent로: 다크모드에서 accent 배경이 밝아져도 글씨 자동 대비 유지
+              className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-black transition-colors bg-[var(--color-accent)] shrink-0"
+              style={{ color: "var(--color-on-accent)" }}
               title="내 경기"
             >
               MY

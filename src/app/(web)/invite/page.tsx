@@ -55,7 +55,7 @@ export default function InvitePage() {
     <div className="min-h-screen">
       {/* 히어로 섹션 */}
       <section
-        className="relative overflow-hidden py-16 lg:py-24 px-6"
+        className="relative overflow-hidden py-12 sm:py-16 lg:py-24 px-4 sm:px-6"
         style={{
           background: "linear-gradient(135deg, var(--color-primary), #FF6B35)",
         }}
@@ -80,7 +80,7 @@ export default function InvitePage() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href="/signup"
-              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded text-base font-bold transition-all active:scale-95"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 sm:px-8 sm:py-3.5 rounded text-base font-bold transition-all active:scale-95"
               style={{ backgroundColor: "#fff", color: "var(--color-primary)" }}
             >
               <span className="material-symbols-outlined">person_add</span>
@@ -88,7 +88,7 @@ export default function InvitePage() {
             </Link>
             <Link
               href="/"
-              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded text-base font-medium transition-all active:scale-95"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 sm:px-8 sm:py-3.5 rounded text-base font-medium transition-all active:scale-95"
               style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.3)" }}
             >
               둘러보기
@@ -108,7 +108,7 @@ export default function InvitePage() {
       </section>
 
       {/* 무엇이 달라졌나요? */}
-      <section className="py-12 lg:py-16 px-6">
+      <section className="py-8 sm:py-12 lg:py-16 px-4 sm:px-6">
         <div className="mx-auto max-w-4xl">
           <div className="text-center mb-10">
             <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--color-text-primary)" }}>
@@ -148,7 +148,7 @@ export default function InvitePage() {
       </section>
 
       {/* 이전 안내 */}
-      <section className="py-12 px-6" style={{ backgroundColor: "var(--color-surface)" }}>
+      <section className="py-8 sm:py-12 px-4 sm:px-6" style={{ backgroundColor: "var(--color-surface)" }}>
         <div className="mx-auto max-w-2xl text-center">
           <span
             className="material-symbols-outlined text-3xl mb-3 block"
@@ -181,7 +181,7 @@ export default function InvitePage() {
       </section>
 
       {/* 하단 CTA */}
-      <section className="py-12 px-6 text-center">
+      <section className="py-8 sm:py-12 px-4 sm:px-6 text-center">
         <h2 className="text-xl font-bold mb-2" style={{ color: "var(--color-text-primary)" }}>
           지금 시작하세요
         </h2>
@@ -190,7 +190,7 @@ export default function InvitePage() {
         </p>
         <Link
           href="/signup"
-          className="inline-flex items-center gap-2 px-8 py-3.5 rounded text-base font-bold transition-all active:scale-95"
+          className="inline-flex items-center gap-2 px-6 py-3 sm:px-8 sm:py-3.5 rounded text-base font-bold transition-all active:scale-95"
           style={{ backgroundColor: "var(--color-primary)", color: "#fff" }}
         >
           <span className="material-symbols-outlined">person_add</span>

@@ -110,15 +110,15 @@ export default function BasketballPage() {
       {/* 핵심 통계: 3열 그리드 */}
       <div className="grid grid-cols-3 gap-3">
         <TossCard className="text-center">
-          <p className="text-3xl font-bold mb-1" style={{ color: "var(--color-text-primary)" }}>{totalGames}</p>
+          <p className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: "var(--color-text-primary)" }}>{totalGames}</p>
           <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>총 경기</p>
         </TossCard>
         <TossCard className="text-center">
-          <p className="text-3xl font-bold mb-1" style={{ color: "var(--color-primary)" }}>{winRate != null ? `${winRate}%` : "-"}</p>
+          <p className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: "var(--color-primary)" }}>{winRate != null ? `${winRate}%` : "-"}</p>
           <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>승률</p>
         </TossCard>
         <TossCard className="text-center">
-          <p className="text-3xl font-bold mb-1" style={{ color: "var(--color-text-primary)" }}>{avgPoints > 0 ? avgPoints.toFixed(1) : "-"}</p>
+          <p className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: "var(--color-text-primary)" }}>{avgPoints > 0 ? avgPoints.toFixed(1) : "-"}</p>
           <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>PPG</p>
         </TossCard>
       </div>
@@ -127,7 +127,7 @@ export default function BasketballPage() {
       {statsRaw?.career_averages && (
         <TossCard>
           <TossSectionHeader title="커리어 평균" />
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
             <div className="text-center">
               <p className="text-lg font-bold" style={{ color: "var(--color-text-primary)" }}>{avgRebounds.toFixed(1)}</p>
               <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>RPG</p>

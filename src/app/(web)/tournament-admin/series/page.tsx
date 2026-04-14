@@ -30,7 +30,7 @@ export default async function SeriesListPage() {
         <h1 className="text-2xl font-extrabold uppercase tracking-wide sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>시리즈</h1>
         <Link
           href="/tournament-admin/series/new"
-          className="rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-accent-hover)] transition-colors"
+          className="rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)] transition-colors"
         >
           새 시리즈 만들기
         </Link>
@@ -71,7 +71,7 @@ export default async function SeriesListPage() {
           <p className="mb-4">아직 시리즈가 없습니다.</p>
           <Link
             href="/tournament-admin/series/new"
-            className="inline-block rounded-[10px] bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-accent-hover)] transition-colors"
+            className="inline-block rounded-[10px] bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)] transition-colors"
           >
             첫 시리즈 만들기
           </Link>

@@ -60,47 +60,55 @@ export function ProfileAccordion({ name, region = "", teamName = "", position = 
 
   return (
     <div className="space-y-1">
-      {/* 프로필 헤더: 클릭하면 아코디언 토글 (페이지 이동 아님) */}
-      <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="flex w-full items-center gap-3.5 rounded-md px-2 py-3 transition-colors hover:bg-[var(--color-surface)]"
-      >
-        {/* 아바타 원형 */}
-        <div
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-black text-white shadow-sm border border-[var(--color-primary)]/50"
-          style={{ backgroundColor: "var(--color-primary)" }}
+      {/* 프로필 헤더: 이름 클릭 → 프로필 이동, 화살표 클릭 → 아코디언 토글 */}
+      <div className="flex w-full items-center gap-3.5 rounded-md px-2 py-3 transition-colors hover:bg-[var(--color-surface)]">
+        {/* 아바타 + 텍스트: 클릭 시 프로필 페이지로 이동 */}
+        <Link
+          href="/profile/basketball"
+          onClick={onNavigate}
+          className="flex flex-1 items-center gap-3.5 min-w-0"
         >
-          {initial}
-        </div>
-
-        {/* 텍스트 영역: 닉네임 + 부가 정보 */}
-        <div className="flex-1 flex flex-col items-start truncate overflow-hidden">
-          <span
-            className="w-full truncate text-left text-sm font-black uppercase tracking-wide"
-            style={{ color: "var(--color-text-primary)" }}
+          {/* 아바타 원형 */}
+          <div
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-black text-white shadow-sm border border-[var(--color-primary)]/50"
+            style={{ backgroundColor: "var(--color-primary)" }}
           >
-            {displayName}
-          </span>
-          {/* 부가 정보: 데이터가 있을 때만 표시 */}
-          {subInfo && (
-            <span className="w-full truncate text-left text-[10px] font-medium text-[var(--color-text-muted)] mt-0.5">
-              {subInfo}
-            </span>
-          )}
-        </div>
+            {initial}
+          </div>
 
-        {/* 화살표 아이콘: 접힘/펼침 상태 표시 */}
-        <span
-          className="material-symbols-outlined text-xl shrink-0 transition-transform duration-200"
-          style={{
-            color: "var(--color-text-muted)",
-            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
-          }}
+          {/* 텍스트 영역: 닉네임 + 부가 정보 */}
+          <div className="flex-1 flex flex-col items-start truncate overflow-hidden">
+            <span
+              className="w-full truncate text-left text-sm font-black uppercase tracking-wide"
+              style={{ color: "var(--color-text-primary)" }}
+            >
+              {displayName}
+            </span>
+            {subInfo && (
+              <span className="w-full truncate text-left text-[10px] font-medium text-[var(--color-text-muted)] mt-0.5">
+                {subInfo}
+              </span>
+            )}
+          </div>
+        </Link>
+
+        {/* 화살표 버튼: 아코디언 토글 전용 */}
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className="shrink-0 p-1 rounded-full hover:bg-[var(--color-elevated)] transition-colors"
         >
-          expand_more
-        </span>
-      </button>
+          <span
+            className="material-symbols-outlined text-xl transition-transform duration-200"
+            style={{
+              color: "var(--color-text-muted)",
+              transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+            }}
+          >
+            expand_more
+          </span>
+        </button>
+      </div>
 
       {/* 카테고리 목록: isOpen일 때만 표시 */}
       {isOpen && (

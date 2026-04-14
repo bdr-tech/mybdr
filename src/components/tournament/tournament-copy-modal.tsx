@@ -187,7 +187,7 @@ export function TournamentCopyModal({ open, onClose, onApply }: Props) {
           <button
             onClick={handleCopy}
             disabled={!selected || copying}
-            className="rounded-[4px] bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
+            className="rounded-[4px] bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
           >
             {copying ? "복사 중..." : "복사 적용"}
           </button>

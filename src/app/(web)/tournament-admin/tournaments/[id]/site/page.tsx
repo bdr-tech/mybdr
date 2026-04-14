@@ -331,7 +331,7 @@ export default function TournamentSitePage() {
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold transition-colors ${
                 step === s
-                  ? "bg-[var(--color-accent)] text-white"
+                  ? "bg-[var(--color-accent)] text-[var(--color-on-accent)]"
                   : step > s
                   ? "bg-[var(--color-success)] text-white"
                   : "bg-[var(--color-border)] text-[var(--color-text-muted)]"

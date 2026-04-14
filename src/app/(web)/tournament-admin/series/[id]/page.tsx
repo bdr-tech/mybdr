@@ -96,7 +96,7 @@ export default async function SeriesDashboardPage({
               <Link key={t.id} href={`/tournament-admin/tournaments/${t.id}`}>
                 <Card className="flex items-center justify-between hover:bg-[var(--color-elevated)] transition-colors cursor-pointer">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[var(--color-accent)] text-sm font-bold text-white">
+                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[var(--color-accent)] text-sm font-bold text-[var(--color-on-accent)]">
                       {t.edition_number}
                     </span>
                     <div>
@@ -122,7 +122,7 @@ export default async function SeriesDashboardPage({
           <p className="mb-4 text-sm">아직 회차가 없습니다.</p>
           <Link
             href={`/tournament-admin/series/${id}/add-edition`}
-            className="inline-block rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-accent-hover)] transition-colors"
+            className="inline-block rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)] transition-colors"
           >
             첫 번째 회차 추가하기
           </Link>
@@ -134,7 +134,7 @@ export default async function SeriesDashboardPage({
         <div className="fixed bottom-20 right-4 lg:bottom-8">
           <Link
             href={`/tournament-admin/series/${id}/add-edition`}
-            className="flex items-center gap-2 rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white shadow-lg hover:bg-[var(--color-accent-hover)] transition-colors"
+            className="flex items-center gap-2 rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[var(--color-on-accent)] shadow-lg hover:bg-[var(--color-accent-hover)] transition-colors"
           >
             <span className="text-lg">+</span>
             {nextEdition}회 추가

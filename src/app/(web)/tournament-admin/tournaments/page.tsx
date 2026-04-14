@@ -21,7 +21,7 @@ export default async function TournamentAdminTournamentsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-extrabold uppercase tracking-wide sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>내 대회</h1>
-        <Link href="/tournament-admin/tournaments/new/wizard" className="rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white">새 대회</Link>
+        <Link href="/tournament-admin/tournaments/new/wizard" className="rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-[var(--color-on-accent)]">새 대회</Link>
       </div>
 
       {tournaments.length > 0 ? (

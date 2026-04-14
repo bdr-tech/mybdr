@@ -156,7 +156,7 @@ export default async function BracketPage({
       />
 
       {/* 2열 레이아웃: 좌측 본문(조별리그+대진표) + 우측 사이드바 */}
-      <div className="grid grid-cols-12 gap-8">
+      <div className="grid grid-cols-12 gap-4 sm:gap-8">
         {/* 좌측 본문 영역 */}
         <div className="col-span-12 lg:col-span-8 space-y-8">
           {/* 조별리그 순위표 (그룹 데이터가 있을 때만) */}

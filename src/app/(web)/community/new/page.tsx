@@ -91,13 +91,13 @@ export default function NewPostPage() {
                   value={imageInput}
                   onChange={(e) => setImageInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addImage(); } }}
-                  className={inp}
+                  className={`${inp} min-w-0`}
                   placeholder="https://example.com/image.jpg"
                 />
                 <button
                   type="button"
                   onClick={addImage}
-                  className="shrink-0 rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-accent-hover,#142D6B)]"
+                  className="shrink-0 rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover,#142D6B)]"
                 >
                   <span className="material-symbols-outlined text-base">add_photo_alternate</span>
                 </button>

@@ -172,7 +172,7 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
         </div>
 
         {/* 속성 뱃지 그리드 — null인 필드는 표시하지 않음 */}
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-1.5 sm:gap-2">
           {/* 코트 유형 (항상 표시) */}
           <InfoBadge
             icon={isIndoor ? "stadium" : "park"}
@@ -315,7 +315,7 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
 
         {/* 카카오맵 버튼 + QR 체크인 */}
         {lat !== 0 && (
-          <div className="mt-5 flex flex-wrap gap-2">
+          <div className="mt-5 flex flex-wrap gap-1.5 sm:gap-2">
             <a
               href={kakaoMapUrl}
               target="_blank"

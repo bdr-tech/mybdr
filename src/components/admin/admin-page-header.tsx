@@ -41,7 +41,7 @@ export function AdminPageHeader({
             />
             <button
               type="submit"
-              className="rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-[10px] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-[var(--color-on-accent)]"
             >
               검색
             </button>

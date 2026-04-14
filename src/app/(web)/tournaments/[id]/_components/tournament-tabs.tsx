@@ -15,6 +15,8 @@
 import { useState, type ReactNode } from "react";
 import useSWR from "swr";
 import { Skeleton } from "@/components/ui/skeleton";
+// API 응답은 snake_case → 하위 컴포넌트는 camelCase를 기대하므로 변환 필요
+import { convertKeysToCamelCase } from "@/lib/utils/case";
 
 // 일정 탭 컴포넌트
 import { ScheduleTimeline } from "./schedule-timeline";
@@ -39,8 +41,15 @@ const TAB_META: { key: TabKey; label: string; icon: string }[] = [
   { key: "teams", label: "참가팀", icon: "groups" },
 ];
 
-// API fetcher (JSON 응답 파싱)
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- API 응답 구조가 탭마다 다름
+type ApiResponse = Record<string, any>;
+
+// API fetcher: JSON 파싱 후 snake_case → camelCase 변환
+// apiSuccess()가 convertKeysToSnakeCase()를 적용하므로 클라이언트에서 되돌림
+const fetcher = (url: string): Promise<ApiResponse> =>
+  fetch(url)
+    .then((r) => r.json())
+    .then((json) => convertKeysToCamelCase(json) as ApiResponse);
 
 interface TournamentTabsProps {
   tournamentId: string;
@@ -69,8 +78,22 @@ function ScheduleTabContent({ tournamentId }: { tournamentId: string }) {
 
   if (isLoading) return <TabSkeleton />;
 
-  const matches: ScheduleMatch[] = data?.data?.matches ?? [];
-  const teams: ScheduleTeam[] = data?.data?.teams ?? [];
+  const rawMatches = data?.data?.matches ?? data?.matches ?? [];
+  const matches: ScheduleMatch[] = rawMatches.map((m: Record<string, unknown>) => ({
+    id: String(m.id ?? m.Id ?? ''),
+    homeTeamName: (m.homeTeamName ?? m.home_team_name ?? null) as string | null,
+    awayTeamName: (m.awayTeamName ?? m.away_team_name ?? null) as string | null,
+    homeScore: (m.homeScore ?? m.home_score ?? 0) as number,
+    awayScore: (m.awayScore ?? m.away_score ?? 0) as number,
+    status: (m.status ?? null) as string | null,
+    roundName: (m.roundName ?? m.round_name ?? null) as string | null,
+    scheduledAt: (m.scheduledAt ?? m.scheduled_at ?? null) as string | null,
+    courtNumber: (m.courtNumber ?? m.court_number ?? null) as string | null,
+  }));
+  const teams: ScheduleTeam[] = (data?.data?.teams ?? data?.teams ?? []).map((t: Record<string, unknown>) => ({
+    id: String(t.id ?? ''),
+    name: (t.name ?? '') as string,
+  }));
 
   return (
     <div>
@@ -90,7 +113,58 @@ function StandingsTabContent({ tournamentId }: { tournamentId: string }) {
 
   if (isLoading) return <TabSkeleton />;
 
-  const teams = data?.data?.teams ?? [];
+  // apiSuccess()는 .data 래핑 없이 직접 반환
+  // 순위표 팀 타입 (API에서 gamesPlayed, winRate, pointDifference, pointsFor 추가됨)
+  type StandingsTeam = {
+    id: string;
+    teamName: string;
+    wins: number;
+    losses: number;
+    gamesPlayed: number;
+    winRate: number;
+    pointDifference: number;
+    pointsFor: number;
+  };
+  const teams: StandingsTeam[] = data?.teams ?? [];
+
+  // 대회 상태에 따라 공동순위 판단 기준이 달라짐
+  // - 진행 중: 승률만 같으면 공동순위 (세부 기준은 아직 의미 없음)
+  // - 종료: 승률+득실차+다득점 모두 같아야 공동순위 (최종 확정 순위)
+  const isCompleted = data?.tournamentStatus === "completed";
+
+  let rank = 1;
+  const ranks = teams.map((t, i) => {
+    if (i > 0) {
+      const prev = teams[i - 1];
+      if (isCompleted) {
+        // 종료된 대회: 모든 세부 기준까지 같아야 공동순위 (거의 발생 안 함)
+        if (
+          t.winRate === prev.winRate &&
+          t.pointDifference === prev.pointDifference &&
+          t.pointsFor === prev.pointsFor
+        ) {
+          // 공동순위 유지
+        } else {
+          rank = i + 1;
+        }
+      } else {
+        // 진행 중 대회: 승률만 같으면 공동순위
+        if (t.winRate === prev.winRate) {
+          // 공동순위 유지
+        } else {
+          rank = i + 1;
+        }
+      }
+    }
+    return rank;
+  });
+
+  // KBL 승률 표시: .XXX 형식 (전승만 1.000, 0경기는 "-")
+  const formatWinRate = (t: StandingsTeam) => {
+    if (t.gamesPlayed === 0) return "-";
+    if (t.winRate === 1) return "1.000";
+    return t.winRate.toFixed(3).replace(/^0/, "");
+  };
 
   return (
     <div>
@@ -98,18 +172,18 @@ function StandingsTabContent({ tournamentId }: { tournamentId: string }) {
       <table className="w-full text-sm">
         <thead>
           <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
-            <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: "var(--color-text-tertiary)" }}>#</th>
-            <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: "var(--color-text-tertiary)" }}>팀</th>
-            <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: "var(--color-text-tertiary)" }}>승</th>
-            <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: "var(--color-text-tertiary)" }}>패</th>
-            <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: "var(--color-text-tertiary)" }}>승률</th>
+            <th className="px-2 py-2 text-left text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>#</th>
+            <th className="px-2 py-2 text-left text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>팀</th>
+            <th className="px-2 py-2 text-center text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>경기</th>
+            <th className="px-2 py-2 text-center text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>승</th>
+            <th className="px-2 py-2 text-center text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>패</th>
+            <th className="px-2 py-2 text-center text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>승률</th>
+            <th className="hidden px-2 py-2 text-center text-xs font-medium sm:table-cell sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>득실차</th>
           </tr>
         </thead>
         <tbody>
-          {teams.map((t: { id: string; teamName: string; wins: number; losses: number }, i: number) => {
-            const total = t.wins + t.losses;
-            const pct = total > 0 ? (t.wins / total).toFixed(3) : ".000";
-            const isTop3 = i < 3;
+          {teams.map((t, i) => {
+            const isTop3 = ranks[i] <= 3;
             return (
               <tr
                 key={t.id}
@@ -118,11 +192,15 @@ function StandingsTabContent({ tournamentId }: { tournamentId: string }) {
                   borderLeft: isTop3 ? "3px solid var(--color-primary)" : "3px solid transparent",
                 }}
               >
-                <td className="px-3 py-2.5 text-sm font-bold" style={{ color: "var(--color-primary)" }}>{i + 1}</td>
-                <td className="px-3 py-2.5 font-medium">{t.teamName}</td>
-                <td className="px-3 py-2.5 text-center">{t.wins}</td>
-                <td className="px-3 py-2.5 text-center">{t.losses}</td>
-                <td className="px-3 py-2.5 text-center">{pct}</td>
+                <td className="px-2 py-2.5 text-sm font-bold sm:px-3" style={{ color: "var(--color-primary)" }}>{ranks[i]}</td>
+                <td className="px-2 py-2.5 font-medium sm:px-3">{t.teamName}</td>
+                <td className="px-2 py-2.5 text-center sm:px-3">{t.gamesPlayed}</td>
+                <td className="px-2 py-2.5 text-center sm:px-3">{t.wins}</td>
+                <td className="px-2 py-2.5 text-center sm:px-3">{t.losses}</td>
+                <td className="px-2 py-2.5 text-center font-mono sm:px-3">{formatWinRate(t)}</td>
+                <td className="hidden px-2 py-2.5 text-center sm:table-cell sm:px-3">
+                  {t.pointDifference > 0 ? `+${t.pointDifference}` : t.pointDifference}
+                </td>
               </tr>
             );
           })}
@@ -142,7 +220,8 @@ function BracketTabContent({ tournamentId }: { tournamentId: string }) {
 
   if (isLoading) return <TabSkeleton />;
 
-  const d = data?.data ?? {};
+  // apiSuccess()는 .data 래핑 없이 직접 반환 + fetcher가 camelCase 변환 완료
+  const d = data ?? {};
   const groupTeams: GroupTeam[] = d.groupTeams ?? [];
   const rounds = d.rounds ?? [];
 
@@ -186,7 +265,8 @@ function TeamsTabContent({ tournamentId }: { tournamentId: string }) {
 
   if (isLoading) return <TabSkeleton />;
 
-  const teams = data?.data?.teams ?? [];
+  // apiSuccess()는 .data 래핑 없이 직접 반환
+  const teams = data?.teams ?? [];
 
   return (
     <div>

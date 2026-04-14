@@ -13,7 +13,7 @@ export function BracketEmpty({ tournamentId }: { tournamentId: string }) {
       {/* CTA 버튼: accent 색상 + hover 시 약간 어두워지는 효과 */}
       <Link
         href={`/tournaments/${tournamentId}/teams`}
-        className="rounded-full bg-[var(--color-accent)] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:opacity-90"
+        className="rounded-full bg-[var(--color-accent)] px-6 py-2.5 text-sm font-semibold text-[var(--color-on-accent)] transition-colors hover:opacity-90"
       >
         참가팀 보러가기
       </Link>

@@ -2,6 +2,18 @@
 <!-- 담당: planner-architect, developer | 최대 30항목 -->
 <!-- 프로젝트의 폴더 구조, 파일 역할, 핵심 패턴을 기록 -->
 
+### [2026-04-13] 대회 형식 프리셋 시스템 구조 설계
+- **분류**: architecture
+- **발견자**: planner-architect
+- **내용**: 대회 조별리그+토너먼트 자동 구성 시스템 설계. (1) 신규 유틸 3파일: src/lib/tournaments/preset.ts(12개 프리셋 정의 + 팀수 기반 추천), group-draw.ts(스네이크 드래프트 조편성 + 조별리그 풀리그 경기 생성), knockout-seeding.ts(교차 시딩 + BYE 배정 + 3/4위전). (2) 신규 API: /api/web/tournaments/[id]/group-draw(POST 자동조편성, GET 조편성조회). (3) 수정: bracket/route.ts에 format 분기 추가(group_stage_knockout 시 조별+토너먼트 연속 생성). (4) 데이터 저장: Tournament.settings Json에 preset{totalTeams,groupCount,teamsPerGroup,advancingPerGroup,wildcards,knockoutSize,thirdPlaceMatch}와 groupDraw{method,groups,drawnAt} 저장. DB 스키마 변경 없음. (5) 기존 single_elimination 로직 유지, format별 분기로 새 로직 추가. (6) 조별리그 경기는 TournamentMatch.group_name만 설정, round_number/bracket_position은 null. 토너먼트 경기는 기존과 동일. (7) wizard UI에 프리셋 선택 + 조편성 확인/수정 단계 추가 예정.
+- **참조횟수**: 0
+
+### [2026-04-13] 경기 기록 입력 시스템 전체 구조 분석
+- **분류**: architecture
+- **발견자**: planner-architect
+- **내용**: Flutter 앱(bdr_stat) 기록 입력 기능의 서버측 구조 전수 분석. (1) 2가지 기록 방식: 이벤트 기반(match_events 테이블, 실시간 득점/파울/리바운드 등 개별 이벤트 기록) + 최종 스탯 동기화(MatchPlayerStat 테이블, 경기 종료 후 전체 스탯 upsert). (2) API 구조: /api/v1/matches/[id]/events(이벤트 CRUD), /api/v1/matches/[id]/events/batch(배치 이벤트), /api/v1/matches/[id]/events/[eventId]/undo(이벤트 취소), /api/v1/matches/[id]/stats(스탯 CRUD), /api/v1/matches/[id]/roster(선수 명단), /api/v1/matches/[id]/status(경기 상태 전환), /api/v1/matches/[id]/live-token(실시간 채널), /api/v1/recorder/matches(기록원 경기 목록), /api/v1/duo/pair+join(2인 모드), /api/v1/tournaments/[id]/matches/sync(경기 데이터 동기화). (3) 인증: requireRecorder 미들웨어 — JWT 우선 + 대회 apiToken 폴백. super_admin/주최자/tournament_recorders 등록자만 접근 가능. (4) 실시간: Supabase Realtime Broadcast — Flutter가 채널(duo_{pin}_{matchId})에 score_update/timer_tick/quarter_change/pbp_event/team_foul/score_snapshot 6종 이벤트 broadcast, 웹 scoreboard 페이지가 구독하여 표시. (5) 점수 갱신: score-updater.ts가 득점 이벤트(2pt/3pt/1pt/score) 시 atomic increment로 homeScore/awayScore 갱신. (6) 상태 전환: scheduled→in_progress→completed/cancelled. 기록원은 scheduled→in_progress, in_progress→completed/cancelled만 가능. (7) 기존 웹 페이지: /scoreboard/[matchId](Supabase Realtime 구독, 실시간 스코어보드), /live(폴링 기반 라이브 경기 목록), /live/[id](폴링 기반 박스스코어+PBP 로그), /tournament-admin/.../recorders(기록원 관리).
+- **참조횟수**: 0
+
 ### [2026-04-05] 홈 페이지 NBA 2K 스타일 적용 현황 분석
 - **분류**: architecture
 - **발견자**: planner-architect

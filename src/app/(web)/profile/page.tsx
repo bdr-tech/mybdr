@@ -192,16 +192,16 @@ export default function ProfilePage() {
       </div>
 
       {/* ==== 4개 카테고리 카드 그리드 ==== */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         {categoryCards.map((card) => (
           <Link key={card.id} href={card.href}>
             <TossCard className="h-full transition-colors hover:bg-[var(--color-surface)]">
-              {/* 아이콘 원형 */}
+              {/* 아이콘 원형 - 모바일에서 약간 축소 */}
               <div
-                className="flex h-10 w-10 items-center justify-center rounded-full mb-3"
+                className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full mb-3"
                 style={{ backgroundColor: card.color }}
               >
-                <span className="material-symbols-outlined text-xl text-white">{card.icon}</span>
+                <span className="material-symbols-outlined text-lg sm:text-xl text-white">{card.icon}</span>
               </div>
               {/* 카테고리명 */}
               <p className="text-sm font-bold mb-1" style={{ color: "var(--color-text-primary)" }}>

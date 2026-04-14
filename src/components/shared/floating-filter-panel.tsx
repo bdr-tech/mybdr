@@ -80,7 +80,8 @@ export function FloatingFilterPanel({
         className="relative flex h-9 w-9 items-center justify-center rounded-full transition-colors"
         style={{
           backgroundColor: "var(--color-accent)",
-          color: "#fff",
+          // 하드코딩 #fff 대신 --color-on-accent 사용: 다크모드에서 accent가 밝아지면 글씨도 자동으로 검정으로 전환됨
+          color: "var(--color-on-accent)",
         }}
         aria-label="필터 열기"
         title="필터"

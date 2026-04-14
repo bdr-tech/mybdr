@@ -65,7 +65,7 @@ export function UpgradeModal({ reason, onClose }: UpgradeModalProps) {
           </button>
           <Link
             href="/upgrade"
-            className="flex-1 rounded-[12px] bg-[var(--color-accent)] py-2.5 text-center text-sm font-semibold text-white hover:bg-[var(--color-accent-hover)]"
+            className="flex-1 rounded-[12px] bg-[var(--color-accent)] py-2.5 text-center text-sm font-semibold text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]"
           >
             플랜 알아보기
           </Link>

@@ -48,7 +48,9 @@ export function SuccessOverlay({ gameId }: SuccessOverlayProps) {
               if (gameId) router.push(`/games/${gameId}`);
               else router.push("/games");
             }}
-            className="rounded-full bg-[var(--color-accent)] px-6 py-3 text-sm font-semibold text-white hover:bg-[var(--color-accent-hover)]"
+            className="rounded-full bg-[var(--color-accent)] px-6 py-3 text-sm font-semibold hover:bg-[var(--color-accent-hover)]"
+            // accent 배경이 테마에 따라 달라지므로 텍스트 색상도 on-accent 변수로 자동 대비 유지
+            style={{ color: "var(--color-on-accent)" }}
           >
             경기 보러 가기
           </button>

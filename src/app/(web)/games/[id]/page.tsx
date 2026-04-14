@@ -201,9 +201,9 @@ export default async function GameDetailPage({
       )}
 
       {/* 2열 레이아웃: 메인 콘텐츠 + 우측 가격 카드 */}
-      <div className="grid lg:grid-cols-[1fr_360px] gap-8">
+      <div className="grid lg:grid-cols-[1fr_360px] gap-6 sm:gap-8">
         {/* 좌측: 메인 콘텐츠 */}
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           {/* 게임 타입별 상세 섹션 (Amenities + Rules 스타일) */}
           {game.game_type === 0 && <PickupDetail game={game} />}
           {game.game_type === 1 && <GuestDetail game={game} />}

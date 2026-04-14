@@ -99,7 +99,7 @@ export default function QrCheckinPage() {
 
       {/* 메시지 */}
       <h1
-        className="text-xl font-bold text-center mb-2"
+        className="text-lg sm:text-xl font-bold text-center mb-2"
         style={{ color: "var(--color-text-primary)" }}
       >
         {message}

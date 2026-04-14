@@ -105,7 +105,7 @@ export default function TournamentTeamsPage() {
             key={s}
             onClick={() => setFilter(s)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-sm transition-colors ${
-              filter === s ? "bg-[var(--color-accent)] font-semibold text-white" : "bg-[var(--color-elevated)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+              filter === s ? "bg-[var(--color-accent)] font-semibold text-[var(--color-on-accent)]" : "bg-[var(--color-elevated)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
             }`}
           >
             {s === "all" ? "전체" : STATUS_LABEL[s]}

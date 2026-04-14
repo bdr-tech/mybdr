@@ -213,7 +213,18 @@
       "Bash(ls \"C:\\\\0.programing\\\\my-bdr-subin-main\\\\src\\\\app\\\\\\(web\\)\")",
       "Bash(node:*)",
       "Bash(echo \"수정: $f\")",
-      "Bash(tasklist //fi \"pid eq 106908\" //v)"
+      "Bash(tasklist //fi \"pid eq 106908\" //v)",
+      "Bash(cygpath:*)",
+      "Bash(rm -rf /tmp/myclaude-staging)",
+      "Bash(git fetch:*)",
+      "Bash(git rev-list:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(git worktree:*)",
+      "Bash(cp \"C:/0. Programing/mybdr/.env\" \"C:/0. Programing/mybdr-referee/.env\")",
+      "Bash(cp \"C:/0. Programing/mybdr/.env.local\" \"C:/0. Programing/mybdr-referee/.env.local\")",
+      "Bash(echo \"EXIT_CODE=$?\")",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(bash /tmp/check_dark_bugs.sh)"
     ]
   }
 }

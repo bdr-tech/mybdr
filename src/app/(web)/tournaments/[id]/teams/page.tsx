@@ -29,7 +29,8 @@ export default async function TournamentTeamsPage({ params }: { params: Promise<
                 <p className="text-xs text-[var(--color-text-secondary)]">{t.groupName && `${t.groupName} · `}{t.players.length}명</p>
               </div>
             </div>
-            <div className="space-y-1">
+            {/* 선수 목록: 카드 과도 확장 방지 */}
+            <div className="max-h-[200px] overflow-hidden space-y-1">
               {t.players.map((p) => (
                 <div key={p.id.toString()} className="flex justify-between text-sm">
                   <span className="text-[var(--color-text-muted)]">#{p.jerseyNumber ?? "-"} {p.users?.nickname ?? "선수"}</span>

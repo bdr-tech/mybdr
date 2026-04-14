@@ -443,18 +443,17 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
 
         {/* 하단: 관리 링크 (로그인) 또는 로그인 버튼 (비로그인) */}
         <div className="border-t border-[var(--color-border)] p-3 space-y-2">
-          {user ? (
-            /* 관리 링크만 표시 (프로필은 헤더 드롭다운으로 이동) */
+          {user?.role === "super_admin" ? (
             <Link href="/admin"
               className="flex items-center gap-3 px-3 py-2.5 text-sm font-black uppercase tracking-wide text-[var(--color-primary)] hover:bg-[var(--color-surface)] transition-colors border-l-4 border-transparent hover:border-[var(--color-primary)]">
               <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
               ADMIN
             </Link>
-          ) : (
+          ) : !user ? (
             <Link href="/login" className="block w-full bg-[var(--color-primary)] py-3 text-center text-sm font-black uppercase tracking-wider text-white rounded-sm shadow-glow-primary hover:bg-[var(--color-primary-hover)] transition-colors">
               로그인
             </Link>
-          )}
+          ) : null}
         </div>
       </aside>
 
@@ -566,10 +565,12 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
               <button
                 key="more-tab"
                 onClick={() => setSlideMenuOpen(true)}
-                className="flex flex-col items-center justify-center gap-0.5 text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-secondary)]"
+                className="flex flex-col items-center justify-center gap-0 text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-secondary)]"
               >
-                <span className="material-symbols-outlined text-2xl">menu</span>
-                <span className="text-[9px] font-black uppercase tracking-widest">{item.label}</span>
+                {/* 아이콘: 20px로 축소 (토스/카카오 스타일) */}
+                <span className="material-symbols-outlined text-xl">menu</span>
+                {/* 텍스트: 10px + semibold로 가독성 향상, 한글이라 uppercase 제거 */}
+                <span className="text-[10px] font-semibold tracking-wide">{item.label}</span>
               </button>
             );
           }
@@ -579,20 +580,21 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
               key={item.href + item.label}
               href={item.href}
               prefetch={true}
-              className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${
+              className={`flex flex-col items-center justify-center gap-0 transition-colors ${
                 active
                   ? "text-[var(--color-primary)]"
                   : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
               }`}
             >
-              {/* Material Symbols 아이콘: 활성 시 FILL 1 */}
+              {/* Material Symbols 아이콘: 20px, 활성 시 FILL 1 */}
               <span
-                className="material-symbols-outlined text-2xl"
+                className="material-symbols-outlined text-xl"
                 style={active ? { fontVariationSettings: "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24" } : undefined}
               >
                 {item.icon}
               </span>
-              <span className="text-[9px] font-black uppercase tracking-widest">{item.label}</span>
+              {/* 텍스트: 10px + semibold, 한글이라 uppercase 불필요 */}
+              <span className="text-[10px] font-semibold tracking-wide">{item.label}</span>
             </Link>
           );
         })}
