@@ -2,6 +2,38 @@
 <!-- 담당: planner-architect | 최대 30항목 -->
 <!-- "왜 A 대신 B를 선택했는지" 기술 결정의 배경과 이유를 기록 -->
 
+### [2026-04-13] 심판 알림 — 신규 Notification 모델 만들지 않고 기존 `notifications` 재사용
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: 신규 RefereeNotification 모델을 만들지 않고 **기존 Rails 호환 `notifications` 테이블 그대로 사용**.
+- **대안 검토**:
+  (A) RefereeNotification 신규 모델 (필드 축소형) → 조회 분리로 쿼리 단순, 그러나 테이블 2개 관리, 통합 벨 UI 시 union 쿼리 필요.
+  (B) **[채택]** 기존 notifications 재사용 + NOTIFICATION_TYPES에 referee.* 5종 추가 → 모델 0 추가, 헬퍼/UI 완전 재사용, bdr 웹과 심판 플랫폼 알림 통합 가능.
+  (C) Referee 자체 소셜 알림함 구축 → 과잉 설계.
+- **이유**: 기존 `src/lib/notifications/create.ts` 인프라 + createNotificationBulk + tournament-reminders cron 패턴이 완비됨. Referee는 User.id 갖고 있으므로 user_id 기반 조회로 자연 통합. 향후 mybdr 본체 알림과 한 벨에서 보는 것이 UX에 유리.
+- **부차 결정**:
+  (1) 공고 마감은 **lazy close 우선 + Cron 2차** — 목록 GET 시 updateMany 1회로 99% 커버, Cron은 새벽 누락분 정리용.
+  (2) 정산 상태 5종 중 **paid/cancelled/refunded 3종만 알림** — pending/scheduled는 내부 상태라 알림 피로도 방지.
+  (3) 알림 생성 실패는 **메인 트랜잭션 외부 try/catch** — 선정/배정 성공이 우선, 알림 에러는 로그만.
+  (4) Flutter 앱 알림은 기존 v1 API 체계와 분리 — 이번 단계는 웹 플랫폼 내부 벨만.
+- **참조횟수**: 0
+
+### [2026-04-13] 심판 배정 워크플로우 — 기존 RefereeAssignment를 "현장 배정" 단계로 재정의 + 앞단 4모델 추가
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: 기존 1모델 CRUD를 버리지 않고 **앞단에 공고/신청/선정/책임자 4모델을 쌓는** 방식 채택. RefereeAssignment에는 pool_id FK 1개만 nullable 추가.
+- **대안 검토**:
+  (A) RefereeAssignment 폐기 + 신규 모델로 전면 교체 → 기존 데이터/페이지/API 모두 이관 필요. 작업량 2~3배.
+  (B) **[채택]** RefereeAssignment 유지 + pool_id nullable 추가 + 앞단만 신설 → 기존 0변경, 점진 마이그레이션 가능, 과도기 2경로 운영 가능.
+  (C) Announcement 하나에 모든 것 때려넣기 (dates/applications/pool을 JSON으로) → 검색/조인 불가, 인덱스 불가.
+- **이유**: 바이브 코더 원칙(단순성 + 작동하는 코드 리팩토링 금지 + 점진적 확장). 기존 assignments 페이지가 이미 운영 중이라 중단 리스크 회피 필요. pool_id를 nullable로 두면 "기존 방식 배정"과 "신규 풀 기반 배정"이 공존 가능.
+- **부차 결정**:
+  (1) is_chief를 DailyAssignmentPool 컬럼 1개로 처리 (별도 Chief 테이블 X) — 조인 절감 + 단순성 우선.
+  (2) dates는 Postgres `DateTime[] @db.Date` 배열 사용 (JSON 대신) — 인덱스 가능, 쿼리 편의.
+  (3) required_count만 JSON — "일자 → {referee: N, scorer: M}" 형태로 키가 동적.
+  (4) 새 권한 키 추가 안 함 — 기존 `assignment_manage` 재사용. 공고/신청/선정/책임자 지정 모두 팀장급 동일 권한.
+- **참조횟수**: 0
+
 ### [2026-04-14] 서류 이미지 저장 + OCR + 업로드 방식 확정
 - **분류**: decision
 - **발견자**: pm (사용자 확정)

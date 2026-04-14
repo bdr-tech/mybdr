@@ -52,9 +52,123 @@
 ---
 
 ## 📌 현재 작업
-- **요청**: 공고 마감 자동화 + 알림 시스템 설계 (신규 기능)
-- **상태**: ✅ planner-architect 설계 완료 — developer 대기
-- **현재 담당**: planner-architect → (다음) developer
+- **요청**: 심판 플랫폼 전체 기능 통합 QA (Full QA)
+- **상태**: ✅ tester 종합 검증 완료 — PASS (Critical 0건)
+- **현재 담당**: tester → (다음) PM 커밋
+
+## 통합 테스트 결과 (tester) — QA (2026-04-13)
+
+### 1. 전체 빌드 검증
+| 항목 | 결과 | 비고 |
+|------|------|------|
+| tsc --noEmit | ✅ 통과 | EXIT=0, 에러 0건 |
+| prisma validate | ✅ 통과 | schema 유효 |
+| npm run lint | ⚠️ N/A | 기존 `next lint` 스크립트 인자 오류(본 QA 범위 외, 기존 이슈) |
+
+### 2. DB 스키마 전체 검증
+| 테이블 | 존재 | count |
+|--------|------|-------|
+| associations | ✅ | 0 |
+| association_admins | ✅ | 0 |
+| referees | ✅ | 0 |
+| referee_certificates | ✅ | 0 |
+| referee_assignments | ✅ | 0 |
+| referee_settlements | ✅ | 0 |
+| assignment_announcements | ✅ | 0 |
+| assignment_applications | ✅ | 0 |
+| daily_assignment_pools | ✅ | 0 |
+| referee_documents | ✅ | 0 |
+| association_fee_settings | ✅ | 0 |
+- 알림: 기존 `notifications` 테이블 재사용(referee_notification 별도 모델 없음, 설계대로)
+- 관계 무결성: User/Tournament↔Referee/Assignment 모두 `@relation` + onDelete 정책 명시. 인덱스 @@index/@@unique 포괄적 배치.
+
+### 3. 시나리오별 검증
+
+#### 시나리오 A: 심판 가입 및 자동 매칭 — ✅ PASS
+- 사전 등록 POST: 중복 체크(정규화 전화번호) + 주민번호 암호화 + `findMatchingUser`→`executeMatch` 즉시 연결.
+- OAuth 로그인: `oauth.ts`의 `tryAutoMatch`가 try/catch 격리로 매칭 실패가 로그인 성공을 방해 안 함.
+- 이메일 로그인: `actions/auth.ts` loginAction에도 동일 훅.
+- (관찰) 이메일 signupAction에는 매칭 훅 없음 — 가입 직후 `/profile/complete`로 강제 리다이렉트되는 구조상 name/phone 미확보. 이후 로그인 시 매칭되므로 실사용 영향 없음.
+
+#### 시나리오 B: Excel 일괄 등록 — ✅ PASS
+- preview: multipart 파싱 + Zod 행별 검증 + N+1 방지(User/Referee 일괄 조회) + matched/unmatched/duplicated/invalid 분류 + 파일 내 중복 감지 + 5MB/500행 상한.
+- confirm: rowSchema 재검증(TOCTOU) + $transaction 일괄 생성 + 트랜잭션 밖 개별 executeMatch(부분 실패 허용) + 주민번호 AES-256 암호화 + association_id 세션 강제.
+- 권한: referee_manage OR game_manage.
+
+#### 시나리오 C: 배정 워크플로우 — ✅ PASS
+- 공고 POST: assignment_manage 권한 + association_id 세션 주입 + Zod dates/required_count 검증 + notifyAnnouncementPublished.
+- 공고 GET: lazy close updateMany(deadline < now && open → closed) 호출.
+- 신청 POST: 본인 Referee 기준 unique(announcement_id, referee_id).
+- 선정(pools POST): referee_id 연결 + notifyPoolSelected.
+- 책임자 지정(pools/[id] PATCH): is_chief=true 전환 시에만 notifyChiefAssigned 발송(memo만 수정은 미발송 — 설계 의도와 일치).
+- 현장 배정(assignments POST with pool_id): pool_id 4중 검증(존재/소속/경기일치/날짜일치).
+- 배정 완료(assignments/[id] PATCH status=completed): `$transaction`으로 update+settlement create 원자적 처리. 금액 우선순위: 요청 fee → assignment.fee → 협회 단가표 → 하드코딩. assignment_id UNIQUE로 중복 생성 방지.
+- 삭제 가드: settlement.status !== "cancelled"이면 409(SETTLEMENT_EXISTS)로 거부 — cascade로 인한 이력 소실 방지. 훌륭한 방어 코드.
+
+#### 시나리오 D: 서류 관리 — ✅ PASS
+- 본인 업로드 POST: 파일 검증(MIME+크기+매직바이트) → optimizeDocumentImage → AES-256-GCM → upsert(referee_id+doc_type). 응답에서 encrypted_data 제외(select 명시).
+- 본인 GET: encrypted_data select 제외.
+- OCR(본인/관리자 각 1개): encrypted_data는 서버 내부 복호화용으로만 select, 응답엔 미포함.
+- 관리자 대리 업로드(referee-admin/documents): association_id IDOR + document_manage 권한.
+- PDF 출력(print): requirePermission("document_print")로 secretary_general 전용, IDOR 방지, 일회성 스트리밍(서버 저장 안 함).
+- 전체 가시성: encrypted_data가 Grep 결과 오직 select:true로 쓰이는 곳은 OCR 복호화·PDF 복호화 2곳뿐. 응답 JSON 노출 0건.
+
+#### 시나리오 E: 정산 관리 — ✅ PASS
+- 단가표(fee-settings): 협회당 1행, role별 금액 관리.
+- 상태 전이 화이트리스트: pending/scheduled/paid/cancelled/refunded + TRANSITIONS 맵으로 엄격 제어. 동일 상태/미허용 전이 차단.
+- paid 전환: 서류 3종(certificate/id_card/bankbook) 완비 검증, 미완비 시 force+memo 강제(감사 로그).
+- 일괄 생성(bulk-create): IDOR 필터 + settlement:null 필터 + $transaction 부분 실패 허용 + 중복 items 1회 처리.
+- 일괄 상태(bulk-status): force 일괄 금지(body에 force 없음) + 500건 상한 + 미완비 심판 자동 skip + N+1 회피(RefereeDocument 일괄 in 조회).
+- summary: by_status groupBy + 상위 심판/대회 groupBy + 미완비 건수 + 빈 결과 즉시 반환(0명 협회).
+- 알림: paid/cancelled/refunded 전환 시에만 `notifySettlementStatusChanged` 호출(설계 의도와 일치).
+
+#### 시나리오 F: 전용 로그인/가입 — ✅ PASS
+- 라우트 그룹 `(referee-public)` / `(referee)` 분리 확인(app 하위 폴더 존재).
+- `(referee)` layout은 미로그인 시 `/referee/login?redirect=/referee` 리다이렉트 → `(referee-public)`은 가드 없음 → 무한 리다이렉트 방지.
+- OAuth 콜백: `bdr_redirect` 쿠키 기반 일회용 복귀(handleOAuthLogin에서 delete).
+
+### 4. 보안 검증 체크리스트
+| 항목 | 결과 | 증거 |
+|------|------|------|
+| IDOR: admin API association_id 세션 강제 | ✅ | admin-guard.getAssociationAdmin()으로 body값 무시, 모든 라우트 `admin.associationId` 사용 |
+| IDOR: 본인 API session.userId 검증 | ✅ | referee-documents 등 Referee.user_id 매칭 |
+| 서류 encrypted_data 응답 미포함 | ✅ | select 명시 제외, 복호화는 OCR/PDF 서버 내부만 |
+| requirePermission 누락 검증 | ✅ | 샘플 API 전수 확인(members/announcements/pools/assignments/settlements/documents/bulk*/fee-settings) |
+| 메뉴 가시성 ↔ 서버 권한 일치 | ✅ | referee-shell.tsx가 /api/web/me의 `admin_info.permissions[]` 사용, admin-guard.PERMISSIONS와 동일 소스 |
+| 주민번호 암호화(AES-256) | ✅ | encryptResidentId + extractLast4 |
+| 계좌번호 암호화 | ✅ | Referee.bank_account 암호화 저장 명세 |
+| 서류 이미지 열람 불가 | ✅ | 사무국장 PDF 출력 외 복호화 경로 없음 |
+| 상태 전이 화이트리스트(정산) | ✅ | TRANSITIONS 맵 + 서류 미완비 force+memo |
+| 상태 전이 화이트리스트(배정) | ✅ | Zod enum 제한 + completed 시 자동 정산 원자성 |
+| 알림 실패 격리 | ✅ | 모든 notify* 헬퍼 try/catch 내장 |
+| CRON 보호 | ✅ | /api/cron/referee-announcement-close CRON_SECRET Bearer 검증 |
+| user_id null Referee 알림 스킵 | ✅ | referee-events에서 null 필터링 |
+
+### 5. 성능 검증
+| 항목 | 결과 | 비고 |
+|------|------|------|
+| N+1 회피 | ✅ | settlements/summary(10건 groupBy/in), bulk-status 서류 일괄 in 조회, bulk-register preview User/Referee 일괄 조회 |
+| 인덱스 | ✅ | referees 7개, assignments 4개, applications 2개, pools 3개(@@unique 포함) 등 조회 필드에 모두 배치 |
+| lazy close + Vercel Cron 이중화 | ✅ | Hobby 플랜 제한 대비 |
+| 알림 벨 30초 폴링 | ✅ | count 2회 + findMany 1회, 인덱스 스캔 |
+
+### 6. 종합 리포트
+
+📊 **종합: 6개 시나리오 모두 PASS / Critical 이슈 0건**
+
+**강점**
+- 권한 매트릭스(PERMISSIONS)와 UI 메뉴 표시가 단일 소스(/api/web/me admin_info.permissions)로 일관
+- 암호화된 서류의 응답 노출 패턴이 모든 엔드포인트에서 일관되게 차단
+- $transaction + 트랜잭션 밖 부분 실패 허용 패턴이 대량 작업(bulk-register/bulk-create/bulk-status)에 일관 적용
+- 상태 전이 화이트리스트(정산)와 파일 업로드 검증(MIME+매직바이트) 등 방어적 코드 품질 높음
+- 알림 시스템이 메인 트랜잭션과 완전히 분리(try/catch 격리)되어 장애 격벽 확립
+
+**경미 관찰(Critical 아님, 수정 불요)**
+1. `npm run lint`: `next lint` 인자 이슈로 실패하나 본 QA 범위 외(기존 이슈).
+2. 이메일 signupAction: 가입 직후 자동 매칭 훅 없음. 다만 `/profile/complete` 강제 리다이렉트 + 이후 loginAction 훅으로 커버되므로 실사용 영향 없음. (이미 scratchpad에 의도적으로 명시됨.)
+
+### 판정
+**QA 통과** — 릴리즈 또는 dev 머지 가능. 수정 요청 없음.
 
 ## 기획설계 — 공고 마감 자동화 + 알림 시스템 (2026-04-13)
 

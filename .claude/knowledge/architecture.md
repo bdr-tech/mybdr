@@ -2,6 +2,18 @@
 <!-- 담당: planner-architect, developer | 최대 30항목 -->
 <!-- 프로젝트의 폴더 구조, 파일 역할, 핵심 패턴을 기록 -->
 
+### [2026-04-13] 심판 알림 시스템 + 공고 마감 자동화 설계
+- **분류**: architecture
+- **발견자**: planner-architect
+- **내용**: 신규 모델 0개, 기존 인프라 전면 재활용. (1) **기존 `notifications` 모델(prisma/schema.prisma L1344, Rails 호환)** 그대로 사용 — user_id/notification_type/title/content/action_url/status(unread/read)/read_at. Referee.user_id로 심판에게 배달. (2) **기존 `src/lib/notifications/create.ts` + `NOTIFICATION_TYPES` 헬퍼**에 referee.* 5종(pool.selected/pool.chief_assigned/assignment.created/settlement.paid/announcement.new) 추가만. (3) **공고 마감 2중 방어**: lazy close(GET /announcements 진입 시 `updateMany({status:open, deadline:lt(now)} → closed)`) + 향후 Vercel Cron 매시간(/api/cron/referee-announcement-close). (4) **알림 생성 포인트 4곳**: pools POST(선정) / pools/[id]/chief PATCH / assignments POST / settlements/[id]/status PATCH. 각 API에 try/catch로 감싼 notify* 헬퍼 호출 — 알림 실패 시 메인 트랜잭션 유지. (5) **API 3개 신규**: GET /api/web/notifications(페이지네이션+unread_count) + PATCH /[id]/read + POST /read-all. (6) **UI**: referee-shell 헤더에 Material Symbols "notifications" 벨 + 우상단 빨간 뱃지(9+) + 드롭다운 최근 10개 + 전체 목록 /referee/notifications 페이지. (7) **구현 3차 분류**: 1차=types+헬퍼+lazy close+4 hook / 2차=API 3개+UI / 3차=Cron+이메일(선택). (8) **Vercel Cron 인프라 기존**: vercel.json에 3건 이미 등록(tournament-reminders/youtube/weekly-report), CRON_SECRET 검증 패턴 `src/app/api/cron/tournament-reminders/route.ts` L10-13 참고.
+- **참조횟수**: 0
+
+### [2026-04-13] 심판 경기 배정 워크플로우 v3: 공고→신청→선정→책임자→현장배정 6단계
+- **분류**: architecture
+- **발견자**: planner-architect
+- **내용**: 기존 원스텝 배정 CRUD(RefereeAssignment 1모델)를 **다단계 워크플로우**로 확장. (1) 신규 Prisma 4모델 + 기존 1모델 수정: AssignmentAnnouncement(공고, dates DateTime[] 배열 + required_count JSON), AssignmentApplication(공고별 신청, unique(announcement_id, referee_id)), AssignmentApplicationDate(신청 일자 N:M 분리), DailyAssignmentPool(일자별 선정 풀 + is_chief 플래그로 책임자 포함, unique(tournament_id, date, referee_id, role_type)), 기존 RefereeAssignment에 pool_id nullable FK 1개만 추가(기존 데이터 0변경). (2) 신규 API 10개: 관리자 3(announcements CRUD) + 본인 2(공고 열람/신청) + 관리자 선정 5(applications 조회/선정/선정취소/책임자 토글/풀 조회), 기존 assignments API는 pool_id 검증 추가만. (3) 신규 페이지 3개: `/referee/admin/announcements`(+상세, 공고 관리 + 신청자 선정 + 책임자 지정), `/referee/applications`(본인 신청), `/referee/admin/pools`(일자별 풀 대시보드), 기존 `/referee/admin/assignments`는 3차에서 풀 기반으로 리팩토링(검색창 기반 referee-picker 컴포넌트). (4) 권한: 기존 `assignment_manage`(sga/referee_chief/game_chief) 그대로 재사용, admin-guard.ts 무수정. (5) 구현 3차 분류: 1차=공고+신청(뼈대), 2차=선정+책임자, 3차=현장배정 리팩토링. (6) 마이그레이션: pool_id nullable 유지 → 기존 배정 호환, 과도기 운영 가능.
+- **참조횟수**: 0
+
 ### [2026-04-12] 심판 플랫폼 재설계 v2: Association 계층 + 배정/정산 조회 포함
 - **분류**: architecture
 - **발견자**: planner-architect
