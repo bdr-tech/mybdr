@@ -13,9 +13,9 @@ type MatchCardProps = {
 // 이유: 모바일 375px 한 화면에 4강 트리(3컬럼)가 들어가려면 카드를 더 작게.
 // 기존 120/140/160 → 100/120/140로 20px씩 축소. 높이도 비율 맞춰 축소.
 const SIZE_MAP = {
-  sm: "w-[100px] min-h-[52px]",
-  md: "w-[120px] min-h-[58px]",
-  lg: "w-[140px] min-h-[66px]",
+  sm: "w-[120px] min-h-[62px]",
+  md: "w-[144px] min-h-[70px]",
+  lg: "w-[168px] min-h-[80px]",
 } as const;
 
 function isWinner(match: BracketMatch, team: TeamSlot): boolean {

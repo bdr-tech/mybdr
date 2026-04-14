@@ -30,9 +30,9 @@ function getCardSize(_rounds: RoundGroup[]): "sm" | "md" | "lg" {
 // 이유: SIZE_MAP과 동기화. match-card의 Tailwind 클래스와 이 상수가 일치해야
 // bracket-builder의 좌표 계산이 정확함 (카드 실제 픽셀 크기 기준으로 선 그림).
 const CARD_DIMENSIONS = {
-  sm: { width: 100, height: 52 },
-  md: { width: 120, height: 58 },
-  lg: { width: 140, height: 66 },
+  sm: { width: 120, height: 62 },
+  md: { width: 144, height: 70 },
+  lg: { width: 168, height: 80 },
 } as const;
 
 // ── 메인 컴포넌트 ──────────────────────────────────────
@@ -112,8 +112,8 @@ function BracketTreeView({
     return map;
   }, [positions]);
 
-  // 라운드 헤더 위치 (각 라운드의 첫 매치 X좌표)
-  // 이유: NBA 스타일 헤더는 "라운드명 · 경기 수"를 표시하므로 matchCount도 함께 계산
+  // 라운드 헤더 위치 (각 라운드의 첫 매치 X 좌표 + 첫 매치 바로 위 Y 좌표)
+  // 이유: 헤더를 각 라운드의 첫 카드 바로 위에 배치 → "헤더 + 카드 블록" 전체가 세로 중앙 정렬되는 효과
   const roundHeaders = useMemo(() => {
     return rounds.map((round) => {
       const firstMatch = round.matches[0];
@@ -124,6 +124,7 @@ function BracketTreeView({
         hasLive: round.hasLive,
         matchCount: round.matches.length,
         x: pos?.x ?? 0,
+        y: pos?.y ?? 0,  // 첫 매치의 y 좌표 (헤더를 이 위에 배치)
       };
     });
   }, [rounds, positionMap]);
@@ -150,14 +151,16 @@ function BracketTreeView({
           height: `${dimensions.height + headerHeight + padding}px`,
         }}
       >
-        {/* 라운드 헤더 — 카드 너비 중앙 정렬, 배경 강조 버튼 스타일 */}
+        {/* 라운드 헤더 — 각 라운드의 첫 카드 바로 위에 배치 (전체 블록 세로 중앙 정렬 효과) */}
         {roundHeaders.map((rh) => (
           <div
             key={rh.roundNumber}
             className="absolute flex items-center justify-center gap-1.5"
             style={{
               left: `${rh.x + padding}px`,
-              top: 0,
+              // 이유: 첫 카드 y 좌표 바로 위(headerHeight - 헤더 여백)에 배치
+              // → 라운드별 헤더+카드 블록 중심이 자연스럽게 트리 전체 중심과 일치
+              top: `${rh.y + headerHeight - 28}px`,
               width: `${cardWidth}px`,
             }}
           >
