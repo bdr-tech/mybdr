@@ -18,9 +18,11 @@ export default async function RefereeLayout({
   children: React.ReactNode;
 }) {
   const session = await getWebSession();
-  // 세션 없음 → 로그인 페이지로 리다이렉트 (복귀 경로 파라미터 포함)
+  // 세션 없음 → 심판 전용 로그인 페이지로 리다이렉트 (복귀 경로 파라미터 포함)
+  // 이유: 심판 플랫폼은 자체 브랜딩을 가진 전용 로그인 입구(/referee/login)를 사용한다.
+  //      (referee-public) 라우트 그룹의 페이지는 이 가드 바깥이라 리다이렉트 무한루프 없음.
   if (!session) {
-    redirect("/login?redirect=/referee");
+    redirect(`/referee/login?redirect=${encodeURIComponent("/referee")}`);
   }
 
   return <RefereeShell>{children}</RefereeShell>;

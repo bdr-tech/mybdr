@@ -2,6 +2,55 @@
 
 ---
 
+## 구현 기록 (developer) — 심판 전용 로그인/가입 (2026-04-13)
+
+📝 구현한 기능:
+- 심판 플랫폼 전용 로그인/가입 페이지 2개 (/referee/login, /referee/signup)
+- 라우트 그룹 `(referee-public)` 신규 생성으로 인증 가드 우회
+- (referee) 레이아웃의 미로그인 리다이렉트를 `/referee/login?redirect=/referee` 로 변경
+
+### 변경 파일
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/app/(referee-public)/layout.tsx | 인증 가드 없는 패스스루 그룹 레이아웃 | 신규 |
+| src/app/(referee-public)/referee/login/page.tsx | 심판 전용 로그인(OAuth 3 + 이메일 모달), redirect=/referee 고정 | 신규 |
+| src/app/(referee-public)/referee/signup/page.tsx | 심판 전용 가입(OAuth 3 + 이메일 폼, signupAction 재사용) | 신규 |
+| src/app/(referee)/referee/layout.tsx | 미로그인 시 /login → /referee/login 로 리다이렉트 변경 | 수정 |
+
+### 핵심 설계 포인트
+- **라우트 그룹 분리**: `(referee-public)` 은 URL 영향 없음. 동일 URL `/referee/login` 충돌 없는 것 확인(기존 `(referee)/referee/login/` 없음).
+- **기존 액션 재사용**: `loginAction`, `signupAction`, `devLoginAction` 은 건드리지 않음. 로그인은 FormData 의 `redirect` hidden input 으로 복귀 경로 전달.
+- **OAuth redirect**: 카카오/구글 버튼 href 에 `&redirect=/referee` 쿼리 붙여 콜백 시 쿠키 기반 리다이렉트 동작.
+- **signup 후 이동**: 이메일 가입은 기존 signupAction 로직상 `/profile/complete` 로 강제 이동(변경 금지 지침 준수). OAuth 가입 경로만 /referee 복귀.
+- **디자인 시스템**: border-radius 4px, CSS 변수(var(--color-*)), Material Symbols(sports/info/visibility/close) 사용. 하드코딩 색상은 카카오/네이버/구글의 브랜드 고유색만(기존과 동일 예외).
+- **일반 로그인/가입 교차 링크**: 하단에 `일반(MyBDR) 로그인/회원가입으로 이동` 작은 링크 추가. (web) 페이지는 수정하지 않음(지침 준수).
+
+### 동작 흐름
+1. 미로그인 사용자가 `/referee/대시보드` 접근 → `(referee)/referee/layout.tsx` 가드 → `/referee/login?redirect=/referee` 로 리다이렉트
+2. `/referee/login` 은 `(referee-public)` 그룹 소속 → 가드 없음 → 정상 렌더
+3. 카카오 버튼 클릭 → `/api/auth/login?provider=kakao&redirect=/referee` → 기존 OAuth 콜백 로직이 쿠키 기반으로 `/referee` 복귀
+4. 이메일 로그인 → `loginAction` 이 hidden input `redirect=/referee` 를 읽어 복귀
+
+### 검증
+- tsc --noEmit: 에러 0건 (EXIT=0)
+
+💡 tester 참고:
+- **테스트 경로**:
+  1. 시크릿 창에서 `/referee` 직접 접근 → `/referee/login?redirect=%2Freferee` 로 리다이렉트 되는지
+  2. `/referee/login` 이 심판 브랜딩(휘슬 아이콘, "심판/경기원 플랫폼" 타이틀)으로 렌더되는지
+  3. `/referee/signup` 가입 폼 유효성(닉네임 2~20자, 비번 8자+영문+숫자+특수)
+  4. Dev 자동 로그인 버튼이 비-프로덕션에서만 보이는지
+  5. 카카오 OAuth 플로우 완료 후 `/referee` 로 복귀하는지
+- **정상 동작**: 기존 (web)/login, (web)/signup 페이지는 영향 없음. (referee) 가드는 동일하되 리다이렉트 목적지만 바뀜.
+- **주의할 입력**: signup 의 `password_confirm` 이름은 기존 action 과 동일한 snake_case. 바꾸면 안 됨.
+
+⚠️ reviewer 참고:
+- 라우트 그룹 `(referee-public)` 은 `(referee)` 와 완전히 분리된 트리. 두 그룹의 layout 은 독립 실행되므로 가드 중첩 없음.
+- 이메일 signup 후 `/profile/complete` 이동은 기존 signupAction 동작 그대로(변경 금지 지침 준수). 심판 플랫폼 복귀는 OAuth 가입 경로에서만 성립 — 향후 signupAction 에 redirect 파라미터를 추가할지는 별도 과제.
+- 네이버는 기존과 동일하게 로그인만 준비 중 표시, 가입 페이지에도 준비 중 처리(기존 signup 은 네이버 활성이지만 통일을 위해 로그인과 맞춤).
+
+---
+
 ## 📌 현재 작업
 - **요청**: 공고 마감 자동화 + 알림 시스템 설계 (신규 기능)
 - **상태**: ✅ planner-architect 설계 완료 — developer 대기

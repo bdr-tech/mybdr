@@ -964,9 +964,120 @@ home-sidebar.tsx, hero-section.tsx, quick-menu.tsx, hero-bento.tsx, home-greetin
 - Referee.user_id가 null이면 알림 조용히 스킵. 앱 미가입 심판은 알림 대상 아님이라는 원칙이 헬퍼에서 일관 적용됨.
 - lazy close + cron 이중화 덕에 Hobby 플랜(일 1회 제한) 환경에서도 관리자 목록 진입 시 갭 없이 closed 전환됨.
 
+## 리뷰 결과 (reviewer) — 2026-04-13 — 심판 전용 로그인/가입 페이지 (4파일)
+
+📊 종합 판정: **APPROVE with comments** (권장 4건, 필수 수정 0건)
+
+리뷰 대상:
+1. `src/app/(referee-public)/layout.tsx` (신규, pass-through)
+2. `src/app/(referee-public)/referee/login/page.tsx` (신규)
+3. `src/app/(referee-public)/referee/signup/page.tsx` (신규)
+4. `src/app/(referee)/referee/layout.tsx` (수정, redirect 경로 변경)
+
+### ✅ 잘된 점
+
+- **라우트 그룹 분리 전략이 정확함**: `(referee-public)`과 `(referee)` 모두 `/referee/*` URL을 생성하지만 Next.js App Router는 라우트 그룹 자체가 경로에 포함되지 않으므로 URL 충돌이 없다. `/referee/login`, `/referee/signup`은 `(referee-public)` 하위로 매칭되고, 나머지(`/referee`, `/referee/admin` 등)는 `(referee)` 하위로 매칭되어 **무한 리다이렉트 루프가 원천 차단됨**. layout.tsx 주석에도 이 의도가 명시되어 있어 좋다.
+- **기존 auth action 재사용으로 보안 체계 유지**: `loginAction`/`signupAction`/`devLoginAction` 기존 로직을 그대로 import해서 쓴다. 브루트포스 차단(`isLoginBlocked`), timing attack 방지(DUMMY_HASH 더미 bcrypt), 자동 매칭(`tryAutoMatch`) 모두 그대로 동작. `(web)/login` 회귀 위험 제로.
+- **OAuth redirect 경로 검증이 이중으로 동작**: `/api/auth/login` 라우트의 `isValidRedirect`(`/` 시작 + `//` 차단)와 `handleOAuthLogin`에서의 재검증이 그대로 재사용된다. 페이지에서 `encodeURIComponent(redirectTo)` 처리도 정확.
+- **loginAction redirect hidden input 활용이 깔끔**: 이메일 로그인 폼에 `<input type="hidden" name="redirect" value={redirectTo} />` 주입 → loginAction이 `formData.get("redirect")` 읽어서 `startsWith("/") && !startsWith("//")` 검증 후 이동. 외부 URL 주입 불가.
+- **브랜딩 일관성**: `sports` Material Symbol + "심판/경기원 플랫폼" 타이틀 + var(--color-primary) 배경 원형 로고로 두 페이지(로그인/가입) 헤더가 통일됨.
+- **상호 네비게이션 자연스러움**: 로그인↔가입 간 링크 양방향 존재, "일반(MyBDR) 로그인/가입으로 이동" 링크로 탈출구 제공, 비밀번호 찾기는 기존 `/forgot-password` 재사용.
+- **모바일 반응형**: 모달이 `items-end sm:items-center` + `rounded-t-[16px] sm:rounded-[16px]` + `animate-slide-up sm:animate-fade-in`으로 모바일은 바텀시트, 데스크톱은 중앙 카드로 전환. 기존 패턴 그대로.
+- **코딩 컨벤션 준수**: 하드코딩 색상 없음(카카오 #FEE500, 네이버 #03C75A, 구글 브랜드색만 예외 — 브랜드 가이드 준수 목적), Material Symbols 사용, lucide-react 미사용, `rounded-[4px]` 버튼 반경 일관.
+
+### 🔴 필수 수정
+
+없음.
+
+### 🟡 권장 수정 (다음 세션에 묶어서 처리 권장)
+
+1. **`(referee-public)/referee/login/page.tsx:37` — redirect 파라미터도 화이트리스트 검증 권장**
+   - 현재: `searchParams.get("redirect") ?? "/referee"` — URL `?redirect=/admin/danger` 같은 값이 들어오면 그대로 사용된다.
+   - 이슈: 최종적으로 loginAction/OAuth 콜백에서 `startsWith("/")` 검증은 되지만, 심판 전용 로그인 페이지 입구에서 `/referee`로 시작하는 경로만 허용하는 편이 의도에 더 부합한다. 현재 구조에서는 `/referee/login?redirect=/tournaments` 같은 URL로 심판 플랫폼 입구를 우회해 다른 영역으로 보낼 수 있다(실제 위험은 낮지만 "심판 전용 입구"라는 정체성이 흐려짐).
+   - 제안:
+     ```tsx
+     const rawRedirect = searchParams.get("redirect");
+     const redirectTo = rawRedirect && rawRedirect.startsWith("/referee") ? rawRedirect : "/referee";
+     ```
+
+2. **`(referee-public)/referee/signup/page.tsx:28` — redirect가 하드코딩 `/referee`**
+   - 현재: `const redirectTo = "/referee";` — signupAction은 redirect 파라미터를 읽지 않아 이메일 가입은 무조건 `/profile/complete`로 이동한다(기존 동작 유지, 문제 없음). 다만 OAuth 가입 시에는 `bdr_redirect` 쿠키로 /referee 복귀가 동작하므로 현 구현으로 충분.
+   - 제안(선택): 주석에 "이메일 가입은 signupAction이 /profile/complete로 하드 리다이렉트하므로 redirectTo는 OAuth 버튼에만 적용된다"는 설명을 추가하면 다음에 읽는 사람이 혼란이 없다.
+
+3. **`(referee-public)/referee/signup/page.tsx:62` — CSS 변수 fallback 문법 이중 중첩**
+   - 현재: `color: "var(--color-info, var(--color-primary))"` — CSS `var()` 함수의 fallback으로 또 다른 `var()`를 쓰는 것은 문법적으로 유효하지만, 정의된 `--color-info` 변수가 CLAUDE.md에 있으므로(#0079B9) fallback이 굳이 필요 없다.
+   - 제안: `color: "var(--color-info)"` 단순화. fallback이 꼭 필요하면 `"var(--color-info, #0079B9)"`처럼 hex로.
+
+4. **(referee-public)/layout.tsx의 존재 의미 재확인**
+   - 현재 pass-through `return <>{children}</>`만 수행한다. Next.js는 route group에서 layout.tsx가 없어도 동작하므로 **파일 자체가 선택사항**이다. 다만 "세션 가드 없는 하위 영역임"을 문서화하는 마커 역할을 하므로 유지해도 무방.
+   - 제안: 그대로 둬도 OK. 파일 최상단 주석이 이미 훌륭하게 의도를 설명함.
+
+### 🔒 보안/라우팅 회귀 체크 결과
+
+| 항목 | 결과 |
+|------|------|
+| 외부 URL redirect 차단 (`//evil.com`) | ✅ loginAction + OAuth route 모두 `startsWith("//")` 차단 |
+| 무한 리다이렉트 루프 (`/referee` → `/referee/login` → `/referee`?) | ✅ (referee-public) 그룹은 세션 가드 바깥이라 안전 |
+| `(web)/login` 기존 동작 | ✅ 파일 미변경, import 공유 없음 |
+| loginAction/signupAction 시그니처 | ✅ 미변경 |
+| (referee)/referee/layout.tsx 세션 가드 자체 | ✅ `getWebSession()` + `!session` 체크 유지, redirect 목적지만 `/login` → `/referee/login?redirect=/referee`로 변경 |
+| OAuth callback 의 bdr_redirect 쿠키 처리 | ✅ 기존 oauth.ts 로직 재사용, 페이지에서 쿠키 세팅 추가 안 함 |
+| JWT 쿠키(WEB_SESSION_COOKIE) 세팅 경로 | ✅ 기존 auth.ts 그대로 |
+
+### 수정 요청 (필수만)
+
+없음. 권장 4건은 다음 작업 묶음에서 처리하거나 생략 가능.
+
+---
+
+## 테스트 결과 (tester) — 2026-04-13 — 심판 전용 로그인/가입 페이지
+
+| 테스트 항목 | 결과 | 비고 |
+|-----------|------|------|
+| Test 1: tsc --noEmit 통과 | ✅ 통과 | 에러 0건 (EXIT=0) |
+| Test 2-1: (referee-public)/layout.tsx 존재 | ✅ 통과 | pass-through 레이아웃 |
+| Test 2-2: 인증 가드 없음 | ✅ 통과 | `<>{children}</>` 만 렌더 |
+| Test 3-1: "use client" 지시어 | ✅ 통과 | 1번 라인 |
+| Test 3-2: 심판 브랜딩 (휘슬 아이콘 `sports` + "심판/경기원 플랫폼") | ✅ 통과 | var(--color-primary) 배경 원형 아이콘 |
+| Test 3-3: OAuth 3버튼 (카카오/구글/네이버) | ✅ 통과 | 네이버는 "준비 중" 비활성 (기존 정책 동일) |
+| Test 3-4: OAuth href에 redirect=/referee 포함 | ✅ 통과 | encodeURIComponent("/referee") 주입 |
+| Test 3-5: 이메일 로그인 폼 (loginAction 사용) | ✅ 통과 | useActionState(loginAction) 모달 폼 |
+| Test 3-6: hidden input redirect=/referee | ✅ 통과 | `<input type="hidden" name="redirect" value={redirectTo}>` |
+| Test 3-7: "회원가입" 링크 → /referee/signup | ✅ 통과 | Link 2곳 모두 /referee/signup |
+| Test 3-8: "일반 로그인으로" 링크 → /login | ✅ 통과 | 하단 "일반(MyBDR) 로그인으로 이동" |
+| Test 4-1: 심판 브랜딩 (가입 페이지) | ✅ 통과 | "심판/경기원 가입" + sports 아이콘 |
+| Test 4-2: OAuth 3버튼 | ✅ 통과 | 동일 3버튼 구성 |
+| Test 4-3: 이메일 가입 폼 (signupAction 사용) | ✅ 통과 | useActionState(signupAction), email/nickname/password/password_confirm |
+| Test 4-4: "협회 관리자 등록 시 자동 자격 부여" 안내 | ✅ 통과 | info 아이콘 안내 박스 존재 |
+| Test 4-5: "로그인" 링크 → /referee/login | ✅ 통과 | "이미 계정이 있으신가요?" 하단 Link |
+| Test 5-1: (referee)/layout.tsx redirect 경로 변경 | ✅ 통과 | `/referee/login?redirect=...` 로 수정됨 |
+| Test 5-2: redirect 파라미터 포함 | ✅ 통과 | encodeURIComponent("/referee") |
+| Test 6-1: /referee/login은 (referee-public) 처리 | ✅ 통과 | (referee)/referee/login 존재 안 함 |
+| Test 6-2: /referee는 (referee) 처리 | ✅ 통과 | (referee)/referee/page.tsx 존재, 세션 가드 동작 |
+| Test 6-3: 라우팅 충돌 없음 | ✅ 통과 | login/signup은 public 그룹에만, 나머지는 보호 그룹에만 |
+| Test 7-1: var(--color-*) 사용 | ✅ 통과 | bg/text/border/primary 모두 CSS 변수 |
+| Test 7-2: Material Symbols 사용 | ✅ 통과 | sports/close/visibility/info 모두 material-symbols-outlined |
+| Test 7-3: border-radius 4px | ✅ 통과 | rounded-[4px] 전체 적용 (모달만 16px, 허용) |
+| Test 7-4: 브랜드색 예외 (카카오 #FEE500 / 네이버 #03C75A / 구글 멀티) | ✅ 통과 | 공식 브랜드 가이드 준수 |
+| Test 7-5: 반응형 (max-w-sm + 모달 sm:rounded) | ✅ 통과 | 모바일 bottom-sheet / 데스크톱 center-modal 전환 |
+
+📊 종합: 25개 중 25개 통과 / 0개 실패 → **전체 PASS**
+
+### 추가 확인
+- `loginAction`, `signupAction`, `devLoginAction` 모두 `src/app/actions/auth.ts`에 실존 (53/115/178행)
+- 리다이렉트 루프 위험 없음: `/referee/login`은 (referee-public) 그룹이라 세션 가드 바깥
+- 기존 `(web)/login`, `(web)/signup` 페이지는 그대로 유지됨 (일반 사용자 진입점)
+
+### 수정 요청
+없음. reviewer 권장 4건 외 tester 추가 발견 없음.
+
+---
+
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-13 | tester | 심판 전용 로그인/가입 페이지 검증 25건 | 전체 PASS |
+| 04-13 | reviewer | 심판 전용 로그인/가입 페이지 리뷰 (4파일) | APPROVE with comments (권장 4건) |
 | 04-13 | tester | 공고 마감 자동화 + 알림 시스템 검증 28건 | 전체 PASS |
 | 04-13 | reviewer | 공고 자동마감 + 알림 시스템 리뷰 (15파일) | APPROVE with comments (권장 7건) |
 | 04-13 | reviewer | 관리자 메뉴 조건부 표시 리뷰 (me/route + referee-shell) | APPROVE with comments (권장 4건) |
