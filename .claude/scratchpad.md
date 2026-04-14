@@ -190,6 +190,11 @@ reviewer 참고:
 - LeagueSchedule은 /live/[matchId]로 링크 (scoreboard로 이동)
 - 기존 분기(groupTeams/rounds)는 isLeague=false 경로로 그대로 유지
 
+#### 수정 이력
+| 회차 | 날짜 | 수정 내용 | 수정 파일 | 사유 |
+|------|------|----------|----------|------|
+| 1차 | 04-13 | 대진표 탭에서 LeagueSchedule 제거 + 4강 토너먼트 트리 영역 추가 (hasKnockout ? BracketView : 안내 카드), hasLeagueData 조건을 leagueTeams만으로 완화, LeagueMatch import 제거 | tournament-tabs.tsx | PM 요청: 경기 일정은 "일정" 탭에 이미 있으므로 대진표 탭은 "조편성(리그 순위)+4강 트리" 역할로 변경 |
+
 ## 수정 요청
 | 요청자 | 대상 파일 | 문제 설명 | 상태 |
 |--------|----------|----------|------|

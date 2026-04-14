@@ -30,8 +30,8 @@ import { TournamentDashboardHeader } from "../bracket/_components/tournament-das
 import { GroupStandings, type GroupTeam } from "../bracket/_components/group-standings";
 import { FinalsSidebar } from "../bracket/_components/finals-sidebar";
 // 풀리그 전용 컴포넌트 (round_robin/full_league/full_league_knockout)
+// 주의: 경기 일정은 "일정" 탭에서 이미 보여주므로 여기서는 LeagueSchedule을 쓰지 않는다.
 import { LeagueStandings, type LeagueTeam } from "../bracket/_components/league-standings";
-import { LeagueSchedule, type LeagueMatch } from "../bracket/_components/league-schedule";
 
 // 탭 타입 정의
 export type TabKey = "overview" | "schedule" | "standings" | "bracket" | "teams";
@@ -275,7 +275,8 @@ function BracketTabContent({ tournamentId }: { tournamentId: string }) {
   const rounds = d.rounds ?? [];
 
   // 포맷별 렌더링 분기
-  // - 풀리그(round_robin/full_league/full_league_knockout): 리그 순위표 + 경기 일정
+  // - 풀리그(round_robin/full_league/full_league_knockout): 리그 순위표(=조편성 역할) + 4강 토너먼트 트리
+  //   → 경기 일정은 "일정" 탭에 있으므로 대진표 탭에서 제거
   // - 조별+토너먼트(group_stage_knockout): 기존 GroupStandings + BracketView
   // - 순수 토너먼트(single_elimination 등): 기존 BracketView만
   const format: string | null = d.format ?? null;
@@ -284,30 +285,66 @@ function BracketTabContent({ tournamentId }: { tournamentId: string }) {
     format === "full_league" ||
     format === "full_league_knockout";
   const leagueTeams: LeagueTeam[] = d.leagueTeams ?? [];
-  const leagueMatches: LeagueMatch[] = d.leagueMatches ?? [];
 
-  // 풀리그 경기가 하나라도 있으면 리그 UI 표시 (경기 0개면 빈 상태)
-  const hasLeagueData = isLeague && (leagueTeams.length > 0 || leagueMatches.length > 0);
+  // 리그 순위표는 참가팀만 있어도 표시 (경기 0개여도 조편성 역할)
+  const hasLeagueData = isLeague && leagueTeams.length > 0;
+  // 토너먼트 경기(round_number + bracket_position 설정된 경기)가 이미 생성되어 있는지
+  const hasKnockout = rounds.length > 0;
 
   return (
     <div>
       {hasLeagueData ? (
         <>
-          {/* 풀리그: 리그 순위표 + 경기 일정 */}
+          {/* 리그 순위표: 풀리그 결과 = 4강 진출 조편성 기준 */}
           <LeagueStandings teams={leagueTeams} tournamentStatus={d.tournamentStatus} />
-          <LeagueSchedule matches={leagueMatches} />
-          {/* full_league_knockout: 리그 후 토너먼트가 이미 생성되어 있으면 함께 표시 */}
-          {rounds.length > 0 && (
-            <div className="mt-8">
-              <BracketView rounds={rounds} tournamentId={tournamentId} />
-            </div>
+
+          {/* 4강 토너먼트 영역: full_league_knockout 포맷에서만 노출
+              - 이미 토너먼트 경기가 생성되어 있으면 BracketView
+              - 아직 생성 전이면 "리그 종료 후 확정" 안내 카드 */}
+          {format === "full_league_knockout" && (
+            hasKnockout ? (
+              <section className="mt-8">
+                <h3
+                  className="mb-4 text-lg font-bold sm:text-xl"
+                  style={{ fontFamily: "var(--font-heading)" }}
+                >
+                  4강 토너먼트
+                </h3>
+                <div className="grid grid-cols-12 gap-4 sm:gap-8">
+                  <div className="col-span-12">
+                    <BracketView rounds={rounds} tournamentId={tournamentId} />
+                  </div>
+                </div>
+              </section>
+            ) : (
+              <section className="mt-8">
+                <div
+                  className="rounded-lg border p-6 text-center"
+                  style={{
+                    borderColor: "var(--color-border)",
+                    backgroundColor: "var(--color-surface)",
+                  }}
+                >
+                  <span
+                    className="material-symbols-outlined mb-2 text-4xl"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    account_tree
+                  </span>
+                  <h3 className="mb-2 text-base font-bold">토너먼트 대진</h3>
+                  <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
+                    리그 종료 후 1-4위, 2-3위가 맞붙는 4강이 확정됩니다.
+                  </p>
+                </div>
+              </section>
+            )
           )}
         </>
       ) : (
         <>
           {/* 기존 분기 유지 (조별+토너먼트 / 순수 토너먼트 / 빈 상태) */}
           {groupTeams.length > 0 && <GroupStandings teams={groupTeams} />}
-          {rounds.length > 0 ? (
+          {hasKnockout ? (
             <div className="grid grid-cols-12 gap-8">
               <div className="col-span-12 lg:col-span-8">
                 <BracketView rounds={rounds} tournamentId={tournamentId} />
