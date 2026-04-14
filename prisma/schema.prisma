@@ -9,67 +9,67 @@ datasource db {
 }
 
 model User {
-  id                                                                        BigInt                       @id @default(autoincrement())
-  email                                                                     String                       @unique(map: "index_users_on_email") @db.VarChar
-  passwordDigest                                                            String                       @map("password_digest") @db.VarChar
-  name                                                                      String?                      @db.VarChar
-  nickname                                                                  String?                      @db.VarChar
-  phone                                                                     String?                      @db.VarChar
-  profile_image                                                             String?                      @db.VarChar
-  position                                                                  String?                      @db.VarChar
+  id                                                                        BigInt                        @id @default(autoincrement())
+  email                                                                     String                        @unique(map: "index_users_on_email") @db.VarChar
+  passwordDigest                                                            String                        @map("password_digest") @db.VarChar
+  name                                                                      String?                       @db.VarChar
+  nickname                                                                  String?                       @db.VarChar
+  phone                                                                     String?                       @db.VarChar
+  profile_image                                                             String?                       @db.VarChar
+  position                                                                  String?                       @db.VarChar
   height                                                                    Int?
   weight                                                                    Int?
-  birth_date                                                                DateTime?                    @db.Date
-  city                                                                      String?                      @db.VarChar
-  district                                                                  String?                      @db.VarChar
+  birth_date                                                                DateTime?                     @db.Date
+  city                                                                      String?                       @db.VarChar
+  district                                                                  String?                       @db.VarChar
   bio                                                                       String?
-  membershipType                                                            Int                          @default(0) @map("membership_type")
-  subscription_started_at                                                   DateTime?                    @db.Timestamp(6)
-  subscription_expires_at                                                   DateTime?                    @db.Timestamp(6)
-  subscription_status                                                       String?                      @default("inactive") @db.VarChar
-  bank_name                                                                 String?                      @db.VarChar
-  bank_code                                                                 String?                      @db.VarChar
-  account_number                                                            String?                      @db.VarChar
-  account_holder                                                            String?                      @db.VarChar
-  toss_id                                                                   String?                      @db.VarChar
-  isAdmin                                                                   Boolean?                     @default(false) @map("is_admin")
-  status                                                                    String?                      @default("active") @db.VarChar
-  suspended_at                                                              DateTime?                    @db.Timestamp(6)
-  evaluation_rating                                                         Decimal?                     @default(0.0) @db.Decimal(3, 2)
-  total_games_hosted                                                        Int?                         @default(0)
-  total_games_participated                                                  Int?                         @default(0)
-  last_login_at                                                             DateTime?                    @db.Timestamp(6)
-  createdAt                                                                 DateTime                     @map("created_at") @db.Timestamp(6) @default(now())
-  updatedAt                                                                 DateTime                     @updatedAt @map("updated_at") @db.Timestamp(6)
-  public_id                                                                 String                       @unique(map: "index_users_on_public_id") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  provider                                                                  String?                      @db.VarChar
-  uid                                                                       String?                      @db.VarChar
-  oauth_token                                                               String?                      @db.VarChar
-  oauth_expires_at                                                          DateTime?                    @db.Timestamp(6)
-  profile_image_url                                                         String?                      @db.VarChar
-  prefer_admin_mode                                                         Boolean?                     @default(false)
-  tutorial_completed_teams                                                  Boolean                      @default(false)
-  tutorial_completed_tournaments                                            Boolean                      @default(false)
-  tutorial_completed_games                                                  Boolean                      @default(false)
-  tutorial_completed_community                                              Boolean                      @default(false)
-  preferred_divisions                                                       Json                         @default("[]")
-  preferred_board_categories                                                Json                         @default("[]")
-  preferred_game_types                                                      Json                         @default("[]")
+  membershipType                                                            Int                           @default(0) @map("membership_type")
+  subscription_started_at                                                   DateTime?                     @db.Timestamp(6)
+  subscription_expires_at                                                   DateTime?                     @db.Timestamp(6)
+  subscription_status                                                       String?                       @default("inactive") @db.VarChar
+  bank_name                                                                 String?                       @db.VarChar
+  bank_code                                                                 String?                       @db.VarChar
+  account_number                                                            String?                       @db.VarChar
+  account_holder                                                            String?                       @db.VarChar
+  toss_id                                                                   String?                       @db.VarChar
+  isAdmin                                                                   Boolean?                      @default(false) @map("is_admin")
+  status                                                                    String?                       @default("active") @db.VarChar
+  suspended_at                                                              DateTime?                     @db.Timestamp(6)
+  evaluation_rating                                                         Decimal?                      @default(0.0) @db.Decimal(3, 2)
+  total_games_hosted                                                        Int?                          @default(0)
+  total_games_participated                                                  Int?                          @default(0)
+  last_login_at                                                             DateTime?                     @db.Timestamp(6)
+  createdAt                                                                 DateTime                      @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt                                                                 DateTime                      @updatedAt @map("updated_at") @db.Timestamp(6)
+  public_id                                                                 String                        @unique(map: "index_users_on_public_id") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider                                                                  String?                       @db.VarChar
+  uid                                                                       String?                       @db.VarChar
+  oauth_token                                                               String?                       @db.VarChar
+  oauth_expires_at                                                          DateTime?                     @db.Timestamp(6)
+  profile_image_url                                                         String?                       @db.VarChar
+  prefer_admin_mode                                                         Boolean?                      @default(false)
+  tutorial_completed_teams                                                  Boolean                       @default(false)
+  tutorial_completed_tournaments                                            Boolean                       @default(false)
+  tutorial_completed_games                                                  Boolean                       @default(false)
+  tutorial_completed_community                                              Boolean                       @default(false)
+  preferred_divisions                                                       Json                          @default("[]")
+  preferred_board_categories                                                Json                          @default("[]")
+  preferred_game_types                                                      Json                          @default("[]")
   // 맞춤 지역/요일/시간대/실력 (JSON 배열로 저장)
-  preferred_regions                                                         Json                         @default("[]")
-  preferred_days                                                            Json                         @default("[]")
-  preferred_time_slots                                                      Json                         @default("[]")
-  preferred_skill_levels                                                    Json                         @default("[]")
+  preferred_regions                                                         Json                          @default("[]")
+  preferred_days                                                            Json                          @default("[]")
+  preferred_time_slots                                                      Json                          @default("[]")
+  preferred_skill_levels                                                    Json                          @default("[]")
   // 맞춤 성별 필터 (["male","female","mixed"] 등의 JSON 배열)
-  preferred_gender                                                          Json                         @default("[]") @map("preferred_gender")
+  preferred_gender                                                          Json                          @default("[]") @map("preferred_gender")
   // 숨긴 메뉴 slug 배열 (예: ["rankings", "organizations"]) — 사이드/슬라이드 메뉴에서 숨김 처리
-  hidden_menus                                                              Json                         @default("[]") @map("hidden_menus")
+  hidden_menus                                                              Json                          @default("[]") @map("hidden_menus")
   // 맞춤 보기 토글 ON/OFF 상태를 DB에 저장 (기본 false)
   // SQL: ALTER TABLE users ADD COLUMN prefer_filter_enabled BOOLEAN NOT NULL DEFAULT false;
-  prefer_filter_enabled                                                     Boolean                      @default(false)
-  onboarding_step                                                           Int                          @default(0)
-  profile_completed                                                         Boolean                      @default(false)
-  profileReminderShownAt                                                    DateTime?                    @map("profile_reminder_shown_at") @db.Timestamp(6)
+  prefer_filter_enabled                                                     Boolean                       @default(false)
+  onboarding_step                                                           Int                           @default(0)
+  profile_completed                                                         Boolean                       @default(false)
+  profileReminderShownAt                                                    DateTime?                     @map("profile_reminder_shown_at") @db.Timestamp(6)
   admin_logs                                                                admin_logs[]
   board_favorites                                                           board_favorites[]
   comments                                                                  comments[]
@@ -84,35 +84,35 @@ model User {
   game_templates                                                            game_templates[]
   games                                                                     games[]
   marketplace_items                                                         marketplace_items[]
-  marketplace_phone_requests_marketplace_phone_requests_seller_idTousers    marketplace_phone_requests[] @relation("marketplace_phone_requests_seller_idTousers")
-  marketplace_phone_requests_marketplace_phone_requests_requester_idTousers marketplace_phone_requests[] @relation("marketplace_phone_requests_requester_idTousers")
+  marketplace_phone_requests_marketplace_phone_requests_seller_idTousers    marketplace_phone_requests[]  @relation("marketplace_phone_requests_seller_idTousers")
+  marketplace_phone_requests_marketplace_phone_requests_requester_idTousers marketplace_phone_requests[]  @relation("marketplace_phone_requests_requester_idTousers")
   marketplace_wishlists                                                     marketplace_wishlists[]
   memory_cards                                                              memory_cards[]
   notifications                                                             notifications[]
   payments                                                                  payments[]
   posts                                                                     posts[]
-  suggestions_suggestions_responded_by_idTousers                            suggestions[]                @relation("suggestions_responded_by_idTousers")
-  suggestions_suggestions_assigned_to_idTousers                             suggestions[]                @relation("suggestions_assigned_to_idTousers")
-  suggestions_suggestions_user_idTousers                                    suggestions[]                @relation("suggestions_user_idTousers")
-  team_join_requests_team_join_requests_user_idTousers                      team_join_requests[]         @relation("team_join_requests_user_idTousers")
-  team_join_requests_team_join_requests_processed_by_idTousers              team_join_requests[]         @relation("team_join_requests_processed_by_idTousers")
-  team_member_histories_team_member_histories_user_idTousers                team_member_histories[]      @relation("team_member_histories_user_idTousers")
-  team_member_histories_team_member_histories_processed_by_idTousers        team_member_histories[]      @relation("team_member_histories_processed_by_idTousers")
+  suggestions_suggestions_responded_by_idTousers                            suggestions[]                 @relation("suggestions_responded_by_idTousers")
+  suggestions_suggestions_assigned_to_idTousers                             suggestions[]                 @relation("suggestions_assigned_to_idTousers")
+  suggestions_suggestions_user_idTousers                                    suggestions[]                 @relation("suggestions_user_idTousers")
+  team_join_requests_team_join_requests_user_idTousers                      team_join_requests[]          @relation("team_join_requests_user_idTousers")
+  team_join_requests_team_join_requests_processed_by_idTousers              team_join_requests[]          @relation("team_join_requests_processed_by_idTousers")
+  team_member_histories_team_member_histories_user_idTousers                team_member_histories[]       @relation("team_member_histories_user_idTousers")
+  team_member_histories_team_member_histories_processed_by_idTousers        team_member_histories[]       @relation("team_member_histories_processed_by_idTousers")
   teamMembers                                                               TeamMember[]
-  teams_teams_manager_idTousers                                             Team[]                       @relation("teams_manager_idTousers")
-  teams_teams_captain_idTousers                                             Team[]                       @relation("teams_captain_idTousers")
+  teams_teams_manager_idTousers                                             Team[]                        @relation("teams_manager_idTousers")
+  teams_teams_captain_idTousers                                             Team[]                        @relation("teams_captain_idTousers")
   tournamentAdminMembers                                                    TournamentAdminMember[]
   tournament_matches                                                        TournamentMatch[]
   tournament_series                                                         tournament_series[]
   tournament_team_players                                                   TournamentTeamPlayer[]
   tournament_teams                                                          TournamentTeam[]
-  tournaments_tournaments_organizer_idTousers                               Tournament[]                 @relation("tournaments_organizer_idTousers")
-  tournaments_tournaments_mvp_player_idTousers                              Tournament[]                 @relation("tournaments_mvp_player_idTousers")
+  tournaments_tournaments_organizer_idTousers                               Tournament[]                  @relation("tournaments_organizer_idTousers")
+  tournaments_tournaments_mvp_player_idTousers                              Tournament[]                  @relation("tournaments_mvp_player_idTousers")
   user_favorite_courts                                                      user_favorite_courts[]
   user_subscriptions                                                        user_subscriptions[]
   bracket_versions_created                                                  tournament_bracket_versions[] @relation("bracket_version_creator")
   bracket_versions_approved                                                 tournament_bracket_versions[] @relation("bracket_version_approver")
-  quickMenuItems                                                            String[]                     @default(["find_game", "my_team", "tournaments", "pickup"]) @map("quick_menu_items")
+  quickMenuItems                                                            String[]                      @default(["find_game", "my_team", "tournaments", "pickup"]) @map("quick_menu_items")
   recorderAssignments                                                       tournament_recorders[]        @relation("TournamentRecorder")
   recorderAssigned                                                          tournament_recorders[]        @relation("TournamentRecorderAssigner")
   match_events_recorded                                                     match_events[]                @relation("MatchEventRecorder")
@@ -125,35 +125,38 @@ model User {
   court_edit_suggestions_submitted                                          court_edit_suggestions[]      @relation("suggestion_submitter")
   court_edit_suggestions_reviewed                                           court_edit_suggestions[]      @relation("suggestion_reviewer")
   // 게이미피케이션: XP/레벨/스트릭 (Phase 4)
-  xp                                                                        Int                          @default(0)
-  level                                                                     Int                          @default(1)
-  streak_count                                                              Int                          @default(0)
-  streak_last_date                                                          DateTime?                    @db.Date
+  xp                                                                        Int                           @default(0)
+  level                                                                     Int                           @default(1)
+  streak_count                                                              Int                           @default(0)
+  streak_last_date                                                          DateTime?                     @db.Date
   user_badges                                                               user_badges[]
   // Phase 5: 픽업게임 — 방장 / 참가자 2가지 관계
-  pickup_games_hosted                                                       pickup_games[]               @relation("pickup_host")
-  pickup_participations                                                     pickup_participants[]        @relation("pickup_participant")
+  pickup_games_hosted                                                       pickup_games[]                @relation("pickup_host")
+  pickup_participations                                                     pickup_participants[]         @relation("pickup_participant")
   // 코트 앰배서더: 해당 유저가 앰배서더로 활동하는 코트들
-  court_ambassadors                                                         court_ambassadors[]          @relation("ambassador_user")
+  court_ambassadors                                                         court_ambassadors[]           @relation("ambassador_user")
   // 3x3 이벤트: 주최자 / 선수 참가
-  court_events_organized                                                    court_events[]               @relation("event_organizer")
-  court_event_players                                                       court_event_players[]        @relation("event_player")
+  court_events_organized                                                    court_events[]                @relation("event_organizer")
+  court_event_players                                                       court_event_players[]         @relation("event_player")
   // 알림 설정: 유형별 ON/OFF (기본 전체 ON)
-  notification_settings                                                     Json?                        @default("{}")
+  notification_settings                                                     Json?                         @default("{}")
   // 웹 푸시 구독: 유저가 등록한 브라우저 푸시 구독 목록
   push_subscriptions                                                        push_subscriptions[]
   // 비밀번호 재설정: 토큰 + 만료시간
-  reset_token                                                               String?              @db.VarChar
-  reset_token_expires                                                       DateTime?            @db.Timestamp(6)
+  reset_token                                                               String?                       @db.VarChar
+  reset_token_expires                                                       DateTime?                     @db.Timestamp(6)
   // 관리자 세분화 역할: null=일반, "super_admin"/"org_admin"/"content_admin" 등
   // 기존 isAdmin=true → super_admin과 동일하게 취급 (호환성 유지)
-  admin_role                                                                String?              @db.VarChar
+  admin_role                                                                String?                       @db.VarChar
   // 단체(Organization) 관계: 소유한 단체 / 멤버로 소속된 단체
-  organizations_owned                                                       organizations[]      @relation("org_owner")
+  organizations_owned                                                       organizations[]               @relation("org_owner")
   organization_members                                                      organization_members[]
   // 광고 파트너: 소유한 파트너사 / 파트너 멤버
-  partners_owned                                                            partners[]           @relation("partner_owner")
+  partners_owned                                                            partners[]                    @relation("partner_owner")
   partner_members                                                           partner_members[]
+
+  // 심판 플랫폼: 1:1 (User 하나당 Referee 0~1). back-relation 1줄만 추가.
+  referee Referee?
 
   @@unique([provider, uid], map: "index_users_on_provider_and_uid")
   @@index([createdAt], map: "index_users_on_created_at")
@@ -165,71 +168,71 @@ model User {
 }
 
 model Tournament {
-  id                                     String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                                     String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   series_id                              BigInt?
-  organizerId                            BigInt                  @map("organizer_id")
-  name                                   String                  @db.VarChar
+  organizerId                            BigInt                        @map("organizer_id")
+  name                                   String                        @db.VarChar
   edition_number                         Int?
   description                            String?
-  logo_url                               String?                 @db.VarChar
-  banner_url                             String?                 @db.VarChar
-  court_bg_url                           String?                 @db.VarChar
-  registration_start_at                  DateTime?               @db.Timestamp(6)
-  registration_end_at                    DateTime?               @db.Timestamp(6)
-  startDate                              DateTime?               @map("start_date") @db.Timestamp(6)
-  endDate                                DateTime?               @map("end_date") @db.Timestamp(6)
-  format                                 String?                 @default("single_elimination") @db.VarChar
-  maxTeams                               Int?                    @default(16) @map("max_teams")
-  min_teams                              Int?                    @default(4)
-  team_size                              Int?                    @default(5)
-  roster_min                             Int?                    @default(5)
-  roster_max                             Int?                    @default(12)
-  entry_fee                              Decimal?                @default(0.0) @db.Decimal(10, 0)
+  logo_url                               String?                       @db.VarChar
+  banner_url                             String?                       @db.VarChar
+  court_bg_url                           String?                       @db.VarChar
+  registration_start_at                  DateTime?                     @db.Timestamp(6)
+  registration_end_at                    DateTime?                     @db.Timestamp(6)
+  startDate                              DateTime?                     @map("start_date") @db.Timestamp(6)
+  endDate                                DateTime?                     @map("end_date") @db.Timestamp(6)
+  format                                 String?                       @default("single_elimination") @db.VarChar
+  maxTeams                               Int?                          @default(16) @map("max_teams")
+  min_teams                              Int?                          @default(4)
+  team_size                              Int?                          @default(5)
+  roster_min                             Int?                          @default(5)
+  roster_max                             Int?                          @default(12)
+  entry_fee                              Decimal?                      @default(0.0) @db.Decimal(10, 0)
   prize_info                             String?
-  prize_distribution                     Json?                   @default("{}")
+  prize_distribution                     Json?                         @default("{}")
   rules                                  String?
-  game_rules                             Json?                   @default("{}")
+  game_rules                             Json?                         @default("{}")
   venue_id                               BigInt?
-  venue_name                             String?                 @db.VarChar
-  venue_address                          String?                 @db.VarChar
-  city                                   String?                 @db.VarChar
-  district                               String?                 @db.VarChar
+  venue_name                             String?                       @db.VarChar
+  venue_address                          String?                       @db.VarChar
+  city                                   String?                       @db.VarChar
+  district                               String?                       @db.VarChar
   // 대회 관리 확장 필드 (BDR-join 이식)
-  organizer                              String?                 @db.VarChar
-  host                                   String?                 @db.VarChar
-  sponsors                               String?                 @db.VarChar
-  game_time                              String?                 @db.VarChar
-  game_ball                              String?                 @db.VarChar
+  organizer                              String?                       @db.VarChar
+  host                                   String?                       @db.VarChar
+  sponsors                               String?                       @db.VarChar
+  game_time                              String?                       @db.VarChar
+  game_ball                              String?                       @db.VarChar
   game_method                            String?
   places                                 Json?
-  gender                                 String?                 @db.VarChar
-  design_template                        String?                 @db.VarChar
-  status                                 String?                 @default("draft") @db.VarChar
-  teams_count                            Int?                    @default(0)
-  matches_count                          Int?                    @default(0)
-  views_count                            Int?                    @default(0)
-  settings                               Json?                   @default("{}")
-  author_nickname                        String?                 @db.VarChar(255)
-  is_public                              Boolean?                @default(true)
-  auto_approve_teams                     Boolean?                @default(false)
+  gender                                 String?                       @db.VarChar
+  design_template                        String?                       @db.VarChar
+  status                                 String?                       @default("draft") @db.VarChar
+  teams_count                            Int?                          @default(0)
+  matches_count                          Int?                          @default(0)
+  views_count                            Int?                          @default(0)
+  settings                               Json?                         @default("{}")
+  author_nickname                        String?                       @db.VarChar(255)
+  is_public                              Boolean?                      @default(true)
+  auto_approve_teams                     Boolean?                      @default(false)
   champion_team_id                       BigInt?
   mvp_player_id                          BigInt?
-  divisions                              Json                    @default("[]")
-  division_tiers                         Json                    @default("[]")
-  categories                             Json?                   @default("{}")
-  div_caps                               Json?                   @default("{}")
-  div_fees                               Json?                   @default("{}")
-  allow_waiting_list                     Boolean?                @default(false)
+  divisions                              Json                          @default("[]")
+  division_tiers                         Json                          @default("[]")
+  categories                             Json?                         @default("{}")
+  div_caps                               Json?                         @default("{}")
+  div_fees                               Json?                         @default("{}")
+  allow_waiting_list                     Boolean?                      @default(false)
   waiting_list_cap                       Int?
   fee_notes                              String?
-  bank_name                              String?                 @db.VarChar
-  bank_account                           String?                 @db.VarChar
-  bank_holder                            String?                 @db.VarChar
-  createdAt                              DateTime                @map("created_at") @db.Timestamp(6) @default(now())
-  updatedAt                              DateTime                @updatedAt @map("updated_at") @db.Timestamp(6)
-  primary_color                          String?                 @db.VarChar
-  secondary_color                        String?                 @db.VarChar
-  apiToken                               String?                 @unique(map: "index_tournaments_on_api_token") @map("api_token") @db.VarChar
+  bank_name                              String?                       @db.VarChar
+  bank_account                           String?                       @db.VarChar
+  bank_holder                            String?                       @db.VarChar
+  createdAt                              DateTime                      @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt                              DateTime                      @updatedAt @map("updated_at") @db.Timestamp(6)
+  primary_color                          String?                       @db.VarChar
+  secondary_color                        String?                       @db.VarChar
+  apiToken                               String?                       @unique(map: "index_tournaments_on_api_token") @map("api_token") @db.VarChar
   adminMembers                           TournamentAdminMember[]
   tournamentMatches                      TournamentMatch[]
   tournamentSite                         TournamentSite[]
@@ -237,11 +240,11 @@ model Tournament {
   siteRegistrations                      site_registrations[]
   tournamentTeams                        TournamentTeam[]
   tournament_bracket_versions            tournament_bracket_versions[]
-  teams                                  Team?                   @relation(fields: [champion_team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_18732ad2a6")
-  tournament_series                      tournament_series?      @relation(fields: [series_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_228d987a3d")
-  courts                                 courts?                 @relation(fields: [venue_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_4ed1e7dadb")
-  users_tournaments_organizer_idTousers  User                    @relation("tournaments_organizer_idTousers", fields: [organizerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_5037ef73fd")
-  users_tournaments_mvp_player_idTousers User?                   @relation("tournaments_mvp_player_idTousers", fields: [mvp_player_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_85db3c3f6e")
+  teams                                  Team?                         @relation(fields: [champion_team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_18732ad2a6")
+  tournament_series                      tournament_series?            @relation(fields: [series_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_228d987a3d")
+  courts                                 courts?                       @relation(fields: [venue_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_4ed1e7dadb")
+  users_tournaments_organizer_idTousers  User                          @relation("tournaments_organizer_idTousers", fields: [organizerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_5037ef73fd")
+  users_tournaments_mvp_player_idTousers User?                         @relation("tournaments_mvp_player_idTousers", fields: [mvp_player_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_85db3c3f6e")
 
   @@index([champion_team_id], map: "index_tournaments_on_champion_team_id")
   @@index([divisions], map: "index_tournaments_on_divisions", type: Gin)
@@ -264,7 +267,7 @@ model TournamentAdminMember {
   role         String     @default("admin") @db.VarChar
   permissions  Json?      @default("{}")
   isActive     Boolean?   @default(true) @map("is_active")
-  createdAt    DateTime   @map("created_at") @db.Timestamp(6) @default(now())
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamp(6)
   tournamentId String     @map("tournament_id") @db.Uuid
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_3f7d9c2d9b")
@@ -280,6 +283,10 @@ model Team {
   id                                                              BigInt                  @id @default(autoincrement())
   uuid                                                            String                  @unique(map: "index_teams_on_uuid") @db.VarChar
   name                                                            String                  @db.VarChar
+  // 신규: 영문 팀명 (선택). 국제 대회/영문 검색 매칭용. null 허용, unique 아님.
+  name_en                                                         String?                 @db.VarChar
+  // 신규: 대표 언어 코드 ("ko" | "en"). UI에서 어느 언어를 상단에 크게 보여줄지 결정. 기본값 "ko".
+  name_primary                                                    String?                 @default("ko") @db.VarChar(10)
   slug                                                            String?                 @unique(map: "index_teams_on_slug") @db.VarChar
   description                                                     String?
   logoUrl                                                         String?                 @map("logo_url") @db.VarChar
@@ -302,7 +309,7 @@ model Team {
   tournaments_count                                               Int?                    @default(0)
   primaryColor                                                    String?                 @default("#FFFFFF") @map("primary_color") @db.VarChar
   secondaryColor                                                  String?                 @default("#000000") @map("secondary_color") @db.VarChar
-  createdAt                                                       DateTime                @map("created_at") @db.Timestamp(6) @default(now())
+  createdAt                                                       DateTime                @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt                                                       DateTime                @updatedAt @map("updated_at") @db.Timestamp(6)
   team_code                                                       String?                 @unique(map: "index_teams_on_team_code") @db.VarChar
   auto_accept_members                                             Boolean                 @default(false)
@@ -336,7 +343,7 @@ model TeamMember {
   status       String?   @default("active") @db.VarChar
   joined_at    DateTime? @db.Timestamp(6)
   left_at      DateTime? @db.Timestamp(6)
-  createdAt    DateTime  @map("created_at") @db.Timestamp(6) @default(now())
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
   team         Team      @relation(fields: [teamId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_194b5b076d")
   user         User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_9ec2d5e75e")
@@ -375,7 +382,7 @@ model TournamentTeam {
   points_against                                                         Int?                   @default(0)
   point_difference                                                       Int?                   @default(0)
   final_rank                                                             Int?
-  createdAt                                                              DateTime               @map("created_at") @db.Timestamp(6) @default(now())
+  createdAt                                                              DateTime               @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt                                                              DateTime               @updatedAt @map("updated_at") @db.Timestamp(6)
   tournamentId                                                           String                 @map("tournament_id") @db.Uuid
   division                                                               String?                @db.VarChar
@@ -423,7 +430,7 @@ model TournamentTeamPlayer {
   avg_points       Decimal?          @default(0.0) @db.Decimal(5, 1)
   avg_rebounds     Decimal?          @default(0.0) @db.Decimal(5, 1)
   avg_assists      Decimal?          @default(0.0) @db.Decimal(5, 1)
-  createdAt        DateTime          @map("created_at") @db.Timestamp(6) @default(now())
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamp(6)
   playerStats      MatchPlayerStat[]
   play_by_plays    play_by_plays[]
@@ -464,7 +471,7 @@ model TournamentMatch {
   mvp_player_id                                                        BigInt?
   notes                                                                String?
   settings                                                             Json?             @default("{}")
-  createdAt                                                            DateTime          @map("created_at") @db.Timestamp(6) @default(now())
+  createdAt                                                            DateTime          @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt                                                            DateTime          @updatedAt @map("updated_at") @db.Timestamp(6)
   tournamentId                                                         String            @map("tournament_id") @db.Uuid
   venue_name                                                           String?           @db.VarChar
@@ -495,17 +502,17 @@ model TournamentMatch {
 }
 
 model tournament_bracket_versions {
-  id             BigInt       @id @default(autoincrement())
-  tournament_id  String       @db.Uuid
+  id             BigInt     @id @default(autoincrement())
+  tournament_id  String     @db.Uuid
   version_number Int
-  created_at     DateTime     @default(now()) @db.Timestamp(6)
+  created_at     DateTime   @default(now()) @db.Timestamp(6)
   created_by     BigInt?
   approved_by    BigInt?
-  is_active      Boolean?     @default(false)
+  is_active      Boolean?   @default(false)
   notes          String?
-  tournament     Tournament   @relation(fields: [tournament_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  creator        User?        @relation("bracket_version_creator", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  approver       User?        @relation("bracket_version_approver", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tournament     Tournament @relation(fields: [tournament_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  creator        User?      @relation("bracket_version_creator", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  approver       User?      @relation("bracket_version_approver", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([tournament_id], map: "idx_tournament_bracket_versions_tournament_id")
   @@index([tournament_id, is_active], map: "idx_tournament_bracket_versions_is_active")
@@ -549,7 +556,7 @@ model MatchPlayerStat {
   fouled_out               Boolean?             @default(false)
   ejected                  Boolean?             @default(false)
   notes                    String?
-  createdAt                DateTime             @map("created_at") @db.Timestamp(6) @default(now())
+  createdAt                DateTime             @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt                DateTime             @updatedAt @map("updated_at") @db.Timestamp(6)
   tournamentMatch          TournamentMatch      @relation(fields: [tournamentMatchId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_c638e8cafa")
   tournamentTeamPlayer     TournamentTeamPlayer @relation(fields: [tournamentTeamPlayerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_e96e36662a")
@@ -584,7 +591,7 @@ model TournamentSite {
   meta_title       String?       @db.VarChar
   meta_description String?
   og_image_url     String?       @db.VarChar
-  createdAt        DateTime      @map("created_at") @db.Timestamp(6) @default(now())
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamp(6)
   tournamentId     String        @map("tournament_id") @db.Uuid
   site_pages       site_pages[]
@@ -611,7 +618,7 @@ model SiteTemplate {
   is_premium      Boolean?         @default(false)
   is_active       Boolean?         @default(true)
   usage_count     Int?             @default(0)
-  createdAt       DateTime         @map("created_at") @db.Timestamp(6) @default(now())
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamp(6)
   tournamentSites TournamentSite[]
 
@@ -751,24 +758,24 @@ model cafe_posts {
 }
 
 model comments {
-  id               BigInt     @id @default(autoincrement())
-  commentable_type String     @db.VarChar
+  id               BigInt          @id @default(autoincrement())
+  commentable_type String          @db.VarChar
   commentable_id   BigInt
   user_id          BigInt
   parent_id        BigInt?
   content          String
-  depth            Int        @default(0)
-  likes_count      Int        @default(0)
-  replies_count    Int        @default(0)
-  status           String     @default("published") @db.VarChar
-  is_author        Boolean    @default(false)
-  metadata         Json?      @default("{}")
-  created_at       DateTime   @db.Timestamp(6)
-  updated_at       DateTime   @db.Timestamp(6)
-  public_id        String     @unique(map: "index_comments_on_public_id") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  users            User       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_03de2dc08c")
-  comments         comments?  @relation("commentsTocomments", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_31554e7034")
-  other_comments   comments[] @relation("commentsTocomments")
+  depth            Int             @default(0)
+  likes_count      Int             @default(0)
+  replies_count    Int             @default(0)
+  status           String          @default("published") @db.VarChar
+  is_author        Boolean         @default(false)
+  metadata         Json?           @default("{}")
+  created_at       DateTime        @db.Timestamp(6)
+  updated_at       DateTime        @db.Timestamp(6)
+  public_id        String          @unique(map: "index_comments_on_public_id") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  users            User            @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_03de2dc08c")
+  comments         comments?       @relation("commentsTocomments", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_31554e7034")
+  other_comments   comments[]      @relation("commentsTocomments")
   comment_likes    comment_likes[]
 
   @@index([commentable_type, commentable_id], map: "index_comments_on_commentable")
@@ -783,31 +790,31 @@ model comments {
 }
 
 model community_posts {
-  id               BigInt   @id @default(autoincrement())
-  user_id          BigInt
-  title            String   @db.VarChar
-  content          String?
-  category         String?  @default("general") @db.VarChar
-  view_count       Int?     @default(0)
-  status           String?  @default("published") @db.VarChar
-  created_at       DateTime @db.Timestamp(6)
-  updated_at       DateTime @db.Timestamp(6)
-  comments_count   Int      @default(0)
-  public_id        String   @unique(map: "index_community_posts_on_public_id") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  team_id          BigInt?
-  latitude         Decimal? @db.Decimal(10, 7)
-  longitude        Decimal? @db.Decimal(10, 7)
-  location_name    String?  @db.VarChar
-  location_address String?  @db.VarChar
-  price            Int?     @default(0)
-  negotiable       Boolean? @default(false)
-  share_contact    Boolean? @default(false)
-  trade_status     String?  @default("available") @db.VarChar
-  images           Json?                                        // 이미지 URL 배열 + 카페 메타 (cafe_source_id, cafe_author, cafe_comments)
-  likes_count      Int      @default(0)
-  author_nickname  String?  @db.VarChar(255)                     // 카페 크롤링 글쓴이 닉네임
-  users            User     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_0b2d1de074")
-  teams            Team?    @relation(fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_e4a581c07d")
+  id                   BigInt                 @id @default(autoincrement())
+  user_id              BigInt
+  title                String                 @db.VarChar
+  content              String?
+  category             String?                @default("general") @db.VarChar
+  view_count           Int?                   @default(0)
+  status               String?                @default("published") @db.VarChar
+  created_at           DateTime               @db.Timestamp(6)
+  updated_at           DateTime               @db.Timestamp(6)
+  comments_count       Int                    @default(0)
+  public_id            String                 @unique(map: "index_community_posts_on_public_id") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  team_id              BigInt?
+  latitude             Decimal?               @db.Decimal(10, 7)
+  longitude            Decimal?               @db.Decimal(10, 7)
+  location_name        String?                @db.VarChar
+  location_address     String?                @db.VarChar
+  price                Int?                   @default(0)
+  negotiable           Boolean?               @default(false)
+  share_contact        Boolean?               @default(false)
+  trade_status         String?                @default("available") @db.VarChar
+  images               Json? // 이미지 URL 배열 + 카페 메타 (cafe_source_id, cafe_author, cafe_comments)
+  likes_count          Int                    @default(0)
+  author_nickname      String?                @db.VarChar(255) // 카페 크롤링 글쓴이 닉네임
+  users                User                   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_0b2d1de074")
+  teams                Team?                  @relation(fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_e4a581c07d")
   community_post_likes community_post_likes[]
 
   @@index([category], map: "index_community_posts_on_category")
@@ -820,12 +827,12 @@ model community_posts {
 
 // 커뮤니티 게시글 좋아요 테이블 (유저당 게시글 1회만 좋아요 가능)
 model community_post_likes {
-  id                BigInt           @id @default(autoincrement())
+  id                BigInt          @id @default(autoincrement())
   community_post_id BigInt
   user_id           BigInt
-  created_at        DateTime         @db.Timestamp(6)
-  community_posts   community_posts  @relation(fields: [community_post_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users             User             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  created_at        DateTime        @db.Timestamp(6)
+  community_posts   community_posts @relation(fields: [community_post_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users             User            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([community_post_id, user_id], map: "index_community_post_likes_on_post_and_user")
   @@index([user_id], map: "index_community_post_likes_on_user_id")
@@ -834,8 +841,8 @@ model community_post_likes {
 // 댓글 좋아요 테이블: 유저당 댓글 1회 좋아요
 model comment_likes {
   id         BigInt   @id @default(autoincrement())
-  comment_id BigInt                                    // 대상 댓글
-  user_id    BigInt                                    // 좋아요 누른 유저
+  comment_id BigInt // 대상 댓글
+  user_id    BigInt // 좋아요 누른 유저
   created_at DateTime @db.Timestamp(6)
   comments   comments @relation(fields: [comment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users      User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -847,8 +854,8 @@ model comment_likes {
 // 팔로우 테이블: follower가 following을 팔로우
 model follows {
   id           BigInt   @id @default(autoincrement())
-  follower_id  BigInt                              // 팔로우 하는 사람
-  following_id BigInt                              // 팔로우 당하는 사람
+  follower_id  BigInt // 팔로우 하는 사람
+  following_id BigInt // 팔로우 당하는 사람
   created_at   DateTime @db.Timestamp(6)
   follower     User     @relation("user_followers", fields: [follower_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   following    User     @relation("user_following", fields: [following_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -901,57 +908,57 @@ model court_checkins {
 }
 
 model court_infos {
-  id              BigInt           @id @default(autoincrement())
-  user_id         BigInt
-  name            String           @db.VarChar
-  description     String?
-  address         String           @db.VarChar
-  city            String           @db.VarChar
-  district        String?          @db.VarChar
-  latitude        Decimal          @db.Decimal(10, 7)
-  longitude       Decimal          @db.Decimal(10, 7)
-  court_type      String           @default("outdoor") @db.VarChar
-  hoops_count     Int?
-  surface_type    String?          @db.VarChar
-  is_free         Boolean?
-  fee             Decimal?         @db.Decimal(10, 0)
-  operating_hours Json?            @default("{}")
-  facilities      Json?            @default("[]")
-  status          String           @default("active") @db.VarChar
-  reviews_count   Int              @default(0)
-  average_rating  Decimal?         @default(0.0) @db.Decimal(3, 2)
-  checkins_count  Int              @default(0)
-  has_lighting    Boolean?         @default(false)
-  photo_url       String?          @db.VarChar
-  data_source     String?          @db.VarChar
-  metadata        Json?            @default("{}")
+  id                     BigInt                   @id @default(autoincrement())
+  user_id                BigInt
+  name                   String                   @db.VarChar
+  description            String?
+  address                String                   @db.VarChar
+  city                   String                   @db.VarChar
+  district               String?                  @db.VarChar
+  latitude               Decimal                  @db.Decimal(10, 7)
+  longitude              Decimal                  @db.Decimal(10, 7)
+  court_type             String                   @default("outdoor") @db.VarChar
+  hoops_count            Int?
+  surface_type           String?                  @db.VarChar
+  is_free                Boolean?
+  fee                    Decimal?                 @db.Decimal(10, 0)
+  operating_hours        Json?                    @default("{}")
+  facilities             Json?                    @default("[]")
+  status                 String                   @default("active") @db.VarChar
+  reviews_count          Int                      @default(0)
+  average_rating         Decimal?                 @default(0.0) @db.Decimal(3, 2)
+  checkins_count         Int                      @default(0)
+  has_lighting           Boolean?                 @default(false)
+  photo_url              String?                  @db.VarChar
+  data_source            String?                  @db.VarChar
+  metadata               Json?                    @default("{}")
   // 야외 코트 확장 필드 (2026-03-28 추가)
-  nickname        String?          @db.VarChar        // 별칭 (예: "뚝섬 코트")
-  nearest_station String?          @db.VarChar        // 가까운 역 (예: "뚝섬역 2번 출구 도보 5분")
-  court_size      String?          @db.VarChar        // fullcourt, halfcourt, 3x3
-  hoop_height     Float?                              // 골대 높이 (cm)
-  lighting_until  String?          @db.VarChar        // 조명 종료 시간 (예: "23:00")
-  has_restroom    Boolean?         @default(false)    // 화장실 유무
-  has_parking     Boolean?         @default(false)    // 주차장 유무
-  rental_available Boolean?        @default(false)    // 대관 가능 여부
-  rental_url      String?          @db.VarChar        // 대관 신청 URL
-  kakao_place_id  String?          @db.VarChar        // 카카오 장소 ID
-  kakao_place_url String?          @db.VarChar        // 카카오 장소 URL
-  avg_rating      Float?                              // 카카오 평균 평점
-  review_count    Int              @default(0)        // 카카오 리뷰 수
-  verified        Boolean          @default(false)    // 수동 큐레이션 검증 여부
-  created_at      DateTime         @db.Timestamp(6)
-  updated_at      DateTime         @db.Timestamp(6)
-  court_checkins  court_checkins[]
-  court_sessions  court_sessions[]
-  users           User             @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d006c2c973")
-  reports_count   Int              @default(0)        // 활성 상태 제보 수
-  court_reviews            court_reviews[]
-  court_reports            court_reports[]
-  court_edit_suggestions   court_edit_suggestions[]
-  pickup_games             pickup_games[]
-  court_ambassadors        court_ambassadors[]
-  court_events             court_events[]
+  nickname               String?                  @db.VarChar // 별칭 (예: "뚝섬 코트")
+  nearest_station        String?                  @db.VarChar // 가까운 역 (예: "뚝섬역 2번 출구 도보 5분")
+  court_size             String?                  @db.VarChar // fullcourt, halfcourt, 3x3
+  hoop_height            Float? // 골대 높이 (cm)
+  lighting_until         String?                  @db.VarChar // 조명 종료 시간 (예: "23:00")
+  has_restroom           Boolean?                 @default(false) // 화장실 유무
+  has_parking            Boolean?                 @default(false) // 주차장 유무
+  rental_available       Boolean?                 @default(false) // 대관 가능 여부
+  rental_url             String?                  @db.VarChar // 대관 신청 URL
+  kakao_place_id         String?                  @db.VarChar // 카카오 장소 ID
+  kakao_place_url        String?                  @db.VarChar // 카카오 장소 URL
+  avg_rating             Float? // 카카오 평균 평점
+  review_count           Int                      @default(0) // 카카오 리뷰 수
+  verified               Boolean                  @default(false) // 수동 큐레이션 검증 여부
+  created_at             DateTime                 @db.Timestamp(6)
+  updated_at             DateTime                 @db.Timestamp(6)
+  court_checkins         court_checkins[]
+  court_sessions         court_sessions[]
+  users                  User                     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d006c2c973")
+  reports_count          Int                      @default(0) // 활성 상태 제보 수
+  court_reviews          court_reviews[]
+  court_reports          court_reports[]
+  court_edit_suggestions court_edit_suggestions[]
+  pickup_games           pickup_games[]
+  court_ambassadors      court_ambassadors[]
+  court_events           court_events[]
 
   @@index([average_rating], map: "index_court_infos_on_average_rating")
   @@index([city], map: "index_court_infos_on_city")
@@ -977,12 +984,12 @@ model court_reviews {
   checkin_longitude    Decimal?    @db.Decimal(10, 7)
   metadata             Json?       @default("{}")
   // Phase 3: 5항목 세부 별점 (nullable로 기존 데이터 보존)
-  facility_rating      Int?                                // 시설 별점 1~5
-  accessibility_rating Int?                                // 접근성 별점 1~5
-  surface_rating       Int?                                // 바닥상태 별점 1~5
-  lighting_rating      Int?                                // 조명 별점 1~5
-  atmosphere_rating    Int?                                // 분위기 별점 1~5
-  photos               Json        @default("[]")          // 사진 URL 배열 (최대 3장)
+  facility_rating      Int? // 시설 별점 1~5
+  accessibility_rating Int? // 접근성 별점 1~5
+  surface_rating       Int? // 바닥상태 별점 1~5
+  lighting_rating      Int? // 조명 별점 1~5
+  atmosphere_rating    Int? // 분위기 별점 1~5
+  photos               Json        @default("[]") // 사진 URL 배열 (최대 3장)
   created_at           DateTime    @db.Timestamp(6)
   updated_at           DateTime    @db.Timestamp(6)
   court_infos          court_infos @relation(fields: [court_info_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_898a2b5629")
@@ -1001,12 +1008,12 @@ model court_reports {
   id            BigInt      @id @default(autoincrement())
   court_info_id BigInt
   user_id       BigInt
-  report_type   String      @db.VarChar            // hoop_broken, surface_damaged 등
-  description   String?                             // 상세 설명
-  photos        Json        @default("[]")          // 사진 URL 배열
-  status        String      @default("active") @db.VarChar  // active, resolved, dismissed
-  resolved_at   DateTime?   @db.Timestamp(6)        // 해결 처리 시각
-  resolved_by   BigInt?                             // 해결 처리한 관리자 ID
+  report_type   String      @db.VarChar // hoop_broken, surface_damaged 등
+  description   String? // 상세 설명
+  photos        Json        @default("[]") // 사진 URL 배열
+  status        String      @default("active") @db.VarChar // active, resolved, dismissed
+  resolved_at   DateTime?   @db.Timestamp(6) // 해결 처리 시각
+  resolved_by   BigInt? // 해결 처리한 관리자 ID
   created_at    DateTime    @default(now()) @db.Timestamp(6)
   updated_at    DateTime    @updatedAt @db.Timestamp(6)
   court_infos   court_infos @relation(fields: [court_info_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -1019,21 +1026,21 @@ model court_reports {
 // 유저 위키 — 코트 정보 수정 제안 (위키피디아식 편집)
 // reports(119 신고)와 구분: suggestions는 "바닥재 우레탄", "조명 23시까지" 같은 정보 보정
 model court_edit_suggestions {
-  id            BigInt      @id @default(autoincrement())
-  court_info_id BigInt                                     // 대상 코트
-  user_id       BigInt                                     // 제안자
-  changes       Json                                       // {"surface_type":{"old":null,"new":"urethane"}, ...}
-  reason        String      @db.VarChar                    // 수정 사유 (필수)
-  status        String      @default("pending") @db.VarChar // pending | approved | rejected
-  reviewed_by   BigInt?                                    // 심사한 관리자 ID
-  reviewed_at   DateTime?   @db.Timestamp(6)               // 심사 시각
-  review_note   String?                                    // 관리자 메모 (거절 사유 등)
-  created_at    DateTime    @default(now()) @db.Timestamp(6)
-  updated_at    DateTime    @updatedAt @db.Timestamp(6)
+  id            BigInt    @id @default(autoincrement())
+  court_info_id BigInt // 대상 코트
+  user_id       BigInt // 제안자
+  changes       Json // {"surface_type":{"old":null,"new":"urethane"}, ...}
+  reason        String    @db.VarChar // 수정 사유 (필수)
+  status        String    @default("pending") @db.VarChar // pending | approved | rejected
+  reviewed_by   BigInt? // 심사한 관리자 ID
+  reviewed_at   DateTime? @db.Timestamp(6) // 심사 시각
+  review_note   String? // 관리자 메모 (거절 사유 등)
+  created_at    DateTime  @default(now()) @db.Timestamp(6)
+  updated_at    DateTime  @updatedAt @db.Timestamp(6)
 
-  court_infos   court_infos @relation(fields: [court_info_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users         User        @relation("suggestion_submitter", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  reviewer      User?       @relation("suggestion_reviewer", fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  court_infos court_infos @relation(fields: [court_info_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users       User        @relation("suggestion_submitter", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reviewer    User?       @relation("suggestion_reviewer", fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([court_info_id, status], map: "idx_court_edit_suggestions_court_status")
   @@index([user_id], map: "idx_court_edit_suggestions_user")
@@ -1046,7 +1053,7 @@ model user_badges {
   user_id    BigInt
   badge_type String   @db.VarChar // court_explorer, streak_7, level_up 등
   badge_name String   @db.VarChar // "동네 농구인", "7일 연속!" 등
-  badge_data Json     @default("{}")  // 추가 메타데이터 (달성 코트 수 등)
+  badge_data Json     @default("{}") // 추가 메타데이터 (달성 코트 수 등)
   earned_at  DateTime @default(now()) @db.Timestamp(6)
 
   users User @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -1073,9 +1080,9 @@ model court_sessions {
 
   @@index([court_id, checked_in_at])
   @@index([user_id, checked_in_at])
-  @@index([court_id], map: "idx_court_sessions_court")                    // 코트별 세션 조회
-  @@index([user_id], map: "idx_court_sessions_user")                      // 유저별 세션 조회
-  @@index([checked_in_at], map: "idx_court_sessions_checkin_time")         // 시간 범위 필터
+  @@index([court_id], map: "idx_court_sessions_court") // 코트별 세션 조회
+  @@index([user_id], map: "idx_court_sessions_user") // 유저별 세션 조회
+  @@index([checked_in_at], map: "idx_court_sessions_checkin_time") // 시간 범위 필터
   @@index([user_id, checked_out_at], map: "idx_court_sessions_user_checkout") // 활성 세션 조회
 }
 
@@ -1645,21 +1652,21 @@ model team_member_histories {
 }
 
 model tournament_series {
-  id                BigInt       @id @default(autoincrement())
-  uuid              String       @unique(map: "index_tournament_series_on_uuid") @db.VarChar
-  name              String       @db.VarChar
-  slug              String       @unique(map: "index_tournament_series_on_slug") @db.VarChar
+  id                BigInt         @id @default(autoincrement())
+  uuid              String         @unique(map: "index_tournament_series_on_uuid") @db.VarChar
+  name              String         @db.VarChar
+  slug              String         @unique(map: "index_tournament_series_on_slug") @db.VarChar
   description       String?
-  logo_url          String?      @db.VarChar
+  logo_url          String?        @db.VarChar
   organizer_id      BigInt
-  status            String?      @default("active") @db.VarChar
-  is_public         Boolean?     @default(true)
-  settings          Json?        @default("{}")
-  tournaments_count Int?         @default(0)
-  created_at        DateTime     @db.Timestamp(6)
-  updated_at        DateTime     @db.Timestamp(6)
+  status            String?        @default("active") @db.VarChar
+  is_public         Boolean?       @default(true)
+  settings          Json?          @default("{}")
+  tournaments_count Int?           @default(0)
+  created_at        DateTime       @db.Timestamp(6)
+  updated_at        DateTime       @db.Timestamp(6)
   organization_id   BigInt?
-  users             User         @relation(fields: [organizer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_65d50a1bc6")
+  users             User           @relation(fields: [organizer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_65d50a1bc6")
   organization      organizations? @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   tournaments       Tournament[]
 
@@ -1733,16 +1740,16 @@ model site_settings {
 }
 
 model tournament_recorders {
-  id           BigInt     @id @default(autoincrement())
-  tournamentId String     @map("tournament_id") @db.Uuid
-  recorderId   BigInt     @map("recorder_id")
-  assignedBy   BigInt     @map("assigned_by")
-  isActive     Boolean    @default(true) @map("is_active")
-  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  id           BigInt   @id @default(autoincrement())
+  tournamentId String   @map("tournament_id") @db.Uuid
+  recorderId   BigInt   @map("recorder_id")
+  assignedBy   BigInt   @map("assigned_by")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  recorder     User       @relation("TournamentRecorder", fields: [recorderId], references: [id], onDelete: Cascade)
-  assigner     User       @relation("TournamentRecorderAssigner", fields: [assignedBy], references: [id])
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  recorder   User       @relation("TournamentRecorder", fields: [recorderId], references: [id], onDelete: Cascade)
+  assigner   User       @relation("TournamentRecorderAssigner", fields: [assignedBy], references: [id])
 
   @@unique([tournamentId, recorderId])
   @@index([tournamentId])
@@ -1751,25 +1758,25 @@ model tournament_recorders {
 }
 
 model match_events {
-  id            BigInt          @id @default(autoincrement())
-  matchId       BigInt          @map("match_id")
-  tournamentId  String          @map("tournament_id") @db.Uuid
-  teamId        BigInt?         @map("team_id")
-  playerId      BigInt?         @map("player_id")
-  eventType     String          @map("event_type") @db.VarChar
+  id            BigInt    @id @default(autoincrement())
+  matchId       BigInt    @map("match_id")
+  tournamentId  String    @map("tournament_id") @db.Uuid
+  teamId        BigInt?   @map("team_id")
+  playerId      BigInt?   @map("player_id")
+  eventType     String    @map("event_type") @db.VarChar
   value         Int?
   quarter       Int?
-  gameTime      String?         @map("game_time") @db.VarChar(10)
-  clientEventId String?         @map("client_event_id") @db.VarChar(36)
-  undone        Boolean         @default(false)
-  undoneAt      DateTime?       @map("undone_at") @db.Timestamptz(6)
-  undoneBy      BigInt?         @map("undone_by")
-  recordedBy    BigInt          @map("recorded_by")
-  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  gameTime      String?   @map("game_time") @db.VarChar(10)
+  clientEventId String?   @map("client_event_id") @db.VarChar(36)
+  undone        Boolean   @default(false)
+  undoneAt      DateTime? @map("undone_at") @db.Timestamptz(6)
+  undoneBy      BigInt?   @map("undone_by")
+  recordedBy    BigInt    @map("recorded_by")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  match         TournamentMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  recorder      User            @relation("MatchEventRecorder", fields: [recordedBy], references: [id])
-  undoner       User?           @relation("MatchEventUndoner", fields: [undoneBy], references: [id])
+  match    TournamentMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  recorder User            @relation("MatchEventRecorder", fields: [recordedBy], references: [id])
+  undoner  User?           @relation("MatchEventUndoner", fields: [undoneBy], references: [id])
 
   @@index([matchId, undone])
   @@index([matchId, createdAt])
@@ -1803,41 +1810,41 @@ model site_registrations {
 // 기존 games(팀매치/대회경기)와 분리 — 코트에서 즉석 참가하는 가벼운 경기
 // ─────────────────────────────────────────
 model pickup_games {
-  id              BigInt    @id @default(autoincrement())
-  court_info_id   BigInt                                      // 코트 FK
-  host_id         BigInt                                      // 방장 (생성자)
-  title           String    @db.VarChar(100)                  // 게임 제목
-  description     String?                                     // 추가 설명
-  scheduled_date  DateTime  @db.Date                          // 경기 날짜
-  start_time      String    @db.VarChar(5)                    // 시작 시간 (HH:mm)
-  end_time        String?   @db.VarChar(5)                    // 종료 시간 (HH:mm, 선택)
-  max_players     Int                                         // 최대 인원
-  skill_level     String?   @db.VarChar(20)                   // beginner | intermediate | advanced | any
-  status          String    @default("recruiting") @db.VarChar(20) // recruiting | full | in_progress | completed | cancelled
-  created_at      DateTime  @default(now()) @db.Timestamp(6)
-  updated_at      DateTime  @updatedAt @db.Timestamp(6)
+  id             BigInt   @id @default(autoincrement())
+  court_info_id  BigInt // 코트 FK
+  host_id        BigInt // 방장 (생성자)
+  title          String   @db.VarChar(100) // 게임 제목
+  description    String? // 추가 설명
+  scheduled_date DateTime @db.Date // 경기 날짜
+  start_time     String   @db.VarChar(5) // 시작 시간 (HH:mm)
+  end_time       String?  @db.VarChar(5) // 종료 시간 (HH:mm, 선택)
+  max_players    Int // 최대 인원
+  skill_level    String?  @db.VarChar(20) // beginner | intermediate | advanced | any
+  status         String   @default("recruiting") @db.VarChar(20) // recruiting | full | in_progress | completed | cancelled
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+  updated_at     DateTime @updatedAt @db.Timestamp(6)
 
   // 관계
-  court_infos     court_infos          @relation(fields: [court_info_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  host            User                 @relation("pickup_host", fields: [host_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  participants    pickup_participants[]
+  court_infos  court_infos           @relation(fields: [court_info_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  host         User                  @relation("pickup_host", fields: [host_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  participants pickup_participants[]
 
   @@index([court_info_id, status], map: "idx_pickup_games_court_status")
   @@index([host_id], map: "idx_pickup_games_host")
   @@index([scheduled_date, status], map: "idx_pickup_games_date_status")
   @@index([status], map: "idx_pickup_games_status")
-  @@index([scheduled_date], map: "idx_pickup_games_date")                  // 날짜별 픽업게임 조회
+  @@index([scheduled_date], map: "idx_pickup_games_date") // 날짜별 픽업게임 조회
 }
 
 model pickup_participants {
   id             BigInt   @id @default(autoincrement())
-  pickup_game_id BigInt                                       // 픽업게임 FK
-  user_id        BigInt                                       // 참가자
-  joined_at      DateTime @default(now()) @db.Timestamp(6)    // 참가 시각
+  pickup_game_id BigInt // 픽업게임 FK
+  user_id        BigInt // 참가자
+  joined_at      DateTime @default(now()) @db.Timestamp(6) // 참가 시각
 
   // 관계
-  pickup_game    pickup_games @relation(fields: [pickup_game_id], references: [id], onDelete: Cascade)
-  user           User         @relation("pickup_participant", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pickup_game pickup_games @relation(fields: [pickup_game_id], references: [id], onDelete: Cascade)
+  user        User         @relation("pickup_participant", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([pickup_game_id, user_id], map: "idx_pickup_participants_unique") // 중복 참가 방지
   @@index([user_id], map: "idx_pickup_participants_user")
@@ -1847,12 +1854,12 @@ model pickup_participants {
 // 앰배서더는 위키 수정을 승인 없이 직접 반영할 수 있고, 제보를 처리할 수 있다.
 model court_ambassadors {
   id            BigInt    @id @default(autoincrement())
-  user_id       BigInt                                        // 신청/임명된 유저
-  court_info_id BigInt                                        // 대상 코트
-  status        String    @default("pending") @db.VarChar     // pending | active | revoked
-  appointed_at  DateTime? @db.Timestamp(6)                    // 승인(임명) 시각
-  revoked_at    DateTime? @db.Timestamp(6)                    // 해임 시각
-  created_at    DateTime  @default(now()) @db.Timestamp(6)    // 신청 시각
+  user_id       BigInt // 신청/임명된 유저
+  court_info_id BigInt // 대상 코트
+  status        String    @default("pending") @db.VarChar // pending | active | revoked
+  appointed_at  DateTime? @db.Timestamp(6) // 승인(임명) 시각
+  revoked_at    DateTime? @db.Timestamp(6) // 해임 시각
+  created_at    DateTime  @default(now()) @db.Timestamp(6) // 신청 시각
   updated_at    DateTime  @updatedAt @db.Timestamp(6)
 
   // 관계
@@ -1862,34 +1869,34 @@ model court_ambassadors {
   @@unique([user_id, court_info_id], map: "idx_court_ambassadors_user_court") // 유저당 코트 1건
   @@index([court_info_id, status], map: "idx_court_ambassadors_court_status")
   @@index([status], map: "idx_court_ambassadors_status")
-  @@index([user_id], map: "idx_court_ambassadors_user")                    // 유저별 앰배서더 조회
+  @@index([user_id], map: "idx_court_ambassadors_user") // 유저별 앰배서더 조회
 }
 
 // ─── 3x3 이벤트: 코트에서 열리는 3대3 대회/이벤트 ───
 // 주최자가 이벤트를 만들고, 팀을 등록하고, 대진표를 생성하는 시스템
 model court_events {
-  id             BigInt    @id @default(autoincrement())
-  court_info_id  BigInt                                          // 개최 코트
-  organizer_id   BigInt                                          // 주최자 (User FK)
-  title          String    @db.VarChar(200)                      // 이벤트 제목
-  description    String?                                         // 설명
-  event_date     DateTime  @db.Date                              // 이벤트 날짜
-  start_time     String?   @db.VarChar(5)                        // 시작 시간 (HH:mm)
-  end_time       String?   @db.VarChar(5)                        // 종료 시간 (HH:mm)
-  max_teams      Int       @default(8)                           // 최대 팀 수 (4/8/16)
-  team_size      Int       @default(3)                           // 팀 인원 (기본 3명)
-  format         String    @default("single_elimination") @db.VarChar(30) // single_elimination | round_robin
-  status         String    @default("recruiting") @db.VarChar(20) // recruiting | ready | in_progress | completed | cancelled
-  rules          String?                                         // 경기 규칙 설명
-  prize          String?   @db.VarChar(200)                      // 상금/상품 정보
-  created_at     DateTime  @default(now()) @db.Timestamp(6)
-  updated_at     DateTime  @updatedAt @db.Timestamp(6)
+  id            BigInt   @id @default(autoincrement())
+  court_info_id BigInt // 개최 코트
+  organizer_id  BigInt // 주최자 (User FK)
+  title         String   @db.VarChar(200) // 이벤트 제목
+  description   String? // 설명
+  event_date    DateTime @db.Date // 이벤트 날짜
+  start_time    String?  @db.VarChar(5) // 시작 시간 (HH:mm)
+  end_time      String?  @db.VarChar(5) // 종료 시간 (HH:mm)
+  max_teams     Int      @default(8) // 최대 팀 수 (4/8/16)
+  team_size     Int      @default(3) // 팀 인원 (기본 3명)
+  format        String   @default("single_elimination") @db.VarChar(30) // single_elimination | round_robin
+  status        String   @default("recruiting") @db.VarChar(20) // recruiting | ready | in_progress | completed | cancelled
+  rules         String? // 경기 규칙 설명
+  prize         String?  @db.VarChar(200) // 상금/상품 정보
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  updated_at    DateTime @updatedAt @db.Timestamp(6)
 
   // 관계
-  court_info     court_infos          @relation(fields: [court_info_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  organizer      User                 @relation("event_organizer", fields: [organizer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  teams          court_event_teams[]
-  matches        court_event_matches[]
+  court_info court_infos           @relation(fields: [court_info_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizer  User                  @relation("event_organizer", fields: [organizer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  teams      court_event_teams[]
+  matches    court_event_matches[]
 
   @@index([court_info_id, status], map: "idx_court_events_court_status")
   @@index([organizer_id], map: "idx_court_events_organizer")
@@ -1898,37 +1905,37 @@ model court_events {
 
 // ─── 3x3 이벤트 팀: 이벤트에 참가하는 팀 ───
 model court_event_teams {
-  id             BigInt    @id @default(autoincrement())
-  event_id       BigInt                                          // 이벤트 FK
-  team_name      String    @db.VarChar(100)                      // 팀명
-  seed           Int?                                            // 시드 번호 (대진표용)
-  status         String    @default("registered") @db.VarChar(20) // registered | confirmed | eliminated | winner
-  created_at     DateTime  @default(now()) @db.Timestamp(6)
+  id         BigInt   @id @default(autoincrement())
+  event_id   BigInt // 이벤트 FK
+  team_name  String   @db.VarChar(100) // 팀명
+  seed       Int? // 시드 번호 (대진표용)
+  status     String   @default("registered") @db.VarChar(20) // registered | confirmed | eliminated | winner
+  created_at DateTime @default(now()) @db.Timestamp(6)
 
   // 관계
-  event          court_events          @relation(fields: [event_id], references: [id], onDelete: Cascade)
-  players        court_event_players[]
-  home_matches   court_event_matches[] @relation("match_home_team")
-  away_matches   court_event_matches[] @relation("match_away_team")
-  won_matches    court_event_matches[] @relation("match_winner_team")
+  event        court_events          @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  players      court_event_players[]
+  home_matches court_event_matches[] @relation("match_home_team")
+  away_matches court_event_matches[] @relation("match_away_team")
+  won_matches  court_event_matches[] @relation("match_winner_team")
 
   @@unique([event_id, team_name], map: "idx_court_event_teams_name") // 같은 이벤트 내 팀명 중복 방지
   @@index([event_id, status], map: "idx_court_event_teams_event_status")
-  @@index([event_id], map: "idx_court_event_teams_event")                  // 이벤트별 팀 조회
+  @@index([event_id], map: "idx_court_event_teams_event") // 이벤트별 팀 조회
 }
 
 // ─── 3x3 이벤트 선수: 팀에 소속된 선수 ───
 model court_event_players {
-  id             BigInt    @id @default(autoincrement())
-  team_id        BigInt                                          // 팀 FK
-  user_id        BigInt                                          // 선수 (User FK)
-  jersey_number  Int?                                            // 등번호 (선택)
-  is_captain     Boolean   @default(false)                       // 주장 여부
-  joined_at      DateTime  @default(now()) @db.Timestamp(6)
+  id            BigInt   @id @default(autoincrement())
+  team_id       BigInt // 팀 FK
+  user_id       BigInt // 선수 (User FK)
+  jersey_number Int? // 등번호 (선택)
+  is_captain    Boolean  @default(false) // 주장 여부
+  joined_at     DateTime @default(now()) @db.Timestamp(6)
 
   // 관계
-  team           court_event_teams @relation(fields: [team_id], references: [id], onDelete: Cascade)
-  user           User              @relation("event_player", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  team court_event_teams @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  user User              @relation("event_player", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([team_id, user_id], map: "idx_court_event_players_unique") // 한 팀에 같은 유저 중복 방지
   @@index([user_id], map: "idx_court_event_players_user")
@@ -1936,25 +1943,25 @@ model court_event_players {
 
 // ─── 3x3 이벤트 경기(대진표): 토너먼트 매치 ───
 model court_event_matches {
-  id             BigInt    @id @default(autoincrement())
-  event_id       BigInt                                          // 이벤트 FK
-  round          Int                                             // 라운드 (1=결승, 2=4강, 4=8강...)
-  match_order    Int                                             // 같은 라운드 내 순서 (1,2,3,4...)
-  home_team_id   BigInt?                                         // 홈팀 FK (미정이면 null)
-  away_team_id   BigInt?                                         // 어웨이팀 FK (미정이면 null)
-  home_score     Int?                                            // 홈팀 점수
-  away_score     Int?                                            // 어웨이팀 점수
-  winner_id      BigInt?                                         // 승리팀 FK
-  status         String    @default("scheduled") @db.VarChar(20) // scheduled | in_progress | completed
-  scheduled_time String?   @db.VarChar(5)                        // 예정 시간 (HH:mm)
-  created_at     DateTime  @default(now()) @db.Timestamp(6)
-  updated_at     DateTime  @updatedAt @db.Timestamp(6)
+  id             BigInt   @id @default(autoincrement())
+  event_id       BigInt // 이벤트 FK
+  round          Int // 라운드 (1=결승, 2=4강, 4=8강...)
+  match_order    Int // 같은 라운드 내 순서 (1,2,3,4...)
+  home_team_id   BigInt? // 홈팀 FK (미정이면 null)
+  away_team_id   BigInt? // 어웨이팀 FK (미정이면 null)
+  home_score     Int? // 홈팀 점수
+  away_score     Int? // 어웨이팀 점수
+  winner_id      BigInt? // 승리팀 FK
+  status         String   @default("scheduled") @db.VarChar(20) // scheduled | in_progress | completed
+  scheduled_time String?  @db.VarChar(5) // 예정 시간 (HH:mm)
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+  updated_at     DateTime @updatedAt @db.Timestamp(6)
 
   // 관계
-  event          court_events      @relation(fields: [event_id], references: [id], onDelete: Cascade)
-  home_team      court_event_teams? @relation("match_home_team", fields: [home_team_id], references: [id], onDelete: SetNull)
-  away_team      court_event_teams? @relation("match_away_team", fields: [away_team_id], references: [id], onDelete: SetNull)
-  winner         court_event_teams? @relation("match_winner_team", fields: [winner_id], references: [id], onDelete: SetNull)
+  event     court_events       @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  home_team court_event_teams? @relation("match_home_team", fields: [home_team_id], references: [id], onDelete: SetNull)
+  away_team court_event_teams? @relation("match_away_team", fields: [away_team_id], references: [id], onDelete: SetNull)
+  winner    court_event_teams? @relation("match_winner_team", fields: [winner_id], references: [id], onDelete: SetNull)
 
   @@unique([event_id, round, match_order], map: "idx_court_event_matches_round") // 라운드+순서 유니크
   @@index([event_id, status], map: "idx_court_event_matches_event_status")
@@ -1963,10 +1970,10 @@ model court_event_matches {
 // 웹 푸시 구독 정보 — 유저별 여러 기기(브라우저) 구독 가능
 model push_subscriptions {
   id         BigInt   @id @default(autoincrement())
-  user_id    BigInt                                      // 구독 유저 FK
-  endpoint   String   @db.VarChar                        // 브라우저가 생성한 푸시 엔드포인트 URL
-  p256dh     String   @db.VarChar                        // 암호화 공개키
-  auth       String   @db.VarChar                        // 인증 시크릿
+  user_id    BigInt // 구독 유저 FK
+  endpoint   String   @db.VarChar // 브라우저가 생성한 푸시 엔드포인트 URL
+  p256dh     String   @db.VarChar // 암호화 공개키
+  auth       String   @db.VarChar // 인증 시크릿
   created_at DateTime @default(now()) @db.Timestamp(6)
 
   // 관계
@@ -1979,34 +1986,34 @@ model push_subscriptions {
 // ===== 단체(Organization) 3단계 계층: 단체 → 시리즈 → 대회 =====
 
 model organizations {
-  id             BigInt               @id @default(autoincrement())
-  uuid           String               @unique @default(uuid()) @db.VarChar
-  name           String               @db.VarChar
-  slug           String               @unique @db.VarChar
-  logo_url       String?              @db.VarChar
-  banner_url     String?              @db.VarChar
-  description    String?
-  region         String?              @db.VarChar        // 활동 지역 (서울, 경기 등)
-  contact_email  String?              @db.VarChar
-  contact_phone  String?              @db.VarChar
-  website_url    String?              @db.VarChar
-  owner_id       BigInt                                  // 단체 소유자 FK
-  status         String               @default("approved") @db.VarChar  // pending → approved/rejected
-  is_public      Boolean              @default(true)     // 공개 여부
-  series_count   Int                  @default(0)        // 소속 시리즈 수 (캐시)
+  id               BigInt    @id @default(autoincrement())
+  uuid             String    @unique @default(uuid()) @db.VarChar
+  name             String    @db.VarChar
+  slug             String    @unique @db.VarChar
+  logo_url         String?   @db.VarChar
+  banner_url       String?   @db.VarChar
+  description      String?
+  region           String?   @db.VarChar // 활동 지역 (서울, 경기 등)
+  contact_email    String?   @db.VarChar
+  contact_phone    String?   @db.VarChar
+  website_url      String?   @db.VarChar
+  owner_id         BigInt // 단체 소유자 FK
+  status           String    @default("approved") @db.VarChar // pending → approved/rejected
+  is_public        Boolean   @default(true) // 공개 여부
+  series_count     Int       @default(0) // 소속 시리즈 수 (캐시)
   // 승인 워크플로 필드
-  approved_at    DateTime?            @db.Timestamp(6)   // 승인된 시각
-  approved_by    BigInt?                                  // 승인한 관리자 ID
-  rejection_reason String?                                // 거절 사유
-  rejection_at   DateTime?            @db.Timestamp(6)   // 거절 시각
-  apply_note     String?                                  // 신청 시 메모 (단체 목적 등)
-  created_at     DateTime             @default(now()) @db.Timestamp(6)
-  updated_at     DateTime             @updatedAt @db.Timestamp(6)
+  approved_at      DateTime? @db.Timestamp(6) // 승인된 시각
+  approved_by      BigInt? // 승인한 관리자 ID
+  rejection_reason String? // 거절 사유
+  rejection_at     DateTime? @db.Timestamp(6) // 거절 시각
+  apply_note       String? // 신청 시 메모 (단체 목적 등)
+  created_at       DateTime  @default(now()) @db.Timestamp(6)
+  updated_at       DateTime  @updatedAt @db.Timestamp(6)
 
   // 관계
-  owner          User                 @relation("org_owner", fields: [owner_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  members        organization_members[]
-  series         tournament_series[]
+  owner   User                   @relation("org_owner", fields: [owner_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  members organization_members[]
+  series  tournament_series[]
 
   @@index([owner_id], map: "idx_organizations_owner_id")
   @@index([status], map: "idx_organizations_status")
@@ -2016,8 +2023,8 @@ model organizations {
 
 model organization_members {
   id              BigInt   @id @default(autoincrement())
-  organization_id BigInt                                  // 단체 FK
-  user_id         BigInt                                  // 멤버 유저 FK
+  organization_id BigInt // 단체 FK
+  user_id         BigInt // 멤버 유저 FK
   role            String   @default("member") @db.VarChar // owner / admin / member
   is_active       Boolean  @default(true)
   created_at      DateTime @default(now()) @db.Timestamp(6)
@@ -2036,23 +2043,23 @@ model organization_members {
 
 // 파트너사: 광고를 집행하는 업체/개인
 model partners {
-  id             BigInt            @id @default(autoincrement())
-  uuid           String            @unique @default(uuid()) @db.VarChar
-  name           String            @db.VarChar                           // 파트너사명
-  logo_url       String?           @db.VarChar                           // 로고 이미지 URL
-  website_url    String?           @db.VarChar                           // 홈페이지 URL
-  contact_email  String?           @db.VarChar                           // 담당자 이메일
-  contact_phone  String?           @db.VarChar                           // 담당자 연락처
-  owner_id       BigInt                                                  // 등록한 유저 FK
-  status         String            @default("pending") @db.VarChar       // pending | approved | rejected | suspended
-  description    String?                                                 // 파트너 소개
-  created_at     DateTime          @default(now()) @db.Timestamp(6)
-  updated_at     DateTime          @updatedAt @db.Timestamp(6)
+  id            BigInt   @id @default(autoincrement())
+  uuid          String   @unique @default(uuid()) @db.VarChar
+  name          String   @db.VarChar // 파트너사명
+  logo_url      String?  @db.VarChar // 로고 이미지 URL
+  website_url   String?  @db.VarChar // 홈페이지 URL
+  contact_email String?  @db.VarChar // 담당자 이메일
+  contact_phone String?  @db.VarChar // 담당자 연락처
+  owner_id      BigInt // 등록한 유저 FK
+  status        String   @default("pending") @db.VarChar // pending | approved | rejected | suspended
+  description   String? // 파트너 소개
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  updated_at    DateTime @updatedAt @db.Timestamp(6)
 
   // 관계
-  owner          User              @relation("partner_owner", fields: [owner_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  members        partner_members[]
-  campaigns      ad_campaigns[]
+  owner     User              @relation("partner_owner", fields: [owner_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  members   partner_members[]
+  campaigns ad_campaigns[]
 
   @@index([owner_id], map: "idx_partners_owner_id")
   @@index([status], map: "idx_partners_status")
@@ -2060,17 +2067,17 @@ model partners {
 
 // 파트너 멤버: 파트너사에 소속된 유저 (광고 관리 권한)
 model partner_members {
-  id          BigInt   @id @default(autoincrement())
-  partner_id  BigInt                                                     // 파트너사 FK
-  user_id     BigInt                                                     // 유저 FK
-  role        String   @default("member") @db.VarChar                    // owner | admin | member
-  is_active   Boolean  @default(true)
-  created_at  DateTime @default(now()) @db.Timestamp(6)
-  updated_at  DateTime @updatedAt @db.Timestamp(6)
+  id         BigInt   @id @default(autoincrement())
+  partner_id BigInt // 파트너사 FK
+  user_id    BigInt // 유저 FK
+  role       String   @default("member") @db.VarChar // owner | admin | member
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @updatedAt @db.Timestamp(6)
 
   // 관계
-  partner     partners @relation(fields: [partner_id], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  partner partners @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@unique([partner_id, user_id], map: "idx_partner_members_partner_user")
   @@index([partner_id], map: "idx_partner_members_partner_id")
@@ -2079,33 +2086,33 @@ model partner_members {
 
 // 광고 캠페인: 파트너가 만든 광고 단위
 model ad_campaigns {
-  id             BigInt          @id @default(autoincrement())
-  uuid           String          @unique @default(uuid()) @db.VarChar
-  partner_id     BigInt                                                  // 파트너사 FK
-  title          String          @db.VarChar                             // 광고 제목 (내부 관리용)
-  headline       String          @db.VarChar                             // 표시될 제목
-  description    String?                                                 // 광고 설명문
-  image_url      String?         @db.VarChar                             // 광고 이미지 URL
-  link_url       String          @db.VarChar                             // 클릭 시 이동할 URL
-  cta_text       String?         @default("자세히 보기") @db.VarChar     // CTA 버튼 텍스트
-  status         String          @default("draft") @db.VarChar           // draft | pending | approved | rejected | paused | ended
+  id             BigInt    @id @default(autoincrement())
+  uuid           String    @unique @default(uuid()) @db.VarChar
+  partner_id     BigInt // 파트너사 FK
+  title          String    @db.VarChar // 광고 제목 (내부 관리용)
+  headline       String    @db.VarChar // 표시될 제목
+  description    String? // 광고 설명문
+  image_url      String?   @db.VarChar // 광고 이미지 URL
+  link_url       String    @db.VarChar // 클릭 시 이동할 URL
+  cta_text       String?   @default("자세히 보기") @db.VarChar // CTA 버튼 텍스트
+  status         String    @default("draft") @db.VarChar // draft | pending | approved | rejected | paused | ended
   // 게재 기간 (null이면 무기한)
-  start_date     DateTime?       @db.Date
-  end_date       DateTime?       @db.Date
+  start_date     DateTime? @db.Date
+  end_date       DateTime? @db.Date
   // 과금 관련 필드 (스키마만, 로직 미구현)
-  budget         Decimal?        @db.Decimal(12, 2)                      // 총 예산
-  spent          Decimal?        @default(0) @db.Decimal(12, 2)          // 소진 금액
-  pricing_type   String?         @default("cpm") @db.VarChar             // cpm | cpc | flat
-  price_per_unit Decimal?        @db.Decimal(10, 2)                      // 단가
+  budget         Decimal?  @db.Decimal(12, 2) // 총 예산
+  spent          Decimal?  @default(0) @db.Decimal(12, 2) // 소진 금액
+  pricing_type   String?   @default("cpm") @db.VarChar // cpm | cpc | flat
+  price_per_unit Decimal?  @db.Decimal(10, 2) // 단가
   // 통계 (캐시 카운터)
-  impressions    Int             @default(0)                             // 노출 수
-  clicks         Int             @default(0)                             // 클릭 수
-  created_at     DateTime        @default(now()) @db.Timestamp(6)
-  updated_at     DateTime        @updatedAt @db.Timestamp(6)
+  impressions    Int       @default(0) // 노출 수
+  clicks         Int       @default(0) // 클릭 수
+  created_at     DateTime  @default(now()) @db.Timestamp(6)
+  updated_at     DateTime  @updatedAt @db.Timestamp(6)
 
   // 관계
-  partner        partners        @relation(fields: [partner_id], references: [id], onDelete: Cascade)
-  placements     ad_placements[]
+  partner    partners        @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+  placements ad_placements[]
 
   @@index([partner_id], map: "idx_ad_campaigns_partner_id")
   @@index([status], map: "idx_ad_campaigns_status")
@@ -2114,36 +2121,378 @@ model ad_campaigns {
 
 // 광고 배치: 어느 위치에 어떤 캠페인을 노출할지
 model ad_placements {
-  id           BigInt       @id @default(autoincrement())
-  campaign_id  BigInt                                                    // 캠페인 FK
-  placement    String       @db.VarChar                                  // feed | sidebar | court_top | list
-  priority     Int          @default(0)                                  // 높을수록 우선 노출
-  is_active    Boolean      @default(true)                               // 활성 여부
-  created_at   DateTime     @default(now()) @db.Timestamp(6)
-  updated_at   DateTime     @updatedAt @db.Timestamp(6)
+  id          BigInt   @id @default(autoincrement())
+  campaign_id BigInt // 캠페인 FK
+  placement   String   @db.VarChar // feed | sidebar | court_top | list
+  priority    Int      @default(0) // 높을수록 우선 노출
+  is_active   Boolean  @default(true) // 활성 여부
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+  updated_at  DateTime @updatedAt @db.Timestamp(6)
 
   // 관계
-  campaign     ad_campaigns @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
+  campaign ad_campaigns @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
 
   @@index([placement, is_active], map: "idx_ad_placements_placement_active")
   @@index([campaign_id], map: "idx_ad_placements_campaign_id")
 }
 
 model DuoSession {
-  id            BigInt   @id @default(autoincrement())
-  pin           String   @unique @db.VarChar(6)
-  matchId       BigInt   @map("match_id")
-  tournamentId  String   @map("tournament_id") @db.Uuid
-  hostUserId    BigInt   @map("host_user_id")
-  guestUserId   BigInt?  @map("guest_user_id")
-  hostTeam      String   @default("home") @map("host_team") @db.VarChar(10)
-  status        String   @default("waiting") @db.VarChar(20)
-  channelName   String   @map("channel_name") @db.VarChar(100)
-  createdAt     DateTime @default(now()) @map("created_at")
-  expiresAt     DateTime @map("expires_at")
+  id           BigInt   @id @default(autoincrement())
+  pin          String   @unique @db.VarChar(6)
+  matchId      BigInt   @map("match_id")
+  tournamentId String   @map("tournament_id") @db.Uuid
+  hostUserId   BigInt   @map("host_user_id")
+  guestUserId  BigInt?  @map("guest_user_id")
+  hostTeam     String   @default("home") @map("host_team") @db.VarChar(10)
+  status       String   @default("waiting") @db.VarChar(20)
+  channelName  String   @map("channel_name") @db.VarChar(100)
+  createdAt    DateTime @default(now()) @map("created_at")
+  expiresAt    DateTime @map("expires_at")
 
   @@index([pin])
   @@index([tournamentId])
   @@index([status])
   @@map("duo_sessions")
+}
+
+// 운영 안전을 위해 users 수정은 `referee Referee?` back-relation 1줄뿐.
+// ============================================================================
+
+// 협회(Association): KBA / 17개 시도협회 / KBL / WKBL 계층형.
+// self-relation으로 parent(상위 협회) ↔ children(하위 협회) 표현.
+model Association {
+  id          BigInt   @id @default(autoincrement())
+  parent_id   BigInt? // null이면 최상위 조직 (KBA/KBL/WKBL)
+  name        String   @db.VarChar // "서울특별시농구협회" 등 풀네임
+  code        String   @unique @db.VarChar // "KBA", "KBA-11", "KBL", "WKBL" (upsert 기준)
+  region_sido String?  @db.VarChar // "서울" 등. 전국조직은 null
+  level       String   @db.VarChar // "national" | "sido" | "pro_league"
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+  updated_at  DateTime @updatedAt @db.Timestamp(6)
+
+  // 계층 구조: parent_id가 자기 자신의 id를 참조하는 self-FK
+  parent        Association?             @relation("AssociationHierarchy", fields: [parent_id], references: [id], onDelete: NoAction)
+  children      Association[]            @relation("AssociationHierarchy")
+  referees      Referee[]
+  admins        AssociationAdmin[]
+  // 배정 워크플로우: 이 협회가 게시한 공고 + 일자별 선정 풀 역참조
+  announcements AssignmentAnnouncement[]
+  pools         DailyAssignmentPool[]
+  // 정산 1차: 협회별 배정비 단가표 (1:1)
+  fee_setting   AssociationFeeSetting?
+
+  @@index([parent_id])
+  @@index([level])
+  @@index([region_sido])
+  @@map("associations")
+}
+
+// 협회 관리자 매핑(옵션 B): users 테이블을 건드리지 않기 위한 매핑 테이블.
+// User.admin_role = "association_admin" AND 이 매핑 행 존재 → 협회 관리자로 인식.
+// user_id UNIQUE → 1인 1협회 강제.
+model AssociationAdmin {
+  id             BigInt   @id @default(autoincrement())
+  user_id        BigInt   @unique // 한 유저는 하나의 협회만 관리 (1:1)
+  association_id BigInt
+  // v3: 협회 내 역할 (9종). 기본값 secretary_general — 기존 레코드에 자동 적용
+  role           String   @default("secretary_general") @db.VarChar
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+
+  association Association @relation(fields: [association_id], references: [id], onDelete: Cascade)
+  // user 쪽은 단방향 FK만 — User 모델에 back-relation 추가하지 않음 (운영 안전)
+
+  @@index([association_id])
+  @@map("association_admins")
+}
+
+// 심판(Referee): User와 1:1. 실명/생년월일/전화 스냅샷을 따로 보관해 검증 변경 추적.
+// v3: user_id nullable — 협회가 사전 등록 시 user_id 없이 생성, 이후 매칭으로 연결.
+// onDelete: Cascade → User 삭제 시 Referee도 자동 삭제 (DB 레벨 무결성 보장).
+model Referee {
+  id             BigInt  @id @default(autoincrement())
+  // v3: nullable — 사전 등록 시 user_id 없이 생성 가능 (매칭 후 채워짐)
+  user_id        BigInt? @unique // User.id — 매칭 후 1인 1 Referee
+  association_id BigInt? // 소속 협회 (없을 수도 있음)
+
+  // 교차검증 스냅샷: User 변경돼도 이 값은 그대로 유지됨 (변경 감지에 사용)
+  verified_name       String?   @db.VarChar
+  verified_birth_date DateTime? @db.Date
+  verified_phone      String?   @db.VarChar
+
+  license_number String?  @unique @db.VarChar // 심판 자격번호(유니크)
+  level          String?  @db.VarChar // beginner/intermediate/advanced/international
+  role_type      String   @default("referee") @db.VarChar // referee/scorer/timer 등
+  region_sido    String?  @db.VarChar
+  region_sigungu String?  @db.VarChar
+  status         String   @default("active") @db.VarChar // active/inactive/pending_review
+  bio            String?
+  joined_at      DateTime @default(now()) @db.Timestamp(6)
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+  updated_at     DateTime @updatedAt @db.Timestamp(6)
+
+  // ── v3 사전 등록 필드 ──────────────────────────────────
+  // 협회가 입력한 원본 정보 (매칭 키로 사용)
+  registered_name        String?   @db.VarChar // 관리자가 입력한 이름
+  registered_phone       String?   @db.VarChar // 관리자가 입력한 전화번호
+  registered_birth_date  DateTime? @db.Date // 관리자가 입력한 생년월일
+  // 주민번호: 암호화 저장 (AES-256-GCM). 평문 절대 금지
+  resident_id_enc        String? // 암호화된 주민번호 전체
+  resident_id_last4      String?   @db.VarChar(4) // 뒷자리 4자리 (마스킹 표시용)
+  // 매칭 상태: unmatched → matched (user_id 채워지면 자동 전환)
+  match_status           String    @default("unmatched") @db.VarChar
+  matched_at             DateTime? @db.Timestamp(6) // 매칭 완료 시각
+  registered_by_admin_id BigInt? // 사전 등록한 관리자의 User.id
+  // ── 사전 등록 필드 끝 ──────────────────────────────────
+
+  // ── 정산 서류용 계좌 정보 ──
+  bank_name    String? @db.VarChar // 은행명 (예: "국민은행")
+  bank_account String? // 계좌번호 (암호화 저장)
+  bank_holder  String? @db.VarChar // 예금주
+
+  // v3: User optional — 사전 등록 시 user_id null 허용. onDelete: Cascade 유지.
+  user         User?                   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  association  Association?            @relation(fields: [association_id], references: [id], onDelete: SetNull)
+  certificates RefereeCertificate[]
+  assignments  RefereeAssignment[]
+  settlements  RefereeSettlement[]
+  documents    RefereeDocument[]
+  // 배정 워크플로우: 심판이 제출한 신청 + 일자별 선정 풀 역참조
+  applications AssignmentApplication[]
+  pools        DailyAssignmentPool[]
+
+  @@index([user_id])
+  @@index([association_id])
+  @@index([level])
+  @@index([region_sido, region_sigungu])
+  @@index([status])
+  // v3: 매칭 검색용 인덱스
+  @@index([match_status])
+  @@index([registered_name, registered_phone])
+  @@map("referees")
+}
+
+// 심판 자격증(RefereeCertificate): 한 심판이 여러 자격증 보유 가능.
+// file_url은 1차 범위 제외. cert_number는 교차검증 키.
+model RefereeCertificate {
+  id                   BigInt    @id @default(autoincrement())
+  referee_id           BigInt
+  cert_type            String    @db.VarChar // referee/scorer/timer
+  cert_grade           String    @db.VarChar // "1급", "2급", "3급", "국제" 등
+  issuer               String    @db.VarChar // 발급 협회명 또는 code
+  cert_number          String?   @db.VarChar // 교차검증 키 (없을 수 있음)
+  issued_at            DateTime  @db.Date
+  expires_at           DateTime? @db.Date // null이면 만료 없음
+  verified             Boolean   @default(false) // admin 검증 여부
+  verified_at          DateTime? @db.Timestamp(6)
+  verified_by_admin_id BigInt? // 검증한 admin의 User.id (단방향)
+  created_at           DateTime  @default(now()) @db.Timestamp(6)
+  updated_at           DateTime  @updatedAt @db.Timestamp(6)
+
+  referee Referee @relation(fields: [referee_id], references: [id], onDelete: Cascade)
+
+  @@index([referee_id])
+  @@index([cert_type, cert_grade])
+  @@index([expires_at])
+  @@index([cert_number])
+  @@map("referee_certificates")
+}
+
+// 심판 배정(RefereeAssignment): 공식 대회 경기(TournamentMatch)에만 배정.
+// v1 확정: game_id(일반 게임) 없음. tournament_match_id NOT NULL 단독.
+model RefereeAssignment {
+  id                  BigInt   @id @default(autoincrement())
+  referee_id          BigInt
+  tournament_match_id BigInt // tournament_matches.id (공식 대회 경기 전용)
+  role                String   @db.VarChar // main/sub/recorder/timer
+  status              String   @default("assigned") @db.VarChar // assigned/confirmed/declined/cancelled/completed
+  assigned_at         DateTime @default(now()) @db.Timestamp(6)
+  memo                String?
+  created_at          DateTime @default(now()) @db.Timestamp(6)
+  updated_at          DateTime @updatedAt @db.Timestamp(6)
+
+  // 1차 추가: 일자별 선정 풀 연결 (SetNull로 기존 배정 무결성 유지)
+  // 기존 RefereeAssignment는 pool 없이도 동작 — 2차에서 선정→배정 흐름 연결 시 사용
+  pool_id BigInt?
+  pool    DailyAssignmentPool? @relation(fields: [pool_id], references: [id], onDelete: SetNull)
+
+  // 정산 1차 추가: 개별 배정비 (원 단위). null이면 협회 단가표(role별 기본값) 적용.
+  // 이유: 일반 경기는 단가표로 충분하지만, 결승/특수 경기는 추가 수당 필요 → 행별 override 지원
+  fee Int?
+
+  referee    Referee            @relation(fields: [referee_id], references: [id], onDelete: Cascade)
+  settlement RefereeSettlement?
+  // tournament_match 쪽은 관계 선언 없음 — 기존 TournamentMatch 모델 미수정
+
+  @@unique([referee_id, tournament_match_id]) // 같은 심판이 같은 경기에 중복 배정 방지
+  @@index([referee_id])
+  @@index([tournament_match_id])
+  @@index([status])
+  @@map("referee_assignments")
+}
+
+// 심판 정산(RefereeSettlement): 1 배정 = 1 정산 (assignment_id UNIQUE).
+// amount는 원 단위 정수.
+// 정산 1차: status 5종 확장(pending/scheduled/paid/cancelled/refunded) + scheduled_at 추가.
+//   pending   — 최초 생성, 지급 전
+//   scheduled — 지급 예정 등록
+//   paid      — 지급 완료
+//   cancelled — 배정 취소 등으로 정산 무효화
+//   refunded  — 지급 이후 환수
+model RefereeSettlement {
+  id            BigInt    @id @default(autoincrement())
+  referee_id    BigInt
+  assignment_id BigInt    @unique // 1:1 (한 배정당 하나의 정산만)
+  amount        Int // 원 단위
+  status        String    @default("pending") @db.VarChar
+  scheduled_at  DateTime? @db.Timestamp(6) // 지급 예정 등록 시각
+  paid_at       DateTime? @db.Timestamp(6) // 지급 완료 시각
+  memo          String?
+  created_at    DateTime  @default(now()) @db.Timestamp(6)
+  updated_at    DateTime  @updatedAt @db.Timestamp(6)
+
+  referee    Referee           @relation(fields: [referee_id], references: [id], onDelete: Cascade)
+  assignment RefereeAssignment @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
+
+  @@index([referee_id])
+  @@index([status])
+  @@map("referee_settlements")
+}
+
+// 협회 배정비 단가표(AssociationFeeSetting): 협회당 1행, 역할별 기본 배정비.
+// 이유: 배정 생성 시 fee 필드가 비어있으면 role에 따라 이 표의 값을 자동 적용.
+//       사무국장이 언제든 수정 가능. 새 배정에만 영향(기존 정산 금액 불변).
+model AssociationFeeSetting {
+  id             BigInt   @id @default(autoincrement())
+  association_id BigInt   @unique // 1협회당 1행
+  fee_main       Int      @default(80000) // 주심
+  fee_sub        Int      @default(60000) // 부심
+  fee_recorder   Int      @default(40000) // 기록
+  fee_timer      Int      @default(40000) // 타이머
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+  updated_at     DateTime @updatedAt @db.Timestamp(6)
+
+  association Association @relation(fields: [association_id], references: [id], onDelete: Cascade)
+
+  @@map("association_fee_settings")
+}
+
+// ── 심판 정산 서류(RefereeDocument): 자격증/신분증/통장 사본 등 정산에 필요한 서류 ──
+// 이미지는 AES-256-GCM 암호화 후 DB에 base64로 저장. 파일 시스템/외부 스토리지 미사용.
+// 1심판당 서류 종류별 1장만 허용 (@@unique).
+model RefereeDocument {
+  id             BigInt   @id @default(autoincrement())
+  referee_id     BigInt
+  doc_type       String   @db.VarChar // "certificate" | "id_card" | "bankbook"
+  encrypted_data String // AES-256-GCM 암호화된 이미지 (base64)
+  file_size      Int // 원본 바이트 수
+  file_type      String   @db.VarChar // "image/jpeg" | "image/png" | "application/pdf"
+  ocr_status     String   @default("pending") @db.VarChar // pending/completed/failed/skipped
+  ocr_result     Json? // OCR 추출 결과 원본
+  uploaded_by    BigInt // 업로드한 User.id (본인 또는 관리자)
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+  updated_at     DateTime @updatedAt @db.Timestamp(6)
+
+  referee Referee @relation(fields: [referee_id], references: [id], onDelete: Cascade)
+
+  @@unique([referee_id, doc_type]) // 1심판당 서류 종류별 1장
+  @@index([referee_id])
+  @@map("referee_documents")
+}
+
+// ============================================================================
+// 심판 배정 워크플로우 (1차: 공고 + 신청 + 선정풀 스켈레톤)
+// ----------------------------------------------------------------------------
+// 흐름:
+//   1) 협회 팀장/총무가 AssignmentAnnouncement(공고) 게시 — 대회/일자/필요인원
+//   2) 심판(또는 경기원)이 AssignmentApplication(신청) 제출 — 신청 일자 체크
+//   3) [2차] 협회가 DailyAssignmentPool(일자별 선정 풀)로 확정
+//   4) [2차] 풀 → RefereeAssignment(경기별 배정)로 내려감 (pool_id 연결)
+// ============================================================================
+
+// 배정 신청 공고 — 심판팀장/경기팀장이 게시
+// tournament_id는 Tournament.id (UUID/String)
+model AssignmentAnnouncement {
+  id             BigInt     @id @default(autoincrement())
+  tournament_id  String     @db.VarChar // Tournament.id (UUID)
+  association_id BigInt // 게시 협회 (IDOR 필터 키)
+  title          String     @db.VarChar
+  description    String?    @db.Text
+  role_type      String     @db.VarChar // "referee" | "game_official"
+  // 공고 대상 일자들 (PostgreSQL Date[])
+  dates          DateTime[] @db.Date
+  // 일자별 필요 인원: {"YYYY-MM-DD": number}. 타임존 이슈 회피 위해 키는 문자열 고정
+  required_count Json
+  deadline       DateTime?  @db.Timestamp(6)
+  status         String     @default("open") @db.VarChar // open/closed/cancelled
+  created_by     BigInt // User.id (게시자)
+  created_at     DateTime   @default(now()) @db.Timestamp(6)
+  updated_at     DateTime   @updatedAt @db.Timestamp(6)
+
+  association  Association             @relation(fields: [association_id], references: [id], onDelete: Cascade)
+  applications AssignmentApplication[]
+
+  @@index([tournament_id])
+  @@index([association_id])
+  @@index([status])
+  @@map("assignment_announcements")
+}
+
+// 배정 신청 — 심판/경기원이 공고에 신청
+// @@unique: 한 심판이 같은 공고에 중복 신청 방지
+model AssignmentApplication {
+  id              BigInt   @id @default(autoincrement())
+  announcement_id BigInt
+  referee_id      BigInt
+  memo            String?  @db.Text
+  status          String   @default("submitted") @db.VarChar // submitted/withdrawn
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+
+  announcement AssignmentAnnouncement      @relation(fields: [announcement_id], references: [id], onDelete: Cascade)
+  referee      Referee                     @relation(fields: [referee_id], references: [id], onDelete: Cascade)
+  dates        AssignmentApplicationDate[]
+
+  @@unique([announcement_id, referee_id])
+  @@index([referee_id])
+  @@map("assignment_applications")
+}
+
+// 신청 일자 (N:M) — 한 신청이 여러 일자를 선택 가능
+model AssignmentApplicationDate {
+  id             BigInt   @id @default(autoincrement())
+  application_id BigInt
+  date           DateTime @db.Date
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+
+  application AssignmentApplication @relation(fields: [application_id], references: [id], onDelete: Cascade)
+
+  @@unique([application_id, date])
+  @@index([date])
+  @@map("assignment_application_dates")
+}
+
+// 일자별 선정 풀 (2차에서 본격 사용, 1차에서는 모델만 생성)
+// 협회 관리자가 신청자 중 특정 일자에 "이 심판을 쓴다"고 확정하는 단계
+model DailyAssignmentPool {
+  id             BigInt   @id @default(autoincrement())
+  tournament_id  String   @db.VarChar
+  association_id BigInt
+  date           DateTime @db.Date
+  referee_id     BigInt
+  role_type      String   @db.VarChar // "referee" | "game_official"
+  is_chief       Boolean  @default(false) // 주심/팀장 여부 (2차에서 활용)
+  selected_by    BigInt // User.id (선정한 관리자)
+  memo           String?  @db.Text
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+  updated_at     DateTime @updatedAt @db.Timestamp(6)
+
+  association Association         @relation(fields: [association_id], references: [id], onDelete: Cascade)
+  referee     Referee             @relation(fields: [referee_id], references: [id], onDelete: Cascade)
+  // 이 풀에서 내려간 경기별 배정들 (2차에서 연결)
+  assignments RefereeAssignment[]
+
+  @@unique([tournament_id, date, referee_id, role_type])
+  @@index([tournament_id, date])
+  @@index([association_id])
+  @@map("daily_assignment_pools")
 }
