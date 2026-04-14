@@ -353,6 +353,39 @@ Phase 1(열혈농구단 즉시 해결)을 먼저 독립적으로 완료한 뒤, 
 
 ## 구현 기록 (developer)
 
+### 로고 없는 팀 플레이스홀더: 이니셜 → city 텍스트 (2026-04-13)
+
+📝 구현한 기능: 로고 없는 팀의 플레이스홀더를 "팀명 첫 글자" → "primaryColor 배경 + city(지역명) 텍스트"로 변경. logoUrl이 있으면 이미지로, 없고 city가 있으면 지역명(예: "제주", "서울"), 둘 다 없으면 팀명 첫 글자(기존 fallback)로 3단 분기.
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/app/api/web/teams/route.ts | select에 `logoUrl: true` 추가, 직렬화 응답에 `logoUrl` 포함 | 수정 |
+| src/app/(web)/teams/_components/team-card.tsx | TeamCardData 타입에 `logoUrl?: string \| null` 추가. 로고 영역을 logoUrl 있음(img)/없음(city 플레이스홀더) 분기로 교체. 폰트 text-base → text-xs로 조정 (city 2-3자 수용) | 수정 |
+| src/app/(web)/teams/_components/teams-content.tsx | TeamFromApi에 `logo_url: string \| null` 추가, cardData에 `logoUrl: team.logo_url` 전달 | 수정 |
+| src/app/api/web/tournaments/[id]/public-teams/route.ts | team.select에 `logoUrl: true` 추가, 응답에 `logoUrl` 포함 | 수정 |
+| src/app/(web)/tournaments/[id]/_components/tournament-tabs.tsx | TeamsTabContent 타입에 `logoUrl: string \| null` 추가. 로고 영역을 img/플레이스홀더(city 우선) 분기로 교체. 폰트 text-base → text-xs sm:text-sm | 수정 |
+| src/app/(web)/teams/[id]/page.tsx | 히어로 팀 아이콘을 logoUrl 있음(img)/없음(city 플레이스홀더) 분기로 교체. city가 2-3자라 text-2xl/4xl → text-sm/xl로 축소 (긴 한글도 깨지지 않도록) | 수정 |
+
+💡 tester 참고:
+- 테스트 URL:
+  - `/teams` (목록): 로고 URL 없는 팀 카드 좌상단 11×11 사각형에 "제주", "서울" 같은 지역명 표시
+  - `/teams/{id}` (상세): 히어로 좌측 64~96px 팀 아이콘에 동일 규칙
+  - `/tournaments/{id}` → "참가팀" 탭: 원형 56~64px 아이콘에 동일 규칙
+- 정상 동작:
+  - 로고 URL 있는 팀 → 이미지 표시 (object-cover, rounded 유지)
+  - 로고 없고 city 있는 팀 → primaryColor 배경 + city 텍스트 (예: 제주 리딤 → "제주")
+  - 로고/city 모두 없는 팀 → 팀명 첫 글자 (기존 fallback)
+  - primaryColor가 #FFFFFF면 secondaryColor → 기본값 순으로 fallback (resolveAccent 유지)
+- 주의할 입력:
+  - city가 3자 이상인 경우 (예: "강원도") 작은 썸네일(11×11)에서 잘리는지 — text-xs로 대응했지만 4자 이상이면 truncate 필요할 수 있음
+  - logo_url이 깨진 URL인 경우 img onError 없음 → 필요시 추후 보강
+- tsc --noEmit: 통과(exit 0, 에러 0건)
+
+⚠️ reviewer 참고:
+- next/image 대신 일반 img 사용 (외부 이미지 최적화 불필요 + eslint 주석 처리)
+- resolveAccent 함수 로직 유지 (primaryColor가 #FFFFFF면 secondary 사용)
+- accepting_members 뱃지, 그라디언트 배경, 디비전 뱃지 등 기존 UI는 그대로 보존
+
 ### BracketView/MatchCard 모바일 한 화면 축소 (2026-04-13)
 
 📝 구현한 기능: 토너먼트 트리 카드/간격을 일괄 축소하여 모바일 375px 화면에서 4강 트리(3컬럼)가 가로 스크롤 없이 들어가도록 조정. `getCardSize`를 모든 라운드 수에 대해 sm 고정으로 변경.
@@ -685,6 +718,7 @@ tsc --noEmit 통과. 미푸시 커밋: N/A (PM 커밋 대기)
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-13 | developer | 로고 없는 팀 플레이스홀더 이니셜→city 텍스트 (teams API + team-card + teams-content + public-teams API + tournament-tabs + teams/[id] 히어로, 6파일, tsc 통과) | 완료 |
 | 04-13 | developer | 참가팀 탭 + 팀 목록 페이지 카드 그리드 통일 (tournament-tabs TeamsTabContent 4열+선수목록 제거, public-teams API city/district 추가, teams-content TossCard 리스트→TeamCard 그리드+max-w 1200, 3파일, tsc 통과) | 완료 |
 | 04-13 | developer | 대진표 NBA 스타일 리디자인 Phase A (match-card 승자/패자 명암+좌측막대 w-1+시드뱃지 승자강조+점수크기차등, bracket-view 연결선 primary+굵게 강약+라운드헤더 칩형태+경기수표시, bracket-builder isActive 기준 winnerTeamId로 정제, 3파일, tsc 통과) | 완료 |
 | 04-13 | developer | BracketView/MatchCard 모바일 한 화면 축소 (SIZE_MAP 100/120/140 + columnGap 24 + getCardSize sm 고정, 2파일, tsc 통과) | 완료 |

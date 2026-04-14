@@ -20,8 +20,8 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   const teamsWithPlayers = await prisma.tournamentTeam.findMany({
     where: { tournamentId: id },
     include: {
-      // 카드에 지역(city/district) 표시를 위해 select 확장
-      team: { select: { name: true, primaryColor: true, city: true, district: true } },
+      // 카드에 지역(city/district) + 로고(logoUrl) 표시를 위해 select 확장
+      team: { select: { name: true, primaryColor: true, logoUrl: true, city: true, district: true } },
       players: {
         select: {
           id: true,
@@ -40,6 +40,8 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     teamId: t.teamId.toString(), // Team 테이블의 실제 id (팀 페이지 링크용)
     teamName: t.team.name,
     primaryColor: t.team.primaryColor,
+    // 로고 URL — 프론트에서 이미지/플레이스홀더 분기 판단용
+    logoUrl: t.team.logoUrl,
     // 참가팀 탭 카드용 지역 정보 추가
     city: t.team.city,
     district: t.team.district,

@@ -6,6 +6,8 @@ interface TeamCardData {
   name: string;
   primaryColor: string | null;
   secondaryColor?: string | null;
+  // 로고 URL — 있으면 이미지로, 없으면 city 기반 플레이스홀더로 표시
+  logoUrl?: string | null;
   city: string | null;
   district: string | null;
   wins: number | null;
@@ -39,12 +41,23 @@ export function TeamCard({ team }: { team: TeamCardData }) {
         <div className="px-4 pb-4 flex flex-col gap-3">
           {/* 팀 로고 + 모집 뱃지 */}
           <div className="flex items-start justify-between">
-            <div
-              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[12px] text-base font-black text-white"
-              style={{ backgroundColor: accent }}
-            >
-              {team.name.charAt(0).toUpperCase()}
-            </div>
+            {/* 로고 있으면 이미지, 없으면 city(지역명) 표시, city도 없으면 팀명 첫 글자 */}
+            {team.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- 외부 이미지, next/image 최적화 불필요
+              <img
+                src={team.logoUrl}
+                alt=""
+                className="h-11 w-11 flex-shrink-0 rounded-[12px] object-cover"
+              />
+            ) : (
+              <div
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[12px] text-xs font-black text-white"
+                style={{ backgroundColor: accent }}
+              >
+                {/* city(지역명)가 있으면 우선 표시 (예: "제주", "서울") — 없으면 팀명 첫 글자 */}
+                {team.city ?? team.name.charAt(0).toUpperCase()}
+              </div>
+            )}
             {team.accepting_members && (
               <Badge variant="success">모집중</Badge>
             )}

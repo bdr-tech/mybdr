@@ -145,14 +145,24 @@ export default async function TeamDetailPage({
           <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-end lg:justify-between">
             {/* 좌측: 팀 로고 + 정보 */}
             <div className="flex items-center gap-3 sm:gap-6">
-              {/* 팀 이니셜 아이콘 (w-24 h-24) */}
+              {/* 팀 로고 — 있으면 이미지, 없으면 primaryColor 배경 + city(지역명) 텍스트 */}
               <div className="relative flex-shrink-0">
-                <div
-                  className="flex h-16 w-16 sm:h-24 sm:w-24 items-center justify-center rounded border-4 border-[var(--color-background)] text-2xl sm:text-4xl font-black text-white shadow-xl"
-                  style={{ backgroundColor: accent }}
-                >
-                  {team.name.charAt(0).toUpperCase()}
-                </div>
+                {team.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- 외부 이미지, next/image 최적화 불필요
+                  <img
+                    src={team.logoUrl}
+                    alt={team.name}
+                    className="h-16 w-16 sm:h-24 sm:w-24 rounded border-4 border-[var(--color-background)] object-cover shadow-xl"
+                  />
+                ) : (
+                  <div
+                    className="flex h-16 w-16 sm:h-24 sm:w-24 items-center justify-center rounded border-4 border-[var(--color-background)] text-sm sm:text-xl font-black text-white shadow-xl"
+                    style={{ backgroundColor: accent }}
+                  >
+                    {/* city(지역명) 우선 — 없을 때만 팀명 첫 글자 */}
+                    {team.city ?? team.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 {/* 디비전 배지 — 아이콘 우하단 */}
                 {division && (
                   <div

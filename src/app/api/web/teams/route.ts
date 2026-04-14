@@ -54,6 +54,8 @@ export async function GET(request: NextRequest) {
           name: true,
           primaryColor: true,
           secondaryColor: true,
+          // 로고 URL — 있으면 이미지, 없으면 city 기반 플레이스홀더로 렌더링
+          logoUrl: true,
           city: true,
           district: true,
           wins: true,
@@ -80,6 +82,8 @@ export async function GET(request: NextRequest) {
       name: t.name,
       primaryColor: t.primaryColor,
       secondaryColor: t.secondaryColor,
+      // 로고 URL — 프론트에서 이미지/플레이스홀더 분기 판단용
+      logoUrl: t.logoUrl,
       city: t.city,
       district: t.district,
       wins: t.wins,

@@ -281,6 +281,8 @@ function TeamsTabContent({ tournamentId }: { tournamentId: string }) {
           teamId: string; // Team 테이블의 실제 id (팀 페이지 링크용)
           teamName: string;
           primaryColor: string | null;
+          // 로고 URL — 있으면 이미지, 없으면 city 플레이스홀더
+          logoUrl: string | null;
           city: string | null;
           district: string | null;
           groupName: string | null;
@@ -293,13 +295,23 @@ function TeamsTabContent({ tournamentId }: { tournamentId: string }) {
             className="flex flex-col items-center gap-2 rounded-lg border p-3 transition-colors hover:opacity-80 sm:p-4"
             style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
           >
-            {/* 팀 로고 원형 — 팀 primary 색상 배경, 팀명 첫 글자 */}
-            <div
-              className="flex h-14 w-14 items-center justify-center rounded-full text-base font-bold text-white sm:h-16 sm:w-16"
-              style={{ backgroundColor: t.primaryColor ?? "var(--color-primary)" }}
-            >
-              {t.teamName.charAt(0)}
-            </div>
+            {/* 팀 로고: 있으면 이미지, 없으면 primaryColor 배경 + city(지역명) 텍스트 */}
+            {t.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- 외부 이미지, next/image 최적화 불필요
+              <img
+                src={t.logoUrl}
+                alt=""
+                className="h-14 w-14 rounded-full object-cover sm:h-16 sm:w-16"
+              />
+            ) : (
+              <div
+                className="flex h-14 w-14 items-center justify-center rounded-full text-xs font-bold text-white sm:h-16 sm:w-16 sm:text-sm"
+                style={{ backgroundColor: t.primaryColor ?? "var(--color-primary)" }}
+              >
+                {/* city(지역명) 우선 — 없을 때만 팀명 첫 글자 */}
+                {t.city ?? t.teamName.charAt(0)}
+              </div>
+            )}
             {/* 팀명 — 가운데 정렬, 잘림 방지 */}
             <p className="w-full truncate text-center text-sm font-bold">{t.teamName}</p>
             {/* 지역 — city + district (없으면 생략) */}

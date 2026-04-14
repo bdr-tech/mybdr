@@ -13,6 +13,8 @@ interface TeamFromApi {
   name: string;
   primary_color: string | null;
   secondary_color: string | null;
+  // 로고 URL — API가 snake_case로 내려줌 (apiSuccess 자동 변환)
+  logo_url: string | null;
   city: string | null;
   district: string | null;
   wins: number | null;
@@ -221,6 +223,8 @@ export function TeamsContent({
                 name: team.name,
                 primaryColor: team.primary_color,
                 secondaryColor: team.secondary_color,
+                // 로고 URL — snake_case(logo_url) → camelCase(logoUrl) 변환하여 전달
+                logoUrl: team.logo_url,
                 city: team.city,
                 district: team.district,
                 wins: team.wins,
