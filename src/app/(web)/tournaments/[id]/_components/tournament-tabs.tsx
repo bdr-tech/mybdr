@@ -33,15 +33,14 @@ import { FinalsSidebar } from "../bracket/_components/finals-sidebar";
 // 주의: 경기 일정은 "일정" 탭에서 이미 보여주므로 여기서는 LeagueSchedule을 쓰지 않는다.
 import { LeagueStandings, type LeagueTeam } from "../bracket/_components/league-standings";
 
-// 탭 타입 정의
-export type TabKey = "overview" | "schedule" | "standings" | "bracket" | "teams";
+// 탭 타입 정의 (standings는 bracket에 통합 — 백엔드 페이지는 유지)
+export type TabKey = "overview" | "bracket" | "schedule" | "teams";
 
-// 탭 메타 정보
+// 탭 메타 정보 — 순서: 대회정보 → 대진표 → 일정 → 참가팀
 const TAB_META: { key: TabKey; label: string; icon: string }[] = [
   { key: "overview", label: "대회정보", icon: "info" },
-  { key: "schedule", label: "일정", icon: "calendar_month" },
-  { key: "standings", label: "순위", icon: "leaderboard" },
   { key: "bracket", label: "대진표", icon: "account_tree" },
+  { key: "schedule", label: "일정", icon: "calendar_month" },
   { key: "teams", label: "참가팀", icon: "groups" },
 ];
 
@@ -120,115 +119,6 @@ function ScheduleTabContent({ tournamentId }: { tournamentId: string }) {
   );
 }
 
-// -- 순위 탭 콘텐츠 (API로 lazy load) --
-function StandingsTabContent({ tournamentId }: { tournamentId: string }) {
-  const { data, isLoading } = useSWR(
-    `/api/web/tournaments/${tournamentId}/public-standings`,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
-
-  if (isLoading) return <TabSkeleton />;
-
-  // apiSuccess()는 .data 래핑 없이 직접 반환
-  // 순위표 팀 타입 (API에서 gamesPlayed, winRate, pointDifference, pointsFor 추가됨)
-  type StandingsTeam = {
-    id: string;
-    teamId: string; // Team 테이블의 실제 id (팀 페이지 링크용)
-    teamName: string;
-    wins: number;
-    losses: number;
-    gamesPlayed: number;
-    winRate: number;
-    pointDifference: number;
-    pointsFor: number;
-  };
-  const teams: StandingsTeam[] = data?.teams ?? [];
-
-  // 대회 상태에 따라 공동순위 판단 기준이 달라짐
-  // - 진행 중: 승률만 같으면 공동순위 (세부 기준은 아직 의미 없음)
-  // - 종료: 승률+득실차+다득점 모두 같아야 공동순위 (최종 확정 순위)
-  const isCompleted = data?.tournamentStatus === "completed";
-
-  let rank = 1;
-  const ranks = teams.map((t, i) => {
-    if (i > 0) {
-      const prev = teams[i - 1];
-      if (isCompleted) {
-        // 종료된 대회: 모든 세부 기준까지 같아야 공동순위 (거의 발생 안 함)
-        if (
-          t.winRate === prev.winRate &&
-          t.pointDifference === prev.pointDifference &&
-          t.pointsFor === prev.pointsFor
-        ) {
-          // 공동순위 유지
-        } else {
-          rank = i + 1;
-        }
-      } else {
-        // 진행 중 대회: 승률만 같으면 공동순위
-        if (t.winRate === prev.winRate) {
-          // 공동순위 유지
-        } else {
-          rank = i + 1;
-        }
-      }
-    }
-    return rank;
-  });
-
-  // KBL 승률 표시: .XXX 형식 (전승만 1.000, 0경기는 "-")
-  const formatWinRate = (t: StandingsTeam) => {
-    if (t.gamesPlayed === 0) return "-";
-    if (t.winRate === 1) return "1.000";
-    return t.winRate.toFixed(3).replace(/^0/, "");
-  };
-
-  return (
-    <div>
-      <h2 className="mb-6 text-xl font-bold sm:text-2xl">순위표</h2>
-      <table className="w-full text-sm">
-        <thead>
-          <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
-            <th className="px-2 py-2 text-left text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>#</th>
-            <th className="px-2 py-2 text-left text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>팀</th>
-            <th className="px-2 py-2 text-center text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>경기</th>
-            <th className="px-2 py-2 text-center text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>승</th>
-            <th className="px-2 py-2 text-center text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>패</th>
-            <th className="px-2 py-2 text-center text-xs font-medium sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>승률</th>
-            <th className="hidden px-2 py-2 text-center text-xs font-medium sm:table-cell sm:px-3" style={{ color: "var(--color-text-tertiary)" }}>득실차</th>
-          </tr>
-        </thead>
-        <tbody>
-          {teams.map((t, i) => {
-            const isTop3 = ranks[i] <= 3;
-            return (
-              <tr
-                key={t.id}
-                style={{
-                  borderBottom: "1px solid var(--color-border)",
-                  borderLeft: isTop3 ? "3px solid var(--color-primary)" : "3px solid transparent",
-                }}
-              >
-                <td className="px-2 py-2.5 text-sm font-bold sm:px-3" style={{ color: "var(--color-primary)" }}>{ranks[i]}</td>
-                <td className="px-2 py-2.5 font-medium sm:px-3">
-                  <Link href={`/teams/${t.teamId}`} className="hover:underline">{t.teamName}</Link>
-                </td>
-                <td className="px-2 py-2.5 text-center sm:px-3">{t.gamesPlayed}</td>
-                <td className="px-2 py-2.5 text-center sm:px-3">{t.wins}</td>
-                <td className="px-2 py-2.5 text-center sm:px-3">{t.losses}</td>
-                <td className="px-2 py-2.5 text-center font-mono sm:px-3">{formatWinRate(t)}</td>
-                <td className="hidden px-2 py-2.5 text-center sm:table-cell sm:px-3">
-                  {t.pointDifference > 0 ? `+${t.pointDifference}` : t.pointDifference}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
 // -- 대회정보 탭: 대시보드 헤더 + 서버 렌더링 개요 콘텐츠 --
 function OverviewWithDashboard({ tournamentId, overviewContent }: { tournamentId: string; overviewContent: ReactNode }) {
@@ -478,9 +368,8 @@ export function TournamentTabs({
       {/* 탭 콘텐츠: 개요는 서버 렌더링, 나머지는 lazy loading */}
       <div>
         {activeTab === "overview" && <OverviewWithDashboard tournamentId={tournamentId} overviewContent={overviewContent} />}
-        {activeTab === "schedule" && <ScheduleTabContent tournamentId={tournamentId} />}
-        {activeTab === "standings" && <StandingsTabContent tournamentId={tournamentId} />}
         {activeTab === "bracket" && <BracketTabContent tournamentId={tournamentId} />}
+        {activeTab === "schedule" && <ScheduleTabContent tournamentId={tournamentId} />}
         {activeTab === "teams" && <TeamsTabContent tournamentId={tournamentId} />}
       </div>
     </div>
