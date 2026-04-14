@@ -2,6 +2,42 @@
 <!-- 담당: planner-architect, developer | 최대 30항목 -->
 <!-- 프로젝트의 폴더 구조, 파일 역할, 핵심 패턴을 기록 -->
 
+### [2026-04-15] 팀명 2필드 구조 (Team.name_en + name_primary) + Referee 시스템 통합
+- **분류**: architecture
+- **발견자**: developer
+- **내용**: Team 모델 2개 필드 추가 — name(한글 필수) + name_en(영문 선택) + name_primary("ko"|"en", 기본 "ko"). 대회/경기/랭킹 전역에서 name_primary에 따라 한글/영문 우선 표시. 동시에 subin-referee 브랜치의 Referee 시스템 14개 모델(associations, association_admins, referees, referee_documents, referee_matches, referee_payouts, referee_reviews 등)을 현재 schema에 통합하여 브랜치 간 schema 분기 해소.
+- **참조횟수**: 0
+
+### [2026-04-14] 대회 상세 페이지 전면 개편 (탭 4개 + 히어로 통합 + 1열)
+- **분류**: architecture
+- **발견자**: planner-architect
+- **내용**: `/tournaments/[id]` 상세 페이지 구조 개편. (1) 탭 4개: 대회정보 / 대진표 / 일정 / 참가팀 (기존 "순위" 탭 제거 → 대진표에 리그 순위표 통합). (2) 히어로 통합: PREMIUM 뱃지 + 날짜/장소/참가비/팀수 요약 + 참가 신청 버튼 + 캘린더 추가 + 문의 버튼(settings.contact_phone 기반). (3) 레이아웃: 사이드바 완전 제거 → 1열 전체 너비. (4) 참가 현황 프로그레스바로 "N/max팀" 시각화. (5) 영향 파일: tournaments/[id]/page.tsx, tournament-hero.tsx(신규), tournament-tabs.tsx.
+- **참조횟수**: 0
+
+### [2026-04-14] 대진표 시스템 4단계 구현 (리그+토너먼트 자동 흐름)
+- **분류**: architecture
+- **발견자**: planner-architect
+- **내용**: format별 대진표 시스템 단계적 구현. (1) Phase 1 — 풀리그 순위표: LeagueStandings 컴포넌트, 경기결과 실시간 집계(public-standings 패턴). (2) Phase 2A — 리그 완료 시 토너먼트 자동 팀 할당: assignTeamsToKnockout() 유틸, 순위 기반 TournamentTeam.seedNumber + homeTeamId 설정. (3) Phase 2B — 토너먼트 시드 뱃지 표시(TournamentTeam.seedNumber). (4) Phase 2C — 토너먼트 뼈대 미리 생성 + 슬롯 플레이스홀더(settings.homeSlotLabel="A조 1위" 등). (5) Phase 3 — admin wizard 포맷 세부설정(BracketSettingsForm, knockoutSize/thirdPlaceMatch/seedingMethod). (6) Phase 4a — 풀리그 경기 자동 생성(league-generator.ts, N*(N-1)/2 조합). 신규 파일: src/lib/tournaments/league-generator.ts, assign-knockout.ts.
+- **참조횟수**: 0
+
+### [2026-04-14] 토너먼트 트리 NBA.com 스타일 (BracketView 개편)
+- **분류**: architecture
+- **발견자**: developer
+- **내용**: 기존 절대위치 데스크톱 + 탭형 모바일 이원화 구조를 SVG 기반 단일 트리로 통일. (1) BracketView SVG 트리로 모바일/PC 동일 렌더링 + 가로 스크롤 + 좌/우 네비 버튼. (2) 카드 분리형: home/away 개별 카드 + gap-0.5로 붙여서 표시. (3) 좌측 세로 띠: 팀 유니폼 색 반영, 미확정 팀은 BDR Red(홈)/Navy(원정). (4) 슬롯 플레이스홀더 텍스트 표시("A조 1위" 등). 영향 파일: bracket-view.tsx, match-card.tsx.
+- **참조횟수**: 0
+
+### [2026-04-14] 대회 선수 userId 자동 연결 시스템 (link-player-user.ts)
+- **분류**: architecture
+- **발견자**: developer
+- **내용**: TournamentTeamPlayer.userId NULL 문제 해결 — 이름 매칭 기반 자동 연결 로직. (1) 핵심 유틸: src/lib/tournaments/link-player-user.ts(팀 멤버 이름 매칭으로 userId 설정, 정확 일치만 허용). (2) 현장 등록(v1 players API) 시 create 직후 자동 매칭. (3) admin 배치 API: /api/web/admin/tournaments/link-players (기존 NULL 데이터 일괄 정리). (4) 매칭 후보 2명 이상이면 skip(안전). (5) 프로필/랭킹의 userId 기반 집계 쿼리가 정상 작동하도록 복구.
+- **참조횟수**: 0
+
+### [2026-04-14] 사이트 전역 팀명/선수명 Link 전환
+- **분류**: architecture
+- **발견자**: developer
+- **내용**: 모든 팀명 텍스트 → `<Link href="/teams/{teamId}">`, 모든 선수명 텍스트 → `<Link href="/users/{userId}">`로 전환. 대회 경기 카드, 랭킹, 프로필 등 전역 적용. 예외: 일정 카드 내부 팀명 — 카드 전체가 이미 Link라 중첩 불가 → 내부 팀명은 Link 생략. 영향 파일: 10+ 카드 컴포넌트.
+- **참조횟수**: 0
+
 ### [2026-04-13] 대회 선수 등록 및 userId 연결 흐름 분석
 - **분류**: architecture
 - **발견자**: planner-architect

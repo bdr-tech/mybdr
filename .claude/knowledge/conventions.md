@@ -1,6 +1,40 @@
 # 코딩 규칙 및 스타일
 <!-- 담당: developer, reviewer | 최대 30항목 -->
 
+### [2026-04-14] 경기결과 실시간 집계 패턴 (Team.wins 필드 무시)
+- **분류**: convention
+- **발견자**: developer
+- **내용**: Team.wins/losses/draws 필드는 자동 갱신되지 않으므로 **절대 사용 금지**. 대신 매 쿼리마다 tournament_matches 테이블에서 집계한다. (1) 집계 대상 status: "completed" + "live" 둘 다 포함 (진행 중 경기도 현재 스코어 반영). (2) 적용 위치: public-standings, hotTeam, 팀 상세 페이지, 랭킹 모두 동일 패턴. (3) 무승부는 농구에 없으므로 제외.  **패턴**:
+  ```ts
+  const matches = await prisma.tournamentMatch.findMany({
+    where: { tournamentId, status: { in: ["completed", "live"] } },
+    select: { homeTeamId, awayTeamId, homeScore, awayScore },
+  });
+  // 팀별로 wins/losses 집계
+  ```
+- **참조횟수**: 0
+
+### [2026-04-14] API 응답 snake_case → camelCase 자동 변환 (fetcher 래퍼)
+- **분류**: convention
+- **발견자**: developer
+- **내용**: `apiSuccess()`는 응답을 snake_case로 자동 변환해 반환한다(래핑 없이 바로). 클라이언트에서 camelCase로 접근하려면 **fetcher 레벨에서 convertKeysToCamelCase() 적용**. 각 컴포넌트마다 `data.career_averages` vs `data.careerAverages` 고민할 필요 없음. **패턴**:
+  ```ts
+  // src/lib/utils/fetcher.ts
+  export async function fetcher<T>(url: string): Promise<T> {
+    const res = await fetch(url);
+    const json = await res.json();
+    return convertKeysToCamelCase(json) as T;
+  }
+  ```
+- **금지**: 응답을 `.data.X`로 접근 (apiSuccess에 data 래핑 없음). errors.md "apiSuccess 응답에 .data로 접근" 참조.
+- **참조횟수**: 0
+
+### [2026-04-14] 팀 카드 공통 컴포넌트 (TeamCard) 재사용
+- **분류**: convention
+- **발견자**: developer
+- **내용**: 팀 목록 페이지 + 대회 상세 "참가팀" 탭에서 같은 TeamCard 컴포넌트 사용. (1) 로고 이미지 없으면 primaryColor 배경 + city 텍스트로 대체. (2) 반응형 그리드: 모바일 2열 / 태블릿(md) 3열 / PC(lg) 4열. (3) 카드 전체가 `<Link href="/teams/{id}">`이므로 내부에 다시 Link 중첩 금지.
+- **참조횟수**: 0
+
 ### [2026-04-12] 테마 반응형 배경 위 텍스트는 `--color-on-*` 변수 사용 (text-white 금지)
 - **분류**: convention
 - **발견자**: pm

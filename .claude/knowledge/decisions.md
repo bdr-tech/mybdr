@@ -2,6 +2,38 @@
 <!-- 담당: planner-architect | 최대 30항목 -->
 <!-- "왜 A 대신 B를 선택했는지" 기술 결정의 배경과 이유를 기록 -->
 
+### [2026-04-14] 순위 로직: KBL 방식 (승률 → 득실차 → 다득점)
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: (1) 정렬 기준: 승률 1차 → 득실차 2차 → 다득점 3차 (KBL 공식 방식). (2) 공동순위 처리: 대회 진행 중에는 승률만 일치해도 공동순위, 대회 종료 후에는 세부 기준까지 전부 일치해야 공동순위. (3) 집계 소스: Team.wins/losses 필드 대신 tournament_matches에서 실시간 집계(status="completed"+"live" 둘 다 포함). (4) 무승부는 농구에 없으므로 제외.
+- **이유**: (1) KBL 방식은 한국 팬에게 가장 익숙한 기준. (2) Team.wins/losses는 자동 갱신되지 않아 실시간성 손상 — 매 쿼리 집계가 정확. (3) 진행 중 공동순위를 너무 엄격히 잡으면 UX가 혼란.
+- **대안 기각**: (A) NBA 방식(승률만) — 득실차를 무시해 한국 정서와 거리. (B) Team 필드 자동 갱신 트리거 — Flutter 앱 경로와 동기화 위험.
+- **참조횟수**: 0
+
+### [2026-04-14] 대진표 자동 생성 흐름 (뼈대 선생성 + 리그 완료 시 할당)
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: (1) 풀리그 자동 생성: N*(N-1)/2 조합을 league-generator.ts에서 생성. (2) 토너먼트 뼈대 미리 생성: 팀 미확정 상태여도 match 레코드를 전부 만들고 settings.homeSlotLabel("A조 1위")로 플레이스홀더 저장. (3) 리그 완료 시 자동 팀 할당: assignTeamsToKnockout()이 순위 기반 TournamentTeam.seedNumber + homeTeamId 설정. (4) 2의 제곱 아닌 knockoutSize(6팀, 12팀 등)도 BYE 자동 처리.
+- **이유**: (1) 뼈대 선생성하면 대진표 UI에서 "다음 경기는 A조 1위 vs B조 2위"를 미리 보여줄 수 있어 UX 개선. (2) BYE 자동 처리로 admin이 수동으로 부전승을 배치하지 않아도 됨. (3) seedNumber가 남아있어야 UI에서 시드 뱃지 표시 가능.
+- **대안 기각**: (A) 리그 종료 시점에 match 레코드를 일괄 생성 — 진행 중 대진표 미리보기 불가. (B) homeTeamId를 null로 두고 문자열 라벨 필드 추가 — DB 필드 증가, settings Json으로 해결 가능.
+- **참조횟수**: 0
+
+### [2026-04-14] 대회 선수 userId 자동 연결: 이름 정확 일치만 허용
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: (1) 현장등록(Flutter v1) 시 player_name을 TeamMember.name과 정확 일치로 매칭하여 TournamentTeamPlayer.userId 자동 설정. (2) 유사 매칭(레벤슈타인 등) 미사용. (3) 매칭 후보 2명 이상이면 skip. (4) 기존 NULL 데이터 정리용 admin 배치 API 제공. (5) 로직을 link-player-user.ts로 분리해 4곳에서 재사용.
+- **이유**: (1) 동명이인 오매칭이 한 번 발생하면 유저 기록이 엉뚱한 사람에게 연결되어 되돌리기 어려움. (2) 정확 일치만으로도 현장등록의 90%+가 자동 연결됨(팀 가입자는 이미 TeamMember에 이름 있음). (3) 실패 케이스는 admin 수동 연결로 해결.
+- **대안 기각**: (A) Flutter 앱에서 userId를 직접 전송 — 앱 업데이트 필요, 즉시 효과 없음. (B) 유사 매칭 — 오매칭 위험.
+- **참조횟수**: 0
+
+### [2026-04-14] 사이트 전역 팀명/선수명을 Link로 전환
+- **분류**: decision
+- **발견자**: pm
+- **결정**: 모든 팀명 → /teams/{teamId}, 선수명 → /users/{userId} 링크. 예외: 일정 카드 내부 팀명(카드 자체가 Link라 중첩 불가).
+- **이유**: (1) 대회/경기 맥락에서 "이 팀 뭐지? 이 선수 누구지?"를 한 번의 클릭으로 해소 — 탐색성 향상. (2) Link 중첩은 HTML 유효성 위반 + 접근성 문제 → 카드형은 예외 처리.
+- **대안 기각**: 모달 팝업 — 페이지 이동이 더 직관적, 뒤로가기로 복귀 가능.
+- **참조횟수**: 0
+
 ### [2026-04-13] 대회 기록 자동 연결: 4시나리오 우선순위 A>D>B>C
 - **분류**: decision
 - **발견자**: planner-architect
@@ -196,12 +228,6 @@
 - **분류**: decision
 - **발견자**: planner-architect
 - **내용**: 4개 페이지(games/teams/tournaments/community)의 필터가 각각 다른 방식(인라인 select, 탭 버튼, 커스텀 드롭다운, pill 탭)으로 구현되어 있어 일관성 없음. 공통 FloatingFilterPanel 컴포넌트를 만들어 페이지별 config 객체로 필터 항목을 전달하는 방식으로 통합. 선택 이유: (1) 화면 공간 절약 -- 필터가 항상 보이지 않고 필요할 때만 열림 (2) 일관된 UX -- 모든 페이지에서 동일한 패턴 (3) 모바일 친화 -- 좁은 화면에서 인라인 필터 4개가 2줄로 깨지는 문제 해결. 아이콘은 "tune" (filter_list보다 조절/설정 느낌이 강함). 패널은 모바일 하단시트 + 데스크탑 우측 슬라이드. 기존 필터 로직(URL params, state, API 호출)은 100% 유지하고 UI만 교체.
-- **참조횟수**: 0
-
-### [2026-03-25] 추가 최적화 조사: 9개 항목 발견 (기적용 9개 제외)
-- **분류**: decision
-- **발견자**: planner-architect
-- **내용**: 기적용 9개(SWR/폴링/캐시헤더/패키지정리/폰트/Redis/SQL/프리페치/병렬화) 제외하고 8개 영역 전수 조사. 발견 9개: (1) lucide-react 잔존 12파일 제거 필요. (2) rankings/games/tournaments/community API에 Cache-Control 미설정. (3) 커뮤니티 상세 generateMetadata+본문 중복 쿼리(React.cache로 해소). (4) 팀 overview-tab 3단 waterfall(topMembers 병렬화). (5) 커뮤니티 상세 post/session/comments 순차 실행(병렬화). (6) img태그 직접 사용(next/image 미활용). (7) next/image AVIF 미설정. (8) dynamic import 전무(효과 제한적이라 선택적). (9) ISR revalidate 미설정 페이지(courts/pricing). 잘 되어 있는 것: Tailwind purge, Prisma pool(5+pgbouncer), DB 인덱스 244개, staleTimes, 서버컴포넌트 병렬, Vercel 자동 압축.
 - **참조횟수**: 0
 
 ### [2026-03-25] 홈 프리페치: SWR fallbackData 방식 선택 (3안 비교)
