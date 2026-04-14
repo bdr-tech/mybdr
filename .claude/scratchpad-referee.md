@@ -2,6 +2,48 @@
 
 ---
 
+## 🚧 중단 지점 (2026-04-15) — 헬스체크 봇 2차 대기
+
+**상태**: 헬스체크 봇 1차 완료, 2차(cron 구현) 시작 전 중단
+**현재 담당**: pm
+
+### 봇 계정 정보 (개발 DB)
+- Bot-Admin: `bot-admin@healthcheck.bot` (User id=2995, 봇협회 secretary_general)
+- Bot-Referee: `bot-referee@healthcheck.bot` (User id=2996, Referee 매칭됨)
+- Bot-Guest: `bot-guest@healthcheck.bot` (User id=2997)
+- 비밀번호: `.env`의 `BOT_DEFAULT_PASSWORD`
+- BOT협회 id=1 (code=`BOT-HEALTHCHECK`)
+
+### 2차 재개 가이드
+1. `src/app/api/cron/referee-healthcheck/route.ts` 신규 (CRON_SECRET Bearer 패턴 — `referee-announcement-close/route.ts` 참고)
+2. 핵심 8항목 점검:
+   - DB ping (`prisma.$queryRaw SELECT 1`)
+   - Redis ping (Upstash)
+   - 봇 Admin 로그인 성공
+   - GET `/api/web/referees/me` (봇 Referee) → 200
+   - GET `/api/web/associations` → 200
+   - GET `/api/web/referee-applications/announcements` (봇 Referee) → 200
+   - 비인증 접근 차단: 토큰 없이 `/api/web/referee-admin/members` → 401
+   - IDOR 차단: 봇 Referee 토큰으로 타 협회 admin API → 403
+3. HealthCheckRun + HealthCheckResult 기록
+4. `vercel.json` crons에 `"0 * * * *"` (매시간) 등록
+5. tester 수동 GET으로 run 1건 생성 확인
+
+### 3차 대기 항목
+- `/referee/admin/healthcheck` 대시보드 (super_admin 전용, 최근 run 50개)
+- 실패 3회 연속 → `createNotificationBulk`로 super_admin 알림
+- 매일 새벽 전체 시나리오 점검 cron (25 페이지 + 37 API + 데이터 무결성)
+- 30일 retention 자동 삭제
+
+### 진행 현황표
+| 단계 | 범위 | 상태 | 커밋 |
+|------|------|------|------|
+| 1차 | DB 모델 + 봇 3계정 + requireNotBot 가드(6 API) | ✅ | f254274 |
+| 2차 | cron + 핵심 8항목 점검 + vercel.json | ⏳ 대기 | — |
+| 3차 | 대시보드 + 실패 알림 + daily cron + retention | ⏳ 대기 | — |
+
+---
+
 ## 구현 기록 (developer) — 헬스체크 봇 1차 (2026-04-13)
 
 📝 구현한 기능:
