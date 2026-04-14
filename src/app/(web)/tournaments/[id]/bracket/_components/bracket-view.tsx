@@ -191,8 +191,8 @@ function BracketTreeView({
             <path
               key={path.id}
               d={path.d}
-              stroke={path.isActive ? "var(--color-primary)" : "var(--color-border)"}
-              strokeWidth={path.isActive ? 2 : 1}
+              stroke={path.isActive ? "var(--color-primary)" : "var(--color-text-muted)"}
+              strokeWidth={path.isActive ? 2.5 : 1.5}
               fill="none"
             />
           ))}

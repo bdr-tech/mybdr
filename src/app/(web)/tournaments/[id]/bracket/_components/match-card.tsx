@@ -82,18 +82,17 @@ function TeamRow({
 
   // 좌측 세로 띠 색상 결정
   // - 팀 확정 + primaryColor가 흰색 아님 → 유니폼 색상
-  // - 팀 확정 + 흰색 → secondaryColor 또는 fallback
-  // - 팀 미확정 → home=primary(red), away=secondary(navy)
+  // - 팀 확정 + 흰색 → BDR 브랜드 컬러 fallback (home=Red, away=Navy)
+  // - 팀 미확정 → home=Red, away=Navy
+  const BDR_RED = "#E31B23";
+  const BDR_NAVY = "#1B3C87";
   const isWhiteColor = (c: string | null | undefined) =>
     !c || c.toLowerCase() === "#ffffff" || c.toLowerCase() === "#fff";
   const stripeColor = (() => {
-    if (team) {
-      if (!isWhiteColor(team.team.primaryColor)) return team.team.primaryColor!;
-      // 흰색이면 position별 fallback
-      return position === "home" ? "var(--color-primary)" : "var(--color-secondary)";
+    if (team && !isWhiteColor(team.team.primaryColor)) {
+      return team.team.primaryColor!;
     }
-    // 팀 미확정: home은 primary(red), away는 secondary(navy)
-    return position === "home" ? "var(--color-primary)" : "var(--color-secondary)";
+    return position === "home" ? BDR_RED : BDR_NAVY;
   })();
 
   return (
@@ -140,8 +139,8 @@ function TeamRow({
       ) : (
         <span
           className={`flex-1 truncate font-medium leading-tight ${
-            // 슬롯 라벨은 팀 이름이 아니라 "대기 중" 의미이므로 이탤릭 + muted
-            slotLabel ? "italic text-[var(--color-text-muted)]" : loser ? "text-[var(--color-text-secondary)]" : "text-[var(--color-text-primary)]"
+            // 슬롯 라벨은 대기 중 의미 — 이탤릭 + 진한 secondary로 시인성 향상
+            slotLabel ? "italic text-[var(--color-text-secondary)]" : loser ? "text-[var(--color-text-secondary)]" : "text-[var(--color-text-primary)]"
           }`}
         >
           {/* 우선순위: bye(부전승) > slotLabel("1위"/"4위") > TBD */}
@@ -156,7 +155,7 @@ function TeamRow({
             ? "text-[12px] font-black text-[var(--color-primary)]"
             : isLive
               ? "font-bold text-[var(--color-primary)]"
-              : "font-bold text-[var(--color-text-muted)]"
+              : "font-bold text-[var(--color-text-secondary)]"
         }`}
       >
         {showScore ? score : "-"}
@@ -169,25 +168,27 @@ export function MatchCard({ match, size = "lg", showBadge = false, className = "
   const isBye = match.status === "bye";
   const isLive = match.status === "in_progress";
 
-  const cardClasses = [
-    "rounded-[12px] border overflow-hidden transition-all duration-150",
+  // 카드 컨테이너: 외곽선만 살짝, 내부 row 2개를 공간 gap으로 분리
+  const wrapperClasses = [
+    "relative flex flex-col gap-0.5",  // home/away row 사이 2px 간격
     SIZE_MAP[size],
-    // 상태별 스타일
-    isBye
-      ? "border-dashed border-[var(--color-border)] bg-[var(--color-surface)] opacity-70"
-      : isLive
-        ? "border-2 border-[var(--color-primary)] bg-[var(--color-card)] shadow-[0_0_12px_rgba(244,162,97,0.15)]"
-        : "border-[var(--color-border)] bg-[var(--color-card)]",
-    // 호버 (bye 제외)
-    !isBye && "hover:border-[rgba(244,162,97,0.3)] hover:bg-[var(--color-surface)] cursor-pointer",
     className,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  ].filter(Boolean).join(" ");
+
+  // 각 row의 공통 스타일 (팀당 개별 카드 느낌)
+  const rowBase = [
+    "rounded-[3px] border overflow-hidden transition-all duration-150",  // 라운드 최소화 (12→3)
+    isBye
+      ? "border-dashed border-[var(--color-text-muted)] bg-[var(--color-surface)] opacity-70"
+      : isLive
+        ? "border-[var(--color-primary)] bg-[var(--color-card)]"
+        : "border-[var(--color-text-muted)] bg-[var(--color-card)]",  // 테두리 진하게 border→text-muted
+    !isBye && "hover:bg-[var(--color-surface)] cursor-pointer",
+  ].filter(Boolean).join(" ");
 
   return (
-    <div className={`${cardClasses} relative`}>
-      {/* LIVE NOW 배지 - 진행중 경기에 카드 상단 표시 (시안 bdr_3 참조) */}
+    <div className={wrapperClasses}>
+      {/* LIVE NOW 배지 */}
       {isLive && (
         <div
           className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 text-[8px] font-bold uppercase rounded z-10 text-white"
@@ -197,23 +198,21 @@ export function MatchCard({ match, size = "lg", showBadge = false, className = "
         </div>
       )}
 
-      {/* 홈팀 */}
-      <TeamRow match={match} team={match.homeTeam} score={match.homeScore} position="home" />
+      {/* 홈팀 — 개별 카드 */}
+      <div className={rowBase}>
+        <TeamRow match={match} team={match.homeTeam} score={match.homeScore} position="home" />
+      </div>
 
-      {/* 구분선 */}
-      <div className={`border-t ${isBye ? "border-[var(--color-border)]" : "border-[var(--color-border)]"}`} />
+      {/* 어웨이팀 — 개별 카드 (gap-0.5로 살짝 분리) */}
+      <div className={rowBase}>
+        <TeamRow match={match} team={match.awayTeam} score={match.awayScore} position="away" />
+      </div>
 
-      {/* 어웨이팀 */}
-      <TeamRow match={match} team={match.awayTeam} score={match.awayScore} position="away" />
-
-      {/* 상태 뱃지 - showBadge=true일 때만 (모바일에서 사용) */}
+      {/* 상태 뱃지 (모바일에서 사용) */}
       {showBadge && (isLive || match.status === "completed" || isBye) && (
-        <>
-          <div className={`border-t ${isBye ? "border-[var(--color-border)]" : "border-[var(--color-border)]"}`} />
-          <div className="flex justify-center py-0.5">
-            <StatusBadge status={match.status} />
-          </div>
-        </>
+        <div className="flex justify-center py-0.5">
+          <StatusBadge status={match.status} />
+        </div>
       )}
     </div>
   );
