@@ -6,6 +6,8 @@ import {
 import { prisma } from "@/lib/db/prisma";
 import { z } from "zod";
 import type { NextRequest } from "next/server";
+// 경기 배정 생성 시 심판에게 알림 발송
+import { notifyAssignmentCreated } from "@/lib/notifications/referee-events";
 
 /**
  * POST /api/web/referee-admin/assignments
@@ -209,6 +211,19 @@ export async function POST(req: NextRequest) {
         pool_id: true,
         fee: true,
       },
+    });
+
+    // 7) 알림: 배정된 심판에게 "XX대회 YYYY-MM-DD HH:MM 주심 배정" 알림
+    //    이유: 배정 직후 심판이 일정을 확인하고 책임자와 조율할 수 있어야 함.
+    //    tournament 이름은 match.tournamentId로 조회. 실패해도 배정 자체는 성공 반환.
+    const tournamentInfo = await prisma.tournament.findUnique({
+      where: { id: match.tournamentId },
+      select: { name: true },
+    });
+    await notifyAssignmentCreated(referee_id, {
+      tournament_name: tournamentInfo?.name ?? "대회",
+      scheduled_at: match.scheduledAt ?? null,
+      role,
     });
 
     return apiSuccess({ assignment: created }, 201);

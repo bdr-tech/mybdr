@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+// 헤더 우측에 알림 벨 — referee 플랫폼 전용 컴포넌트
+import { NotificationBell } from "./notification-bell";
 
 /**
  * 심판 플랫폼 독자 셸.
@@ -289,8 +291,11 @@ export function RefereeShell({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
 
-        {/* 우측: 본사이트 링크 */}
+        {/* 우측: 알림 벨 + 본사이트 링크
+            이유: 벨은 모바일/데스크톱 공통으로 보여야 하므로 헤더 우측에 배치.
+                 MyBDR 홈 링크는 그 다음 */}
         <div className="ml-auto flex items-center gap-2">
+          <NotificationBell />
           <Link
             href="/"
             className="flex h-9 items-center gap-1 px-3 text-xs font-semibold"

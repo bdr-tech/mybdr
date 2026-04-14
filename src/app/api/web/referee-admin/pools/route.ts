@@ -6,6 +6,8 @@ import {
 import { prisma } from "@/lib/db/prisma";
 import { z } from "zod";
 import type { NextRequest } from "next/server";
+// 선정 시 심판 본인에게 알림 발송 — 헬퍼 내부에서 try/catch 처리
+import { notifyPoolSelected } from "@/lib/notifications/referee-events";
 
 /**
  * /api/web/referee-admin/pools
@@ -133,6 +135,19 @@ export async function POST(req: NextRequest) {
         memo: true,
         created_at: true,
       },
+    });
+
+    // 6) 알림: 선정된 심판에게 "XX대회 YYYY-MM-DD 선정" 알림 발송
+    //    이유: 선정되자마자 심판이 일정을 확인하고 필요 시 사전 준비 가능.
+    //    tournament_name이 필요하므로 이름만 간단히 조회 (select로 최소화).
+    const tournamentInfo = await prisma.tournament.findUnique({
+      where: { id: tournament_id },
+      select: { name: true },
+    });
+    await notifyPoolSelected([referee_id], {
+      tournament_name: tournamentInfo?.name ?? "대회",
+      date: dateUtc,
+      role_type,
     });
 
     return apiSuccess({ pool: created }, 201);

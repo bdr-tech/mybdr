@@ -3,9 +3,170 @@
 ---
 
 ## 📌 현재 작업
-- **요청**: 관리자 메뉴 조건부 표시 — 비관리자에게 admin 메뉴 숨기기 + 역할별 권한 세분화
-- **상태**: ✅ developer 구현 완료 (tsc --noEmit EXIT=0) — tester 대기
-- **현재 담당**: developer → (다음) tester
+- **요청**: 공고 마감 자동화 + 알림 시스템 설계 (신규 기능)
+- **상태**: ✅ planner-architect 설계 완료 — developer 대기
+- **현재 담당**: planner-architect → (다음) developer
+
+## 기획설계 — 공고 마감 자동화 + 알림 시스템 (2026-04-13)
+
+🎯 목표: (1) 공고 deadline 지나면 자동 closed 처리 (2) 워크플로우 주요 이벤트 시 심판/관리자에게 알림 발송
+
+💡 핵심 발견:
+- **기존 `notifications` 모델 그대로 재사용 가능** (Rails 호환 1344행) — 신규 모델 불필요
+  - 필드: user_id, notification_type, title, content, action_url, action_type, metadata, status(unread/read), read_at
+  - Referee도 Referee.user_id 있으므로 user_id 기반 조회로 통합 가능
+- **이미 `src/lib/notifications/create.ts` + `NOTIFICATION_TYPES` 헬퍼 존재** — import해서 타입만 추가하면 됨
+- **Vercel Cron 이미 3건 설정됨**(vercel.json) — 4번째 추가만 하면 됨 (Pro 플랜 아닌 Hobby도 매일 1회는 무료)
+- **CRON_SECRET 이미 운영** — Authorization 헤더 검증 패턴 확립됨
+
+📍 만들 위치와 구조:
+| 파일 경로 | 역할 | 신규/수정 |
+|----------|------|----------|
+| src/lib/notifications/types.ts | NOTIFICATION_TYPES에 referee.* 5종 추가 | 수정 |
+| src/lib/notifications/referee-events.ts | 심판 이벤트별 알림 생성 헬퍼(notifyPoolSelected/notifyChiefAssigned/notifyAssignmentCreated/notifySettlementStatusChanged) | 신규 |
+| src/app/api/cron/referee-announcement-close/route.ts | Vercel Cron: deadline 지난 open 공고 → closed (매시간) | 신규 |
+| vercel.json | crons 배열에 /api/cron/referee-announcement-close 추가 (schedule "0 * * * *") | 수정 |
+| src/app/api/web/referee-admin/announcements/route.ts | GET 목록 조회 시 lazy close (deadline 지난 row만 updateMany) | 수정 |
+| src/app/api/web/referee-admin/pools/route.ts | POST(선정) 끝에 notifyPoolSelected 호출 | 수정 |
+| src/app/api/web/referee-admin/pools/[id]/chief/route.ts | PATCH is_chief=true 시 notifyChiefAssigned 호출 | 수정 |
+| src/app/api/web/referee-admin/assignments/route.ts | POST(배정 생성) 끝에 notifyAssignmentCreated 호출 | 수정 |
+| src/app/api/web/referee-admin/settlements/[id]/status/route.ts | 상태 전이 시 notifySettlementStatusChanged 호출 | 수정 |
+| src/app/api/web/notifications/route.ts | GET 본인 알림 목록(페이지네이션, unread_count 포함) | 신규 |
+| src/app/api/web/notifications/[id]/read/route.ts | PATCH 단건 읽음 | 신규 |
+| src/app/api/web/notifications/read-all/route.ts | POST 전체 읽음 | 신규 |
+| src/app/(referee)/referee/_components/referee-shell.tsx | 상단 헤더에 벨 아이콘 + 안 읽은 수 뱃지 + 드롭다운 | 수정 |
+| src/app/(referee)/referee/notifications/page.tsx | 알림 전체 목록 페이지(무한스크롤 or 페이지네이션) | 신규 |
+
+🔗 기존 코드 연결 (비유: "이미 설치된 우체국 + 빈 우편함 시스템에 심판용 우표 5종만 추가"):
+- **기존 notifications 테이블**: 우체국 자체는 이미 있음 → Referee.user_id로 심판 유저에게 그대로 배달
+- **createNotificationBulk 헬퍼**: 우표 붙이는 자동 기계 → 심판 이벤트 5종 우표만 types.ts에 등록
+- **tournament-reminders cron**: 우체부 배송 시간표가 이미 세팅됨 → 새 배송 항목 1줄 추가
+- **referee-shell 레이아웃**: 건물 입구 안내 데스크 → 벨 아이콘만 얹으면 됨 (기존 테마토글 옆)
+- **BOTTOM_TABS**: 모바일 하단 탭 건드리지 않음 (별도 전용 알림 페이지에서 관리)
+
+📋 실행 계획 (3차 단계 구성, 1차만 이번에 진행 권장):
+
+### 1차: DB 미사용 + 공고 마감 lazy + 알림 생성 hook (핵심)
+| 순서 | 작업 | 담당 | 선행 조건 |
+|------|------|------|----------|
+| 1 | NOTIFICATION_TYPES에 referee.* 5종 추가 (types.ts) | developer | 없음 |
+| 2 | referee-events.ts 헬퍼 4개 작성 (createNotificationBulk 래핑) | developer | 1 |
+| 3 | 공고 lazy close: 목록 GET 진입 시 updateMany({where: deadline<now, status:open} → closed) | developer | 없음 |
+| 4 | 선정/책임자/배정/정산 API 4곳에 notify* 호출 삽입 | developer | 2 |
+| 5 | tester + reviewer 병렬 | tester + reviewer | 1~4 |
+
+### 2차: 알림 UI (별도 작업)
+| 순서 | 작업 | 담당 | 선행 조건 |
+|------|------|------|----------|
+| 1 | GET/PATCH read/POST read-all 3개 API | developer | 1차 완료 |
+| 2 | 벨 아이콘 + 드롭다운 (referee-shell 헤더) | developer | 1 |
+| 3 | /referee/notifications 페이지 | developer | 1 |
+| 4 | tester + reviewer 병렬 | tester + reviewer | 1~3 |
+
+### 3차: Vercel Cron + 이메일 (향후, 지금은 스킵)
+- Cron 라우트 추가 + vercel.json 1줄
+- 이메일/푸시는 현 단계에서 불필요 (플랫폼 내부 알림만)
+
+⚠️ developer 주의사항:
+1. **Referee.user_id 조회 필수** — notifications.user_id는 User.id(BigInt). DailyAssignmentPool/RefereeAssignment는 referee_id만 있으므로 `referee.user_id`를 꼭 조인해서 얻기
+2. **기존 createNotificationBulk 패턴 그대로 사용** — tournament-reminders/route.ts 참고 (import { createNotificationBulk } from "@/lib/notifications/create")
+3. **notification action_url 규약**: `/referee/applications` `/referee/assignments` `/referee/settlements` 로 딥링크 (벨 클릭 시 이동용)
+4. **lazy close는 Prisma updateMany 한 방**: `updateMany({ where: { status:"open", deadline: { lt: new Date() } }, data: { status:"closed" }})` — 응답 속도 영향 적음 (인덱스 status 있음)
+5. **알림 실패해도 메인 트랜잭션은 성공해야 함** — try/catch로 감싸고 에러 로그만 남기기 (선정/배정은 성공해야 함)
+6. **bulk 선정 시 N명 알림 한 번에** — createNotificationBulk로 Referee[] 배열 전체를 1 쿼리 처리
+7. **정산 상태 전이 5종 모두 알림 vs 지급완료만?** — 추천: paid/cancelled/refunded 3개만 (pending/scheduled는 내부 상태 변경이라 시끄러움)
+8. **CRON_SECRET 검증 패턴** — tournament-reminders/route.ts L10-13 그대로 복붙
+
+🎨 UI 설계 (2차 단계):
+- **벨 아이콘**: Material Symbols "notifications" (`<span className="material-symbols-outlined">notifications</span>`), 헤더 테마토글 왼쪽
+- **안 읽은 뱃지**: 절대위치 우상단 빨간 원 + 숫자 (9+ 표시, `var(--color-primary)` 배경)
+- **드롭다운**: 클릭 시 열림, 최근 10개 + "전체 보기" 링크, 각 항목 클릭 시 action_url 이동 + 자동 읽음 처리(PATCH)
+- **목록 페이지**: 날짜 그룹핑(오늘/어제/이번 주/더 오래), 읽음/안읽음 필터, "전체 읽음" 버튼
+- **알림 아이콘 타입별**: selection=how_to_vote / chief=star / assigned=sports_basketball / settlement=payments / announcement=campaign
+
+🧾 알림 문구 템플릿:
+| 타입 | title | content | action_url |
+|------|-------|---------|-----------|
+| referee.pool.selected | "XX협회 심판 선정" | "2026-05-02 (토) 심판으로 선정되었습니다" | /referee/applications |
+| referee.pool.chief_assigned | "책임심판 지정" | "2026-05-02 (토) 책임심판으로 지정되었습니다" | /referee/assignments |
+| referee.assignment.created | "경기 배정" | "2026-05-02 15:00 A경기 주심 배정" | /referee/assignments |
+| referee.settlement.paid | "정산 지급완료" | "80,000원 지급이 완료되었습니다" | /referee/settlements |
+| referee.announcement.new | "새 배정 공고" | "5월 협회장기 심판 모집 공고가 게시되었습니다" | /referee/applications |
+
+
+## 구현 기록 (developer) — 알림 시스템 (2026-04-13)
+
+📝 구현한 기능 (1차 백엔드 + 2차 UI 통합):
+
+**1차 백엔드:**
+- NOTIFICATION_TYPES에 referee.* 5종 추가 (pool.selected/pool.chief_assigned/assignment.created/settlement.paid/announcement.new)
+- 심판 이벤트 헬퍼 5개(`lib/notifications/referee-events.ts`): try/catch 내장, Referee.user_id null 방어
+- 공고 lazy close: 관리자 GET 목록 조회 시 deadline 지난 open → closed 일괄 전환 (updateMany 1회)
+- Vercel Cron 신규: `/api/cron/referee-announcement-close` 매시간(0 * * * *) + vercel.json crons 4번째 등록
+- 알림 hook 5곳 삽입: pools POST(선정) / pools/[id] PATCH(is_chief=true 전환) / assignments POST(배정) / settlements/[id]/status PATCH(paid/cancelled/refunded만) / announcements POST(공고 게시 후 협회 심판 일괄)
+
+**2차 UI:**
+- `/api/web/notifications` GET 확장: list=true 쿼리 시 페이지네이션 + unread_count, 기본 모드(unreadCount만)는 하위호환 유지
+- `/api/web/notifications/[id]/read` PATCH 신규: 본인 알림 단건 읽음 (IDOR 방어 + 멱등)
+- `/api/web/notifications/read-all` POST 신규: 본인 unread 전체 읽음
+- NotificationBell 컴포넌트: 벨 아이콘 + 빨간 원 뱃지(9+) + 드롭다운(최근 10건) + 30초 폴링 + ESC/외부 클릭 닫기 + 단건/전체 읽음 + action_url 딥링크
+- `/referee/notifications` 전체 목록 페이지: 전체/안읽음 탭 + 페이지네이션 + 전체 읽음 버튼
+- referee-shell 헤더 우측에 NotificationBell 통합 (모바일/데스크톱 공통)
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/lib/notifications/types.ts | referee.* 5종 추가 | 수정 |
+| src/lib/notifications/referee-events.ts | notifyPoolSelected/notifyChiefAssigned/notifyAssignmentCreated/notifySettlementStatusChanged/notifyAnnouncementPublished 5개 헬퍼 (user_id null 필터) | 신규 |
+| src/app/api/web/referee-admin/announcements/route.ts | GET 앞에 lazy close updateMany + POST 끝에 notifyAnnouncementPublished | 수정 |
+| src/app/api/web/referee-admin/pools/route.ts | POST 끝에 tournament.name 조회 후 notifyPoolSelected | 수정 |
+| src/app/api/web/referee-admin/pools/[id]/route.ts | PATCH 끝에 is_chief=true 전환 시 notifyChiefAssigned (updated에 referee_id 추가) | 수정 |
+| src/app/api/web/referee-admin/assignments/route.ts | POST 끝에 notifyAssignmentCreated (tournament.name 조회) | 수정 |
+| src/app/api/web/referee-admin/settlements/[id]/status/route.ts | update 뒤 paid/cancelled/refunded 전환 시 notifySettlementStatusChanged | 수정 |
+| src/app/api/cron/referee-announcement-close/route.ts | CRON_SECRET Bearer 인증 + deadline<now open → closed updateMany | 신규 |
+| vercel.json | crons 배열에 /api/cron/referee-announcement-close "0 * * * *" 추가 | 수정 |
+| src/app/api/web/notifications/route.ts | GET 확장: list=true 쿼리 시 페이지네이션 + unread_count (기본 unreadCount 모드 하위호환 유지) | 수정 |
+| src/app/api/web/notifications/[id]/read/route.ts | PATCH 본인 알림 단건 읽음 (IDOR + 멱등) | 신규 |
+| src/app/api/web/notifications/read-all/route.ts | POST 본인 unread 전체 읽음 | 신규 |
+| src/app/(referee)/referee/_components/notification-bell.tsx | "use client" 벨 + 뱃지 + 드롭다운 + 30초 폴링 + 단건/전체 읽음 + ESC/외부클릭 닫기 | 신규 |
+| src/app/(referee)/referee/notifications/page.tsx | "use client" 전체 목록 + 전체/안읽음 탭 + 페이지네이션 + 전체 읽음 | 신규 |
+| src/app/(referee)/referee/_components/referee-shell.tsx | 헤더 우측에 NotificationBell 추가 (import + 렌더) | 수정 |
+
+💡 tester 참고:
+- **tsc --noEmit**: EXIT=0, 에러 0건
+- **DB 마이그레이션 불필요**: 기존 notifications 테이블 그대로 사용
+- **테스트 시나리오**:
+  1. 공고 게시 → 협회 role_type 일치 심판 전원에게 "새 배정 공고" 알림 도착 확인
+  2. 선정(pools POST) → 선정된 심판에게 "XX대회 YYYY-MM-DD (요일) 심판 선정" 알림
+  3. 책임심판 지정(pools/[id] PATCH is_chief:true) → 해당 심판에게 "책임심판 지정" 알림. is_chief:false나 memo만 수정은 알림 없음
+  4. 경기 배정(assignments POST) → 심판에게 "XX대회 YYYY-MM-DD HH:MM 주심 배정" (scheduled_at 없으면 "일정 미확정")
+  5. 정산 상태 전이: pending→scheduled 알림 없음 / scheduled→paid "정산 지급완료 80,000원" / paid→refunded "정산 환수" / scheduled→cancelled "정산 취소"
+  6. 공고 deadline 지난 뒤 관리자 목록 GET → 자동 closed 확인. Cron `/api/cron/referee-announcement-close` 매시간도 동일
+  7. 벨 아이콘: unread_count 9 이하 그대로 / 10 이상 "9+" 표시
+  8. 벨 드롭다운: 항목 클릭 → 자동 읽음 + action_url 이동 + 뱃지 숫자 감소
+  9. 전체 읽음: 드롭다운/목록 페이지 버튼 둘 다 동일 API 호출
+  10. 알림 목록 페이지 탭: 전체/안읽음 전환 시 페이지 1로 리셋
+- **주의할 입력**:
+  - Referee.user_id가 null(앱 미가입)인 심판 → 알림 발송 대상 제외 (에러 없이 skip)
+  - CRON_SECRET 없는 GET 요청 → 401 Unauthorized
+  - 다른 유저 알림 ID로 PATCH read → 403 FORBIDDEN
+- **재사용/충돌 주의**:
+  - 기존 /api/web/notifications GET(unreadCount)은 그대로 유지 — list=true 쿼리 없으면 기존 동작
+  - 기존 /api/web/notifications PATCH(전체 읽음)도 유지 — 신규 /read-all POST와 동등 효과
+
+⚠️ reviewer 참고:
+- **알림 실패 격리**: 모든 notify* 헬퍼가 try/catch 내장. 메인 트랜잭션(선정/배정/정산) 절대 방해 안 함
+- **N+1 회피**: notifyAnnouncementPublished는 Referee 1쿼리 + createNotificationBulk 1쿼리로 처리
+- **IDOR 방어**:
+  - /api/web/notifications?list=true: user_id=session.userId 단일 조건으로 자동 필터
+  - /[id]/read PATCH: notification.user_id.toString() === session.sub 검증
+- **멱등성**: /[id]/read는 이미 read 상태면 already_read:true로 즉시 반환 (updated_at 안 건드림)
+- **Cron 이중화**: lazy close(관리자 접근 시) + Vercel Cron(매시간) 둘 다 배치 → Hobby 플랜 제한 와도 lazy가 커버
+- **KST 날짜 포맷**: toKstDateLabel/toKstDateTimeLabel로 UTC→KST 보정해서 알림 문구에 반영
+- **하드코딩 색상 없음**: var(--color-primary/background/border/text-*) + border-radius 4px + Material Symbols만 사용
+- **벨 30초 폴링**: 탭이 오래 열려있어도 DB 부하 적음(count 2회 + findMany 1회 = 인덱스 스캔)
+
+미푸시 커밋: (없음 — tester 후 PM 커밋 예정)
+
 
 ## 구현 기록 (developer) — 메뉴 조건부 표시 (2026-04-13)
 

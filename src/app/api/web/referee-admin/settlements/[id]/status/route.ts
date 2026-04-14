@@ -6,6 +6,8 @@ import {
 import { prisma } from "@/lib/db/prisma";
 import { z } from "zod";
 import type { NextRequest } from "next/server";
+// 정산 상태 전환 시(paid/cancelled/refunded만) 심판에게 알림 발송
+import { notifySettlementStatusChanged } from "@/lib/notifications/referee-events";
 
 /**
  * PATCH /api/web/referee-admin/settlements/[id]/status
@@ -208,6 +210,21 @@ export async function PATCH(
         updated_at: true,
       },
     });
+
+    // 알림: paid/cancelled/refunded 전환 시에만 심판에게 알림 발송
+    //    이유: pending/scheduled는 내부 관리 상태라 심판에게 알릴 필요 없음.
+    //    실패해도 상태 전환 자체는 성공 반환 (헬퍼 내부 try/catch).
+    if (
+      nextStatus === "paid" ||
+      nextStatus === "cancelled" ||
+      nextStatus === "refunded"
+    ) {
+      await notifySettlementStatusChanged(
+        updated.referee_id,
+        updated.amount,
+        nextStatus
+      );
+    }
 
     return apiSuccess({
       settlement: updated,

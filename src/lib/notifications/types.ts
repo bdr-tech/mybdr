@@ -21,6 +21,15 @@ export const NOTIFICATION_TYPES = {
 
   // 리포트 관련
   WEEKLY_REPORT: "weekly.report",                             // 유저: 주간 운동 리포트 도착
+
+  // 심판 플랫폼 관련 — 협회 워크플로우 5종
+  // 이유: 공고 → 신청 → 선정 → 책임자 → 경기 배정 → 정산 흐름에서
+  //      심판/관리자에게 이벤트별 알림이 필요. notifications 테이블을 그대로 사용.
+  REFEREE_POOL_SELECTED: "referee.pool.selected",             // 심판: 공고에 선정됨
+  REFEREE_POOL_CHIEF: "referee.pool.chief_assigned",          // 심판: 책임심판으로 지정됨
+  REFEREE_ASSIGNMENT_CREATED: "referee.assignment.created",   // 심판: 경기 배정 생성
+  REFEREE_SETTLEMENT_PAID: "referee.settlement.paid",         // 심판: 정산 상태 전환(paid/cancelled/refunded)
+  REFEREE_ANNOUNCEMENT_NEW: "referee.announcement.new",       // 심판: 새 배정 공고 게시
 } as const;
 
 export type NotificationType =

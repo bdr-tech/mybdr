@@ -6,6 +6,8 @@ import {
 import { prisma } from "@/lib/db/prisma";
 import { z } from "zod";
 import type { NextRequest } from "next/server";
+// 책임심판 지정 시 해당 심판에게 알림 발송
+import { notifyChiefAssigned } from "@/lib/notifications/referee-events";
 
 /**
  * /api/web/referee-admin/pools/[id]
@@ -176,11 +178,27 @@ export async function PATCH(
       where: { id },
       select: {
         id: true,
+        referee_id: true,
         is_chief: true,
         memo: true,
         updated_at: true,
       },
     });
+
+    // 4) 알림: is_chief = true로 전환된 경우에만 "책임심판 지정" 알림 발송
+    //    이유: false 해제나 memo만 수정된 경우까지 알림 보내면 시끄러움.
+    //    tournament 이름 조회 필요 — 위 $transaction 블록에서 이미 existing.tournament_id 확보됨.
+    if (is_chief === true && updated) {
+      const tournamentInfo = await prisma.tournament.findUnique({
+        where: { id: existing.tournament_id },
+        select: { name: true },
+      });
+      await notifyChiefAssigned(updated.referee_id, {
+        tournament_name: tournamentInfo?.name ?? "대회",
+        date: existing.date,
+      });
+    }
+
     return apiSuccess({ pool: updated });
   } catch (error) {
     console.error("[referee-admin/pools/:id] PATCH 실패:", error);

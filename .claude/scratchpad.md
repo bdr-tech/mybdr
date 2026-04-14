@@ -847,9 +847,128 @@ home-sidebar.tsx, hero-section.tsx, quick-menu.tsx, hero-bento.tsx, home-greetin
 
 📌 결론: **APPROVE with comments**. 병합해도 안전. 권장 수정 4건은 즉시 처리 불필요, 추후 React Query 도입 시 1번 해결, 3번은 10분이면 타입 강화 가능하여 선택적 반영 권장.
 
+## 리뷰 결과 (reviewer) — 2026-04-13 — 공고 자동 마감 + 알림 시스템 (15파일)
+
+📊 종합 판정: **APPROVE with comments** (실동작/보안 OK, 권장 개선 7건 / 필수 수정 0건)
+
+✅ 잘된 점:
+- **알림 헬퍼 격리 품질 최고**: `referee-events.ts`의 모든 함수가 try/catch로 감싸져 있고, 실패 시 `logNotifyError`로 로깅만 하고 메인 흐름을 방해하지 않음. 선정/배정/정산 API들이 안전하게 호출 가능
+- **user_id null 가드 철저**: `Referee.user_id`가 nullable임을 인지하고 모든 헬퍼에서 `user_id: { not: null }` 또는 null 체크. 앱 미가입 심판에게 알림 시도 안 함
+- **createNotificationBulk 적극 활용**: `notifyPoolSelected`, `notifyAnnouncementPublished` 모두 bulk 사용 → createMany 1쿼리. N+1 회피 ✅
+- **Cron 인증 패턴 일관**: `Bearer ${process.env.CRON_SECRET}` — 기존 `tournament-reminders`와 동일 패턴 재사용 ✅
+- **이중 안전망**: Cron (매시간) + lazy close (관리자 GET 시) 2중 보강. Hobby 플랜 제한 대비 OK
+- **Announcement IDOR 방지 철저**: POST에서 `association_id = admin.associationId` 강제. body 값 무시. 
+- **Pool 선정 5중 검증**: 대회·일자·협회·신청존재·role_type 모두 체크. `dates: { some: { date: dateUtc } }`로 일자 신청 여부까지 확인
+- **Assignment pool_id 5중 검증**: 풀 존재 + referee 일치 + 협회 일치 + 대회 일치 + 날짜 일치(YYYY-MM-DD 비교)
+- **벨 + 페이지 일관성**: 동일한 `iconForType`, `formatRelative` 로직을 벨과 목록 페이지에 의도적 중복 (주석 명시). 단순함 우선 OK
+- **Optimistic update**: 읽음 처리 시 로컬 상태 먼저 변경 → 폴링까지 대기 없음. UX 좋음
+- **IDOR 방지(알림)**: `[id]/read/route.ts`에서 `notification.user_id.toString() !== session.sub` 검증. 다른 유저 알림 못 건드림 ✅
+- **ESC/외부 클릭 닫기**: 벨 드롭다운에서 접근성/UX 기본 요소 구현됨
+- **하위호환 완벽**: 기존 `/api/web/notifications`는 파라미터 없이 호출 시 `{unreadCount}`만 반환 유지. header.tsx/layout.tsx 3곳 기존 사용처 영향 없음 ✅
+- **PATCH /api/web/notifications 기존 유지**: notifications-client.tsx가 사용하는 "전체 읽음" PATCH는 건드리지 않음. read-all POST는 신규 경로로 병존 ✅
+
+🟡 권장 수정 (필수 아님, 개선 여지):
+
+1. **[referee-events.ts:220-228] notifyAnnouncementPublished — 역할별 발송 시 role_type 필터 엄격성**
+   - 현재 `where: { role_type: params.role_type }`로 필터. 다만 `Referee.role_type`이 "referee"/"game_official" 외 다른 값이 들어올 가능성(과거 데이터 드리프트)은 방어되지 않음. 대규모 협회(수백명)에서 전체 알림 폭탄 가능성 낮지만, 대량 createMany가 트랜잭션 타임아웃을 치는 케이스에 대비해 **청크(chunk) 처리**(예: 100명 단위)를 고려할 가치 있음. 지금은 수십 명 수준이라 문제 없음.
+
+2. **[announcements/route.ts:162-173] lazy close를 매 GET 때마다 실행**
+   - 관리자가 목록을 새로고침할 때마다 `updateMany` 쿼리 발생. 대부분 0행 업데이트지만 불필요한 라운드트립. 개선안: 마지막 실행 시각을 메모리/Redis에 캐시해 5분 이내엔 skip. 선택사항 (현재 규모 문제없음).
+
+3. **[pools/[id]/route.ts:177-186] PATCH 후 updated 재조회 — 트랜잭션 밖**
+   - `$transaction` 안에서 업데이트하고 밖에서 다시 `findUnique`. is_chief 토글이 매우 빈번하진 않으나, 트랜잭션 내 update의 `select:` 결과를 바로 반환하면 1쿼리 절감. 현재 코드도 동작엔 이상 없음.
+
+4. **[notification-bell.tsx:107] 30초 폴링 고정**
+   - 탭 비활성(Page Visibility API) 상태에서도 계속 요청. `document.visibilityState === "hidden"` 때는 폴링 정지 권장. 서버 부하 완화 + 모바일 배터리 절약. 선택사항.
+
+5. **[notification-bell.tsx:80] fetch credentials 중복**
+   - 동일 출처 요청엔 `credentials: "include"` 불필요(same-origin 기본). 동작엔 영향 없음. 일관성/명시성 목적이면 유지 OK.
+
+6. **[notifications/route.ts:79] PATCH 전체 읽음 응답 — updated 건수 반환 없음**
+   - `apiSuccess({ success: true })`로만 응답. 신규 `/read-all` POST는 `updated: result.count` 반환. 일관성 위해 기존 PATCH도 count 포함 고려 가능하나, 하위호환상 현행 유지가 안전.
+
+7. **[referee-events.ts:117/152] actionUrl 하드코딩**
+   - "/referee/applications", "/referee/assignments", "/referee/settlements" 문자열 리터럴. 나중에 경로 바꾸면 여기도 같이 수정 필요. 작은 상수 파일(`src/lib/notifications/referee-routes.ts`)로 빼두면 리팩터링 안전. 선택사항.
+
+🔐 보안 관점 평가:
+- **Cron 인증**: `CRON_SECRET` Bearer 비교. 타이밍 공격 방지용 `timingSafeEqual`은 아니지만 기존 프로젝트 패턴과 일치. 운영 Vercel은 공인 IP만 접근 → 실질 위험 낮음 ✅
+- **IDOR(알림 조회/읽음)**: GET list는 `where: { user_id: userId }`로 고정, PATCH [id]/read는 user_id 일치 검증, POST /read-all도 session.sub만 사용. 본인 외 접근 불가 ✅
+- **Referee → User 조인**: Referee.user_id nullable 처리 모든 헬퍼에서 확인. user_id가 null인 데이터에 의한 null 알림 생성 없음 ✅
+- **notifiable_id 타입**: `announcement_id`는 BigInt(Announcement.id)로 통일. createNotificationBulk 내부 Prisma.InputJsonValue 호환 확인 필요 — 기존 헬퍼 시그니처에 `notifiableId: bigint`로 선언되어 있어 OK ✅
+- **비관리자가 cron URL 직접 호출**: CRON_SECRET 없으면 401. 노출 위험 없음 ✅
+
+📊 무결성 평가:
+- **알림 실패 ≠ 메인 흐름 실패**: 모든 헬퍼 내부 try/catch. 호출처(POST announcements/pools/pools[id]/assignments/settlements[id]/status)는 await만 하고 에러 throw 받지 않음. 알림 DB 장애나 푸시 서비스 장애가 공고 게시/선정/배정/정산을 막지 않음 ✅
+- **중복 알림 가능성**: notifyAnnouncementPublished에서 `Set`으로 user_id 중복 제거. 한 유저가 여러 Referee 레코드를 가질 가능성 방어 ✅
+- **Pool DELETE 시 assignments 참조 무결성**: `_count.assignments > 0` 체크로 선행 삭제 유도(409 반환) ✅
+- **is_chief 단일 제약**: $transaction으로 기존 chief 해제 + 본인 설정 원자화 ✅
+
+⚡ 성능 평가:
+- **Bulk 알림 O(1) 쿼리**: createMany 1회로 처리. 협회 50명 수준에서 <100ms 예상 ✅
+- **벨 폴링 30초**: Vercel 서버리스 비용상 허용 수준. 단 로그인 전원이 동시 폴링하면 RPS 증가 — 현재 사용자 규모에서는 OK
+- **알림 목록 인덱스**: `notifications(user_id, created_at)`, `notifications(user_id, status)` 두 인덱스 전제. schema 확인 필요 (기존 작업에서 생성됐을 가능성 높음) ✅ (추정)
+- **lazy close updateMany**: `association_id + status + deadline` 복합 조건. status 인덱스 + deadline 필터 — 공고 수가 수백 개 수준이면 부담 없음 ✅
+
+🎨 UX 평가:
+- **벨 뱃지 가독성**: "9+" 표시, h-4 min-w-4, primary 배경 흰 글자 — 시인성 OK ✅
+- **드롭다운 깜빡임 없음**: `loading && items.length === 0`으로 첫 로드만 "불러오는 중", 이후 폴링은 조용히 교체. OK ✅
+- **시간 포맷 친숙**: 방금/N분/N시간/N일/날짜 5단계. 표준적이고 친숙 ✅
+- **전체 읽음 버튼 disabled**: unreadCount===0일 때 disabled:opacity-40 — 피드백 명확 ✅
+- **모바일 드롭다운 폭**: w-80 sm:w-96 — 360px 이하 화면에서 우측 말림 가능성 있음. 현재 `right-0`으로 붙어있어 큰 문제 없어 보이나, 초소형 기기 확인 권장 🟡
+
+🔁 기존 기능 회귀 평가:
+- **기존 헤더 알림**: `fetch("/api/web/notifications", ...)`를 list 파라미터 없이 호출 → `{unreadCount}` 응답 그대로 받음. header.tsx / (web)/layout.tsx 모두 영향 없음 ✅
+- **기존 알림 클라이언트**: `/(web)/notifications/_components/notifications-client.tsx`의 PATCH(`/api/web/notifications`) 전체 읽음 호출 유지됨 ✅
+- **기존 DELETE `/api/web/notifications/[id]`**: 별도 파일에 살아있음. 새 PATCH `/[id]/read`와 충돌 없음 (다른 HTTP 메서드) ✅
+- **Vercel Cron 목록**: 기존 3개 유지 + 신규 1개 추가. Hobby 플랜 상한(최대 N개) 확인 필요하나 영향은 경미 ✅
+
+📌 결론: **APPROVE with comments**. 바로 병합 OK. 실동작/보안/무결성 모두 견고함. 권장 7건 중 #4(Page Visibility 폴링 정지)와 #7(라우트 상수화)가 가장 가성비 좋음 — 후속 정리 작업 시 반영 권장.
+
+## 테스트 결과 (tester) — 2026-04-13 — 공고 마감 자동화 + 알림 시스템 (1차+2차 통합)
+
+| 테스트 항목 | 결과 | 비고 |
+|-----------|------|------|
+| Test 1: tsc --noEmit | PASS | 타입 에러 0건, exit 0 |
+| Test 2: 알림 타입 5종 추가 (types.ts) | PASS | REFEREE_POOL_SELECTED/CHIEF/ASSIGNMENT_CREATED/SETTLEMENT_PAID/ANNOUNCEMENT_NEW 정의 확인 (28~32행) |
+| Test 3-1: referee-events 5개 함수 존재 | PASS | notifyPoolSelected/ChiefAssigned/AssignmentCreated/SettlementStatusChanged/AnnouncementPublished |
+| Test 3-2: Referee → user_id 조회 + null 방어 | PASS | 모든 함수에서 user_id null 필터링 (72-74, 108-111, 136-140, 166-172, 220-227행) |
+| Test 3-3: try/catch로 메인 흐름 보호 | PASS | 5개 함수 모두 logNotifyError로 catch 처리 |
+| Test 3-4: createNotificationBulk 활용 | PASS | Pool/Announcement에서 bulk, 단건은 createNotification 사용 |
+| Test 4: announcements GET lazy close | PASS | updateMany로 deadline 지난 open→closed (162-173행, catch로 UX 보호) |
+| Test 5-1: pools POST → notifyPoolSelected | PASS | route.ts:147 호출, tournament_name+date+role_type 전달 |
+| Test 5-2: pools [id] PATCH(is_chief=true) → notifyChiefAssigned | PASS | is_chief=true일 때만 호출 (191-200행) |
+| Test 5-3: assignments POST → notifyAssignmentCreated | PASS | route.ts:223 호출, scheduled_at/role 포함 |
+| Test 5-4: settlements [id]/status(paid/cancelled/refunded) → notifySettlementStatusChanged | PASS | 해당 3상태에서만 발송 (217-227행) |
+| Test 5-5: announcements POST → notifyAnnouncementPublished | PASS | route.ts:135 호출, association_id/role_type/title 전달 |
+| Test 6-1: /api/cron/referee-announcement-close 존재 | PASS | route.ts 40줄, updateMany 한 방 |
+| Test 6-2: CRON_SECRET Bearer 인증 | PASS | Bearer ${process.env.CRON_SECRET} 비교 (18-21행) |
+| Test 6-3: vercel.json crons 등록 | PASS | "0 * * * *" 매시간 스케줄 |
+| Test 7-1: GET /api/web/notifications list 모드 | PASS | ?list=true → items+total+unread_count+페이지네이션 (40-84행) |
+| Test 7-2: PATCH /api/web/notifications/[id]/read | PASS | IDOR 체크(42행) + 이미 read면 멱등 |
+| Test 7-3: POST /api/web/notifications/read-all | PASS | 세션 user 본인만 updateMany |
+| Test 7-4: 본인 알림만 접근 (IDOR) | PASS | 모든 라우트 user_id=session.sub 강제 |
+| Test 8-1: NotificationBell 벨 아이콘 + 뱃지 | PASS | Material Symbols + 9+ 포맷 뱃지 (178행) |
+| Test 8-2: 드롭다운 최근 10건 | PASS | limit=10 fetch + 자동 읽음 |
+| Test 8-3: 전체 보기 / 전체 읽음 버튼 | PASS | /referee/notifications 링크 + markAllRead |
+| Test 8-4: ESC / 외부 클릭 닫기 | PASS | keydown Escape + mousedown 래퍼 밖 감지 (112-129행) |
+| Test 9-1: /referee/notifications 페이지 | PASS | 탭(전체/안읽음) + 페이지네이션 + 전체 읽음 |
+| Test 9-2: unread_only 파라미터 연동 | PASS | tab==="unread"이면 unread_only=true (85행) |
+| Test 10: referee-shell NotificationBell 배치 | PASS | 헤더 우측 (7행 import, 298행 렌더) |
+| Test 11-1: 기존 notifications API 하위호환 | PASS | list 미지정 시 unreadCount만 반환 + 30초 캐시 헤더 유지 |
+| Test 11-2: 기존 cron 동작 유지 | PASS | tournament-reminders/weekly-report/youtube 경로 vercel.json에 그대로 + 신규 1건 추가만 |
+
+결과: **28개 중 28개 통과 / 0개 실패 — 전체 PASS**
+
+참고 사항:
+- notifyPoolSelected는 bulk 시그니처(배열)이지만 현재 pools POST 흐름은 단건 등록이라 배열에 ID 1개만 담김. bulk와 단건 모두 재사용할 수 있게 설계된 의도 — 문제 없음.
+- Referee.user_id가 null이면 알림 조용히 스킵. 앱 미가입 심판은 알림 대상 아님이라는 원칙이 헬퍼에서 일관 적용됨.
+- lazy close + cron 이중화 덕에 Hobby 플랜(일 1회 제한) 환경에서도 관리자 목록 진입 시 갭 없이 closed 전환됨.
+
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-13 | tester | 공고 마감 자동화 + 알림 시스템 검증 28건 | 전체 PASS |
+| 04-13 | reviewer | 공고 자동마감 + 알림 시스템 리뷰 (15파일) | APPROVE with comments (권장 7건) |
 | 04-13 | reviewer | 관리자 메뉴 조건부 표시 리뷰 (me/route + referee-shell) | APPROVE with comments (권장 4건) |
 | 04-13 | developer | 배정 DELETE 정산 가드 추가 (reviewer critical 되돌림 1차) | tsc 통과, SETTLEMENT_EXISTS 409 가드 |
 | 04-13 | reviewer | Excel 일괄 사전 등록 리뷰 (4파일) | APPROVE with comments (권장 9건) |

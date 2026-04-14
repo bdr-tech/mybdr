@@ -6,6 +6,8 @@ import {
 import { prisma } from "@/lib/db/prisma";
 import { z } from "zod";
 import type { NextRequest } from "next/server";
+// 공고 게시 시 협회 소속 심판에게 일괄 알림 발송 — 실패해도 메인 트랜잭션은 성공
+import { notifyAnnouncementPublished } from "@/lib/notifications/referee-events";
 
 /**
  * /api/web/referee-admin/announcements
@@ -127,6 +129,16 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // 6) 알림: 협회 소속 + role_type 일치 심판 전원에게 공고 알림 발송
+    //    이유: 심판들이 "내 앞으로 새 공고가 떴다"는 걸 즉시 알 수 있어야 신청 접수율이 오름.
+    //    실패해도 공고 생성 자체는 성공으로 처리 (헬퍼 내부 try/catch)
+    await notifyAnnouncementPublished({
+      association_id: admin.associationId,
+      role_type,
+      title,
+      announcement_id: created.id,
+    });
+
     return apiSuccess({ announcement: created }, 201);
   } catch (error) {
     console.error("[referee-admin/announcements] POST 실패:", error);
@@ -140,6 +152,24 @@ export async function GET(req: NextRequest) {
   const admin = await getAssociationAdmin();
   if (!admin) {
     return apiError("접근 권한이 없습니다.", 403, "FORBIDDEN");
+  }
+
+  // 1-1) 공고 자동 마감(lazy close):
+  //      Vercel Cron이 누락되거나 지연될 수 있으므로, 관리자 목록 조회 시점에
+  //      deadline이 지난 open 공고를 updateMany 한 방으로 closed 처리.
+  //      인덱스가 status/association_id에 걸려 있어 비용이 크지 않다.
+  //      실패해도 목록 조회는 계속 — catch로 감싸서 UX 영향 최소화.
+  try {
+    await prisma.assignmentAnnouncement.updateMany({
+      where: {
+        association_id: admin.associationId,
+        status: "open",
+        deadline: { lt: new Date() },
+      },
+      data: { status: "closed" },
+    });
+  } catch (err) {
+    console.error("[referee-admin/announcements] lazy close 실패:", err);
   }
 
   // 2) 쿼리 파라미터
