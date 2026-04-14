@@ -42,7 +42,14 @@ type BracketData = {
   versions: BracketVersion[];
   matches: Match[];
   approvedTeams: ApprovedTeam[];
+  /** 풀리그/토너먼트 UI 분기용 — API 가 함께 내려줌 */
+  format: string | null;
 };
+
+// 풀리그 계열 포맷 판별 — UI 분기용
+function isLeagueFormat(fmt: string | null | undefined): boolean {
+  return fmt === "round_robin" || fmt === "full_league" || fmt === "full_league_knockout";
+}
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "대기",
@@ -125,12 +132,17 @@ export default function BracketAdminPage() {
   if (loading)
     return <div className="flex h-40 items-center justify-center text-[var(--color-text-muted)]">불러오는 중...</div>;
 
-  const round1Matches = data?.matches.filter((m) => m.round_number === 1) ?? [];
+  // 풀리그는 라운드 개념이 없어 "1라운드 팀 배치 편집"을 숨긴다
+  const isLeague = isLeagueFormat(data?.format);
+  const round1Matches = isLeague ? [] : (data?.matches.filter((m) => m.round_number === 1) ?? []);
   const hasMatches = (data?.matches.length ?? 0) > 0;
   const versionUsed = data?.currentVersion ?? 0;
   const versionLimit = MAX_FREE_VERSIONS;
   const canGenerate = versionUsed < versionLimit;
   const isActivated = data?.activeVersion != null;
+  // 풀리그 예상 경기 수 = n*(n-1)/2
+  const approvedCount = data?.approvedTeams?.length ?? 0;
+  const expectedLeagueMatches = approvedCount >= 2 ? (approvedCount * (approvedCount - 1)) / 2 : 0;
 
   return (
     <div>
@@ -142,7 +154,14 @@ export default function BracketAdminPage() {
         >
           ← 대회 관리
         </Link>
-        <h1 className="mt-1 text-xl font-bold sm:text-2xl">대진표 생성</h1>
+        <h1 className="mt-1 text-xl font-bold sm:text-2xl">
+          {isLeague ? "풀리그 경기 생성" : "대진표 생성"}
+        </h1>
+        {isLeague && approvedCount >= 2 && !hasMatches && (
+          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+            승인된 {approvedCount}팀 기준 총 {expectedLeagueMatches}경기가 생성됩니다.
+          </p>
+        )}
       </div>
 
       {error && (
@@ -203,7 +222,7 @@ export default function BracketAdminPage() {
                 onClick={() => generate(false)}
                 disabled={generating || !canGenerate}
               >
-                {generating ? "생성 중..." : "대진표 생성"}
+                {generating ? "생성 중..." : isLeague ? "경기 자동 생성" : "대진표 생성"}
               </Button>
             )}
           </div>
@@ -340,9 +359,14 @@ export default function BracketAdminPage() {
       {!hasMatches && (
         <Card className="py-16 text-center text-[var(--color-text-muted)]">
           <div className="mb-3 text-4xl">🏆</div>
-          <p className="font-medium">대진표가 없습니다</p>
+          <p className="font-medium">
+            {isLeague ? "생성된 경기가 없습니다" : "대진표가 없습니다"}
+          </p>
           <p className="mt-1 text-sm">
-            승인된 팀 {data?.approvedTeams?.length ?? 0}팀이 있습니다.
+            승인된 팀 {approvedCount}팀이 있습니다.
+            {isLeague && approvedCount >= 2 && (
+              <> · 생성 시 {expectedLeagueMatches}경기가 만들어집니다.</>
+            )}
           </p>
         </Card>
       )}

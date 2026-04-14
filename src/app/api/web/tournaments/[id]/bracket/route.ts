@@ -5,6 +5,8 @@ import { getBracketVersionStatus, createBracketVersion, activateBracketVersion }
 import { createNotificationBulk } from "@/lib/notifications/create";
 import { NOTIFICATION_TYPES } from "@/lib/notifications/types";
 import { apiSuccess, apiError } from "@/lib/api/response";
+// 풀리그(라운드 로빈) 자동 생성 유틸 — single_elimination 외 format 분기용
+import { generateRoundRobinMatches, isLeagueFormat } from "@/lib/tournaments/league-generator";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -31,7 +33,8 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   const auth = await requireTournamentAdmin(id);
   if ("error" in auth) return auth.error;
 
-  const [versionStatus, versions, matches, approvedTeams] = await Promise.all([
+  // 풀리그/토너먼트 UI 분기에 필요한 format 을 함께 반환
+  const [versionStatus, versions, matches, approvedTeams, tournamentMeta] = await Promise.all([
     getBracketVersionStatus(id),
     prisma.tournament_bracket_versions.findMany({
       where: { tournament_id: id },
@@ -40,7 +43,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     }),
     prisma.tournamentMatch.findMany({
       where: { tournamentId: id },
-      orderBy: [{ round_number: "asc" }, { bracket_position: "asc" }],
+      orderBy: [{ round_number: "asc" }, { bracket_position: "asc" }, { match_number: "asc" }],
       select: {
         id: true,
         roundName: true,
@@ -63,9 +66,19 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
       orderBy: [{ seedNumber: "asc" }, { createdAt: "asc" }],
       select: { id: true, seedNumber: true, team: { select: { name: true } } },
     }),
+    prisma.tournament.findUnique({
+      where: { id },
+      select: { format: true },
+    }),
   ]);
 
-  return apiSuccess({ ...versionStatus, versions, matches, approvedTeams });
+  return apiSuccess({
+    ...versionStatus,
+    versions,
+    matches,
+    approvedTeams,
+    format: tournamentMeta?.format ?? null, // UI 가 풀리그/토너먼트 분기할 때 사용
+  });
 }
 
 // POST: generate bracket (single elimination)
@@ -99,6 +112,38 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       `무료 생성 횟수(${versionStatus.currentVersion}회)를 초과하였습니다. 슈퍼관리자의 승인을 요청했습니다.`,
       403
     );
+  }
+
+  // ── format 분기: 풀리그 계열이면 라운드 로빈 경기 생성 후 조기 반환 ──
+  // 이유: single_elimination 트리 생성과 풀리그(N*(N-1)/2) 생성은 완전히 다른 로직.
+  // 기존 single_elimination 로직 보존 + 분기만 최소 추가
+  const tournamentMeta = await prisma.tournament.findUnique({
+    where: { id },
+    select: { format: true },
+  });
+
+  if (isLeagueFormat(tournamentMeta?.format)) {
+    try {
+      const league = await generateRoundRobinMatches(id, { clear: body.clear });
+      // bracket_version 기록 — single_elimination 과 동일하게 버전 관리 일관성 유지
+      await createBracketVersion(id, auth.userId);
+      return apiSuccess({
+        success: true,
+        type: "round_robin", // UI 에서 메시지 분기용
+        matchesCreated: league.matchesCreated,
+        teamCount: league.teamCount,
+        versionNumber: versionStatus.currentVersion + 1,
+      });
+    } catch (e) {
+      const err = e as { code?: string; message?: string };
+      if (err.code === "TEAMS_INSUFFICIENT" || err.message === "TEAMS_INSUFFICIENT") {
+        return apiError("2팀 이상 승인되어야 풀리그 경기를 생성할 수 있습니다.", 400);
+      }
+      if (err.code === "ALREADY_EXISTS" || err.message === "ALREADY_EXISTS") {
+        return apiError("이미 경기가 존재합니다. 재생성을 원하면 clear=true 로 요청하세요.", 409);
+      }
+      throw e;
+    }
   }
 
   // TC-003: 브라켓 생성 전 DB 어드바이저리 락으로 동시 생성 race condition 방지

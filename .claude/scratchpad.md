@@ -433,6 +433,49 @@ reviewer 참고:
 - format 변경 시 useEffect로 bracketSettings.format 동기화 (조건부 렌더링 즉시 반영)
 - Zod updateTournamentSchema.settings는 이미 z.record(z.string(), z.unknown()).optional() → 통과
 
+### Phase 4a: 풀리그 경기 자동 생성 (2026-04-13)
+
+구현한 기능: 대회 format 이 풀리그 계열(round_robin / full_league / full_league_knockout)일 때 admin bracket 페이지의 생성 버튼이 `N*(N-1)/2` 개의 라운드 로빈 경기를 createMany 로 일괄 생성. 기존 single_elimination 로직은 완전 보존.
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/lib/tournaments/league-generator.ts | `generateRoundRobinMatches(id, {clear})` + `deleteAllLeagueMatches` + `isLeagueFormat` 유틸. advisory lock + createMany + matches_count 캐시 업데이트 + TEAMS_INSUFFICIENT/ALREADY_EXISTS 에러코드 | 신규 |
+| src/app/api/web/tournaments/[id]/bracket/route.ts | POST 핸들러에 format 분기 추가(풀리그면 generateRoundRobinMatches 호출 후 조기 반환, 아니면 기존 single_elimination 트랜잭션). GET 응답에 `format` 필드 추가. matches orderBy 에 `match_number` 추가 | 수정 |
+| src/app/(web)/tournament-admin/tournaments/[id]/bracket/page.tsx | `isLeagueFormat` 로컬 헬퍼 + 페이지 타이틀/버튼 라벨/빈 상태 문구 분기. 풀리그는 "1라운드 팀 배치 편집" 섹션 숨김. 예상 경기 수(n*(n-1)/2) 안내 | 수정 |
+
+설계 결정:
+- 기존 `bracket-generator.ts` 와 별도 파일로 분리 (single_elimination 로직과 서로 간섭 없도록)
+- createMany 1회 호출로 성능 확보 (8팀 28경기, 32팀이면 496경기)
+- bracket_version 기록은 single_elimination 과 동일하게 호출 → 버전 관리/승인 흐름 일관성 유지
+- 시드 순서대로 (i,j) i<j 조합 → 시드 앞선 팀이 homeTeam 으로 고정 (시각적 일관성)
+- `clear=true` 로 재생성 지원 (기존 bracket API 와 동일 패턴)
+
+tester 참고:
+- 테스트 URL: /tournament-admin/tournaments/{id}/bracket
+- 사전 조건: 해당 대회의 format 이 round_robin / full_league / full_league_knockout 중 하나 + 승인된 팀 2팀 이상
+- 정상 동작:
+  - 버튼 라벨: "경기 자동 생성" (풀리그 포맷일 때)
+  - 8팀이면 28경기, 4팀이면 6경기 생성
+  - 생성된 경기는 status=scheduled, homeScore=0, awayScore=0, scheduledAt=null, round_number=null, bracket_position=null
+  - 빈 상태 카드에 "생성 시 N경기가 만들어집니다" 안내
+  - 재생성 버튼은 clear=true 로 요청 → 기존 경기 삭제 후 재생성
+- 에러 케이스:
+  - 승인팀 1팀 이하 → "2팀 이상 승인되어야 풀리그 경기를 생성할 수 있습니다" (400)
+  - 이미 경기 존재 + clear=false → "이미 경기가 존재합니다" (409)
+  - 무료 생성 횟수 초과 (3회) → 기존 버전 승인 플로우 작동 (403)
+- 회귀 확인: single_elimination 대회에서 기존 "대진표 생성" 버튼이 이전과 동일하게 트리 생성하는지 (기존 로직 미변경)
+- 수동 경기 입력: 기존 /tournament-admin/tournaments/{id}/matches 페이지에서 CRUD 가능 (별도 추가 없음)
+
+reviewer 참고:
+- advisory lock: `pg_advisory_xact_lock(hashtext(id)::bigint)` 로 동일 대회 동시 생성 race 방지 (기존 bracket/route.ts 패턴 그대로)
+- 에러코드 패턴은 single_elimination 과 동일: TEAMS_INSUFFICIENT / ALREADY_EXISTS 를 Object.assign 으로 붙여서 catch 에서 분기
+- 트랜잭션 timeout 30초 (32팀 496경기도 여유)
+- BigInt 필드(homeTeamId/awayTeamId)는 Prisma 가 teams[i].id 를 그대로 받음 (createMany 타입도 Prisma.TournamentMatchCreateManyInput 사용)
+
+#### 회귀 영향 범위
+- 영향 없음: src/lib/tournaments/bracket-generator.ts, bracket-builder.ts, match-transitions.ts, update-standings.ts
+- 수정 영향: bracket GET 응답에 `format` 필드 추가 → 클라이언트는 optional 로 받으므로 기존 호출부 무영향
+
 ## 수정 요청
 | 요청자 | 대상 파일 | 문제 설명 | 상태 |
 |--------|----------|----------|------|
@@ -440,6 +483,7 @@ reviewer 참고:
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-13 | developer | Phase 4a 풀리그 경기 자동 생성 (league-generator + bracket API 분기 + admin UI 분기, 3파일, tsc 통과) | 완료 |
 | 04-13 | developer | Phase 3 wizard 포맷 세부설정 UI + settings.bracket 저장 (5파일, tsc 통과) | 완료 |
 | 04-13 | planner-architect | 대진표 Phase 2-4 구체 계획 (리그→4강 자동 + wizard 세부설정 + 조편성) | 기획완료 |
 | 04-13 | developer | 팀 전적 tournament_matches 집계 + draws 제거 (2파일) | 완료 |
@@ -449,5 +493,3 @@ reviewer 참고:
 | 04-13 | developer | 대회 상세 UI 전면 리디자인 (히어로+탭+대시보드+일정카드+순위표 등 15건) | 완료 |
 | 04-13 | developer | 모바일 반응형 전수 수정 (빨강5+노랑14+녹색8건, 20+파일) | 완료 |
 | 04-13 | planner-architect | 대회 형식 프리셋 시스템 설계 (12프리셋+조편성+시딩) | 기획완료 |
-| 04-13 | planner-architect | 중복 팀 안전 병합 보고서 (B안 채택: teamId만 UPDATE) | 기획완료 |
-| 04-13 | planner-architect | 경기 기록 입력 시스템 전체 구조 분석 (v1 API 12개+실시간 6종) | 기획완료 |
