@@ -3,7 +3,7 @@
 // 이유: 모바일 탭 뷰를 제거하고 모든 화면에서 SVG 트리 뷰를 표시하기 위해
 // useState/useEffect 훅과 MobileMatchCard가 더 이상 필요 없음. 트리 뷰는 순수
 // 렌더링이라 useMemo만 있으면 충분함.
-import { useMemo } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import type {
   RoundGroup,
   BracketConfig,
@@ -133,15 +133,48 @@ function BracketTreeView({
   const headerHeight = 32;
   const padding = 16;
 
+  // 스크롤 컨트롤 (3라운드 이상일 때만 버튼 표시)
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const update = () => {
+      setCanScrollLeft(el.scrollLeft > 4);
+      setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    };
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      el.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [rounds]);
+
+  // 한 스텝(카드폭 + columnGap)씩 스크롤
+  const scrollBy = (dir: "left" | "right") => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const step = cardWidth + columnGap;
+    el.scrollBy({ left: dir === "right" ? step : -step, behavior: "smooth" });
+  };
+
   return (
-    // 이유: 모바일에서 컨테이너 패딩을 p-3으로 줄이고 데스크톱은 p-6 유지.
-    // overflow-x-auto가 모바일 가로 스크롤을 처리함.
+    // 이유: 스크롤 컨테이너를 relative 래퍼로 감싸서 좌/우 화살표 버튼을 overlay
+    <div className="relative -mx-4 sm:mx-0">
     <div
-      className="overflow-x-auto rounded-[12px] border p-3 sm:p-6"
+      ref={scrollRef}
+      className="overflow-x-auto border-y sm:rounded-[12px] sm:border sm:p-6"
       style={{
         borderColor: "var(--color-text-muted)",
         backgroundColor: "var(--color-card)",
         boxShadow: "0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)",
+        scrollSnapType: "x mandatory",
+        paddingInline: "16px",
+        paddingBlock: "16px",
       }}
     >
       <div
@@ -226,6 +259,39 @@ function BracketTreeView({
           }),
         )}
       </div>
+    </div>
+
+    {/* 좌/우 스크롤 버튼 — 스크롤 가능할 때만 표시 */}
+    {canScrollLeft && (
+      <button
+        type="button"
+        onClick={() => scrollBy("left")}
+        aria-label="이전 라운드"
+        className="absolute left-1 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full shadow-lg transition-opacity sm:left-2"
+        style={{
+          backgroundColor: "var(--color-card)",
+          border: "1px solid var(--color-text-muted)",
+          color: "var(--color-text-primary)",
+        }}
+      >
+        <span className="material-symbols-outlined text-lg">chevron_left</span>
+      </button>
+    )}
+    {canScrollRight && (
+      <button
+        type="button"
+        onClick={() => scrollBy("right")}
+        aria-label="다음 라운드"
+        className="absolute right-1 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full shadow-lg transition-opacity sm:right-2"
+        style={{
+          backgroundColor: "var(--color-card)",
+          border: "1px solid var(--color-text-muted)",
+          color: "var(--color-text-primary)",
+        }}
+      >
+        <span className="material-symbols-outlined text-lg">chevron_right</span>
+      </button>
+    )}
     </div>
   );
 }
