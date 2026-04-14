@@ -643,9 +643,49 @@ tsc --noEmit 통과. 미푸시 커밋: N/A (PM 커밋 대기)
 | 요청자 | 대상 파일 | 문제 설명 | 상태 |
 |--------|----------|----------|------|
 
+### 구현 기록 — 대진표 NBA 스타일 리디자인 Phase A (2026-04-13)
+
+구현한 기능: 기존 미니멀 대진표 카드를 NBA.com 스타일로 개선. (1) 매치 카드 승자/패자 명암 대비 강화, (2) 승자 경로 연결선 primary 굵게 강조, (3) 라운드 헤더 칩 형태+경기 수 표시.
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/app/(web)/tournaments/[id]/bracket/_components/match-card.tsx | TeamRow: 좌측 막대 w-0.5→w-1, 승자 시드뱃지 primary 배경(흰글씨), 패자 row opacity-50, 승자 text font-bold, 승자 점수 text-[12px] font-black, 뱃지 #prefix 제거(공간 절약) | 수정 |
+| src/app/(web)/tournaments/[id]/bracket/_components/bracket-view.tsx | 연결선 stroke 승자=primary+strokeWidth2/예정=border+1, 라운드 헤더 칩(rounded-full px-2 py-0.5) + 경기 수 "· N" 표시, roundHeaders에 matchCount 추가 | 수정 |
+| src/lib/tournaments/bracket-builder.ts | computeConnectorPaths isActive 기준을 status→winnerTeamId로 변경 (승자 확정된 경기만 경로 강조) | 수정 |
+
+시각적 변화:
+- **카드 승자**: 왼쪽 primary 세로 막대(w-1) + 시드뱃지 primary배경+흰글씨 + 팀명 font-bold + 점수 12px font-black primary
+- **카드 패자**: opacity-50으로 확 흐리게 처리 → 승패가 한눈에 보임
+- **연결선**: 승자 경로는 primary 2px 굵은 선, 미확정 경로는 border 1px 얇은 선
+- **라운드 헤더**: "1라운드 · 4" 형태 칩(surface배경 rounded-full)으로 변경
+
+tester 참고:
+- 테스트 URL: `/tournaments/<id>` → 대진표 탭
+- 정상 동작:
+  1. 완료된 경기: 승자 좌측 primary 막대, 승자 시드뱃지 주황배경+흰글씨, 패자 row 흐림(opacity-50)
+  2. 완료 경기→다음 경기로 이어지는 연결선이 primary(주황) 굵은 2px로 표시
+  3. 미완료 경기 사이 연결선은 얇은 회색(1px)
+  4. 각 라운드 컬럼 상단에 "1라운드 · 4", "준결승 · 2" 같이 경기 수 포함된 칩 표시
+  5. 진행중(LIVE) 라운드는 칩 옆에 펄스 애니메이션 유지
+- 주의할 입력:
+  - 리그 진행중인 full_league_knockout 대회: 토너먼트 슬롯은 이탤릭 "1위/4위" 라벨 유지 확인
+  - 부전승(bye) 카드: 점선 테두리 + opacity-70 유지 확인
+  - 모바일 375px: 카드 크기 그대로 유지(SIZE_MAP 변경 없음), 한 화면에 트리 들어가는지 확인
+- 다크모드/라이트모드 둘 다 확인 (색상 모두 var(--color-*) 사용)
+
+reviewer 참고:
+- bracket-builder의 isActive 기준 변경: 기존 `completed || in_progress` → `winnerTeamId != null || in_progress`. 의미적으로 "완료"라 해도 winnerTeamId 없는 케이스(무승부/취소)를 경로로 강조 안 함이 더 정확함
+- MatchCard 카드 크기(SIZE_MAP) 변경 없음 — 기존 100×52 유지
+- MobileMatchCard(모바일 풀와이드)는 변경 안 함 — 모바일에서도 트리 뷰를 쓰므로 MobileMatchCard 자체가 현재 미사용 경로지만 하위호환 유지
+- bracket-builder.ts의 좌표 계산 로직은 건드리지 않음
+- 하드코딩 색상 없음, 모두 var(--color-*) CSS 변수 사용
+
+tsc --noEmit 통과. 미푸시 커밋: N/A (PM 커밋 대기)
+
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-13 | developer | 대진표 NBA 스타일 리디자인 Phase A (match-card 승자/패자 명암+좌측막대 w-1+시드뱃지 승자강조+점수크기차등, bracket-view 연결선 primary+굵게 강약+라운드헤더 칩형태+경기수표시, bracket-builder isActive 기준 winnerTeamId로 정제, 3파일, tsc 통과) | 완료 |
 | 04-13 | developer | BracketView/MatchCard 모바일 한 화면 축소 (SIZE_MAP 100/120/140 + columnGap 24 + getCardSize sm 고정, 2파일, tsc 통과) | 완료 |
 | 04-13 | developer | BracketView 모바일 탭 뷰 제거 → 트리 전체 표시 (bracket-view.tsx 1파일, columnGap 40 + 패딩축소, tsc 통과) | 완료 |
 | 04-13 | developer | Phase 2C 토너먼트 뼈대 미리 생성 + 슬롯 라벨 (tournament-seeding 2함수 추가 + bracket API 훅 + matches 자동 훅 전환 + bracket-builder 타입확장 + match-card 라벨 표시 + admin 안내, 6파일, tsc 통과) | 완료 |
@@ -655,5 +695,3 @@ tsc --noEmit 통과. 미푸시 커밋: N/A (PM 커밋 대기)
 | 04-13 | developer | Phase 3 wizard 포맷 세부설정 UI + settings.bracket 저장 (5파일, tsc 통과) | 완료 |
 | 04-13 | planner-architect | 대진표 Phase 2-4 구체 계획 (리그→4강 자동 + wizard 세부설정 + 조편성) | 기획완료 |
 | 04-13 | developer | 팀 전적 tournament_matches 집계 + draws 제거 (2파일) | 완료 |
-| 04-13 | developer | 팀명/선수명 Link 추가 (9파일, API 3곳 + UI 6곳) | 완료 |
-| 04-13 | developer | 대회 선수 userId 자동 연결 구현 (시나리오 A+D, 3파일) | 완료 |

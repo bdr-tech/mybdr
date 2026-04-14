@@ -113,6 +113,7 @@ function BracketTreeView({
   }, [positions]);
 
   // 라운드 헤더 위치 (각 라운드의 첫 매치 X좌표)
+  // 이유: NBA 스타일 헤더는 "라운드명 · 경기 수"를 표시하므로 matchCount도 함께 계산
   const roundHeaders = useMemo(() => {
     return rounds.map((round) => {
       const firstMatch = round.matches[0];
@@ -121,6 +122,7 @@ function BracketTreeView({
         roundNumber: round.roundNumber,
         roundName: round.roundName,
         hasLive: round.hasLive,
+        matchCount: round.matches.length,
         x: pos?.x ?? 0,
       };
     });
@@ -141,22 +143,28 @@ function BracketTreeView({
           height: `${dimensions.height + headerHeight + padding}px`,
         }}
       >
-        {/* 라운드 헤더 */}
+        {/* 라운드 헤더 — NBA 스타일 칩 (라운드명 + 경기 수) + LIVE 펄스 */}
         {roundHeaders.map((rh) => (
           <div
             key={rh.roundNumber}
-            className="absolute flex items-center gap-2"
+            className="absolute flex items-center gap-1.5"
             style={{
               left: `${rh.x + padding}px`,
               top: 0,
               width: `${cardWidth}px`,
             }}
           >
+            {/* 칩 형태 헤더: surface 배경 + rounded-full + 작은 폰트 */}
             <span
-              className="text-xs font-bold uppercase tracking-widest whitespace-nowrap"
-              style={{ color: "var(--color-text-muted)" }}
+              className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap"
+              style={{
+                backgroundColor: "var(--color-surface)",
+                color: "var(--color-text-secondary)",
+              }}
             >
               {rh.roundName}
+              {/* 이유: "준결승 · 2경기" 형태로 경기 수 표시 → 트리 스캔성 향상 */}
+              <span className="ml-1 opacity-60">· {rh.matchCount}</span>
             </span>
             {rh.hasLive && (
               <span className="relative flex h-2 w-2">
@@ -177,12 +185,14 @@ function BracketTreeView({
           width={dimensions.width}
           height={dimensions.height}
         >
+          {/* 이유: NBA 스타일 — 승자 경로(isActive)는 primary+굵게(2px), 예정 경로는 border색+얇게(1px).
+              강약 대비로 "여기서 올라간 팀이 다음 라운드에 올라간다"는 흐름을 시각적으로 명확히 전달 */}
           {connectorPaths.map((path) => (
             <path
               key={path.id}
               d={path.d}
-              stroke={path.isActive ? "rgba(244,162,97,0.5)" : "var(--color-text-muted)"}
-              strokeWidth={1.5}
+              stroke={path.isActive ? "var(--color-primary)" : "var(--color-border)"}
+              strokeWidth={path.isActive ? 2 : 1}
               fill="none"
             />
           ))}

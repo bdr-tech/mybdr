@@ -280,8 +280,10 @@ export function computeConnectorPaths(
 
       const d = `M ${x1} ${y1} H ${midX} V ${y2} H ${x2}`;
 
+      // 이유: NBA 스타일 "승자 경로 강조" — 승자가 확정된 매치(winnerTeamId 존재)만 active로 간주.
+      // 진행중(in_progress)은 아직 승자 미확정이지만 시각적 연속성을 위해 포함.
       const isActive =
-        match.status === "completed" ||
+        match.winnerTeamId != null ||
         match.status === "in_progress" ||
         nextMatch.status === "in_progress";
 

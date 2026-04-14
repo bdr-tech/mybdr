@@ -81,40 +81,43 @@ function TeamRow({
   const slotLabel = position === "home" ? match.homeSlotLabel : match.awaySlotLabel;
 
   return (
-    // 이유: 카드 크기 축소에 맞춰 내부 패딩/폰트도 축소.
-    // px-2.5 py-1.5 → px-2 py-1, text-xs → text-[11px] (팀명은 여전히 읽히되 공간 절약)
+    // 이유: NBA.com 스타일 — 승자 row는 굵게+primary 하이라이트, 패자 row는 opacity로 명암 구분.
+    // px-2 py-1 유지, 승자 배경 0.08 → 0.1로 살짝 강화.
     <div
-      className={`flex items-center gap-1 px-2 py-1 text-[11px] ${
-        winner ? "bg-[rgba(244,162,97,0.08)]" : ""
-      }`}
+      className={`flex items-center gap-1 px-2 py-1 text-[11px] transition-opacity ${
+        winner ? "bg-[rgba(244,162,97,0.1)]" : ""
+      } ${loser ? "opacity-50" : ""}`}
     >
-      {/* 승자 표시 바 */}
+      {/* 승자 좌측 세로 막대 — NBA 스타일로 w-0.5 → w-1로 강화하여 시각적 "승자 표시" 명확히 */}
       <div
-        className={`w-0.5 self-stretch rounded-full flex-shrink-0 ${
+        className={`w-1 self-stretch rounded-sm flex-shrink-0 ${
           winner ? "bg-[var(--color-primary)]" : "bg-transparent"
         }`}
       />
 
       {/* 팀명: teamId가 있으면 팀 페이지 링크 */}
-      {/* 시드 뱃지(#1, #4)는 팀명 바로 앞에 작게 inline 표시 — 공간 절약 위해 10px */}
+      {/* 시드 뱃지(#1, #4)는 팀명 바로 앞에 작게 inline 표시 — 승자면 primary 배경으로 강조 */}
       {team !== null && !isBye ? (
         <Link
           href={`/teams/${team.teamId}`}
-          className={`flex-1 min-w-0 flex items-center gap-1 font-medium leading-tight hover:underline ${
+          className={`flex-1 min-w-0 flex items-center gap-1 leading-tight hover:underline ${
+            // 이유: NBA 스타일은 승자를 font-bold로, 패자는 font-normal로 확실히 구분
+            winner ? "font-bold" : "font-medium"
+          } ${
             loser ? "text-[var(--color-text-secondary)]" : "text-[var(--color-text-primary)]"
           }`}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* 시드 번호가 있을 때만 뱃지 렌더링. 없으면 팀명만 표시 */}
+          {/* 시드 뱃지: 승자는 primary 배경(흰 글씨), 일반은 surface(muted) */}
           {team.seedNumber != null && (
             <span
               className="inline-flex items-center justify-center rounded px-1 text-[9px] font-bold flex-shrink-0 tabular-nums"
               style={{
-                backgroundColor: "var(--color-surface)",
-                color: "var(--color-text-muted)",
+                backgroundColor: winner ? "var(--color-primary)" : "var(--color-surface)",
+                color: winner ? "#ffffff" : "var(--color-text-muted)",
               }}
             >
-              #{team.seedNumber}
+              {team.seedNumber}
             </span>
           )}
           <span className="truncate">{team.team.name}</span>
@@ -131,14 +134,14 @@ function TeamRow({
         </span>
       )}
 
-      {/* 점수 */}
+      {/* 점수 — 승자는 더 크게(text-[12px]) + 강한 색상. 명암으로 승부 가시성 높임 */}
       <span
-        className={`flex-shrink-0 font-bold tabular-nums ${
+        className={`flex-shrink-0 tabular-nums ${
           winner
-            ? "text-[var(--color-primary)]"
+            ? "text-[12px] font-black text-[var(--color-primary)]"
             : isLive
-              ? "text-[var(--color-primary)]"
-              : "text-[var(--color-text-secondary)]"
+              ? "font-bold text-[var(--color-primary)]"
+              : "font-bold text-[var(--color-text-muted)]"
         }`}
       >
         {showScore ? score : "-"}
