@@ -3,9 +3,34 @@
 ---
 
 ## 📌 현재 작업
-- **요청**: 심판 배정 워크플로우 2차 — 신청자 선정 + 일자별 풀 + 책임자 지정
-- **상태**: ✅ tester 전체 PASS (23/23) — PM 커밋 대기
+- **요청**: 심판 배정 워크플로우 3차 — 현장 배정 풀 기반 마이그레이션 (RefereePicker + 경기 API 풀 조인 + 배정 API 5중 검증)
+- **상태**: ✅ tester 전체 PASS (7/7) — PM 커밋 대기
 - **현재 담당**: tester → (다음) PM 커밋
+
+## 🧪 테스트 결과 (tester) — 배정워크플로우 3차 (2026-04-13)
+
+| 테스트 항목 | 결과 | 비고 |
+|-----------|------|------|
+| Test 1: `npx tsc --noEmit` | ✅ 통과 | EXIT=0, 타입 에러 0건 |
+| Test 2: RefereePicker 컴포넌트 | ✅ 통과 | "use client" + 검색 input + 실시간 필터(useMemo) + pools/excludeRefereeIds props + ⭐star(is_chief) + "이미 배정됨" 뱃지 비활성화 + ESC/외부클릭 닫기 모두 확인 |
+| Test 3: 경기 목록 API 확장 | ✅ 통과 | `available_pools` 필드 포함. `prisma.dailyAssignmentPool.findMany`를 대회+협회 단위 1회 호출 후 `poolsByDate` Map으로 날짜별 그룹화(N+1 방지). 경기별 `toISOString().slice(0,10)`로 조회 |
+| Test 4: POST /assignments 5중 검증 | ✅ 통과 | pool_id optional; (1) pool 존재 404 POOL_NOT_FOUND / (2) referee 일치 400 POOL_REFEREE_MISMATCH / (3) association IDOR 403 / (4) tournament 일치 400 POOL_TOURNAMENT_MISMATCH / (5) date UTC YYYY-MM-DD 일치 400 POOL_DATE_MISMATCH + MATCH_DATE_MISSING |
+| Test 4b: PATCH /assignments/[id] 동일 검증 | ✅ 통과 | `loadOwnedAssignment`가 referee_id/tournament_match_id 반환. pool_id=null 시 해제 허용, undefined 시 미터치, BigInt 시 동일한 5중 검증 |
+| Test 5: 배정 관리 페이지 리팩토링 | ✅ 통과 | 심판 select 드롭다운 제거 → `<RefereePicker pools={toPickerPools} excludeRefereeIds={getExcludeIds} />`. 경기 카드에 "선정 풀: N명·가용 M명" 뱃지. POST body에 `pool_id: pickedPool.id` 전달. 빈 풀 시 안내박스 + `/referee/admin/pools?tournament_id=...` 링크 + "배정 추가" 버튼 disabled |
+| Test 6: 과도기 호환성 | ✅ 통과 | Prisma 스키마 `pool_id BigInt?` nullable. POST/PATCH 모두 pool_id 없으면 검증 스킵하고 정상 생성. 기존 pool_id=NULL 배정은 목록 API에 그대로 포함 |
+| Test 7: 디자인 규칙 | ✅ 통과 | lucide-react import 없음(Material Symbols 사용). border-radius 4px 전 영역 일관. var(--color-*) 사용. `color: "var(--color-text-on-primary, #fff)"`는 CSS 변수 fallback 형태로 허용. `color-mix(... #22c55e ...)`는 기존 v2 4/4 커밋(995f9ca)부터 존재하던 confirmed 상태색이며 3차에서 신규 도입한 위반 아님 |
+
+📊 종합: **7개 중 7개 통과 / 0개 실패**
+
+🎯 핵심 검증 포인트:
+- RefereePicker의 open 상태일 때만 `mousedown`/`keydown` 이벤트 바인딩 → 다른 모달/드롭다운 간섭 없음 (76행 useEffect)
+- 매치 API가 풀을 대회+협회 단위 1회 쿼리 후 메모리 Map 그룹화 → 경기 N개마다 N+1 회피 (tournaments/[id]/matches/route.ts L121~172)
+- POST/PATCH 5중 검증이 순서대로 단락 평가 → 권한 먼저(403), 그 다음 비즈니스(400) 순 UX 친화적
+- UTC Date(@db.Date 자정 저장)와 scheduled_at(DateTime)을 `.toISOString().slice(0,10)`로 일관 비교 → 시차 무관
+- 페이지 canAdd 계산: `poolTotal > 0 && poolRemaining > 0`로 "빈 풀" / "모두 배정됨" 분기 처리
+
+⚠️ 참고(실패 아님):
+- confirmed 상태 뱃지 배경의 `#22c55e`는 3차 변경분이 아닌 기존 995f9ca 커밋 코드 — 다른 페이지(documents/assignments/settlements)에서는 `var(--color-success, #22c55e)` 변수 fallback 형태로 통일되어 있음. 향후 리팩토링 시 함께 정리 권고(현재 작업 블로커 아님)
 
 ## 🧭 진행 현황표
 
@@ -30,6 +55,51 @@
 | 1차 | 공고 게시 + 본인 신청 뼈대 (공고/신청/선정풀 스키마 + API 5개 + 페이지 2개) | ✅ 완료 |
 | 2차 | 신청자 선정 + 일자별 풀 + 책임자 지정 (pools API 2개 + 상세/대시보드 페이지 2개) | ✅ 테스트 통과 |
 | 3차 | 풀→경기 배정 자동화 + 기존 assignments 통합 | 대기 |
+
+## 구현 기록 (developer) — 배정워크플로우 3차
+
+📝 구현한 기능:
+- 경기 배정 단계를 "공고→신청→일자별 선정풀→경기 배정" 최종 단계로 통합
+- 심판 선택 드롭다운을 "협회 전체 심판" → "해당 경기 일자 선정 풀"로 제한
+- 풀 id를 RefereeAssignment.pool_id에 저장해 선정→배정 추적 가능
+- 빈 풀/모두 배정 상태에서는 일자별 운영 페이지로 안내 + 배정 추가 버튼 비활성화
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/app/(referee)/referee/_components/referee-picker.tsx | 풀 기반 심판 선택 공통 컴포넌트 — 검색 input + 드롭다운 리스트 + is_chief ⭐ + 등급 뱃지 + "이미 배정됨" 비활성화 + ESC/외부클릭 닫기 | 신규 |
+| src/app/api/web/referee-admin/tournaments/[id]/matches/route.ts | 각 경기 응답에 available_pools 추가 — tournament_id + association_id로 풀 일괄 조회 후 YYYY-MM-DD(UTC)로 날짜별 그룹화 → scheduled_at 동일 일자만 매칭 | 수정 |
+| src/app/api/web/referee-admin/assignments/route.ts | POST: pool_id optional 스키마 추가 + 5중 검증(존재·referee 일치·association·tournament·date) + 생성 시 pool_id 저장 | 수정 |
+| src/app/api/web/referee-admin/assignments/[id]/route.ts | PATCH: pool_id optional(null 해제 / BigInt 재배정) + POST와 동일한 5중 검증 로직 + loadOwnedAssignment가 referee_id/tournament_match_id까지 반환 | 수정 |
+| src/app/(referee)/referee/admin/assignments/page.tsx | select → RefereePicker 교체 / MatchRow에 available_pools 반영 / 경기 카드에 "선정풀 N명·가용 M명" 뱃지 / 빈 풀이면 일자별 운영 링크 + 배정 추가 버튼 비활성화 / 모달도 풀 선택 기반 | 수정 |
+
+💡 tester 참고:
+- `npx tsc --noEmit` 에러 0건 확인 (EXIT=0)
+- 스키마 변경 없음 — 기존 RefereeAssignment.pool_id(nullable) 그대로 활용
+- 테스트 시나리오:
+  1. `/referee/admin/assignments` → 대회 선택 → 경기 목록에 "선정풀 N명·가용 M명" 뱃지 노출
+  2. 풀이 없는 경기: 안내 박스 + "일자별 운영 →" 링크 + "배정 추가" 버튼 비활성화
+  3. 풀이 있는 경기: "배정 추가" 클릭 → RefereePicker 드롭다운에 선정된 심판만 나열
+  4. RefereePicker 검색 input에 이름 타이핑 → 실시간 필터링
+  5. 이미 배정된 심판: "이미 배정됨" 뱃지 + 클릭 비활성화
+  6. 책임자(is_chief): ⭐ star 아이콘 표시
+  7. ESC 키 / 바깥 클릭으로 드롭다운 닫기
+  8. 선택 → 역할/메모 입력 → "배정 확정" → API에 pool_id 포함 전송 → 성공 시 목록 재조회
+- 정상 동작 포인트:
+  - pool_id 없는 기존 배정도 목록에 그대로 표시 (과도기 호환 OK)
+  - 다른 협회 풀 ID로 POST 시 403 FORBIDDEN
+  - pool의 referee_id와 body referee_id 불일치 시 400 POOL_REFEREE_MISMATCH
+  - 경기 scheduled_at 날짜와 pool.date 불일치 시 400 POOL_DATE_MISMATCH
+  - 경기 scheduled_at null인데 pool_id 보낸 경우 400 MATCH_DATE_MISSING
+- 주의할 입력:
+  - pool_id는 number/string BigInt 모두 허용
+  - PATCH에서 pool_id=null은 풀 연결 해제(허용), undefined는 미터치
+
+⚠️ reviewer 참고:
+- **IDOR 방어**: POST/PATCH 둘 다 pool.association_id === admin.associationId 검증 후에만 통과
+- **날짜 일치**: PostgreSQL @db.Date는 UTC 자정 저장, scheduled_at도 UTC 기준 toISOString().slice(0,10)로 비교 — 시차 무관
+- **N+1 회피**: matches 응답에서 pool을 경기마다 쿼리하지 않고 대회·협회 단위로 1회 findMany 후 메모리 Map으로 날짜별 그룹화
+- **RefereePicker 독립성**: 외부 클릭/ESC 감지를 useEffect 내부에서 open일 때만 바인딩 → 다른 컴포넌트의 이벤트 간섭 없음
+- **과도기 호환**: pool_id optional 유지 — 기존 배정 데이터나 외부 스크립트의 POST도 계속 동작. 추후 "필수화"는 데이터 마이그레이션 후 진행 필요
 
 ## 구현 기록 (developer) — 배정워크플로우 2차
 
@@ -171,6 +241,43 @@
 - 클라이언트 낙관적 UI(selecting Set으로 중복 클릭 방지 L95)
 - Material Symbols(star/star_border/chevron_right/calendar_today) + border-radius 4px + var(--color-*) 일관
 - 기존 배정(RefereeAssignment) 페이지/API 0 수정 — 3차 통합 전까지 회귀 리스크 없음
+
+## 리뷰 결과 (reviewer) — 배정워크플로우 3차 [2026-04-13]
+
+### 📊 종합 판정: **APPROVE** (통과) — 필수 수정 없음, 권장 사항 소수
+
+### ✅ 잘된 점
+- **5중 pool 검증이 명확·일관**: POST(route.ts L105-164), PATCH([id]/route.ts L122-189) 둘 다 (1)존재→(2)referee 일치→(3)association(IDOR)→(4)tournament→(5)date 순서로 동일하게 검사. 에러 코드도 `POOL_NOT_FOUND / POOL_REFEREE_MISMATCH / FORBIDDEN / POOL_TOURNAMENT_MISMATCH / MATCH_DATE_MISSING / POOL_DATE_MISMATCH`로 프론트가 분기 처리하기 좋음.
+- **IDOR 방어 철저**: assignments GET은 `referee: { association_id }` 조인 필터로 전체 목록에도 우리 협회만 노출. PATCH/DELETE는 loadOwnedAssignment 공통 헬퍼로 중복 제거.
+- **N+1 회피**: matches 라우트 L121-141 한 번의 `dailyAssignmentPool.findMany(tournament_id+association_id)`로 모든 풀 선조회 → Map으로 YYYY-MM-DD 그룹화. 경기 수와 무관하게 쿼리 2~3개(tournament + matches + assignments + pools = 4개)로 고정.
+- **과도기 호환성 유지**: `pool_id` Zod optional, create data에 `pool_id ?? null`(L193), PATCH는 undefined면 미터치. 기존 pool_id 없는 배정도 무리 없이 공존.
+- **날짜 비교 안전**: PostgreSQL @db.Date(UTC 자정) + `toISOString().slice(0,10)` 양측 동일 방식으로 YYYY-MM-DD 추출 → 타임존 드리프트 없음.
+- **RefereePicker UX**: 검색/ESC/외부클릭 닫기, 책임자 ⭐ + 등급 뱃지, "이미 배정됨" 비활성화가 모두 한 파일에 정돈. excludedSet으로 O(1) 판정.
+- **빈 풀 안내 명확**: 풀 0명 → `info` 아이콘 + "일자별 운영 →" 링크, 풀 있지만 모두 배정 → `check_circle` + 회색톤 안내. 배정 추가 버튼 `disabled` + title로 이유 노출.
+- **디자인 컨벤션 준수**: 모든 색이 var(--color-*) + color-mix, 아이콘은 Material Symbols, border-radius 4, lucide-react 흔적 없음.
+- **기존 기능 무회귀**: RefereeAssignment 스키마 변경 없음(pool_id 컬럼은 1차에서 이미 추가됨). assignments API 응답 필드는 추가만(`pool_id`), 삭제·변경 없음 → Flutter/기존 클라 영향 없음.
+
+### 🔴 필수 수정
+- **없음** (동작·안전·기존 호환 모두 문제 없음)
+
+### 🟡 권장 수정 (다음 작업 또는 3차 마무리 시점에 검토)
+- **assignments/[id]/route.ts L120-189 중복 로직 공통화**: POST(route.ts)와 PATCH의 5중 검증이 거의 그대로 중복. 공통 함수 `validatePoolAgainstMatch(pool_id, referee_id, match, associationId)` 하나로 뽑으면 앞으로 "풀 검증 규칙 변경" 시 한 곳만 고치면 됨. (현 시점엔 동작 OK라 필수 아님)
+- **assignments GET 응답에 pool_id 포함 누락**: route.ts L260-275 select에 `pool_id: true`가 빠져 있어, 관리자 GET 결과만으로는 "풀 연동됐는지" 알 수 없음. matches 라우트 쪽 assignments에는 pool_id가 아예 없음. UI가 당장 쓰진 않지만, 일관성·추후 필터용으로 추가 권장.
+- **matches 라우트 권한 주석 수정**: L20 주석 "모든 관리자 열람 가능 (배정 여부는 협회 무관 공개 정보)"인데, 실제로는 pool은 association_id로 필터(L123)됨. 주석이 약간 오해 소지. 현재 관리자라면 누구든 대회의 경기 자체는 봐도 되는 정책이면 그대로 두되, 주석을 "pool은 admin 협회로 필터"라고 명시하면 좋음.
+- **RefereePicker placeholder "1차 렌더 race"**: useEffect(L60-65)에서 value→name 초기화하는데, `pools`가 비동기 늦게 오면 초기 input이 빈 값으로 한 번 렌더됨. 본 플로우에서는 모달 열 때 modalMatch 상태가 이미 pools를 들고 있어 문제 없지만, 다른 화면에서 재사용 시 깜빡임 가능. 필요할 때 `useRef(prevValue)`나 가드 추가 고려.
+- **page.tsx "심판 #N" 뱃지 레벨**: matches 응답에서 level이 null일 때 `p.level ?? undefined`로 뱃지 숨김은 OK. 다만 가용/배정 숫자를 셀 때 `assignedRefIds.has(String(p.referee_id))`로 하고 있는데, 서로 다른 role_type이면 같은 심판이 두 역할로 풀에 올라올 수 있음. 지금은 referee_id 단위로 1명 카운트되니 이중 선정된 풀 1건은 보이지 않을 수도 있음. 운영 정책(한 사람 = 한 역할)이라면 현 로직 OK.
+
+### 리뷰 관점별 체크
+| 관점 | 결과 | 요약 |
+|------|------|------|
+| 보안 (pool 5중 검증) | ✅ | POST/PATCH 모두 동일 로직, IDOR 차단 |
+| 과도기 호환성 (pool_id nullable) | ✅ | optional + null 저장 + undefined 미터치 |
+| 성능 (N+1 회피) | ✅ | pools 1회 조회 + Map 그룹화 |
+| UX (RefereePicker / 빈 풀) | ✅ | 검색/필터/뱃지/비활성화/안내 링크 |
+| 코딩 컨벤션 | ✅ | apiSuccess/apiError, var(--color-*), Material Symbols |
+| 기존 기능 회귀 | ✅ | 스키마 변경 無, 응답 필드 추가만 |
+
+**커밋 승인 권장** — 권장 수정은 모두 다음 라운드에서 처리해도 무방.
 
 ## 테스트 결과 (tester) — 배정워크플로우 1차 [2026-04-13]
 

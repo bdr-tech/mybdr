@@ -26,9 +26,14 @@ const patchSchema = z.object({
     .enum(["assigned", "confirmed", "declined", "cancelled", "completed"])
     .optional(),
   memo: z.string().max(500).optional().nullable(),
+  // 배정워크플로우 3차: 재배정 시 pool_id 변경. null이면 풀 연결 해제.
+  pool_id: z
+    .union([z.number(), z.string(), z.null()])
+    .transform((v) => (v === null ? null : BigInt(v)))
+    .optional(),
 });
 
-// 공통: 배정 조회 + 협회 소속 검증
+// 공통: 배정 조회 + 협회 소속 검증 + referee_id·tournament_match_id 동반 반환
 async function loadOwnedAssignment(
   assignmentId: bigint,
   associationId: bigint
@@ -37,6 +42,8 @@ async function loadOwnedAssignment(
     where: { id: assignmentId },
     select: {
       id: true,
+      referee_id: true,
+      tournament_match_id: true,
       referee: { select: { association_id: true } },
     },
   });
@@ -104,9 +111,81 @@ export async function PATCH(
   if (
     data.role === undefined &&
     data.status === undefined &&
-    data.memo === undefined
+    data.memo === undefined &&
+    data.pool_id === undefined
   ) {
     return apiError("변경할 내용이 없습니다.", 400, "NO_CHANGES");
+  }
+
+  // 배정워크플로우 3차 — pool_id가 명시적으로 주어지면 재배정 검증.
+  //   null이면 풀 연결 해제(허용). BigInt면 POST와 동일한 4중 검증.
+  if (data.pool_id !== undefined && data.pool_id !== null) {
+    const assignmentRef = loaded.ok ? loaded.assignment : null;
+    if (!assignmentRef) {
+      // 타입 가드 — 이미 위에서 404/403 처리되지만 안전하게
+      return apiError("배정을 찾을 수 없습니다.", 404, "NOT_FOUND");
+    }
+
+    const pool = await prisma.dailyAssignmentPool.findUnique({
+      where: { id: data.pool_id },
+      select: {
+        id: true,
+        referee_id: true,
+        association_id: true,
+        tournament_id: true,
+        date: true,
+      },
+    });
+    if (!pool) {
+      return apiError("선정 풀을 찾을 수 없습니다.", 404, "POOL_NOT_FOUND");
+    }
+    // pool.referee_id === 배정의 referee_id
+    if (pool.referee_id !== assignmentRef.referee_id) {
+      return apiError(
+        "선정 풀과 배정 심판이 일치하지 않습니다.",
+        400,
+        "POOL_REFEREE_MISMATCH"
+      );
+    }
+    // 우리 협회 풀
+    if (pool.association_id !== admin.associationId) {
+      return apiError(
+        "다른 협회의 선정 풀은 사용할 수 없습니다.",
+        403,
+        "FORBIDDEN"
+      );
+    }
+    // 배정의 경기 대회·날짜와 일치 확인
+    const match = await prisma.tournamentMatch.findUnique({
+      where: { id: assignmentRef.tournament_match_id },
+      select: { tournamentId: true, scheduledAt: true },
+    });
+    if (!match) {
+      return apiError("경기를 찾을 수 없습니다.", 404, "NOT_FOUND");
+    }
+    if (pool.tournament_id !== match.tournamentId) {
+      return apiError(
+        "선정 풀의 대회가 경기 대회와 다릅니다.",
+        400,
+        "POOL_TOURNAMENT_MISMATCH"
+      );
+    }
+    if (!match.scheduledAt) {
+      return apiError(
+        "경기 일자가 확정되지 않아 풀을 연결할 수 없습니다.",
+        400,
+        "MATCH_DATE_MISSING"
+      );
+    }
+    const poolYmd = pool.date.toISOString().slice(0, 10);
+    const matchYmd = match.scheduledAt.toISOString().slice(0, 10);
+    if (poolYmd !== matchYmd) {
+      return apiError(
+        "선정 풀 날짜와 경기 일자가 다릅니다.",
+        400,
+        "POOL_DATE_MISMATCH"
+      );
+    }
   }
 
   try {
@@ -116,6 +195,8 @@ export async function PATCH(
         ...(data.role !== undefined && { role: data.role }),
         ...(data.status !== undefined && { status: data.status }),
         ...(data.memo !== undefined && { memo: data.memo }),
+        // pool_id: undefined이면 터치 안 함. null이면 해제. BigInt면 연결.
+        ...(data.pool_id !== undefined && { pool_id: data.pool_id }),
       },
       select: {
         id: true,
@@ -125,6 +206,7 @@ export async function PATCH(
         status: true,
         memo: true,
         assigned_at: true,
+        pool_id: true,
       },
     });
     return apiSuccess({ assignment: updated });

@@ -1,20 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import RefereePicker, {
+  type RefereePickerPool,
+} from "../../_components/referee-picker";
 
 /**
- * /referee/admin/assignments — 심판 경기 배정 관리 페이지.
+ * /referee/admin/assignments — 심판 경기 배정 관리 페이지 (배정워크플로우 3차 리팩토링).
  *
- * 이유: 협회 관리자가 대회 → 경기 → 심판을 3단계 드릴다운 방식으로 선택하여
- *      배정을 등록/수정/삭제할 수 있어야 한다.
+ * 이유: 이전 버전은 "우리 협회 전체 심판"을 드롭다운에 보여줬는데,
+ *      배정 워크플로우가 "공고 → 신청 → 일자별 선정풀 → 경기 배정"으로 정리되면서
+ *      실제 배정 단계에서는 "해당 경기 일자에 선정된 풀"에서만 골라야 한다.
  *
  * 구조:
- *   1단계: 대회 검색/선택
- *   2단계: 선택한 대회의 경기 목록 (각 경기별 배정 현황 포함)
- *   3단계: 배정 추가 모달 (심판 선택 + 역할 선택 + 메모)
+ *   1단계: 대회 검색/선택 (기존 동일)
+ *   2단계: 경기 목록 + 경기별 available_pools (기존 동일 + 풀 정보 추가)
+ *   3단계: 배정 추가 모달 — RefereePicker (풀 기반) + 역할 선택 + 메모
  *
- * 디자인: var(--color-*) CSS 변수 + Material Symbols.
- *        데스크톱은 테이블, 모바일은 카드 레이아웃.
+ * 빈 풀 안내:
+ *   - 경기 일자 풀이 하나도 없으면 "일자별 운영에서 먼저 인원 선정" 안내 + 링크
+ *   - 풀은 있지만 모두 배정된 경우 "모든 선정 인원이 배정되었습니다"
+ *
+ * 기존 기능 유지: 대회 검색, 경기 목록, 역할 지정, 메모, 타 협회 배정 표시.
  */
 
 // ── 타입 정의 (API 응답 형태) ──
@@ -37,6 +45,16 @@ type AssignmentRow = {
   is_own_association: boolean;
 };
 
+// 배정워크플로우 3차 — 경기에 포함된 "해당 일자 선정 풀"
+type AvailablePool = {
+  id: string | number;
+  referee_id: string | number;
+  name: string;
+  level: string | null;
+  is_chief: boolean;
+  role_type: string;
+};
+
 type MatchRow = {
   id: string | number;
   scheduled_at: string | null;
@@ -46,11 +64,7 @@ type MatchRow = {
   home_team_name: string | null;
   away_team_name: string | null;
   assignments: AssignmentRow[];
-};
-
-type MyReferee = {
-  id: string | number;
-  user_name: string | null;
+  available_pools: AvailablePool[]; // 3차 추가
 };
 
 // ── 역할 라벨 맵 ──
@@ -81,8 +95,12 @@ export default function AssignmentsPage() {
 
   // 3단계 상태 (모달)
   const [modalMatch, setModalMatch] = useState<MatchRow | null>(null);
-  const [myReferees, setMyReferees] = useState<MyReferee[]>([]);
-  const [formRefereeId, setFormRefereeId] = useState("");
+  // RefereePicker에서 선택된 풀 (id + referee_id + name 세트로 보관)
+  const [pickedPool, setPickedPool] = useState<{
+    id: string;
+    referee_id: string;
+    name: string;
+  } | null>(null);
   const [formRole, setFormRole] = useState<keyof typeof ROLE_LABELS>("main");
   const [formMemo, setFormMemo] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -154,33 +172,10 @@ export default function AssignmentsPage() {
     }
   }, [selected, fetchMatches]);
 
-  // ── 우리 협회 소속 심판 목록 (모달용) ──
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(
-          "/api/web/admin/associations/members?limit=100"
-        );
-        if (!res.ok) return;
-        const json = await res.json();
-        // items[i].id + user_name
-        const list: MyReferee[] = (json.items ?? []).map(
-          (r: { id: string | number; user_name: string | null }) => ({
-            id: r.id,
-            user_name: r.user_name,
-          })
-        );
-        setMyReferees(list);
-      } catch {
-        // 심판 목록 실패해도 페이지 자체는 동작
-      }
-    })();
-  }, []);
-
   // ── 3단계 액션: 배정 생성 ──
   const openModal = (match: MatchRow) => {
     setModalMatch(match);
-    setFormRefereeId("");
+    setPickedPool(null);
     setFormRole("main");
     setFormMemo("");
     setFormError(null);
@@ -191,7 +186,7 @@ export default function AssignmentsPage() {
 
   const submitAssignment = async () => {
     if (!modalMatch) return;
-    if (!formRefereeId) {
+    if (!pickedPool) {
       setFormError("심판을 선택해 주세요.");
       return;
     }
@@ -202,10 +197,12 @@ export default function AssignmentsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          referee_id: formRefereeId,
+          referee_id: pickedPool.referee_id,
           tournament_match_id: String(modalMatch.id),
           role: formRole,
           memo: formMemo || null,
+          // 3차 핵심: pool_id 함께 전달 → 서버가 4중 검증 + 저장
+          pool_id: pickedPool.id,
         }),
       });
       if (!res.ok) {
@@ -276,7 +273,7 @@ export default function AssignmentsPage() {
     }
   };
 
-  // 요약 뱃지: "주심 1/부심 0" 같은 문자열
+  // 요약 뱃지: "주심 1/부심 0" 같은 카운트
   const summarizeAssignments = (list: AssignmentRow[]) => {
     const counts: Record<string, number> = {
       main: 0,
@@ -290,14 +287,20 @@ export default function AssignmentsPage() {
     return counts;
   };
 
-  // 내 협회 심판이 아닌 경우 드롭다운에서도 제외 (중복 표시는 가능)
-  const refereeOptions = useMemo(() => {
-    // 이미 모달 경기에 배정된 심판은 제외
-    const taken = new Set(
-      (modalMatch?.assignments ?? []).map((a) => String(a.referee_id))
-    );
-    return myReferees.filter((r) => !taken.has(String(r.id)));
-  }, [myReferees, modalMatch]);
+  // RefereePicker용 풀 변환 — API 응답(AvailablePool) → 컴포넌트 props 타입
+  // id/referee_id가 string|number 혼합이라 문자열로 통일
+  const toPickerPools = (list: AvailablePool[]): RefereePickerPool[] =>
+    list.map((p) => ({
+      id: String(p.id),
+      referee_id: String(p.referee_id),
+      name: p.name,
+      level: p.level ?? undefined,
+      is_chief: p.is_chief,
+    }));
+
+  // 이미 배정된 심판 id 목록 (RefereePicker excludeRefereeIds)
+  const getExcludeIds = (m: MatchRow) =>
+    m.assignments.map((a) => String(a.referee_id));
 
   return (
     <div className="space-y-6">
@@ -313,7 +316,8 @@ export default function AssignmentsPage() {
           className="text-sm"
           style={{ color: "var(--color-text-muted)" }}
         >
-          대회를 선택한 뒤 경기별로 심판을 배정하세요.
+          대회를 선택한 뒤 경기별로 심판을 배정하세요. 심판은 해당 일자에 선정된
+          인원 중에서만 고를 수 있습니다.
         </p>
       </header>
 
@@ -503,6 +507,16 @@ export default function AssignmentsPage() {
             <div className="space-y-3">
               {matches.map((m) => {
                 const counts = summarizeAssignments(m.assignments);
+                // 풀 상태: 0개면 "선정 필요", 있지만 모두 배정됐으면 "모두 배정됨"
+                const poolTotal = m.available_pools.length;
+                const assignedRefIds = new Set(
+                  m.assignments.map((a) => String(a.referee_id))
+                );
+                const poolRemaining = m.available_pools.filter(
+                  (p) => !assignedRefIds.has(String(p.referee_id))
+                ).length;
+                const canAdd = poolTotal > 0 && poolRemaining > 0;
+
                 return (
                   <div
                     key={String(m.id)}
@@ -531,6 +545,13 @@ export default function AssignmentsPage() {
                           {m.home_team_name ?? "TBD"} vs{" "}
                           {m.away_team_name ?? "TBD"}
                         </div>
+                        {/* 풀 상태 뱃지 — 선정 인원이 몇 명 남았는지 표시 */}
+                        <div
+                          className="text-[11px] mt-1"
+                          style={{ color: "var(--color-text-muted)" }}
+                        >
+                          선정 풀: {poolTotal}명 · 가용 {poolRemaining}명
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -549,12 +570,25 @@ export default function AssignmentsPage() {
                         <button
                           type="button"
                           onClick={() => openModal(m)}
-                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold"
+                          disabled={!canAdd}
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold disabled:cursor-not-allowed"
                           style={{
-                            backgroundColor: "var(--color-primary)",
-                            color: "var(--color-text-on-primary, #fff)",
+                            backgroundColor: canAdd
+                              ? "var(--color-primary)"
+                              : "var(--color-border)",
+                            color: canAdd
+                              ? "var(--color-text-on-primary, #fff)"
+                              : "var(--color-text-muted)",
                             borderRadius: 4,
+                            opacity: canAdd ? 1 : 0.6,
                           }}
+                          title={
+                            !canAdd
+                              ? poolTotal === 0
+                                ? "이 일자에 선정된 인원이 없습니다"
+                                : "선정 인원이 모두 배정되었습니다"
+                              : undefined
+                          }
                         >
                           <span className="material-symbols-outlined text-sm">
                             add
@@ -563,6 +597,49 @@ export default function AssignmentsPage() {
                         </button>
                       </div>
                     </div>
+
+                    {/* 풀 상태 안내 — 빈 풀 / 모두 배정됨 */}
+                    {poolTotal === 0 && (
+                      <div
+                        className="flex items-center gap-2 text-xs py-2 px-2 mb-2"
+                        style={{
+                          backgroundColor:
+                            "color-mix(in srgb, var(--color-primary) 8%, transparent)",
+                          color: "var(--color-primary)",
+                          borderRadius: 4,
+                        }}
+                      >
+                        <span className="material-symbols-outlined text-base">
+                          info
+                        </span>
+                        <span className="flex-1">
+                          이 일자에 선정된 인원이 없습니다. 먼저 일자별 운영에서
+                          인원을 선정하세요.
+                        </span>
+                        <Link
+                          href={`/referee/admin/pools?tournament_id=${selected.id}`}
+                          className="font-bold underline"
+                        >
+                          일자별 운영 →
+                        </Link>
+                      </div>
+                    )}
+                    {poolTotal > 0 && poolRemaining === 0 && (
+                      <div
+                        className="flex items-center gap-2 text-xs py-2 px-2 mb-2"
+                        style={{
+                          backgroundColor:
+                            "color-mix(in srgb, var(--color-text-muted) 10%, transparent)",
+                          color: "var(--color-text-muted)",
+                          borderRadius: 4,
+                        }}
+                      >
+                        <span className="material-symbols-outlined text-base">
+                          check_circle
+                        </span>
+                        모든 선정 인원이 이미 배정되었습니다.
+                      </div>
+                    )}
 
                     {/* 배정 목록 */}
                     {m.assignments.length === 0 ? (
@@ -700,31 +777,41 @@ export default function AssignmentsPage() {
               {modalMatch.away_team_name ?? "TBD"}
             </div>
 
-            {/* 심판 선택 */}
+            {/* 심판 선택 — RefereePicker (풀 기반) */}
             <label
               className="block text-xs font-bold mb-1"
               style={{ color: "var(--color-text-secondary)" }}
             >
-              심판 *
+              심판 * (선정된 인원 중에서만 선택)
             </label>
-            <select
-              value={formRefereeId}
-              onChange={(e) => setFormRefereeId(e.target.value)}
-              className="w-full mb-3 px-3 py-2 text-sm"
-              style={{
-                backgroundColor: "var(--color-surface)",
-                border: "1px solid var(--color-border)",
-                color: "var(--color-text-primary)",
-                borderRadius: 4,
-              }}
-            >
-              <option value="">-- 선택 --</option>
-              {refereeOptions.map((r) => (
-                <option key={String(r.id)} value={String(r.id)}>
-                  {r.user_name ?? `심판 #${r.id}`}
-                </option>
-              ))}
-            </select>
+            <div className="mb-3">
+              <RefereePicker
+                pools={toPickerPools(modalMatch.available_pools)}
+                excludeRefereeIds={getExcludeIds(modalMatch)}
+                value={pickedPool?.id}
+                onSelect={(p) => setPickedPool(p)}
+                placeholder="심판 이름으로 검색"
+              />
+              {modalMatch.available_pools.length === 0 && (
+                <div
+                  className="mt-2 text-[11px]"
+                  style={{ color: "var(--color-primary)" }}
+                >
+                  이 일자에 선정된 인원이 없습니다.
+                  {selected && (
+                    <>
+                      {" "}
+                      <Link
+                        href={`/referee/admin/pools?tournament_id=${selected.id}`}
+                        className="underline font-bold"
+                      >
+                        일자별 운영 →
+                      </Link>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* 역할 */}
             <label
@@ -798,13 +885,13 @@ export default function AssignmentsPage() {
               <button
                 type="button"
                 onClick={submitAssignment}
-                disabled={submitting}
+                disabled={submitting || !pickedPool}
                 className="px-4 py-2 text-sm font-bold"
                 style={{
                   backgroundColor: "var(--color-primary)",
                   color: "var(--color-text-on-primary, #fff)",
                   borderRadius: 4,
-                  opacity: submitting ? 0.6 : 1,
+                  opacity: submitting || !pickedPool ? 0.6 : 1,
                 }}
               >
                 {submitting ? "저장 중..." : "배정 확정"}

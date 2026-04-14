@@ -23,9 +23,16 @@ import type { NextRequest } from "next/server";
  *   items: [{
  *     id, scheduled_at, round_name, status, court_number,
  *     home_team_name, away_team_name,
- *     assignments: [{ id, referee_id, referee_name, role, status }]
+ *     assignments: [{ id, referee_id, referee_name, role, status }],
+ *     // 배정워크플로우 3차: 경기 일자의 선정 풀 — 드롭다운 소스
+ *     available_pools: [{ id, referee_id, name, level, is_chief, role_type }]
  *   }]
  * }
+ *
+ * available_pools 규칙:
+ *   - 경기 scheduled_at(날짜 부분, UTC)와 tournament_id 일치
+ *   - admin.associationId 소속 풀만 (IDOR)
+ *   - scheduled_at null이면 빈 배열
  */
 
 export const dynamic = "force-dynamic";
@@ -106,6 +113,64 @@ export async function GET(
         })
       : [];
 
+    // 5-pre) 배정워크플로우 3차 — 해당 대회의 "우리 협회 선정 풀" 한 번에 조회.
+    //   이유: 각 경기마다 DB를 또 치지 않도록 tournament_id + association_id로
+    //        풀을 한 방에 가져와서 메모리에서 날짜별로 그룹화한다.
+    //   날짜 키는 YYYY-MM-DD 문자열 — PostgreSQL @db.Date는 UTC 자정이므로
+    //   new Date(...).toISOString().slice(0,10)로 그대로 추출 가능.
+    const poolsAll = await prisma.dailyAssignmentPool.findMany({
+      where: {
+        tournament_id: tournamentId,
+        association_id: admin.associationId,
+      },
+      select: {
+        id: true,
+        referee_id: true,
+        date: true,
+        role_type: true,
+        is_chief: true,
+        referee: {
+          select: {
+            id: true,
+            registered_name: true,
+            level: true,
+            user: { select: { name: true, nickname: true } },
+          },
+        },
+      },
+    });
+
+    // 날짜(YYYY-MM-DD) → 풀 배열로 그룹화
+    type PoolItem = {
+      id: string;
+      referee_id: string;
+      name: string;
+      level: string | null;
+      is_chief: boolean;
+      role_type: string;
+    };
+    const poolsByDate = new Map<string, PoolItem[]>();
+    for (const p of poolsAll) {
+      // PostgreSQL Date는 UTC 자정 저장 → toISOString slice가 안전
+      const ymd = p.date.toISOString().slice(0, 10);
+      const name =
+        p.referee.user?.name ??
+        p.referee.user?.nickname ??
+        p.referee.registered_name ??
+        `심판 #${p.referee.id.toString()}`;
+      const item: PoolItem = {
+        id: p.id.toString(),
+        referee_id: p.referee_id.toString(),
+        name,
+        level: p.referee.level,
+        is_chief: p.is_chief,
+        role_type: p.role_type,
+      };
+      const list = poolsByDate.get(ymd) ?? [];
+      list.push(item);
+      poolsByDate.set(ymd, list);
+    }
+
     // 5) 경기별 배정 그룹화 (match_id → assignments[])
     const assignmentsByMatch = new Map<
       bigint,
@@ -140,20 +205,28 @@ export async function GET(
       assignmentsByMatch.set(a.tournament_match_id, list);
     }
 
-    // 6) 응답 조립
-    const items = matches.map((m) => ({
-      id: m.id,
-      scheduled_at: m.scheduledAt,
-      round_name: m.roundName,
-      status: m.status,
-      court_number: m.court_number,
-      home_score: m.homeScore,
-      away_score: m.awayScore,
-      // Team 관계를 따라가서 이름 추출 — null-safe
-      home_team_name: m.homeTeam?.team?.name ?? null,
-      away_team_name: m.awayTeam?.team?.name ?? null,
-      assignments: assignmentsByMatch.get(m.id) ?? [],
-    }));
+    // 6) 응답 조립 — 각 경기에 available_pools(일자별 선정 풀) 포함
+    const items = matches.map((m) => {
+      // scheduled_at이 없으면 풀을 매칭할 기준 일자가 없음 → 빈 배열
+      const ymd = m.scheduledAt
+        ? m.scheduledAt.toISOString().slice(0, 10)
+        : null;
+      const available_pools = ymd ? poolsByDate.get(ymd) ?? [] : [];
+      return {
+        id: m.id,
+        scheduled_at: m.scheduledAt,
+        round_name: m.roundName,
+        status: m.status,
+        court_number: m.court_number,
+        home_score: m.homeScore,
+        away_score: m.awayScore,
+        // Team 관계를 따라가서 이름 추출 — null-safe
+        home_team_name: m.homeTeam?.team?.name ?? null,
+        away_team_name: m.awayTeam?.team?.name ?? null,
+        assignments: assignmentsByMatch.get(m.id) ?? [],
+        available_pools,
+      };
+    });
 
     return apiSuccess({
       tournament: {
