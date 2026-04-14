@@ -685,6 +685,7 @@ tsc --noEmit 통과. 미푸시 커밋: N/A (PM 커밋 대기)
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-13 | developer | 참가팀 탭 + 팀 목록 페이지 카드 그리드 통일 (tournament-tabs TeamsTabContent 4열+선수목록 제거, public-teams API city/district 추가, teams-content TossCard 리스트→TeamCard 그리드+max-w 1200, 3파일, tsc 통과) | 완료 |
 | 04-13 | developer | 대진표 NBA 스타일 리디자인 Phase A (match-card 승자/패자 명암+좌측막대 w-1+시드뱃지 승자강조+점수크기차등, bracket-view 연결선 primary+굵게 강약+라운드헤더 칩형태+경기수표시, bracket-builder isActive 기준 winnerTeamId로 정제, 3파일, tsc 통과) | 완료 |
 | 04-13 | developer | BracketView/MatchCard 모바일 한 화면 축소 (SIZE_MAP 100/120/140 + columnGap 24 + getCardSize sm 고정, 2파일, tsc 통과) | 완료 |
 | 04-13 | developer | BracketView 모바일 탭 뷰 제거 → 트리 전체 표시 (bracket-view.tsx 1파일, columnGap 40 + 패딩축소, tsc 통과) | 완료 |
@@ -694,4 +695,3 @@ tsc --noEmit 통과. 미푸시 커밋: N/A (PM 커밋 대기)
 | 04-13 | developer | Phase 4a 풀리그 경기 자동 생성 (league-generator + bracket API 분기 + admin UI 분기, 3파일, tsc 통과) | 완료 |
 | 04-13 | developer | Phase 3 wizard 포맷 세부설정 UI + settings.bracket 저장 (5파일, tsc 통과) | 완료 |
 | 04-13 | planner-architect | 대진표 Phase 2-4 구체 계획 (리그→4강 자동 + wizard 세부설정 + 조편성) | 기획완료 |
-| 04-13 | developer | 팀 전적 tournament_matches 집계 + draws 제거 (2파일) | 완료 |

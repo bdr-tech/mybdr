@@ -270,60 +270,50 @@ function TeamsTabContent({ tournamentId }: { tournamentId: string }) {
   // apiSuccess()는 .data 래핑 없이 직접 반환
   const teams = data?.teams ?? [];
 
+  // 카드 그리드 레이아웃: 모바일 2열 / 태블릿 3열 / PC 4열
+  // 선수 목록은 팀 상세 페이지(/teams/{teamId})로 이동하여 확인
   return (
     <div>
       <h2 className="mb-6 text-xl font-bold sm:text-2xl">참가팀</h2>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
         {teams.map((t: {
           id: string;
           teamId: string; // Team 테이블의 실제 id (팀 페이지 링크용)
           teamName: string;
           primaryColor: string | null;
+          city: string | null;
+          district: string | null;
           groupName: string | null;
           players: { id: string; userId: string | null; jerseyNumber: number | null; position: string | null; nickname: string }[];
         }) => (
-          <div
+          // 카드 전체를 Link로 감싸 클릭 시 팀 상세로 이동
+          <Link
             key={t.id}
-            className="rounded-lg p-4"
-            style={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)" }}
+            href={`/teams/${t.teamId}`}
+            className="flex flex-col items-center gap-2 rounded-lg border p-3 transition-colors hover:opacity-80 sm:p-4"
+            style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
           >
-            <div className="mb-3 flex items-center gap-3">
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold"
-                style={{
-                  backgroundColor: t.primaryColor
-                    ? `${t.primaryColor}20`
-                    : "color-mix(in srgb, var(--color-primary) 12%, transparent)",
-                  color: t.primaryColor ?? "var(--color-primary)",
-                }}
-              >
-                {t.teamName.charAt(0)}
-              </div>
-              <div>
-                <Link href={`/teams/${t.teamId}`} className="hover:underline">
-                  <h3 className="font-semibold">{t.teamName}</h3>
-                </Link>
-                <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>
-                  {t.groupName && `${t.groupName} · `}{t.players.length}명
-                </p>
-              </div>
+            {/* 팀 로고 원형 — 팀 primary 색상 배경, 팀명 첫 글자 */}
+            <div
+              className="flex h-14 w-14 items-center justify-center rounded-full text-base font-bold text-white sm:h-16 sm:w-16"
+              style={{ backgroundColor: t.primaryColor ?? "var(--color-primary)" }}
+            >
+              {t.teamName.charAt(0)}
             </div>
-            <div className="space-y-1">
-              {t.players.map((p: { id: string; userId: string | null; jerseyNumber: number | null; position: string | null; nickname: string }) => (
-                <div key={p.id} className="flex justify-between text-sm">
-                  {/* userId가 있으면 선수 프로필 링크, 없으면 텍스트만 */}
-                  {p.userId ? (
-                    <Link href={`/users/${p.userId}`} className="hover:underline" style={{ color: "var(--color-text-muted)" }}>
-                      #{p.jerseyNumber ?? "-"} {p.nickname}
-                    </Link>
-                  ) : (
-                    <span style={{ color: "var(--color-text-muted)" }}>#{p.jerseyNumber ?? "-"} {p.nickname}</span>
-                  )}
-                  <span className="text-xs" style={{ color: "var(--color-text-secondary)" }}>{p.position ?? ""}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+            {/* 팀명 — 가운데 정렬, 잘림 방지 */}
+            <p className="w-full truncate text-center text-sm font-bold">{t.teamName}</p>
+            {/* 지역 — city + district (없으면 생략) */}
+            {t.city && (
+              <p className="w-full truncate text-center text-xs" style={{ color: "var(--color-text-muted)" }}>
+                {t.city}{t.district ? ` ${t.district}` : ""}
+              </p>
+            )}
+            {/* 멤버수 — 아이콘 + 명수 */}
+            <p className="flex items-center gap-0.5 text-xs" style={{ color: "var(--color-text-secondary)" }}>
+              <span className="material-symbols-outlined align-middle text-xs">group</span>
+              {t.players?.length ?? 0}명
+            </p>
+          </Link>
         ))}
       </div>
     </div>

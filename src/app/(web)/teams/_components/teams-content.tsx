@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TossListItem } from "@/components/toss/toss-list-item";
-import { TossSectionHeader } from "@/components/toss/toss-section-header";
-import { TossCard } from "@/components/toss/toss-card";
+// 팀 목록 카드 그리드용: 기존 TeamCard 재사용 (로고/지역/전적/멤버/모집 뱃지)
+import { TeamCard } from "./team-card";
 
 // API에서 내려오는 팀 데이터 타입 (apiSuccess가 snake_case로 자동 변환)
 interface TeamFromApi {
@@ -29,117 +28,15 @@ interface TeamsApiResponse {
   cities: string[];
 }
 
-// -- 페이지당 팀 수 --
+// -- 페이지당 팀 수 (4열 그리드 2행 = 8 또는 3행 = 12) --
 const TEAMS_PER_PAGE = 12;
 
-// -- 배지 타입 정의 --
-type BadgeType = "TOP1" | "인기" | "신규" | "플래티넘" | "프로" | "골드" | "루키" | null;
-
-// -- 배지 계산: 승수 기반 디비전 + 특수 배지(TOP1/HOT/NEW) --
-function computeBadges(teams: TeamFromApi[]): Map<string, BadgeType> {
-  const badgeMap = new Map<string, BadgeType>();
-  if (teams.length === 0) return badgeMap;
-
-  // 승수 기준으로 정렬해서 TOP1 찾기
-  const sorted = [...teams].sort((a, b) => (b.wins ?? 0) - (a.wins ?? 0));
-  const topTeamId = sorted[0]?.id;
-  const topWins = sorted[0]?.wins ?? 0;
-
-  for (const team of teams) {
-    const wins = team.wins ?? 0;
-    const losses = team.losses ?? 0;
-    const total = wins + losses;
-    const winRate = total > 0 ? (wins / total) * 100 : 0;
-
-    // 특수 배지 우선
-    if (team.id === topTeamId && topWins > 0) {
-      badgeMap.set(team.id, "TOP1");
-      continue;
-    }
-
-    // 신규: created_at이 30일 이내
-    if (team.created_at) {
-      const created = new Date(team.created_at);
-      const daysDiff = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
-      if (daysDiff <= 30) {
-        badgeMap.set(team.id, "신규");
-        continue;
-      }
-    }
-
-    // 인기: 승률 70% 이상이고 5경기 이상
-    if (winRate >= 70 && total >= 5) {
-      badgeMap.set(team.id, "인기");
-      continue;
-    }
-
-    // 디비전 배지: 승수 기준
-    if (wins >= 30) {
-      badgeMap.set(team.id, "플래티넘");
-    } else if (wins >= 20) {
-      badgeMap.set(team.id, "프로");
-    } else if (wins >= 10) {
-      badgeMap.set(team.id, "골드");
-    } else {
-      badgeMap.set(team.id, "루키");
-    }
-  }
-
-  return badgeMap;
-}
-
-// -- 배지 색상 매핑 (토스 스타일: 연한 배경 + 진한 텍스트) --
-function getBadgeStyle(badge: BadgeType): { bg: string; text: string } {
-  switch (badge) {
-    case "TOP1":
-      return { bg: "var(--color-primary)", text: "#FFFFFF" };
-    case "인기":
-      return { bg: "var(--color-accent)", text: "#FFFFFF" };
-    case "신규":
-      return { bg: "var(--color-success)", text: "#FFFFFF" };
-    case "플래티넘":
-      return { bg: "var(--color-accent)", text: "#FFFFFF" };
-    case "프로":
-      return { bg: "var(--color-primary)", text: "#FFFFFF" };
-    case "골드":
-      return { bg: "var(--color-tertiary)", text: "#FFFFFF" };
-    case "루키":
-      return { bg: "var(--color-text-disabled)", text: "#FFFFFF" };
-    default:
-      return { bg: "transparent", text: "transparent" };
-  }
-}
-
-// -- 팀 액센트 색상 결정 (흰색이면 보조 색상 사용) --
-function resolveAccent(primary: string | null, secondary?: string | null): string {
-  if (!primary || primary.toLowerCase() === "#ffffff" || primary.toLowerCase() === "#fff") {
-    return secondary ?? "#E31B23";
-  }
-  return primary;
-}
-
-// -- 팀명에서 이니셜 추출 (한글: 첫 2글자, 영문: 각 단어 첫 글자) --
-function getInitials(name: string): string {
-  if (/^[가-힣]/.test(name)) return name.slice(0, 2);
-  return name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-}
-
-// -- 스켈레톤 UI: 토스 리스트 스타일 --
+// -- 스켈레톤 UI: 카드 그리드 스타일 (모바일 2열 / 태블릿 3열 / PC 4열) --
 function TeamsListSkeleton() {
   return (
-    <div className="space-y-2">
+    <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 py-4 px-1">
-          {/* 원형 아이콘 스켈레톤 */}
-          <Skeleton className="h-10 w-10 rounded-full shrink-0" />
-          {/* 텍스트 영역 */}
-          <div className="flex-1 space-y-1.5">
-            <Skeleton className="h-4 w-32 rounded" />
-            <Skeleton className="h-3 w-24 rounded" />
-          </div>
-          {/* 우측 값 */}
-          <Skeleton className="h-4 w-16 rounded" />
-        </div>
+        <Skeleton key={i} className="h-48 rounded-[16px]" />
       ))}
     </div>
   );
@@ -283,9 +180,6 @@ export function TeamsContent({
     setCurrentPage(1);
   }, [searchParams]);
 
-  // 배지 계산 (팀 목록이 바뀔 때만 재계산)
-  const badgeMap = useMemo(() => computeBadges(teams), [teams]);
-
   // 페이지네이션 계산
   const totalPages = Math.max(1, Math.ceil(teams.length / TEAMS_PER_PAGE));
   const paginatedTeams = teams.slice(
@@ -294,8 +188,8 @@ export function TeamsContent({
   );
 
   return (
-    /* 토스 스타일: 1열 세로 스택, 최대 640px */
-    <div className="max-w-[640px] mx-auto">
+    /* 카드 그리드 수용을 위해 최대 너비 확장 (모바일~PC 반응형) */
+    <div className="max-w-[1200px] mx-auto">
       {/* 헤더 영역: 토스 스타일 간결한 제목 */}
       <div className="mb-8">
         <h1
@@ -317,112 +211,53 @@ export function TeamsContent({
         <TeamsListSkeleton />
       ) : (
         <>
-          {/* 팀 리스트: TossListItem 패턴 */}
-          <TossCard className="p-0 mt-4">
+          {/* 팀 카드 그리드 — 모바일 2열 / 태블릿 3열 / PC 4열 */}
+          {/* TeamCard 재사용: 로고/팀명/지역/전적/멤버/모집중 뱃지 포함 */}
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             {paginatedTeams.map((team) => {
-              const accent = resolveAccent(team.primary_color, team.secondary_color);
-              const wins = team.wins ?? 0;
-              const losses = team.losses ?? 0;
-              const total = wins + losses;
-              const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
-              const location = [team.city, team.district].filter(Boolean).join(" ");
-              const badge = badgeMap.get(team.id) ?? null;
-              const badgeStyle = getBadgeStyle(badge);
-
-              return (
-                <Link key={team.id} href={`/teams/${team.id}`} className="block">
-                  <div
-                    className="flex items-center gap-3 py-4 px-5 transition-colors hover:bg-[var(--color-surface-bright)] border-b border-[var(--color-border-subtle)] last:border-b-0"
-                  >
-                    {/* 좌: 원형 팀 색상 아이콘 (40px) */}
-                    <div
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-                      style={{ backgroundColor: accent }}
-                    >
-                      <span className="text-xs font-bold text-white select-none">
-                        {getInitials(team.name)}
-                      </span>
-                    </div>
-
-                    {/* 중: 팀명 + 부가정보 */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-[var(--color-text-primary)] truncate">
-                          {team.name}
-                        </p>
-                        {/* 배지: TOP1/인기/신규 등 */}
-                        {badge && (
-                          <span
-                            className="text-xs font-bold px-1.5 py-0.5 rounded shrink-0"
-                            style={{ backgroundColor: badgeStyle.bg, color: badgeStyle.text }}
-                          >
-                            {badge}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-[var(--color-text-muted)] mt-0.5 truncate">
-                        {location || "지역 미설정"} · 멤버 {team.member_count}명
-                      </p>
-                    </div>
-
-                    {/* 우: 전적 + 화살표 */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      {total > 0 ? (
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-[var(--color-text-primary)]">
-                            {wins}W {losses}L
-                          </p>
-                          <p className="text-xs text-[var(--color-primary)]">
-                            {winRate}%
-                          </p>
-                        </div>
-                      ) : team.accepting_members ? (
-                        <span
-                          className="text-xs font-bold px-2 py-1 rounded"
-                          style={{ backgroundColor: "var(--color-primary)", color: "#FFFFFF" }}
-                        >
-                          모집중
-                        </span>
-                      ) : (
-                        <span className="text-xs text-[var(--color-text-disabled)]">
-                          전적 없음
-                        </span>
-                      )}
-                      <span className="material-symbols-outlined text-lg text-[var(--color-text-disabled)]">
-                        chevron_right
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              );
+              // TeamFromApi(snake_case) → TeamCard의 TeamCardData(camelCase/mixed) 변환
+              const cardData = {
+                id: BigInt(team.id),
+                name: team.name,
+                primaryColor: team.primary_color,
+                secondaryColor: team.secondary_color,
+                city: team.city,
+                district: team.district,
+                wins: team.wins,
+                losses: team.losses,
+                accepting_members: team.accepting_members,
+                tournaments_count: team.tournaments_count,
+                _count: { teamMembers: team.member_count },
+              };
+              return <TeamCard key={team.id} team={cardData} />;
             })}
+          </div>
 
-            {/* 빈 상태 + CTA */}
-            {teams.length === 0 && (
-              <div className="py-16 text-center">
-                <span
-                  className="material-symbols-outlined text-5xl mb-3 block"
-                  style={{ color: "var(--color-text-disabled)" }}
-                >
-                  sports_basketball
-                </span>
-                <p className="text-sm mb-4" style={{ color: "var(--color-text-secondary)" }}>
-                  {searchParams.get("q") || searchParams.get("city")
-                    ? "조건에 맞는 팀이 없습니다"
-                    : "등록된 팀이 없습니다"}
-                </p>
-                {/* 빈 상태 액션 버튼: 팀 만들기 */}
-                <Link
-                  href="/teams/new"
-                  className="inline-flex items-center gap-1.5 rounded-md px-5 py-2.5 text-sm font-bold text-white transition-all active:scale-[0.97]"
-                  style={{ backgroundColor: "var(--color-primary)" }}
-                >
-                  <span className="material-symbols-outlined text-base">add</span>
-                  팀 만들기
-                </Link>
-              </div>
-            )}
-          </TossCard>
+          {/* 빈 상태 + CTA — 그리드 밖으로 분리 (gap 영향 없이 중앙 정렬) */}
+          {teams.length === 0 && (
+            <div className="py-16 text-center">
+              <span
+                className="material-symbols-outlined text-5xl mb-3 block"
+                style={{ color: "var(--color-text-disabled)" }}
+              >
+                sports_basketball
+              </span>
+              <p className="text-sm mb-4" style={{ color: "var(--color-text-secondary)" }}>
+                {searchParams.get("q") || searchParams.get("city")
+                  ? "조건에 맞는 팀이 없습니다"
+                  : "등록된 팀이 없습니다"}
+              </p>
+              {/* 빈 상태 액션 버튼: 팀 만들기 */}
+              <Link
+                href="/teams/new"
+                className="inline-flex items-center gap-1.5 rounded-md px-5 py-2.5 text-sm font-bold text-white transition-all active:scale-[0.97]"
+                style={{ backgroundColor: "var(--color-primary)" }}
+              >
+                <span className="material-symbols-outlined text-base">add</span>
+                팀 만들기
+              </Link>
+            </div>
+          )}
 
           {/* 새 팀 만들기: 토스 스타일 하단 CTA */}
           <Link href="/teams/new" className="block mt-6">
