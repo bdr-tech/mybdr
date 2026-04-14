@@ -81,14 +81,19 @@ export async function GET(
       });
 
       // 선수 목록 구성 (roster)
+      // 0414: role='player' + is_active !== false 인 선수만 박스스코어 대상
+      // (감독/코치/매니저는 제외)
+      const filterRoster = (p: { role?: string | null; is_active?: boolean | null }) =>
+        (p.role ?? "player") === "player" && p.is_active !== false;
+
       const allPlayers = [
-        ...(match.homeTeam?.players ?? []).map((p) => ({
+        ...(match.homeTeam?.players ?? []).filter(filterRoster).map((p) => ({
           id: Number(p.id),
           jerseyNumber: p.jerseyNumber,
           name: p.users?.nickname ?? p.users?.name ?? p.player_name ?? `#${p.jerseyNumber ?? "-"}`,
           teamId: Number(p.tournamentTeamId),
         })),
-        ...(match.awayTeam?.players ?? []).map((p) => ({
+        ...(match.awayTeam?.players ?? []).filter(filterRoster).map((p) => ({
           id: Number(p.id),
           jerseyNumber: p.jerseyNumber,
           name: p.users?.nickname ?? p.users?.name ?? p.player_name ?? `#${p.jerseyNumber ?? "-"}`,
@@ -185,7 +190,7 @@ export async function GET(
         }
       }
 
-      // 진행 중 경기에서도 match_player_stats의 quarter_stats_json에서 MIN 보강
+      // 진행 중 경기에서도 match_player_stats의 quarter_stats_json에서 MIN 보강 (dev)
       for (const stat of match.playerStats) {
         const pid = Number(stat.tournamentTeamPlayerId);
         const row = statsMap.get(pid);
@@ -214,7 +219,18 @@ export async function GET(
         }
       }
 
-      const allStats = Array.from(statsMap.values()).sort((a, b) => b.pts - a.pts);
+      // 0414: DNP 플래그 부여 (MIN 보강 후에 판정해야 정확)
+      for (const stat of statsMap.values()) {
+        stat.dnp = isDnpRow(stat);
+      }
+
+      const allStats = Array.from(statsMap.values()).sort((a, b) => {
+        // DNP는 항상 마지막. 그 외는 득점 내림차순.
+        if ((a.dnp ?? false) !== (b.dnp ?? false)) {
+          return (a.dnp ?? false) ? 1 : -1;
+        }
+        return b.pts - a.pts;
+      });
       homePlayers = allStats.filter((s) => s.teamId === Number(homeTeamId));
       awayPlayers = allStats.filter((s) => s.teamId === Number(awayTeamId));
     } else {
@@ -236,7 +252,7 @@ export async function GET(
       const toPlayerRow = (stat: (typeof match.playerStats)[number]): PlayerRow => {
         const player = stat.tournamentTeamPlayer;
         const user = player.users;
-        return {
+        const row: PlayerRow = {
           id: Number(stat.id),
           jerseyNumber: player.jerseyNumber,
           name: user?.nickname ?? user?.name ?? player.player_name ?? `#${player.jerseyNumber ?? "-"}`,
@@ -260,14 +276,37 @@ export async function GET(
           fouls: stat.personal_fouls ?? 0,
           plus_minus: stat.plusMinus ?? 0,
         };
+        row.dnp = isDnpRow(row);
+        return row;
       };
 
-      homePlayers = match.playerStats
-        .filter((s) => s.tournamentTeamPlayer.tournamentTeamId === homeTeamId)
-        .map(toPlayerRow);
-      awayPlayers = match.playerStats
-        .filter((s) => s.tournamentTeamPlayer.tournamentTeamId === awayTeamId)
-        .map(toPlayerRow);
+      // 0414: role='player' + is_active !== false 필터 (감독/코치 제외)
+      const isPlayerRole = (stat: (typeof match.playerStats)[number]) => {
+        const p = stat.tournamentTeamPlayer;
+        return (p.role ?? "player") === "player" && p.is_active !== false;
+      };
+
+      // DNP는 항상 마지막, 그 외는 득점 내림차순
+      const sortWithDnp = (rows: PlayerRow[]) =>
+        rows.sort((a, b) => {
+          if ((a.dnp ?? false) !== (b.dnp ?? false)) {
+            return (a.dnp ?? false) ? 1 : -1;
+          }
+          return b.pts - a.pts;
+        });
+
+      homePlayers = sortWithDnp(
+        match.playerStats
+          .filter((s) => s.tournamentTeamPlayer.tournamentTeamId === homeTeamId)
+          .filter(isPlayerRole)
+          .map(toPlayerRow)
+      );
+      awayPlayers = sortWithDnp(
+        match.playerStats
+          .filter((s) => s.tournamentTeamPlayer.tournamentTeamId === awayTeamId)
+          .filter(isPlayerRole)
+          .map(toPlayerRow)
+      );
     }
 
     // DB quarterScores 파싱 — 앱 포맷({"Q1":{"home":3,"away":3}}) 또는 서버 포맷({"home":{"q1":3},"away":{"q1":3}})
@@ -370,4 +409,36 @@ interface PlayerRow {
   to: number;
   fouls: number;
   plus_minus?: number;
+  // 0414: DNP(Did Not Play) — 등록됐으나 출전 0 + 스탯 0
+  dnp?: boolean;
+}
+
+/// 선수가 "코트에서 뛴 기록이 전혀 없음" 여부 (DNP 판정)
+function isDnpRow(p: {
+  min_seconds?: number;
+  pts: number;
+  fgm: number;
+  fga: number;
+  tpm: number;
+  tpa: number;
+  ftm: number;
+  fta: number;
+  oreb: number;
+  dreb: number;
+  ast: number;
+  stl: number;
+  blk: number;
+  to: number;
+  fouls: number;
+}): boolean {
+  return (
+    (p.min_seconds ?? 0) === 0 &&
+    p.pts === 0 &&
+    p.fgm === 0 && p.fga === 0 &&
+    p.tpm === 0 && p.tpa === 0 &&
+    p.ftm === 0 && p.fta === 0 &&
+    p.oreb === 0 && p.dreb === 0 &&
+    p.ast === 0 && p.stl === 0 && p.blk === 0 &&
+    p.to === 0 && p.fouls === 0
+  );
 }
