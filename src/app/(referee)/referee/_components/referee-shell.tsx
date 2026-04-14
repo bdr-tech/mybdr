@@ -38,6 +38,9 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/referee/admin/bulk-register", label: "일괄 등록", icon: "upload_file" },
   // 배정 워크플로우 2차: 대회별 일자별 풀 대시보드
   { href: "/referee/admin/pools", label: "일자별 운영", icon: "calendar_today" },
+  // 정산 1차: 정산 관리 + 협회 단가표 (사무국장 위주)
+  { href: "/referee/admin/settlements", label: "정산 관리", icon: "payments" },
+  { href: "/referee/admin/fee-settings", label: "배정비 단가", icon: "monetization_on" },
   { href: "/referee/admin/settings", label: "설정", icon: "settings" },
 ];
 

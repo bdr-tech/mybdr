@@ -31,6 +31,10 @@ const patchSchema = z.object({
     .union([z.number(), z.string(), z.null()])
     .transform((v) => (v === null ? null : BigInt(v)))
     .optional(),
+  // 정산 1차: 개별 배정비. null이면 단가표 기본값으로 돌림.
+  fee: z
+    .union([z.number().int().min(0), z.null()])
+    .optional(),
 });
 
 // 공통: 배정 조회 + 협회 소속 검증 + referee_id·tournament_match_id 동반 반환
@@ -112,7 +116,8 @@ export async function PATCH(
     data.role === undefined &&
     data.status === undefined &&
     data.memo === undefined &&
-    data.pool_id === undefined
+    data.pool_id === undefined &&
+    data.fee === undefined
   ) {
     return apiError("변경할 내용이 없습니다.", 400, "NO_CHANGES");
   }
@@ -189,27 +194,93 @@ export async function PATCH(
   }
 
   try {
-    const updated = await prisma.refereeAssignment.update({
-      where: { id: assignmentId },
-      data: {
-        ...(data.role !== undefined && { role: data.role }),
-        ...(data.status !== undefined && { status: data.status }),
-        ...(data.memo !== undefined && { memo: data.memo }),
-        // pool_id: undefined이면 터치 안 함. null이면 해제. BigInt면 연결.
-        ...(data.pool_id !== undefined && { pool_id: data.pool_id }),
-      },
-      select: {
-        id: true,
-        referee_id: true,
-        tournament_match_id: true,
-        role: true,
-        status: true,
-        memo: true,
-        assigned_at: true,
-        pool_id: true,
-      },
+    // 정산 1차: status가 "completed"로 변경되는 경우 자동 정산 생성.
+    //   - 배정 업데이트와 정산 생성을 $transaction으로 묶어 일관성 보장
+    //   - 이미 정산 있으면 생성 스킵 (assignment_id UNIQUE)
+    //   - 금액: data.fee(요청에서 변경) → assignment.fee(기존) → 협회 단가표[role] 순
+    const willComplete = data.status === "completed";
+
+    const result = await prisma.$transaction(async (tx) => {
+      const updated = await tx.refereeAssignment.update({
+        where: { id: assignmentId },
+        data: {
+          ...(data.role !== undefined && { role: data.role }),
+          ...(data.status !== undefined && { status: data.status }),
+          ...(data.memo !== undefined && { memo: data.memo }),
+          // pool_id: undefined이면 터치 안 함. null이면 해제. BigInt면 연결.
+          ...(data.pool_id !== undefined && { pool_id: data.pool_id }),
+          // fee: undefined이면 터치 안 함. null이면 제거(단가표 사용). 숫자면 저장.
+          ...(data.fee !== undefined && { fee: data.fee }),
+        },
+        select: {
+          id: true,
+          referee_id: true,
+          tournament_match_id: true,
+          role: true,
+          status: true,
+          memo: true,
+          assigned_at: true,
+          pool_id: true,
+          fee: true,
+        },
+      });
+
+      let createdSettlement = null as null | {
+        id: bigint;
+        amount: number;
+        status: string;
+      };
+
+      if (willComplete) {
+        // 중복 방지 — assignment_id UNIQUE. 이미 있으면 스킵.
+        const existing = await tx.refereeSettlement.findUnique({
+          where: { assignment_id: updated.id },
+          select: { id: true },
+        });
+        if (!existing) {
+          // 금액 산정: 1) updated.fee (방금 쓴 값) 2) 협회 단가표[role] 3) 하드코딩 fallback
+          let amount = updated.fee ?? null;
+          if (amount === null) {
+            const feeSetting = await tx.associationFeeSetting.findUnique({
+              where: { association_id: admin.associationId },
+              select: {
+                fee_main: true,
+                fee_sub: true,
+                fee_recorder: true,
+                fee_timer: true,
+              },
+            });
+            // role → 단가표 필드 매핑
+            const roleToFee: Record<string, number> = {
+              main: feeSetting?.fee_main ?? 80000,
+              sub: feeSetting?.fee_sub ?? 60000,
+              recorder: feeSetting?.fee_recorder ?? 40000,
+              timer: feeSetting?.fee_timer ?? 40000,
+            };
+            amount = roleToFee[updated.role] ?? 0;
+          }
+
+          const s = await tx.refereeSettlement.create({
+            data: {
+              referee_id: updated.referee_id,
+              assignment_id: updated.id,
+              amount,
+              status: "pending",
+            },
+            select: { id: true, amount: true, status: true },
+          });
+          createdSettlement = s;
+        }
+      }
+
+      return { updated, createdSettlement };
     });
-    return apiSuccess({ assignment: updated });
+
+    return apiSuccess({
+      assignment: result.updated,
+      // 자동 생성된 정산이 있으면 함께 반환 (UI에서 토스트 표시용)
+      auto_settlement: result.createdSettlement,
+    });
   } catch (error) {
     console.error("[referee-admin/assignments/[id]] PATCH 실패:", error);
     return apiError("배정 수정에 실패했습니다.", 500, "INTERNAL_ERROR");
@@ -246,7 +317,24 @@ export async function DELETE(
     );
   }
 
+  // 정산 가드 — 이유: 스키마의 onDelete: Cascade 때문에 배정을 지우면
+  //   연결된 정산도 조용히 함께 사라진다. paid/pending/scheduled/refunded 상태는
+  //   지급 이력이므로 소실되면 안 된다. cancelled 상태만 cascade 삭제 허용.
+  const settlement = await prisma.refereeSettlement.findUnique({
+    where: { assignment_id: assignmentId },
+    select: { id: true, status: true },
+  });
+
+  if (settlement && settlement.status !== "cancelled") {
+    return apiError(
+      "이 배정에 연결된 정산이 존재합니다. 정산을 먼저 취소하거나 삭제해주세요.",
+      409,
+      "SETTLEMENT_EXISTS"
+    );
+  }
+
   try {
+    // cancelled 상태 정산이거나 정산이 없는 경우만 여기 도달 → cascade로 함께 삭제됨
     await prisma.refereeAssignment.delete({ where: { id: assignmentId } });
     return apiSuccess({ deleted: true });
   } catch (error) {

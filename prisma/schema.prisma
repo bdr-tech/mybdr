@@ -2180,6 +2180,8 @@ model Association {
   // 배정 워크플로우: 이 협회가 게시한 공고 + 일자별 선정 풀 역참조
   announcements AssignmentAnnouncement[]
   pools         DailyAssignmentPool[]
+  // 정산 1차: 협회별 배정비 단가표 (1:1)
+  fee_setting   AssociationFeeSetting?
 
   @@index([parent_id])
   @@index([level])
@@ -2315,6 +2317,10 @@ model RefereeAssignment {
   pool_id BigInt?
   pool    DailyAssignmentPool? @relation(fields: [pool_id], references: [id], onDelete: SetNull)
 
+  // 정산 1차 추가: 개별 배정비 (원 단위). null이면 협회 단가표(role별 기본값) 적용.
+  // 이유: 일반 경기는 단가표로 충분하지만, 결승/특수 경기는 추가 수당 필요 → 행별 override 지원
+  fee Int?
+
   referee    Referee            @relation(fields: [referee_id], references: [id], onDelete: Cascade)
   settlement RefereeSettlement?
   // tournament_match 쪽은 관계 선언 없음 — 기존 TournamentMatch 모델 미수정
@@ -2327,14 +2333,21 @@ model RefereeAssignment {
 }
 
 // 심판 정산(RefereeSettlement): 1 배정 = 1 정산 (assignment_id UNIQUE).
-// amount는 원 단위 정수. 2차에서 생성 로직 추가, 1차는 조회 전용.
+// amount는 원 단위 정수.
+// 정산 1차: status 5종 확장(pending/scheduled/paid/cancelled/refunded) + scheduled_at 추가.
+//   pending   — 최초 생성, 지급 전
+//   scheduled — 지급 예정 등록
+//   paid      — 지급 완료
+//   cancelled — 배정 취소 등으로 정산 무효화
+//   refunded  — 지급 이후 환수
 model RefereeSettlement {
   id            BigInt    @id @default(autoincrement())
   referee_id    BigInt
   assignment_id BigInt    @unique // 1:1 (한 배정당 하나의 정산만)
   amount        Int // 원 단위
-  status        String    @default("pending") @db.VarChar // pending/paid/cancelled
-  paid_at       DateTime? @db.Timestamp(6)
+  status        String    @default("pending") @db.VarChar
+  scheduled_at  DateTime? @db.Timestamp(6) // 지급 예정 등록 시각
+  paid_at       DateTime? @db.Timestamp(6) // 지급 완료 시각
   memo          String?
   created_at    DateTime  @default(now()) @db.Timestamp(6)
   updated_at    DateTime  @updatedAt @db.Timestamp(6)
@@ -2345,6 +2358,24 @@ model RefereeSettlement {
   @@index([referee_id])
   @@index([status])
   @@map("referee_settlements")
+}
+
+// 협회 배정비 단가표(AssociationFeeSetting): 협회당 1행, 역할별 기본 배정비.
+// 이유: 배정 생성 시 fee 필드가 비어있으면 role에 따라 이 표의 값을 자동 적용.
+//       사무국장이 언제든 수정 가능. 새 배정에만 영향(기존 정산 금액 불변).
+model AssociationFeeSetting {
+  id             BigInt   @id @default(autoincrement())
+  association_id BigInt   @unique // 1협회당 1행
+  fee_main       Int      @default(80000) // 주심
+  fee_sub        Int      @default(60000) // 부심
+  fee_recorder   Int      @default(40000) // 기록
+  fee_timer      Int      @default(40000) // 타이머
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+  updated_at     DateTime @updatedAt @db.Timestamp(6)
+
+  association Association @relation(fields: [association_id], references: [id], onDelete: Cascade)
+
+  @@map("association_fee_settings")
 }
 
 // ── 심판 정산 서류(RefereeDocument): 자격증/신분증/통장 사본 등 정산에 필요한 서류 ──

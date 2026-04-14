@@ -44,6 +44,9 @@ const createSchema = z.object({
     .union([z.number(), z.string()])
     .transform((v) => BigInt(v))
     .optional(),
+  // 정산 1차: 개별 배정비 (원 단위, optional).
+  // 입력하지 않으면 협회 단가표에서 role별 기본값 자동 적용 (배정 completed 시 정산 생성 단계에서).
+  fee: z.number().int().min(0).optional(),
 });
 
 // ── POST: 배정 생성 ──
@@ -67,7 +70,8 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return validationError(parsed.error.issues);
   }
-  const { referee_id, tournament_match_id, role, memo, pool_id } = parsed.data;
+  const { referee_id, tournament_match_id, role, memo, pool_id, fee } =
+    parsed.data;
 
   try {
     // 3) 심판 존재 + 우리 협회 소속 확인 (IDOR 방지)
@@ -181,7 +185,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 6) 배정 생성 — pool_id가 주어졌으면 함께 저장(추적용)
+    // 6) 배정 생성 — pool_id가 주어졌으면 함께 저장(추적용). fee는 optional(null이면 단가표 적용).
     const created = await prisma.refereeAssignment.create({
       data: {
         referee_id,
@@ -191,6 +195,8 @@ export async function POST(req: NextRequest) {
         memo: memo ?? null,
         // pool_id는 optional. 없으면 null로 저장되어 기존 동작과 동일.
         pool_id: pool_id ?? null,
+        // fee는 optional. null이면 정산 생성 시 협회 단가표 기본값 사용.
+        fee: fee ?? null,
       },
       select: {
         id: true,
@@ -201,6 +207,7 @@ export async function POST(req: NextRequest) {
         memo: true,
         assigned_at: true,
         pool_id: true,
+        fee: true,
       },
     });
 

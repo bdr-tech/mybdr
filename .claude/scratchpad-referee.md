@@ -3,34 +3,140 @@
 ---
 
 ## 📌 현재 작업
-- **요청**: 심판 배정 워크플로우 3차 — 현장 배정 풀 기반 마이그레이션 (RefereePicker + 경기 API 풀 조인 + 배정 API 5중 검증)
-- **상태**: ✅ tester 전체 PASS (7/7) — PM 커밋 대기
-- **현재 담당**: tester → (다음) PM 커밋
+- **요청**: 정산(Settlement) 1차 — DB 확장 + 기본 CRUD + 자동 생성 + 목록 페이지 + 단가표
+- **상태**: ✅ tester 전체 PASS (10/10) — PM 커밋/DB 마이그레이션 대기
+- **현재 담당**: tester → (다음) PM (`npx prisma db push` + git commit)
 
-## 🧪 테스트 결과 (tester) — 배정워크플로우 3차 (2026-04-13)
+## 구현 기록 (developer) — 정산 1차 (2026-04-13)
+
+📝 구현한 기능:
+- 협회 배정비 단가표(AssociationFeeSetting) 도입 — 4역할(주심/부심/기록/타이머) 기본값 1행 관리
+- RefereeAssignment.fee(개별 배정비) + RefereeSettlement.scheduled_at + status 5종 확장
+- 배정 completed 자동 정산 생성 (트랜잭션, fee → 단가표 → 하드코딩 fallback 3단계)
+- 정산 CRUD + 상태 전이(/status) API + IDOR + 화이트리스트 전이 + 서류 3종 paid 검증(force/memo)
+- 정산 관리 페이지 (요약카드 5개 + 상태탭 + 대회/기간 필터 + 테이블 + 모바일 카드 + 상태/수정 모달)
+- 협회 단가표 설정 페이지 (4 input + 천단위 콤마 + upsert)
+- referee-shell 메뉴 2개 추가 (정산 관리 / 배정비 단가)
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| prisma/schema.prisma | RefereeAssignment.fee Int? + RefereeSettlement.scheduled_at + AssociationFeeSetting 모델 + Association.fee_setting 역참조 | 수정 |
+| src/app/api/web/referee-admin/fee-settings/route.ts | GET(전체 admin 열람, 없으면 기본값) + PUT(settlement_manage upsert, association_id 세션 강제) | 신규 |
+| src/app/api/web/referee-admin/settlements/route.ts | GET(필터: status/tournament_id/referee_id/from/to/page, 요약 5종, 서류 3종 완비 플래그, N+1 회피 일괄 조회) + POST(수동 생성, completed 검증, 중복 409) | 신규 |
+| src/app/api/web/referee-admin/settlements/[id]/route.ts | PATCH(amount/memo) + DELETE(pending만) — IDOR | 신규 |
+| src/app/api/web/referee-admin/settlements/[id]/status/route.ts | PATCH 상태 전이(5상태 화이트리스트) + paid 시 서류 3종 확인 + force/memo 강행 + paid_at/scheduled_at 자동 기록 | 신규 |
+| src/app/api/web/referee-admin/assignments/route.ts | POST body에 fee 추가 + create data에 fee 저장 + select에 fee 포함 | 수정 |
+| src/app/api/web/referee-admin/assignments/[id]/route.ts | PATCH body에 fee 추가 + 변경 없음 검증 갱신 + status="completed" 시 $transaction 내 자동 정산 생성(fee → 단가표 → fallback) | 수정 |
+| src/app/(referee)/referee/admin/settlements/page.tsx | "use client" 정산 관리 페이지 — 요약카드/상태탭/필터/데스크톱 테이블/모바일 카드/상태변경 모달/수정·삭제 모달/페이지네이션 | 신규 |
+| src/app/(referee)/referee/admin/fee-settings/page.tsx | "use client" 단가표 설정 — 4개 input(천단위 콤마 표시) + upsert 저장 + 저장 시각 표시 | 신규 |
+| src/app/(referee)/referee/_components/referee-shell.tsx | NAV_ITEMS에 "정산 관리"(payments) + "배정비 단가"(monetization_on) 추가 | 수정 |
+
+💡 tester 참고:
+- **DB 마이그레이션**: `npx prisma generate` 완료. **`npx prisma db push`는 PM이 별도 실행 필요** (개발 DB) — 신규 컬럼 3개 + 신규 테이블 1개
+- **타입 체크**: `npx tsc --noEmit` EXIT=0 통과
+- **테스트 시나리오**:
+  1. 사무국장으로 로그인 → `/referee/admin/fee-settings` 진입 → 4개 금액 저장 → 단가표 생성 확인
+  2. `/referee/admin/assignments`에서 배정 생성(fee 미입력) → completed로 변경 → `/referee/admin/settlements`에서 자동 생성된 정산 확인 (단가표 금액 적용)
+  3. 정산 상태 pending → scheduled → paid 순차 변경 시 scheduled_at/paid_at 기록 확인
+  4. 서류 3종 미완비 상태에서 paid 시도 → 400 MISSING_DOCUMENTS, force=true + memo로 강행 가능
+  5. 화이트리스트 외 전이(예: pending → paid) 시도 → 400 INVALID_TRANSITION
+  6. 다른 협회 정산 ID로 PATCH/DELETE/status 시도 → 403 FORBIDDEN
+  7. POST 수동 생성 시 assignment.status !== "completed" → 400 ASSIGNMENT_NOT_COMPLETED, 중복 시 409 DUPLICATE_SETTLEMENT
+  8. 필터: 대회 드롭다운/기간 from~to/상태 탭 동작 + 페이지네이션
+- **정상 동작 확인 포인트**:
+  - 자동 정산 금액: assignment.fee → 협회단가표[role] → fallback(80k/60k/40k/40k) 우선순위
+  - paid 전환 시 paid_at = now(), scheduled 전환 시 scheduled_at = now()
+  - 중복 정산은 unique 제약 + 사전 체크 둘 다 P2002 fallback 처리
+  - tournament 필터는 matchIds → assignmentIds 2단계 조회로 IN 필터 (관계 정의 없는 FK 우회)
+- **주의할 입력**:
+  - 음수 금액(amount/fee): Zod min(0)으로 차단
+  - 동일 상태 재전이: SAME_STATUS 400
+  - 사무국장 외 권한으로 PUT/POST/PATCH/DELETE/status 시도: 403 FORBIDDEN
+
+⚠️ reviewer 참고:
+- 정산 GET의 N+1 회피: items의 referee_id, match_id, tournament_id, document를 각각 한 번씩만 일괄 조회 후 메모리 Map 매칭
+- 트랜잭션: 배정 PATCH의 status="completed" 변경과 자동 정산 생성을 `prisma.$transaction(async tx => {...})`로 묶음 → 정산 생성 실패 시 배정 변경도 롤백
+- TournamentTeam에 name 컬럼이 없어 1차에서는 home_team/away_team 표시 생략 (round_name + venue_name으로 식별 충분)
+- Tournament.id가 String UUID라 `BigInt(tournamentIdRaw)` 변환 안 함 (다른 BigInt와 헷갈리지 않도록)
+- 모달의 ESC 닫기: ModalShell에서 `keydown` 리스너 등록/해제
+- 디자인 규칙 준수: var(--color-*) + Material Symbols + border-radius 4px + 천단위 콤마
+
+## 🔎 리뷰 결과 (reviewer) — 정산 1차 (2026-04-13)
+
+📊 종합 판정: **APPROVE with comments** (필수 수정 1건, 권장 수정 4건 — 커밋 전 필수 1건 반영 권장)
+
+✅ 잘된 점:
+- **IDOR 일관성**: 모든 엔드포인트가 `settlement.referee.association_id === admin.associationId` 중첩 필터로 방어. fee-settings는 association_id 쿼리 허용 없이 세션 값을 강제해 우회 경로 자체를 봉쇄
+- **상태 전이 화이트리스트**를 `TRANSITIONS` 테이블 한 곳에 모아 서버/UI 공유. 동일 상태(SAME_STATUS)·비허용 전이(INVALID_TRANSITION) 모두 400으로 세분화
+- **서류 미완비 paid 강행**: force=true + memo 필수 + 감사 로그로 memo 저장. 바이브 코더 요구 "서류 완비 안내 명확" 충족
+- **N+1 회피**: 정산 GET이 tournament_match / tournament / referee_document를 각각 한 번씩만 in: 조회 후 Map 매칭. groupBy로 요약 단건 처리
+- **트랜잭션 무결성**: 배정 PATCH에서 status="completed" 시 `$transaction`으로 assignment 업데이트 + settlement 생성 원자화. 중복은 findUnique + P2002 fallback 이중 방어
+- **Zod min(0) 전역**: amount/fee 모두 음수 차단
+- **우선순위 3단 fee 산정**: updated.fee → 협회 단가표 → 하드코딩 fallback
+- **UX**: 천단위 콤마, 5종 상태 뱃지 색상 구분, 서류 부족 툴팁, 페이지네이션, 모바일 카드. 디자인 규칙(var(--color-*), radius 4px, Material Symbols) 준수
+
+🔴 필수 수정:
+- **src/app/api/web/referee-admin/assignments/[id]/route.ts:320-322** — DELETE가 배정에 연결된 정산 존재 여부를 확인하지 않음. 스키마상 RefereeSettlement.assignment_id에 onDelete: Cascade가 걸려 있어 **이미 paid 처리된 정산도 배정 삭제 시 조용히 사라짐**(지급 이력 소실 위험)
+  - 수정 방법: `prisma.refereeAssignment.delete` 호출 전 `refereeSettlement.findUnique({ where: { assignment_id }, select: { id, status } })`로 조회. 정산이 존재하면서 `status !== "cancelled"`인 경우 409 `SETTLEMENT_EXISTS`로 차단하고 "정산을 먼저 취소하세요" 메시지 반환. (settlements DELETE는 pending만 허용이므로 paid된 건은 /status로 cancelled → 배정 DELETE 순서로 진행)
+
+🟡 권장 수정:
+- **src/app/api/web/referee-admin/settlements/route.ts:48-75 & fee-settings/route.ts:46-50** — GET에 settlement_view 권한 체크 없음. 현재 getAssociationAdmin()만 통과하면 staff까지 열람 가능. 매트릭스에 `settlement_view: [secretary_general, referee_chief, game_chief, president, vice_president, director]`가 이미 정의되어 있으니 `requirePermission(admin.role, "settlement_view")` 추가 권장
+- **src/app/(referee)/referee/_components/referee-shell.tsx:33-44** — 관리자 메뉴(배정 관리/정산 관리/배정비 단가)가 모든 로그인 심판에게 노출. 서버 403으로 막히지만 UX 혼란. 레이아웃에서 admin role을 받아 조건부 렌더 권장 (블로커 아님)
+- **src/app/api/web/referee-admin/settlements/[id]/status/route.ts:44-50** — cancelled→pending / refunded→pending 전이 허용. "환수 후 다시 미지급" 상태 가능. 실수 롤백용이면 유지, 의도가 아니라면 refunded를 최종 상태로 고정 권장
+- **src/app/api/web/referee-admin/settlements/route.ts:280 & 310** — `s.assignment?.` optional chaining 불필요(Prisma 스키마상 required FK). 동작 문제 없으나 `s.assignment.role`로 정리하면 가독성 개선
+
+📌 판정 근거:
+- 보안/IDOR/전이 화이트리스트/서류 bypass 제한 — 정책 준수
+- 데이터 무결성 — 자동 생성 트랜잭션 + @unique + P2002 이중 방어 OK. 다만 **배정 DELETE → 정산 cascade 누락**은 1차에서 반드시 차단(필수)
+- 성능 — groupBy + 일괄 in: 조회로 N+1 회피 충분
+- UX/디자인 — 규칙 준수 양호
+- 기존 기능 회귀 — 본인 정산 조회(/referee/settlements) + 기존 배정 API(fee 없이 동작) 모두 영향 없음
+
+→ 필수 수정 1건만 반영되면 APPROVE. 권장 4건은 병합 이후 후속 커밋 가능
+
+### 수정 요청 (developer용)
+| 우선순위 | 파일 | 라인 | 요청 내용 |
+|---------|------|------|----------|
+| 필수 | src/app/api/web/referee-admin/assignments/[id]/route.ts | 320 | DELETE 전 refereeSettlement 존재 확인 → non-cancelled 정산 있으면 409 SETTLEMENT_EXISTS 반환 |
+| 권장 | src/app/api/web/referee-admin/settlements/route.ts | 48 | GET에 `requirePermission(admin.role, "settlement_view")` 추가 |
+| 권장 | src/app/api/web/referee-admin/fee-settings/route.ts | 46 | GET에 settlement_view 권한 체크 추가(또는 모든 admin 열람 허용이 정책이면 코멘트 명시) |
+| 권장 | src/app/(referee)/referee/_components/referee-shell.tsx | 33 | admin 메뉴 role 기반 조건부 렌더(후속 커밋 가능) |
+| 권장 | src/app/api/web/referee-admin/settlements/[id]/status/route.ts | 48-49 | refunded→pending 전이 제거 검토 |
+
+## (이전 작업) 배정 워크플로우 3차 — ✅ 완료 (상세는 작업 로그 참고)
+
+## 🧪 테스트 결과 (tester) — 정산 1차 (2026-04-13)
 
 | 테스트 항목 | 결과 | 비고 |
 |-----------|------|------|
 | Test 1: `npx tsc --noEmit` | ✅ 통과 | EXIT=0, 타입 에러 0건 |
-| Test 2: RefereePicker 컴포넌트 | ✅ 통과 | "use client" + 검색 input + 실시간 필터(useMemo) + pools/excludeRefereeIds props + ⭐star(is_chief) + "이미 배정됨" 뱃지 비활성화 + ESC/외부클릭 닫기 모두 확인 |
-| Test 3: 경기 목록 API 확장 | ✅ 통과 | `available_pools` 필드 포함. `prisma.dailyAssignmentPool.findMany`를 대회+협회 단위 1회 호출 후 `poolsByDate` Map으로 날짜별 그룹화(N+1 방지). 경기별 `toISOString().slice(0,10)`로 조회 |
-| Test 4: POST /assignments 5중 검증 | ✅ 통과 | pool_id optional; (1) pool 존재 404 POOL_NOT_FOUND / (2) referee 일치 400 POOL_REFEREE_MISMATCH / (3) association IDOR 403 / (4) tournament 일치 400 POOL_TOURNAMENT_MISMATCH / (5) date UTC YYYY-MM-DD 일치 400 POOL_DATE_MISMATCH + MATCH_DATE_MISSING |
-| Test 4b: PATCH /assignments/[id] 동일 검증 | ✅ 통과 | `loadOwnedAssignment`가 referee_id/tournament_match_id 반환. pool_id=null 시 해제 허용, undefined 시 미터치, BigInt 시 동일한 5중 검증 |
-| Test 5: 배정 관리 페이지 리팩토링 | ✅ 통과 | 심판 select 드롭다운 제거 → `<RefereePicker pools={toPickerPools} excludeRefereeIds={getExcludeIds} />`. 경기 카드에 "선정 풀: N명·가용 M명" 뱃지. POST body에 `pool_id: pickedPool.id` 전달. 빈 풀 시 안내박스 + `/referee/admin/pools?tournament_id=...` 링크 + "배정 추가" 버튼 disabled |
-| Test 6: 과도기 호환성 | ✅ 통과 | Prisma 스키마 `pool_id BigInt?` nullable. POST/PATCH 모두 pool_id 없으면 검증 스킵하고 정상 생성. 기존 pool_id=NULL 배정은 목록 API에 그대로 포함 |
-| Test 7: 디자인 규칙 | ✅ 통과 | lucide-react import 없음(Material Symbols 사용). border-radius 4px 전 영역 일관. var(--color-*) 사용. `color: "var(--color-text-on-primary, #fff)"`는 CSS 변수 fallback 형태로 허용. `color-mix(... #22c55e ...)`는 기존 v2 4/4 커밋(995f9ca)부터 존재하던 confirmed 상태색이며 3차에서 신규 도입한 위반 아님 |
+| Test 2: Prisma 스키마 | ✅ 통과 | schema.prisma L2322 `fee Int?`, L2349 `scheduled_at DateTime? @db.Timestamp(6)`, L2366 `model AssociationFeeSetting`(association_id `@unique` + fee_main/sub/recorder/timer 기본값 80k/60k/40k/40k), L2184 `Association.fee_setting AssociationFeeSetting?` 역참조 |
+| Test 3: 단가표 API | ✅ 통과 | GET: `getAssociationAdmin` 전체 관리자 열람 + 없으면 DEFAULT_FEES(80k/60k/40k/40k) + is_default 플래그. PUT: `requirePermission("settlement_manage")` + Zod min(0) + `upsert`로 association_id=admin.associationId 세션 강제 (IDOR 방지) |
+| Test 4: 정산 CRUD API | ✅ 통과 | GET: tournament_id(matchIds→assignmentIds 2단계 우회)/referee_id/status(화이트리스트)/from-to(created_at 범위)/page·limit 필터 + groupBy 요약 5종 + N+1 회피(matches/tournaments/docs 배치 조회) + documents_complete·missing_documents. POST: assignment.referee.association_id IDOR + status!=="completed" 400 ASSIGNMENT_NOT_COMPLETED + unique 선검사+P2002 fallback 409 DUPLICATE_SETTLEMENT. PATCH [id]: amount/memo만, NO_CHANGES 400, IDOR. DELETE [id]: pending만, 그 외 400 NOT_DELETABLE |
+| Test 5: 상태 전이 API | ✅ 통과 | TRANSITIONS 맵: pending→[scheduled,cancelled] / scheduled→[paid,pending,cancelled] / paid→[refunded] / cancelled→[pending] / refunded→[pending]. 동일상태 400 SAME_STATUS, 외 전이 400 INVALID_TRANSITION. paid 전환 시 `REQUIRED_DOCS=[certificate,id_card,bankbook]` 확인 → 누락 시 400 MISSING_DOCUMENTS(+missing 목록), force=true 시 memo 공백 불허 400 MEMO_REQUIRED_FOR_FORCE. paid→paid_at=now(), scheduled→scheduled_at=now() 자동 세팅 |
+| Test 6: 배정 자동 정산 생성 | ✅ 통과 | assignments/[id] PATCH L203 `prisma.$transaction(async tx => {...})` 내부에서 update→`tx.refereeSettlement.findUnique(assignment_id)` 중복체크→없을 때만 create. 금액 산정 우선순위: `updated.fee` → `associationFeeSetting[role]`(tx 내 조회) → hardcoded fallback(main 80k / sub 60k / recorder·timer 40k). `status="pending"`으로 생성 |
+| Test 7: 배정 API fee 필드 | ✅ 통과 | assignments/route.ts L49 `fee: z.number().int().min(0).optional()`, L199 create data에 `fee: fee ?? null`, L210 select에 `fee: true`. [id]/route.ts PATCH L213 `...(data.fee !== undefined && { fee: data.fee })` — undefined 미터치 / null 제거(단가표 사용) / 숫자 저장 |
+| Test 8: 정산 관리 페이지 | ✅ 통과 | `/referee/admin/settlements/page.tsx` "use client" + 요약카드 5개(pending/scheduled/paid/cancelled/refunded + STATUS_BADGE 배경) + 상태 탭 + tournament/from/to 필터 + 데스크톱 테이블 + 모바일 카드 + `documents_complete` 아이콘 + `needForce = next==="paid" && !documents_complete` 강행 모달 + 천단위 콤마(`toLocaleString("ko-KR")`) |
+| Test 9: 단가표 페이지 | ✅ 통과 | `/referee/admin/fee-settings/page.tsx` "use client" + 4개 input(fee_main/sub/recorder/timer, Material Symbols sports/groups/edit_note/timer 아이콘) + `formatMoney(n)=n.toLocaleString("ko-KR")` 천단위 콤마 표시 + 저장 버튼 PUT /api/web/referee-admin/fee-settings + setMain/setSub/setRecorder/setTimer로 초기값 로드 |
+| Test 10: 메뉴 추가 | ✅ 통과 | referee-shell.tsx L42 "정산 관리" (payments 아이콘) + L43 "배정비 단가" (monetization_on 아이콘) 추가 확인 |
 
-📊 종합: **7개 중 7개 통과 / 0개 실패**
+📊 종합: **10개 중 10개 통과 / 0개 실패** — 정산 1차 전체 PASS
 
 🎯 핵심 검증 포인트:
-- RefereePicker의 open 상태일 때만 `mousedown`/`keydown` 이벤트 바인딩 → 다른 모달/드롭다운 간섭 없음 (76행 useEffect)
-- 매치 API가 풀을 대회+협회 단위 1회 쿼리 후 메모리 Map 그룹화 → 경기 N개마다 N+1 회피 (tournaments/[id]/matches/route.ts L121~172)
-- POST/PATCH 5중 검증이 순서대로 단락 평가 → 권한 먼저(403), 그 다음 비즈니스(400) 순 UX 친화적
-- UTC Date(@db.Date 자정 저장)와 scheduled_at(DateTime)을 `.toISOString().slice(0,10)`로 일관 비교 → 시차 무관
-- 페이지 canAdd 계산: `poolTotal > 0 && poolRemaining > 0`로 "빈 풀" / "모두 배정됨" 분기 처리
+- 트랜잭션 일관성: 배정 PATCH의 completed 전환과 자동 정산 생성이 `$transaction` 내부에서 이뤄져 정산 생성 실패 시 배정 변경도 롤백
+- 중복 방지 이중화: `findUnique(assignment_id)` 선체크 + Prisma unique 제약 P2002 코드 fallback → 409 DUPLICATE_SETTLEMENT
+- IDOR: 모든 경로(`settlements` GET/POST/PATCH/DELETE/status)에서 `settlement.referee.association_id === admin.associationId` 또는 `assignment.referee.association_id === admin.associationId` 확인
+- N+1 회피: GET 목록에서 matches/tournaments/documents를 각각 `{ in: Array.from(Set) }` 한 번씩만 조회 후 Map 매칭
+- 대회 필터 우회: `RefereeSettlement → RefereeAssignment → tournament_match_id`는 schema 관계 미정의 → matchIds(String UUID) → assignmentIds(BigInt) 2단계 findMany 후 `where.assignment_id = { in: [...] }` 적용
+- 금액 Fallback 3단계: `updated.fee` (PATCH에서 들어온 값 or 기존 저장값) → `AssociationFeeSetting[role]` (tx 내 조회, 역할별 매핑) → 하드코딩 80k/60k/40k/40k
 
 ⚠️ 참고(실패 아님):
-- confirmed 상태 뱃지 배경의 `#22c55e`는 3차 변경분이 아닌 기존 995f9ca 커밋 코드 — 다른 페이지(documents/assignments/settlements)에서는 `var(--color-success, #22c55e)` 변수 fallback 형태로 통일되어 있음. 향후 리팩토링 시 함께 정리 권고(현재 작업 블로커 아님)
+- DB 마이그레이션(`npx prisma db push`)은 developer 기록대로 PM이 별도 실행해야 함 — 테스터는 정적 코드/타입 검증만 수행 (런타임 테스트는 DB 마이그 후 가능)
+- 대회 필터 시 TournamentTeam에 name 컬럼이 없어 1차에서 홈/원정 팀명 표시 생략 — round_name+venue_name으로 식별은 충분하나 2차에서 Team 모델 join 권장 (블로커 아님)
+
+## 🛠️ 수정 요청 (tester)
+
+없음 — 정산 1차 구현 모두 명세 충족.
 
 ## 🧭 진행 현황표
 
@@ -591,6 +697,7 @@ tester 참고:
 | 04-13 | pm | 협회 역할 9종 + 권한 매트릭스 확정 | ✅ 사용자 승인 |
 | 04-13 | developer | v3 1차: 스키마+매칭+암호화+권한+API수정 (7파일) | ✅ tsc 통과 |
 | 04-13 | reviewer | v3 1차 리뷰: critical 0, warning 2 (VarChar 제한+동명이인) | ✅ APPROVE |
+| 04-13 | reviewer | 정산 1차 리뷰: 필수 1(배정DELETE cascade), 권장 4 | ⚠️ APPROVE with comments |
 | 04-13 | tester | v3 2차: API 3개 + 페이지 3개 검증 (7개 중 5통과/2실패) | ❌ 수정 필요 |
 | 04-13 | developer | 메인사이트 심판 바로가기: me API is_referee + PC사이드바 + 모바일슬라이드 | ✅ tsc 통과 |
 | 04-13 | developer | 서류 1차: Prisma모델+sharp+암호화+API4개+페이지2개+셸+상세링크 (13파일) | ✅ tsc 통과 |
