@@ -480,6 +480,25 @@ function BoxScoreTable({
                   </td>
                 </tr>
               ))}
+              {/* 0414: DNP 인라인 행 — 본체 테이블 안에서 표시, 스탯 영역 colspan */}
+              {dnpPlayers.map((p, i) => (
+                <tr
+                  key={`dnp-${p.id}`}
+                  className={`border-b border-white/5 ${(sorted.length + i) % 2 === 0 ? "" : "bg-white/[0.02]"}`}
+                >
+                  <td className="py-2 px-3 text-gray-600 sticky left-0 bg-inherit print:static print:bg-transparent">
+                    {p.jersey_number ?? "-"}
+                  </td>
+                  <td className="py-2 px-1 text-gray-500 sticky left-8 bg-inherit min-w-[70px] truncate max-w-[70px] print:static print:bg-transparent print:max-w-none">
+                    {p.name}
+                  </td>
+                  <td colSpan={16} className="py-2 px-1 text-center">
+                    <span className="text-[10px] font-semibold tracking-[0.2em] text-gray-500 uppercase">
+                      DNP &mdash; Did Not Play
+                    </span>
+                  </td>
+                </tr>
+              ))}
               {/* TOTAL 합산 행 — 출전 선수만 집계 (DNP 제외) */}
               {(() => {
                 const total = activePlayers.reduce(
@@ -530,21 +549,6 @@ function BoxScoreTable({
             </tbody>
           </table>
         </div>
-        {/* 0414: DNP 섹션 (NBA 스타일 Did Not Play) */}
-        {dnpPlayers.length > 0 && (
-          <div className="border-t border-white/10 px-3 py-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="text-[10px] font-semibold tracking-wider text-gray-500 uppercase">
-              DNP
-            </span>
-            {dnpPlayers.map((p, i) => (
-              <span key={p.id} className="text-xs text-gray-400">
-                {i > 0 && <span className="text-gray-700 mx-1">·</span>}
-                <span className="text-gray-500">#{p.jersey_number ?? "-"}</span>{" "}
-                <span className="text-gray-300">{p.name}</span>
-              </span>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
