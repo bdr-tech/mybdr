@@ -29,6 +29,9 @@ import { BracketEmpty } from "../bracket/_components/bracket-empty";
 import { TournamentDashboardHeader } from "../bracket/_components/tournament-dashboard-header";
 import { GroupStandings, type GroupTeam } from "../bracket/_components/group-standings";
 import { FinalsSidebar } from "../bracket/_components/finals-sidebar";
+// 풀리그 전용 컴포넌트 (round_robin/full_league/full_league_knockout)
+import { LeagueStandings, type LeagueTeam } from "../bracket/_components/league-standings";
+import { LeagueSchedule, type LeagueMatch } from "../bracket/_components/league-schedule";
 
 // 탭 타입 정의
 export type TabKey = "overview" | "schedule" | "standings" | "bracket" | "teams";
@@ -271,25 +274,57 @@ function BracketTabContent({ tournamentId }: { tournamentId: string }) {
   const groupTeams: GroupTeam[] = d.groupTeams ?? [];
   const rounds = d.rounds ?? [];
 
+  // 포맷별 렌더링 분기
+  // - 풀리그(round_robin/full_league/full_league_knockout): 리그 순위표 + 경기 일정
+  // - 조별+토너먼트(group_stage_knockout): 기존 GroupStandings + BracketView
+  // - 순수 토너먼트(single_elimination 등): 기존 BracketView만
+  const format: string | null = d.format ?? null;
+  const isLeague =
+    format === "round_robin" ||
+    format === "full_league" ||
+    format === "full_league_knockout";
+  const leagueTeams: LeagueTeam[] = d.leagueTeams ?? [];
+  const leagueMatches: LeagueMatch[] = d.leagueMatches ?? [];
+
+  // 풀리그 경기가 하나라도 있으면 리그 UI 표시 (경기 0개면 빈 상태)
+  const hasLeagueData = isLeague && (leagueTeams.length > 0 || leagueMatches.length > 0);
+
   return (
     <div>
-      {groupTeams.length > 0 && <GroupStandings teams={groupTeams} />}
-      {rounds.length > 0 ? (
-        <div className="grid grid-cols-12 gap-8">
-          <div className="col-span-12 lg:col-span-8">
-            <BracketView rounds={rounds} tournamentId={tournamentId} />
-          </div>
-          <div className="col-span-12 lg:col-span-4">
-            <FinalsSidebar
-              finalsDate={d.finalsDate ?? null}
-              venueName={d.venueName ?? null}
-              city={d.city ?? null}
-              entryFee={d.entryFee ?? null}
-            />
-          </div>
-        </div>
+      {hasLeagueData ? (
+        <>
+          {/* 풀리그: 리그 순위표 + 경기 일정 */}
+          <LeagueStandings teams={leagueTeams} tournamentStatus={d.tournamentStatus} />
+          <LeagueSchedule matches={leagueMatches} />
+          {/* full_league_knockout: 리그 후 토너먼트가 이미 생성되어 있으면 함께 표시 */}
+          {rounds.length > 0 && (
+            <div className="mt-8">
+              <BracketView rounds={rounds} tournamentId={tournamentId} />
+            </div>
+          )}
+        </>
       ) : (
-        <BracketEmpty tournamentId={tournamentId} />
+        <>
+          {/* 기존 분기 유지 (조별+토너먼트 / 순수 토너먼트 / 빈 상태) */}
+          {groupTeams.length > 0 && <GroupStandings teams={groupTeams} />}
+          {rounds.length > 0 ? (
+            <div className="grid grid-cols-12 gap-8">
+              <div className="col-span-12 lg:col-span-8">
+                <BracketView rounds={rounds} tournamentId={tournamentId} />
+              </div>
+              <div className="col-span-12 lg:col-span-4">
+                <FinalsSidebar
+                  finalsDate={d.finalsDate ?? null}
+                  venueName={d.venueName ?? null}
+                  city={d.city ?? null}
+                  entryFee={d.entryFee ?? null}
+                />
+              </div>
+            </div>
+          ) : (
+            <BracketEmpty tournamentId={tournamentId} />
+          )}
+        </>
       )}
     </div>
   );

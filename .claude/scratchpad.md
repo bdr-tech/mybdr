@@ -1,7 +1,7 @@
 # 작업 스크래치패드
 
 ## 현재 작업
-- **요청**: 대회 기록 자동 연결 시스템 계획 수립
+- **요청**: 대진표 시스템 개발 계획 수립 (포맷 설정 -> 자동 생성 -> 표시)
 - **상태**: 기획설계 완료
 - **현재 담당**: planner-architect
 
@@ -15,195 +15,180 @@
 
 ## 기획설계 (planner-architect)
 
-### 대회 기록 자동 연결 시스템 (2026-04-13)
+### 대진표 시스템 개발 (2026-04-13)
 
-목표: TournamentTeamPlayer.userId가 NULL인 선수를 자동으로 실제 유저와 연결하여 프로필에서 대회 기록이 보이게 하기
-
----
-
-#### 1. 현재 선수 등록 흐름 분석
-
-**경로 A: 웹 참가신청 (userId가 설정됨 -- 문제 없음)**
-- 파일: /api/web/tournaments/[id]/join/route.ts (297행)
-- 흐름: 팀 주장이 팀 멤버 중 선수를 선택 -> TeamMember.userId를 그대로 TournamentTeamPlayer.userId에 넣음
-- 결과: userId가 항상 설정됨 (BigInt(p.userId))
-
-**경로 B: Flutter 앱 현장 등록 (userId가 항상 NULL -- 문제의 원인)**
-- 파일: /api/v1/tournaments/[id]/teams/[teamId]/players/route.ts (110~124행)
-- 흐름: 기록원이 현장에서 선수 이름+등번호만 입력 -> userId: null, auto_registered: true
-- 결과: userId가 항상 null. player_name만 있음
-
-**경로 C: admin 팀 직접 등록 (선수 등록 없음)**
-- 파일: /api/web/tournaments/[id]/teams/route.ts POST
-- 흐름: admin이 팀만 등록 (TournamentTeam 생성). 선수(TournamentTeamPlayer) 미생성
-- 결과: 선수 등록은 별도로 Flutter 앱에서 해야 함 -> 경로 B와 동일 문제
+목표: 대회 관리자가 포맷 설정 -> 경기 자동 생성 -> 대진표/순위표 표시까지 완성
 
 ---
 
-#### 2. 유저 프로필에서 대회 기록 조회 방식
+#### 0. 현재 상태 분석
 
-**내 프로필**: src/lib/services/user.ts getProfile()
-- tournamentTeamPlayer.findMany({ where: { userId } }) -> userId 기준 조회
-- userId가 NULL이면 아무것도 안 나옴
+**이미 있는 것:**
+- wizard: format 4종 선택 UI (group_stage_knockout / dual_tournament / single_elimination / full_league_knockout)
+- bracket admin 페이지: single_elimination 전용 대진표 생성/재생성/확정 (1라운드 팀 배치 편집)
+- bracket API (POST): single_elimination만 생성 (format을 안 읽음)
+- bracket-builder.ts: 시각화 유틸 (round_number 기준 그룹핑, SVG 좌표) -- 변경 불필요
+- bracket-generator.ts: single_elimination 생성기 (BYE 배정, 시드 정렬)
+- update-standings.ts: 경기 완료 시 wins/losses 갱신 + advanceWinner 진출 처리
+- GroupStandings 컴포넌트: groupName이 있는 팀의 조별리그 순위표
+- BracketView 컴포넌트: 토너먼트 트리 (데스크톱 SVG + 모바일 라운드탭)
+- public-bracket API: 대시보드 통계 + groupTeams + rounds 반환
 
-**타인 프로필**: src/app/(web)/users/[id]/page.tsx
-- matchPlayerStat.aggregate({ where: { tournamentTeamPlayer: { userId: BigInt(id) } } })
-- 역시 userId 기준. NULL이면 스탯 0으로 표시됨
+**열혈농구단 문제:**
+- 8팀 풀리그 31경기, 7경기 완료
+- TournamentMatch에 group_name/round_number/bracket_position 전부 NULL
+- TournamentTeam에 groupName도 NULL
+- tournament.format 값이 기본 single_elimination (또는 미설정)
+- 결과: 조별 순위표도 안 나오고, 대진표 트리도 안 나옴 -> "대진표가 없습니다"
 
-**랭킹**: /api/web/rankings/route.ts
-- tournamentTeamPlayer를 userId 기준 groupBy -> userId NULL은 필터링됨
-
-결론: userId가 NULL인 TournamentTeamPlayer의 모든 대회 기록(스탯, 승률, 랭킹)이 해당 유저에게 귀속되지 않음
-
----
-
-#### 3. 기존 유사 시스템 분석
-
-**merge-temp-member.ts**: 팀 가입 시 "사전 등록 계정"(닉네임 동일+미로그인 유저) 병합
-- TeamMember 레벨에서만 동작. TournamentTeamPlayer와는 무관
-- 패턴 참고 가능: 이름 매칭 + 트랜잭션 병합
-
-**auto_registered 필드**: boolean, 현장 등록 여부 표시용. 자동 연결 로직은 없음
+**핵심 문제: format에 따라 경기 생성 로직이 달라야 하는데, 현재는 single_elimination만 지원**
 
 ---
 
-#### 4. 시나리오별 해결 방안
+#### 1. 열혈농구단 즉시 해결 방안 (Phase 0)
 
-**시나리오 A: 현장 등록 시 자동 매칭 (가장 효과 큼)**
-- 시점: Flutter 앱에서 선수 등록할 때 (POST /v1/tournaments/[id]/teams/[teamId]/players)
-- 방법: player_name으로 같은 팀(TournamentTeam.teamId -> Team -> TeamMember)에서 이름 매칭
-- 로직:
-  1. TournamentTeam에서 teamId 조회
-  2. TeamMember에서 teamId + (user.nickname = player_name OR user.name = player_name) 검색
-  3. 정확히 1명 매칭되면 userId 자동 설정
-  4. 0명 또는 2명 이상이면 userId = null 유지 (안전)
-- 장점: 가장 자연스러운 시점. 대부분의 케이스를 커버
-- 주의: unique 제약 (tournamentTeamId, userId) 위반 방지 -- 이미 같은 유저가 등록되어 있으면 skip
+열혈농구단은 이미 31경기가 수동으로 생성되어 있음. 대진표 시스템을 새로 구축하기 전에, 기존 경기를 바로 표시할 수 있는 방법이 필요.
 
-**시나리오 B: 회원가입/팀 가입 시 과거 기록 연결**
-- 시점: 유저가 팀에 가입할 때 (POST /api/web/teams/[id]/join)
-- 방법: 가입한 팀이 참가했던 모든 대회에서 userId NULL + player_name 매칭
-- 로직:
-  1. TeamMember 생성 후
-  2. TournamentTeam에서 해당 teamId의 모든 대회 참가 기록 조회
-  3. 각 TournamentTeamPlayer 중 userId NULL + player_name 매칭 -> userId 업데이트
-- 장점: 나중에 가입한 유저도 과거 기록 연결
-- 주의: merge-temp-member.ts와 동일 위치에서 실행하면 좋음
+**방법: "풀리그" format일 때 대진표 탭에서 순위표+경기목록 표시**
 
-**시나리오 C: admin 수동 연결 (관리 도구)**
-- 시점: tournament-admin에서 선수 목록 볼 때
-- 방법: userId NULL인 선수 옆에 "유저 검색/연결" 버튼 제공
-- 로직: 선수 이름으로 User 검색 -> 선택 -> PATCH로 userId 업데이트
-- 구현: teams/[teamId]/players API에 PATCH 추가
-- 장점: 이름이 다르거나 자동 매칭 실패한 경우 수동 해결
+현재 bracket 페이지는 bracketOnlyMatches (round_number != null AND bracket_position != null)만 보여줌. 풀리그 경기는 이 필드가 NULL이라 아예 표시 안 됨.
 
-**시나리오 D: 배치 자동 연결 (일괄 정리)**
-- 시점: 수동 실행 또는 cron
-- 방법: userId NULL인 모든 TournamentTeamPlayer를 스캔, 팀 멤버와 이름 매칭
-- 로직: 시나리오 A와 동일하나 전체 대상
-- 장점: 기존 NULL 데이터 한번에 정리
-- 구현: admin API 또는 스크립트
+format이 full_league_knockout이면:
+- 순위표: 모든 참가팀의 경기결과 기반 승/패/득실차 집계 (이미 bracket 페이지에서 teamStats로 계산하는 로직 있음)
+- 경기목록: group_name이 NULL인 경기도 "리그전 경기"로 표시
+
+이 방법의 장점: 기존 데이터 수정 불필요. format만 full_league_knockout으로 바꾸면 됨.
 
 ---
 
-#### 5. 만들 위치와 구조
+#### 2. Phase별 계획
+
+**Phase 1: 풀리그 순위표 표시 (열혈농구단 즉시 적용)** -- 예상 30분
+
+bracket 페이지에서 format을 읽고, 풀리그일 때 리그 순위표 + 경기 일정을 표시.
 
 | 파일 경로 | 역할 | 신규/수정 |
 |----------|------|----------|
-| src/lib/tournaments/link-player-user.ts | 이름 매칭 + userId 연결 핵심 로직 | 신규 |
-| src/app/api/v1/tournaments/[id]/teams/[teamId]/players/route.ts | 현장 등록 시 자동 매칭 호출 (시나리오 A) | 수정 |
-| src/app/api/web/teams/[id]/join/route.ts (또는 관련 action) | 팀 가입 시 과거 기록 연결 (시나리오 B) | 수정 |
-| src/app/api/web/tournaments/[id]/teams/[teamId]/players/route.ts | admin 선수 userId 수동 연결 PATCH + 배치 연결 POST (시나리오 C+D) | 신규 |
+| src/app/(web)/tournaments/[id]/bracket/page.tsx | format 읽기 + 풀리그 분기 추가 | 수정 |
+| src/app/api/web/tournaments/[id]/public-bracket/route.ts | format 반환 + 풀리그 경기 목록 반환 | 수정 |
+| src/app/(web)/tournaments/[id]/bracket/_components/league-standings.tsx | 풀리그 전용 순위표 (경기결과 기반 집계) | 신규 |
+| src/app/(web)/tournaments/[id]/bracket/_components/league-schedule.tsx | 풀리그 경기 일정/결과 목록 | 신규 |
 
-기존 코드 연결:
-- link-player-user.ts는 merge-temp-member.ts와 유사한 패턴 (이름 매칭 + 안전 체크)
-- v1 players API의 handlePost 함수 내부에서 create 후 link 시도
-- teams join API/action에서 TeamMember 생성 후 link 시도
-- 프로필/랭킹 쿼리는 수정 불필요 (userId가 채워지면 자동으로 표시됨)
+핵심 로직:
+- public-bracket API에서 tournament.format을 함께 반환
+- format이 full_league_knockout이면 모든 경기(group_name NULL 포함)를 "리그전 경기"로 포함
+- league-standings: bracket 페이지의 teamStats 계산 로직을 재사용하여 순위표 렌더링
+- league-schedule: 경기를 날짜별/라운드별로 그룹핑하여 카드 형태로 표시
+
+**Phase 2: 조편성 자동 배분 + 조별리그 경기 자동 생성** -- 예상 1시간
+
+| 파일 경로 | 역할 | 신규/수정 |
+|----------|------|----------|
+| src/lib/tournaments/group-draw.ts | 스네이크 드래프트 조편성 + 풀리그 경기쌍 생성 로직 | 신규 |
+| src/lib/tournaments/league-generator.ts | 풀리그/조별리그 TournamentMatch 일괄 생성 | 신규 |
+| src/app/api/web/tournaments/[id]/bracket/route.ts | POST에 format 분기 추가 (조별리그/풀리그/토너먼트) | 수정 |
+| src/app/(web)/tournament-admin/tournaments/[id]/bracket/page.tsx | 조편성 UI 추가 (그룹별 팀 배치 + 수정) | 수정 |
+
+핵심 로직:
+- group-draw.ts: 시드 기반 스네이크 드래프트 (시드1->A조, 시드2->B조, 시드3->B조, 시드4->A조, ...)
+- league-generator.ts: N팀 풀리그 경기쌍 생성 (round-robin: N*(N-1)/2 경기)
+- bracket API POST: format 읽기 -> single_elimination이면 기존 로직, group_stage_knockout이면 조편성+조별리그 경기 생성, full_league_knockout이면 전체 풀리그 경기 생성
+- 생성된 조별리그 경기: group_name 설정, round_number/bracket_position은 NULL (리그전이므로)
+- admin bracket 페이지: 조편성 결과 표시 + 팀 이동 UI
+
+**Phase 3: 토너먼트 대진표 자동 생성 (조별리그 후 이어서)** -- 예상 40분
+
+| 파일 경로 | 역할 | 신규/수정 |
+|----------|------|----------|
+| src/lib/tournaments/knockout-seeding.ts | 조별리그 결과 기반 교차 시딩 + BYE 배정 | 신규 |
+| src/app/api/web/tournaments/[id]/bracket/route.ts | 조별리그 완료 후 토너먼트 생성 엔드포인트 추가 | 수정 |
+| src/app/(web)/tournament-admin/tournaments/[id]/bracket/page.tsx | "토너먼트 생성" 버튼 (조별리그 완료 후 활성화) | 수정 |
+
+핵심 로직:
+- knockout-seeding.ts: 조1위 vs 타조2위 교차배치, 미달 팀 BYE 자동 배정
+- 기존 bracket-generator.ts의 single_elimination 로직 재사용
+- 3/4위전 옵션 (settings.thirdPlaceMatch)
+- 조별리그 경기와 토너먼트 경기가 같은 대회 안에 공존 (group_name으로 구분)
+
+**Phase 4: 대진표 탭 format별 조건부 렌더링** -- 예상 30분
+
+| 파일 경로 | 역할 | 신규/수정 |
+|----------|------|----------|
+| src/app/(web)/tournaments/[id]/bracket/page.tsx | format별 분기 렌더링 (리그/조별+토너먼트) | 수정 |
+| src/app/api/web/tournaments/[id]/public-bracket/route.ts | 리그전 경기 목록 + 조별리그 경기 포함 | 수정 |
+
+핵심 로직:
+- group_stage_knockout: 조별리그 순위표(GroupStandings) + 토너먼트 트리(BracketView) 순서 표시
+- full_league_knockout: 리그 순위표(LeagueStandings) + 리그 경기 일정(LeagueSchedule) + (리그 후 토너먼트가 있으면 BracketView)
+- single_elimination: 기존 그대로 (BracketView만)
+- dual_tournament: Phase 5에서 별도 처리 (우선순위 낮음)
 
 ---
 
-#### 6. 실행 계획
+#### 3. 기존 코드 연결
+
+- bracket API POST의 기존 single_elimination 로직(advisory lock, version 관리, BYE 처리)은 유지. format 분기만 추가
+- update-standings.ts의 advanceWinner는 토너먼트 경기(next_match_id 있는)에만 동작 -> 조별리그 경기에는 영향 없음 (안전)
+- GroupStandings 컴포넌트는 groupName이 있는 팀에만 동작 -> 풀리그(groupName NULL)에는 별도 LeagueStandings 필요
+- bracket-builder.ts는 round_number 기준 그룹핑이므로 조별리그 경기(round_number NULL)는 자동 제외 -> 기존 토너먼트 표시에 영향 없음
+- wizard의 format 4종 선택은 이미 DB에 저장됨 -> 그대로 활용
+
+---
+
+#### 4. 실행 계획 (우선순위 순)
 
 | 순서 | 작업 | 담당 | 선행 조건 | 예상 시간 |
 |------|------|------|----------|----------|
-| 1 | link-player-user.ts 신규: 이름 매칭 + userId 연결 함수 | developer | 없음 | 15분 |
-| 2 | v1 players API 수정: 현장 등록 시 자동 매칭 (시나리오 A) | developer | 1 | 10분 |
-| 3 | teams join 수정: 팀 가입 시 과거 기록 연결 (시나리오 B) | developer | 1 | 10분 |
-| 4 | admin players API 신규: 수동 연결 + 배치 연결 (시나리오 C+D) | developer | 1 | 15분 |
-| 5 | tester 검증 | tester | 2,3,4 | 10분 |
+| 1 | Phase 1: 풀리그 순위표/경기목록 표시 + 열혈농구단 format 변경 | developer | 없음 | 30분 |
+| 2 | Phase 1 검증 | tester | 1 | 10분 |
+| 3 | Phase 2: group-draw.ts + league-generator.ts + bracket API format 분기 | developer | 2 | 40분 |
+| 4 | Phase 2: admin bracket 페이지 조편성 UI | developer | 3 | 20분 |
+| 5 | Phase 3: knockout-seeding.ts + 조별리그 후 토너먼트 생성 | developer | 4 | 40분 |
+| 6 | Phase 4: 공개 bracket 페이지 format별 조건부 렌더링 | developer | 5 | 30분 |
+| 7 | 전체 통합 검증 | tester + reviewer (병렬) | 6 | 15분 |
 
-우선순위: 시나리오 A(현장등록) > D(배치정리) > B(팀가입) > C(admin UI)
+Phase 1(열혈농구단 즉시 해결)을 먼저 독립적으로 완료한 뒤, Phase 2~4를 순차 진행.
 
 ---
 
-#### 7. developer 주의사항
+#### 5. developer 주의사항
 
-- DB 스키마 변경 없음 -- TournamentTeamPlayer.userId는 이미 nullable BigInt
-- unique 제약 @@unique([tournamentTeamId, userId]) 주의 -- 같은 대회팀에 같은 유저 중복 등록 방지
-- 이름 매칭은 정확 일치만 (유사 매칭은 오매칭 위험). nickname OR name 둘 다 체크
-- 매칭 후보가 2명 이상이면 연결하지 않음 (안전)
-- Flutter API(v1)는 응답 형식 변경 금지 -- userId 필드만 null에서 값으로 바뀌는 것은 하위 호환
-- link 실패가 선수 등록 자체를 실패시키면 안 됨 (try-catch로 감싸기)
+- DB 스키마 변경 없음 -- Tournament.settings(Json), TournamentTeam.groupName/seedNumber, TournamentMatch.group_name 모두 이미 존재
+- bracket-builder.ts 절대 수정 금지 (기존 토너먼트 시각화 깨짐)
+- 조별리그 경기: group_name 설정, round_number/bracket_position은 NULL 유지 (리그전이므로)
+- 토너먼트 경기: round_number/bracket_position 설정, group_name은 NULL (기존 패턴)
+- format이 설정 안 된 기존 대회는 single_elimination으로 폴백 (하위 호환)
+- Flutter 앱(bdr_stat)이 사용하는 v1 API는 절대 변경 금지
+- 열혈농구단 대회의 format을 full_league_knockout으로 PATCH하는 것은 admin wizard에서 수동으로 진행 (코드로 직접 DB 변경하지 않음)
+- 풀리그 순위표에서 승/패는 TournamentTeam.wins/losses가 아닌 경기 결과 실시간 집계 사용 (이미 bracket 페이지에 teamStats 로직 있음)
+- advisory lock + bracket version 관리 패턴은 조별리그/풀리그 생성에도 동일 적용
 
 ## 구현 기록 (developer)
 
-### 대회 선수 userId 자동 연결 시스템 (2026-04-13)
+### Phase 1: 풀리그 대진표 표시 (2026-04-13)
 
-구현한 기능: 현장 등록 시 자동 매칭 (시나리오 A) + 배치 일괄 연결 API (시나리오 D)
+구현한 기능: 대진표 탭에서 tournament.format이 풀리그(round_robin/full_league/full_league_knockout)일 때 리그 순위표 + 경기 일정 목록을 조건부 렌더링. 기존 single_elimination 동작은 완전히 유지.
 
 | 파일 경로 | 변경 내용 | 신규/수정 |
 |----------|----------|----------|
-| src/lib/tournaments/link-player-user.ts | 이름 매칭 핵심 유틸 (linkPlayersToUsers, findUserIdByName) | 신규 |
-| src/app/api/v1/tournaments/[id]/teams/[teamId]/players/route.ts | 현장 등록 시 findUserIdByName 호출하여 userId 자동 설정 | 수정 |
-| src/app/api/web/tournaments/[id]/link-players/route.ts | 배치 연결 API (POST, 대회 관리자 권한) | 신규 |
+| src/app/api/web/tournaments/[id]/public-bracket/route.ts | format/status/leagueTeams/leagueMatches 응답 추가 (teamStats 재사용) | 수정 |
+| src/app/(web)/tournaments/[id]/bracket/_components/league-standings.tsx | 리그 순위표 (공동순위+KBL 승률 포맷) | 신규 |
+| src/app/(web)/tournaments/[id]/bracket/_components/league-schedule.tsx | 경기 일정 (날짜별 그룹핑+LIVE 뱃지+승패 강조) | 신규 |
+| src/app/(web)/tournaments/[id]/_components/tournament-tabs.tsx | BracketTabContent에 format 분기 추가 | 수정 |
+| DB (tournaments) | 열혈농구단 format을 full_league_knockout으로 UPDATE | 데이터 |
 
 tester 참고:
-- 테스트 방법: v1 players POST에서 기존 팀 멤버 이름으로 선수 등록 시 userId 자동 연결 확인
-- 정상 동작: 팀 멤버 닉네임/이름 일치 시 userId 설정, 불일치 시 null (기존 동작)
-- 주의: unique 제약 (tournamentTeamId, userId) -- 같은 유저 중복 등록 시 null 유지
-- 배치 API: POST /api/web/tournaments/[id]/link-players (대회 관리자 쿠키 인증)
+- 테스트 URL: /tournaments/d83e8b83-66d3-4f2f-ac41-3b594dbc38f6 → 대진표 탭
+- 정상: 8팀 리그 순위표(상위 3팀 빨간 막대) + 날짜별 경기 카드(31경기, 7완료) 표시
+- 기존 단일 토너먼트 대회 샘플도 열어서 기존 BracketView가 깨지지 않았는지 확인 필요
+- 풀리그인데 경기가 0개인 경우: "아직 생성된 경기가 없습니다" 표시
+- 순위 정렬: 승률 → 득실차 → 다득점
 
 reviewer 참고:
-- 매칭 후보 2명 이상이면 안전하게 null 반환 (동명이인 방지)
-- findUserIdByName에서 unique 제약 위반 사전 체크
-- v1 API 응답 형식 유지 (user_id 필드가 null -> 값으로 바뀌는 것은 하위 호환)
-
-### 팀명/선수명 Link 추가 (2026-04-13)
-
-구현한 기능: 대회 상세 페이지 12곳에 팀/선수 프로필 페이지 Link 추가 (schedule-timeline은 카드 전체가 Link라 건너뜀)
-
-| 파일 경로 | 변경 내용 | 신규/수정 |
-|----------|----------|----------|
-| src/app/api/web/tournaments/[id]/public-standings/route.ts | teamId 필드 추가 | 수정 |
-| src/app/api/web/tournaments/[id]/public-teams/route.ts | teamId + players.userId 필드 추가 | 수정 |
-| src/app/api/web/tournaments/[id]/public-bracket/route.ts | groupTeams에 teamId 필드 추가 | 수정 |
-| src/app/(web)/tournaments/[id]/_components/tournament-tabs.tsx | 순위표 팀명 + 참가팀 팀명/선수명에 Link 추가 | 수정 |
-| src/app/(web)/tournaments/[id]/bracket/_components/group-standings.tsx | 조별리그 팀명에 Link 추가 | 수정 |
-| src/app/(web)/tournaments/[id]/bracket/_components/match-card.tsx | MatchCard + MobileMatchCard 팀명에 Link 추가 | 수정 |
-| src/app/(web)/tournaments/[id]/bracket/page.tsx | groupTeams에 teamId 필드 추가 | 수정 |
-| src/app/(web)/tournaments/[id]/standings/page.tsx | 서버 컴포넌트 팀명에 Link 추가 | 수정 |
-| src/app/(web)/tournaments/[id]/teams/page.tsx | 서버 컴포넌트 팀명/선수명에 Link 추가 | 수정 |
-
-tester 참고:
-- 테스트 방법: 대회 상세 페이지에서 팀명 클릭 시 /teams/{teamId}로 이동, 선수명 클릭 시 /users/{userId}로 이동 확인
-- 정상 동작: 팀명 hover시 underline 표시, 클릭 시 해당 페이지로 이동
-- 주의: userId가 null인 선수는 Link 없이 텍스트만 표시됨 (정상)
-- schedule-timeline은 경기 카드 전체가 Link로 감싸져 있어 건너뜀 (중첩 Link 방지)
-
-### 팀 전적 tournament_matches 집계 + draws 제거 (2026-04-13)
-
-구현한 기능: 팀 상세 페이지에서 Team.wins/losses 대신 tournament_matches 스코어에서 실제 승/패 집계, draws(무승부) 관련 로직 전부 제거
-
-| 파일 경로 | 변경 내용 | 신규/수정 |
-|----------|----------|----------|
-| src/app/(web)/teams/[id]/page.tsx | TournamentTeam + TournamentMatch에서 승/패 집계, draws 제거 | 수정 |
-| src/app/(web)/teams/[id]/_tabs/overview-tab.tsx | OverviewTabProps에서 draws 제거, 전적 텍스트/계산에서 draws 제거 | 수정 |
-
-tester 참고:
-- 테스트 방법: 대회 경기 기록이 있는 팀 상세 페이지에서 전적이 표시되는지 확인
-- 정상 동작: tournament_matches에서 completed/live 경기의 스코어 비교로 승/패 표시
-- 주의: Team.wins/losses가 아닌 실제 경기 결과 기반이므로, 대회 경기가 없는 팀은 0승 0패로 표시
+- teamStats는 public-bracket route에서 원래 hotTeam 계산용으로 집계하던 것을 재사용 (중복 계산 없음)
+- leagueMatches 정렬 시 scheduledAt=null은 맨 뒤로
+- LeagueSchedule은 /live/[matchId]로 링크 (scoreboard로 이동)
+- 기존 분기(groupTeams/rounds)는 isLeague=false 경로로 그대로 유지
 
 ## 수정 요청
 | 요청자 | 대상 파일 | 문제 설명 | 상태 |
@@ -222,4 +207,3 @@ tester 참고:
 | 04-13 | planner-architect | 중복 팀 안전 병합 보고서 (B안 채택: teamId만 UPDATE) | 기획완료 |
 | 04-13 | planner-architect | 경기 기록 입력 시스템 전체 구조 분석 (v1 API 12개+실시간 6종) | 기획완료 |
 | 04-12 | developer+tester | 다크모드 accent 버튼 가시성 전수 수정 (40파일) | 완료 |
-| 04-12 | pm | 새 PC 세팅 + 작업 인수인계 | 완료 |

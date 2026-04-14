@@ -19,14 +19,22 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   }
 
   // 대회 기본 정보 (대진표 헤더용)
+  // format / status도 함께 조회해서 클라이언트가 포맷별 분기 렌더링을 할 수 있게 한다.
   const tournament = await prisma.tournament.findUnique({
     where: { id },
-    select: { name: true, venue_name: true, city: true, entry_fee: true },
+    select: { name: true, venue_name: true, city: true, entry_fee: true, format: true, status: true },
   });
 
   if (!tournament) {
     return apiError("Tournament not found", 404);
   }
+
+  // 풀리그 포맷 판별 (리그 순위표/일정을 추가로 반환할지 결정)
+  // round_robin: 순수 풀리그 / full_league: 풀리그만 / full_league_knockout: 풀리그 후 토너먼트
+  const isLeague =
+    tournament.format === "round_robin" ||
+    tournament.format === "full_league" ||
+    tournament.format === "full_league_knockout";
 
   const [matches, tournamentTeams] = await Promise.all([
     // 매치 데이터
@@ -147,6 +155,68 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   // 라운드 그룹 빌드
   const rounds = bracketOnlyMatches.length > 0 ? buildRoundGroups(bracketOnlyMatches) : [];
 
+  // 풀리그(리그전) 순위표 데이터
+  // 이미 위에서 teamStats로 집계한 wins/losses/pointsFor/pointsAgainst를 재사용한다.
+  // 순위 탭(public-standings)과 동일한 형식(winRate, gamesPlayed, pointDifference)으로 맞춰서 클라이언트가 그대로 렌더링 가능하게 한다.
+  const leagueTeams = isLeague
+    ? tournamentTeams
+        .map((t) => {
+          const stats = teamStats[t.id.toString()] ?? {
+            wins: 0,
+            losses: 0,
+            pointsFor: 0,
+            pointsAgainst: 0,
+          };
+          const gamesPlayed = stats.wins + stats.losses;
+          // 소수점 3자리까지 유지 (KBL 형식)
+          const winRate = gamesPlayed > 0 ? Math.round((stats.wins / gamesPlayed) * 1000) / 1000 : 0;
+          return {
+            id: t.id.toString(),
+            teamId: t.teamId.toString(),
+            teamName: t.team.name,
+            wins: stats.wins,
+            losses: stats.losses,
+            gamesPlayed,
+            winRate,
+            pointsFor: stats.pointsFor,
+            pointsAgainst: stats.pointsAgainst,
+            pointDifference: stats.pointsFor - stats.pointsAgainst,
+          };
+        })
+        .sort((a, b) => {
+          // 1순위: 승률 → 2순위: 득실차 → 3순위: 다득점
+          if (b.winRate !== a.winRate) return b.winRate - a.winRate;
+          if (b.pointDifference !== a.pointDifference) return b.pointDifference - a.pointDifference;
+          return b.pointsFor - a.pointsFor;
+        })
+    : [];
+
+  // 풀리그 경기 일정 (전체 경기 시간순 정렬)
+  // 토너먼트 트리와 달리 풀리그는 라운드 개념이 없으므로 시간순 리스트로 표시
+  const leagueMatches = isLeague
+    ? matches
+        .map((m) => ({
+          id: m.id.toString(),
+          // homeTeam/awayTeam은 TournamentTeam을 가리키고, 그 안의 teamId가 실제 Team.id
+          homeTeamId: m.homeTeam?.teamId?.toString() ?? null,
+          awayTeamId: m.awayTeam?.teamId?.toString() ?? null,
+          homeTeamName: m.homeTeam?.team?.name ?? null,
+          awayTeamName: m.awayTeam?.team?.name ?? null,
+          homeScore: m.homeScore,
+          awayScore: m.awayScore,
+          status: m.status,
+          scheduledAt: m.scheduledAt?.toISOString() ?? null,
+          courtNumber: m.court_number,
+        }))
+        .sort((a, b) => {
+          // 일정 미정(scheduledAt=null)은 맨 뒤로
+          if (!a.scheduledAt && !b.scheduledAt) return 0;
+          if (!a.scheduledAt) return 1;
+          if (!b.scheduledAt) return -1;
+          return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
+        })
+    : [];
+
   return apiSuccess({
     tournamentName: tournament.name,
     totalTeams: tournamentTeams.length,
@@ -160,5 +230,10 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     venueName: tournament.venue_name,
     city: tournament.city,
     entryFee: tournament.entry_fee ? Number(tournament.entry_fee) : null,
+    // 포맷별 조건부 렌더링용
+    format: tournament.format,
+    tournamentStatus: tournament.status,
+    leagueTeams,
+    leagueMatches,
   });
 }
