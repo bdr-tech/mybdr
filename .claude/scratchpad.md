@@ -522,6 +522,37 @@ reviewer 참고:
 - 영향 없음: src/lib/tournaments/update-standings.ts, bracket-generator.ts, league-generator.ts
 - 수정 영향: matches PATCH 핸들러에 훅 1블록 추가. status=completed 경로에만 동작 → 다른 PATCH 시나리오에 영향 없음
 
+### Phase 2B: 토너먼트 카드 시드 뱃지 표시 (2026-04-13)
+
+구현한 기능: 토너먼트 대진 카드(준결승/결승 등)에 "#1", "#4" 시드 번호 뱃지를 팀명 앞에 표시. 리그 순위(1위=#1)를 시드로 사용. 기존 MatchCard 크기/레이아웃 영향 없이 inline 뱃지만 추가.
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/lib/tournaments/tournament-seeding.ts | generateKnockoutMatches에서 ranking 계산 직후 TournamentTeam.seedNumber를 rank로 업데이트 | 수정 |
+| src/lib/tournaments/bracket-builder.ts | TeamSlot/DbMatch 타입에 seedNumber 필드 추가 + toTeamSlot에서 전파 | 수정 |
+| src/app/api/web/tournaments/[id]/public-bracket/route.ts | homeTeam/awayTeam include를 select로 전환 + seedNumber 명시 포함 | 수정 |
+| src/app/(web)/tournaments/[id]/bracket/_components/match-card.tsx | TeamRow(데스크톱)와 MobileMatchCard 홈/어웨이팀 렌더링부에 #N 뱃지 추가 | 수정 |
+
+시드 뱃지 UX:
+- 데스크톱(TeamRow): text-[9px], rounded, px-1, flex-shrink-0 — 팀명 truncate 우선
+- 모바일(MobileMatchCard): text-[11px], rounded, px-1.5 py-0.5 — 공간 여유 있음
+- 색상: bg=var(--color-surface), text=var(--color-text-muted) — 팀명 대비 시각 위계 낮춤
+- null safety: team.seedNumber != null 조건부 렌더링 (시드 미배정 팀 호환)
+
+tester 참고:
+- 테스트 URL: /tournaments/d83e8b83-66d3-4f2f-ac41-3b594dbc38f6 → 대진표 탭
+- 정상 동작: 4강 생성된 토너먼트에서 각 매치카드 팀명 앞에 "#1" "#4" 뱃지 표시
+- 단, 열혈농구단은 이미 4강이 생성되어 있어서 기존 TournamentTeam.seedNumber가 null일 수 있음 → 재생성하지 않으면 뱃지 안 나옴 (정상 동작)
+- 신규 대회에서 generate-knockout API 호출 시 seedNumber 자동 저장 확인
+- 시드 없는 팀(리그 미참여 또는 seedNumber=null): 뱃지 없이 팀명만 표시 → 정상
+- 모바일 라운드탭에서도 뱃지 표시 확인
+
+reviewer 참고:
+- bracket-builder.ts DbMatch 타입 확장: include: { team: ... } 쿼리(bracket/page.tsx:40)와 호환 — Prisma include는 모든 스칼라(seedNumber 포함) 자동 조회
+- public-bracket route의 matches 변수는 leagueMatches 섹션에서도 재사용: m.homeTeam?.teamId, m.homeTeam?.team?.name은 select 전환 후에도 그대로 접근 가능
+- seedNumber는 TournamentTeam DB에 원래 있던 필드(schema.prisma:355) — DB 마이그레이션 불필요
+- tsc --noEmit 통과 확인
+
 ## 수정 요청
 | 요청자 | 대상 파일 | 문제 설명 | 상태 |
 |--------|----------|----------|------|
@@ -529,6 +560,7 @@ reviewer 참고:
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-13 | developer | Phase 2B 토너먼트 카드 시드 뱃지 표시 (seeding seedNumber 저장 + bracket-builder 타입확장 + public-bracket select + match-card UI, 4파일, tsc 통과) | 완료 |
 | 04-13 | developer | Phase 2A 리그 종료 시 토너먼트 자동 생성 (tournament-seeding + matches 훅 + 수동 API, 3파일, tsc 통과) | 완료 |
 | 04-13 | developer | Phase 4a 풀리그 경기 자동 생성 (league-generator + bracket API 분기 + admin UI 분기, 3파일, tsc 통과) | 완료 |
 | 04-13 | developer | Phase 3 wizard 포맷 세부설정 UI + settings.bracket 저장 (5파일, tsc 통과) | 완료 |
@@ -538,4 +570,3 @@ reviewer 참고:
 | 04-13 | developer | 대회 선수 userId 자동 연결 구현 (시나리오 A+D, 3파일) | 완료 |
 | 04-13 | planner-architect | 대회 기록 자동 연결 시스템 계획 수립 (4시나리오 분석+5파일 설계) | 기획완료 |
 | 04-13 | developer | 대회 상세 UI 전면 리디자인 (히어로+탭+대시보드+일정카드+순위표 등 15건) | 완료 |
-| 04-13 | developer | 모바일 반응형 전수 수정 (빨강5+노랑14+녹색8건, 20+파일) | 완료 |

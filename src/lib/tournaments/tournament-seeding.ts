@@ -227,6 +227,16 @@ export async function generateKnockoutMatches(
     throw new Error("토너먼트 생성에 필요한 팀이 부족합니다.");
   }
 
+  // 2-1) 리그 순위를 TournamentTeam.seedNumber에 저장
+  // 이유: 토너먼트 경기 카드에서 "#1 제이크루 vs #4 몽키즈" 형태의 시드 뱃지 표시용
+  // 별도 계산 없이 DB 조회만으로 시드 번호를 읽을 수 있어 API 단순화
+  for (const r of ranking) {
+    await prisma.tournamentTeam.update({
+      where: { id: r.tournamentTeamId },
+      data: { seedNumber: r.rank },
+    });
+  }
+
   // 3) 대진 빌드
   const { rounds, totalRounds } = buildKnockoutBracket(ranking, knockoutSize);
 

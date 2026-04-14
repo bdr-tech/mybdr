@@ -42,13 +42,21 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
       where: { tournamentId: id },
       orderBy: [{ round_number: "asc" }, { bracket_position: "asc" }],
       include: {
+        // 홈팀: 매치카드 시드 뱃지용 seedNumber 필드 명시 포함
+        // select로 한정하면 불필요한 필드 전송을 줄이고 타입 일관성 확보
         homeTeam: {
-          include: {
+          select: {
+            id: true,
+            teamId: true,
+            seedNumber: true,
             team: { select: { name: true, primaryColor: true } },
           },
         },
         awayTeam: {
-          include: {
+          select: {
+            id: true,
+            teamId: true,
+            seedNumber: true,
             team: { select: { name: true, primaryColor: true } },
           },
         },

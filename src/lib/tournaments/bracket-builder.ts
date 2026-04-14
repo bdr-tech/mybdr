@@ -14,6 +14,9 @@ export type MatchStatus =
 export type TeamSlot = {
   id: string;
   teamId: string;
+  // 시드 번호: 리그 최종 순위(1=1위, 2=2위, ...). 시드 미배정 팀은 null
+  // MatchCard에서 "#1", "#4" 뱃지로 표시
+  seedNumber: number | null;
   team: { name: string; primaryColor: string | null };
 } | null;
 
@@ -64,11 +67,13 @@ type DbMatch = {
   homeTeam: {
     id: bigint;
     teamId: bigint;
+    seedNumber: number | null; // DB TournamentTeam.seed_number
     team: { name: string; primaryColor: string | null };
   } | null;
   awayTeam: {
     id: bigint;
     teamId: bigint;
+    seedNumber: number | null;
     team: { name: string; primaryColor: string | null };
   } | null;
 };
@@ -80,6 +85,8 @@ function toTeamSlot(
   return {
     id: t.id.toString(),
     teamId: t.teamId.toString(),
+    // seedNumber가 undefined일 수 있으므로 ?? null로 안전 처리
+    seedNumber: t.seedNumber ?? null,
     team: {
       name: t.team.name,
       primaryColor: t.team.primaryColor,

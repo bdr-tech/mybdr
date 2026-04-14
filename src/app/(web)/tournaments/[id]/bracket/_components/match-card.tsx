@@ -90,15 +90,28 @@ function TeamRow({
       />
 
       {/* 팀명: teamId가 있으면 팀 페이지 링크 */}
+      {/* 시드 뱃지(#1, #4)는 팀명 바로 앞에 작게 inline 표시 — 공간 절약 위해 10px */}
       {team !== null && !isBye ? (
         <Link
           href={`/teams/${team.teamId}`}
-          className={`flex-1 truncate font-medium leading-tight hover:underline ${
+          className={`flex-1 min-w-0 flex items-center gap-1 font-medium leading-tight hover:underline ${
             loser ? "text-[var(--color-text-secondary)]" : "text-[var(--color-text-primary)]"
           }`}
           onClick={(e) => e.stopPropagation()}
         >
-          {team.team.name}
+          {/* 시드 번호가 있을 때만 뱃지 렌더링. 없으면 팀명만 표시 */}
+          {team.seedNumber != null && (
+            <span
+              className="inline-flex items-center justify-center rounded px-1 text-[9px] font-bold flex-shrink-0 tabular-nums"
+              style={{
+                backgroundColor: "var(--color-surface)",
+                color: "var(--color-text-muted)",
+              }}
+            >
+              #{team.seedNumber}
+            </span>
+          )}
+          <span className="truncate">{team.team.name}</span>
         </Link>
       ) : (
         <span
@@ -228,14 +241,26 @@ export function MobileMatchCard({
           }`}
         />
         {/* 홈팀명: teamId가 있으면 팀 페이지 링크 */}
+        {/* 모바일은 데스크톱보다 공간 여유 있으므로 뱃지 11px로 살짝 크게 */}
         {match.homeTeam ? (
           <Link
             href={`/teams/${match.homeTeam.teamId}`}
-            className={`flex-1 font-medium hover:underline ${
+            className={`flex-1 min-w-0 flex items-center gap-1.5 font-medium hover:underline ${
               homeLoser ? "text-[var(--color-text-secondary)]" : "text-[var(--color-text-primary)]"
             }`}
           >
-            {match.homeTeam.team.name}
+            {match.homeTeam.seedNumber != null && (
+              <span
+                className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-bold flex-shrink-0 tabular-nums"
+                style={{
+                  backgroundColor: "var(--color-surface)",
+                  color: "var(--color-text-muted)",
+                }}
+              >
+                #{match.homeTeam.seedNumber}
+              </span>
+            )}
+            <span className="truncate">{match.homeTeam.team.name}</span>
           </Link>
         ) : (
           <span className={`flex-1 font-medium text-[var(--color-text-primary)]`}>TBD</span>
@@ -271,11 +296,22 @@ export function MobileMatchCard({
         {match.awayTeam ? (
           <Link
             href={`/teams/${match.awayTeam.teamId}`}
-            className={`flex-1 font-medium hover:underline ${
+            className={`flex-1 min-w-0 flex items-center gap-1.5 font-medium hover:underline ${
               awayLoser ? "text-[var(--color-text-secondary)]" : "text-[var(--color-text-primary)]"
             }`}
           >
-            {match.awayTeam.team.name}
+            {match.awayTeam.seedNumber != null && (
+              <span
+                className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-bold flex-shrink-0 tabular-nums"
+                style={{
+                  backgroundColor: "var(--color-surface)",
+                  color: "var(--color-text-muted)",
+                }}
+              >
+                #{match.awayTeam.seedNumber}
+              </span>
+            )}
+            <span className="truncate">{match.awayTeam.team.name}</span>
           </Link>
         ) : (
           <span className={`flex-1 font-medium text-[var(--color-text-primary)]`}>
