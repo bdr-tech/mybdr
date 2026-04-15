@@ -460,17 +460,47 @@ export default function LiveBoxScorePage() {
   // 2026-04-16: 프린트 옵션 확정 → 다음 틱에 실제 프린트 실행
   // 이유: printOptions 세팅으로 #box-score-print-area가 리렌더되는 타이밍과
   // window.print() 타이밍을 분리해야 DOM이 완전히 반영된 상태로 프린트된다.
+  // 추가: 프린트 직전 document.title을 "YYMMDD_홈팀_원정팀"으로 변경 →
+  //       Chrome "PDF로 저장" 다이얼로그의 파일명이 이 title을 사용.
+  //       afterprint 이벤트로 원래 title 복원.
   useEffect(() => {
-    if (printOptions) {
-      const t = setTimeout(() => {
-        window.print();
-        // 프린트 다이얼로그가 닫힌 뒤(사용자 취소 포함) 옵션 초기화
+    if (printOptions && match) {
+      // 파일명용 날짜: scheduled_at 우선 → started_at → 현재
+      const dateStr = match.scheduled_at ?? match.started_at ?? new Date().toISOString();
+      const d = new Date(dateStr);
+      const yy = String(d.getFullYear()).slice(2);
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      // 파일명 안전 문자만: 공백/특수문자 → _, 한글 허용
+      const safe = (s: string) => s.replace(/[\s\\/:*?"<>|]+/g, "_").trim() || "team";
+      const homeName = safe(match.home_team.name);
+      const awayName = safe(match.away_team.name);
+      const printTitle = `${yy}${mm}${dd}_${homeName}_${awayName}`;
+
+      const originalTitle = document.title;
+      document.title = printTitle;
+
+      // afterprint 이벤트 (사용자가 프린트/저장/취소 후) → title 복원 + state 초기화
+      const handleAfterPrint = () => {
+        document.title = originalTitle;
         setPrintOptions(null);
         setPrintDialogOpen(false);
+        window.removeEventListener("afterprint", handleAfterPrint);
+      };
+      window.addEventListener("afterprint", handleAfterPrint);
+
+      const t = setTimeout(() => {
+        window.print();
       }, 100);
-      return () => clearTimeout(t);
+
+      return () => {
+        clearTimeout(t);
+        // 안전장치: cleanup 시 title 복원 + 리스너 제거
+        window.removeEventListener("afterprint", handleAfterPrint);
+        if (document.title === printTitle) document.title = originalTitle;
+      };
     }
-  }, [printOptions]);
+  }, [printOptions, match]);
 
   // 2026-04-16: printOptions 기반 동적 섹션 목록
   // 순서: 홈(누적 → 1Q → ... → OT) → 원정(누적 → 1Q → ... → OT)
