@@ -548,12 +548,20 @@ export async function GET(
     // 경기장명: tournament_matches.venue_name 우선 → 없으면 tournament.venue_name fallback
     const venueName = match.venue_name ?? match.tournament?.venue_name ?? null;
 
+    // 합계 점수: DB homeScore가 0이면 playerStats 합산으로 fallback
+    // 이유: 종료된 경기에서 homeScore/awayScore가 sync 안 된 경우 있음 (e.g. match 102)
+    // 우선순위: DB homeScore(>0) > playerStats pts 합산
+    const homePlayerPts = homePlayers.reduce((sum, p) => sum + p.pts, 0);
+    const awayPlayerPts = awayPlayers.reduce((sum, p) => sum + p.pts, 0);
+    const finalHomeScore = (match.homeScore && match.homeScore > 0) ? match.homeScore : homePlayerPts;
+    const finalAwayScore = (match.awayScore && match.awayScore > 0) ? match.awayScore : awayPlayerPts;
+
     return apiSuccess({
       match: {
         id: Number(match.id),
         status: match.status ?? "scheduled",
-        homeScore: match.homeScore ?? 0,
-        awayScore: match.awayScore ?? 0,
+        homeScore: finalHomeScore,
+        awayScore: finalAwayScore,
         roundName: match.roundName,
         quarterScores,
         // 경기 날짜 필드 — 프런트에서 4/11~12 게임 클럭 부정확 안내 분기에 사용
