@@ -44,12 +44,13 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
       include: {
         // 홈팀: 매치카드 시드 뱃지용 seedNumber 필드 명시 포함
         // select로 한정하면 불필요한 필드 전송을 줄이고 타입 일관성 확보
+        // Phase 2C: 대진표 카드에 대표 언어 기준 한 줄만 표기하기 위해 name_en/name_primary 포함
         homeTeam: {
           select: {
             id: true,
             teamId: true,
             seedNumber: true,
-            team: { select: { name: true, primaryColor: true } },
+            team: { select: { name: true, name_en: true, name_primary: true, primaryColor: true } },
           },
         },
         awayTeam: {
@@ -57,7 +58,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
             id: true,
             teamId: true,
             seedNumber: true,
-            team: { select: { name: true, primaryColor: true } },
+            team: { select: { name: true, name_en: true, name_primary: true, primaryColor: true } },
           },
         },
       },
@@ -66,7 +67,8 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     prisma.tournamentTeam.findMany({
       where: { tournamentId: id },
       include: {
-        team: { select: { name: true } },
+        // Phase 2C: 리그/조별 순위표 한 줄 표기용 name_en/name_primary 포함
+        team: { select: { name: true, name_en: true, name_primary: true } },
       },
       orderBy: [{ wins: "desc" }, { losses: "asc" }],
     }),
@@ -79,10 +81,12 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   const completedMatchCount = matches.filter((m) => m.status === "completed").length;
 
   // 핫팀 계산: 경기 결과 기반 승률→득실차→다득점 1위 팀
+  // Phase 2C: teamStats에 name_en/name_primary도 캐시해두어 리그 순위표/핫팀 응답에 함께 내려줌
   const teamStats: Record<string, {
     wins: number; losses: number;
     pointsFor: number; pointsAgainst: number;
     teamId: bigint; teamName: string;
+    teamNameEn: string | null; teamNamePrimary: string | null;
   }> = {};
 
   for (const t of tournamentTeams) {
@@ -90,6 +94,9 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
       wins: 0, losses: 0,
       pointsFor: 0, pointsAgainst: 0,
       teamId: t.teamId, teamName: t.team.name,
+      // Phase 2C: 한/영 병기 필드
+      teamNameEn: t.team.name_en,
+      teamNamePrimary: t.team.name_primary,
     };
   }
 
@@ -129,7 +136,13 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     });
 
   const hotTeam = ranked[0]
-    ? { teamId: ranked[0].teamId.toString(), teamName: ranked[0].teamName }
+    ? {
+        teamId: ranked[0].teamId.toString(),
+        teamName: ranked[0].teamName,
+        // Phase 2C: 핫팀 카드도 대표언어 기준 표기를 위해 내려줌
+        teamNameEn: ranked[0].teamNameEn,
+        teamNamePrimary: ranked[0].teamNamePrimary,
+      }
     : null;
 
   const bracketOnlyMatches = matches.filter(
@@ -151,6 +164,9 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
       id: t.id.toString(),
       teamId: t.teamId.toString(), // Team 테이블의 실제 id (팀 페이지 링크용)
       teamName: t.team.name,
+      // Phase 2C: 조별 순위표 한 줄 표기용
+      teamNameEn: t.team.name_en,
+      teamNamePrimary: t.team.name_primary,
       groupName: t.groupName,
       wins: t.wins ?? 0,
       losses: t.losses ?? 0,
@@ -182,6 +198,9 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
             id: t.id.toString(),
             teamId: t.teamId.toString(),
             teamName: t.team.name,
+            // Phase 2C: 리그 순위표 한 줄 표기용
+            teamNameEn: t.team.name_en,
+            teamNamePrimary: t.team.name_primary,
             wins: stats.wins,
             losses: stats.losses,
             gamesPlayed,

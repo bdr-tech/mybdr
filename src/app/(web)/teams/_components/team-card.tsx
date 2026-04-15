@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+// Phase 2C: 한/영 병기 표시 유틸 — 카드는 공간이 넉넉하므로 2줄 표기 사용
+import { getTeamDisplayNames } from "@/lib/utils/team-display";
 
 interface TeamCardData {
   id: bigint;
   name: string;
+  // Phase 2C: 영문 팀명 + 대표 언어 ("ko"/"en")
+  // → 팀 목록/참가팀 탭 카드에서 한/영 병기 렌더링을 위한 필드
+  name_en?: string | null;
+  name_primary?: string | null;
   primaryColor: string | null;
   secondaryColor?: string | null;
   // 로고 URL — 있으면 이미지로, 없으면 city 기반 플레이스홀더로 표시
@@ -30,6 +36,12 @@ export function TeamCard({ team }: { team: TeamCardData }) {
   const losses = team.losses ?? 0;
   const location = [team.city, team.district].filter(Boolean).join(" ");
   const memberCount = team._count.teamMembers;
+  // Phase 2C: 한/영 병기 — primary=메인(굵게), secondary=부제(작게, 있을 때만)
+  const { primary: displayPrimary, secondary: displaySecondary } = getTeamDisplayNames(
+    team.name,
+    team.name_en,
+    team.name_primary,
+  );
 
   return (
     <Link href={`/teams/${team.id}`}>
@@ -63,9 +75,14 @@ export function TeamCard({ team }: { team: TeamCardData }) {
             )}
           </div>
 
-          {/* 팀명 + 지역 */}
+          {/* 팀명(+부제) + 지역 */}
           <div className="min-w-0">
-            <p className="truncate font-bold transition-colors" style={{ color: 'var(--color-text-primary)' }}>{team.name}</p>
+            {/* 메인 팀명: 대표 언어 기준 (기본 한글, namePrimary="en"이면 영문) */}
+            <p className="truncate font-bold transition-colors" style={{ color: 'var(--color-text-primary)' }}>{displayPrimary}</p>
+            {/* Phase 2C: 부제(반대 언어) — 영문명이 실제로 있을 때만 표시 */}
+            {displaySecondary && (
+              <p className="truncate text-xs" style={{ color: 'var(--color-text-muted)' }}>{displaySecondary}</p>
+            )}
             {location && (
               <p className="mt-0.5 flex items-center gap-1 truncate text-xs" style={{ color: 'var(--color-text-secondary)' }}>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 opacity-50"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>

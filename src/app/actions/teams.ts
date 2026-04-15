@@ -5,19 +5,38 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 import { getWebSession } from "@/lib/auth/web-session";
 import { canCreateTeam } from "@/lib/auth/roles";
+// Phase 2A-2: Zod로 영문명/대표 언어까지 한번에 검증
+import { createTeamSchema } from "@/lib/validation/team";
 
 export async function createTeamAction(_prevState: { error: string } | null, formData: FormData) {
   const session = await getWebSession();
   if (!session) redirect("/login");
 
-  const name = (formData.get("name") as string)?.trim();
-  const description = (formData.get("description") as string)?.trim();
+  // 폼 필드 추출 — FormData는 항상 string | File이라서 string으로 캐스팅
+  const rawName = (formData.get("name") as string | null) ?? "";
+  const rawDescription = (formData.get("description") as string | null) ?? "";
+  const rawNameEn = formData.get("name_en") as string | null; // 없으면 null
+  const rawNamePrimary = (formData.get("name_primary") as string | null) ?? "ko";
   const primaryColor = (formData.get("primary_color") as string) || "#E31B23";
   const secondaryColor = (formData.get("secondary_color") as string) || "#E76F51";
 
-  if (!name) {
-    return { error: "팀 이름은 필수입니다." };
+  // Zod 검증 — 한글명 필수 + 영문명 엄격 규칙 + 대표언어 enum
+  const parsed = createTeamSchema.safeParse({
+    name: rawName,
+    name_en: rawNameEn, // nameEnSchema가 빈 문자열을 null로 변환
+    name_primary: rawNamePrimary,
+    description: rawDescription || null,
+    primary_color: primaryColor,
+    secondary_color: secondaryColor,
+  });
+
+  if (!parsed.success) {
+    // 첫 번째 에러 메시지만 사용자에게 노출 (바이브 코더 친화)
+    const firstIssue = parsed.error.issues[0];
+    return { error: firstIssue?.message ?? "입력값이 올바르지 않습니다." };
   }
+
+  const { name, name_en, name_primary, description } = parsed.data;
 
   let createdTeamId: bigint;
   try {
@@ -36,6 +55,9 @@ export async function createTeamAction(_prevState: { error: string } | null, for
         data: {
           uuid: randomUUID(),
           name,
+          // Phase 2A-2: 영문명/대표언어 신규 필드 — 없으면 null / "ko"
+          name_en: name_en ?? null,
+          name_primary: name_primary ?? "ko",
           description: description || null,
           primaryColor,
           secondaryColor,
