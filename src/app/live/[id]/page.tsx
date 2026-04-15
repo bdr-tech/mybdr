@@ -286,7 +286,7 @@ export default function LiveBoxScorePage() {
 
       {/* 스코어 카드 */}
       <div className="px-4 py-6">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-3">
           {/* 홈팀 */}
           <div className="flex-1 text-center">
             <div
@@ -300,21 +300,18 @@ export default function LiveBoxScorePage() {
             >
               {match.home_team.name}
             </p>
-            {/* 메인 점수: 팀색 유지 + text-shadow outline으로 라이트/다크 양쪽 경계 보장
-                (안쪽 1px은 text-primary, 바깥 3px은 background 색으로 2겹 보강) */}
+            {/* 메인 점수: 팀색 버리고 text-primary로 통일 (외곽선만 보이던 이슈 해결)
+                팀 식별은 상단 동그라미(team.color)로 수행 */}
             <p
               className={`text-6xl font-black mt-1 transition-all duration-300 ${homeFlash ? "scale-125 brightness-150" : "scale-100"}`}
-              style={{
-                color: match.home_team.color,
-                textShadow: "0 0 1px var(--color-text-primary), 0 0 3px var(--color-background)",
-              }}
+              style={{ color: "var(--color-text-primary)" }}
             >
               {match.home_score}
             </p>
           </div>
 
           {/* 가운데 — 콜론 크기는 의미상 유지. 색상은 muted 변수로 (라이트에서 어둡게, 다크에서 밝게) */}
-          <div className="text-center px-2">
+          <div className="text-center px-1">
             <p className="text-xl font-light" style={{ color: "var(--color-text-muted)" }}>:</p>
             {match.round_name && (
               <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
@@ -335,13 +332,10 @@ export default function LiveBoxScorePage() {
             >
               {match.away_team.name}
             </p>
-            {/* 원정팀 메인 점수: 홈과 동일한 text-shadow 방식 */}
+            {/* 원정팀 메인 점수: 홈과 동일하게 text-primary로 통일 */}
             <p
               className={`text-6xl font-black mt-1 transition-all duration-300 ${awayFlash ? "scale-125 brightness-150" : "scale-100"}`}
-              style={{
-                color: match.away_team.color,
-                textShadow: "0 0 1px var(--color-text-primary), 0 0 3px var(--color-background)",
-              }}
+              style={{ color: "var(--color-text-primary)" }}
             >
               {match.away_score}
             </p>
@@ -351,7 +345,7 @@ export default function LiveBoxScorePage() {
         {/* 쿼터별 점수 */}
         {quarters.some((q) => q.home > 0 || q.away > 0) && (
           <div
-            className="mt-4 rounded-md overflow-hidden"
+            className="mt-4 mx-auto w-3/4 rounded-md overflow-hidden"
             style={{ backgroundColor: "var(--color-card)" }}
           >
             {/* 쿼터 테이블: text-sm → text-lg (18px)로 상속. 좌우 끝 셀 px-3→px-2, 쿼터 셀 px-2→px-1로 축소 */}
@@ -378,13 +372,10 @@ export default function LiveBoxScorePage() {
                       {q.home}
                     </td>
                   ))}
-                  {/* 합계: 메인 점수와 동일한 text-shadow 방식(크기 작으니 바깥 반경 2px로 약하게) */}
+                  {/* 합계: 메인 점수와 동일하게 text-primary로 통일 (font-bold로 강조) */}
                   <td
                     className="py-2 px-2 text-center font-bold"
-                    style={{
-                      color: match.home_team.color,
-                      textShadow: "0 0 1px var(--color-text-primary), 0 0 2px var(--color-background)",
-                    }}
+                    style={{ color: "var(--color-text-primary)" }}
                   >
                     {match.home_score}
                   </td>
@@ -400,10 +391,7 @@ export default function LiveBoxScorePage() {
                   ))}
                   <td
                     className="py-2 px-2 text-center font-bold"
-                    style={{
-                      color: match.away_team.color,
-                      textShadow: "0 0 1px var(--color-text-primary), 0 0 2px var(--color-background)",
-                    }}
+                    style={{ color: "var(--color-text-primary)" }}
                   >
                     {match.away_score}
                   </td>
