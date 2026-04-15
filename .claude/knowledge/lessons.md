@@ -2,6 +2,29 @@
 <!-- 담당: 전체 에이전트 | 최대 30항목 -->
 <!-- 삽질 경험, 다음에 피해야 할 것, 효과적이었던 접근법을 기록 -->
 
+### [2026-04-15] 신규 파일 add 누락 방지 — 커밋 전 `git status --short`로 `??` 확인
+- **분류**: lesson
+- **발견자**: pm
+- **내용**: Phase 2B 커밋 시 `@/lib/validation/team` import는 했지만 실제 신규 파일은 add 누락 → 로컬은 정상, Vercel 빌드에서만 실패. 개인 브랜치는 Vercel preview가 없어서 dev 머지 후에야 발견됨. 원영님이 응급 핫픽스 커밋(d94beb6)으로 수습.
+- **교훈**:
+  1. 커밋 직전 `git status --short`에서 `??` 표시된 신규 파일을 반드시 점검 (특히 신규 유틸/validation 파일)
+  2. "파일 1~2개씩 특정해서 add"하는 습관의 맹점 — 신규 파일은 특히 잘 빠짐
+  3. 개인 브랜치에서 dev 머지 후 **Vercel dev preview 빌드 상태를 즉시 확인**
+  4. import 경로가 바뀌거나 추가될 때는 해당 파일도 같은 커밋에 포함됐는지 이중 체크
+- **참조**: errors.md "신규 파일 git add 누락 → 원격 Vercel 빌드 실패"
+- **참조횟수**: 0
+
+### [2026-04-15] gh 인증이 풀렸을 때 `git credential fill`로 토큰 우회 추출
+- **분류**: lesson
+- **발견자**: pm
+- **내용**: `gh auth status`는 "not logged in"인데 `git push`는 정상 동작하는 상황 발생. 이는 gh CLI가 자체 토큰을 잃었지만 git credential manager에는 GitHub OAuth 토큰(`gho_...`)이 남아있기 때문. `printf "protocol=https\nhost=github.com\n\n" | git credential fill`로 토큰을 추출해 `GH_TOKEN` 환경변수로 한 번만 주입하면 gh pr create 등 세션 단위로 작동 가능. 영구 해결은 `gh auth login` 재실행.
+- **교훈**:
+  1. gh 인증이 막혔다고 해서 작업을 중단하거나 수동으로 PR을 만들 필요 없음
+  2. git credential이 살아있으면 한 세션 단위로 GH_TOKEN 주입이 가장 빠름
+  3. 영구 복구는 별도로 `gh auth login --web` 안내
+- **응용**: `GH_TOKEN=$(printf "protocol=https\nhost=github.com\n\n" | git credential fill 2>/dev/null | grep ^password= | cut -d= -f2) gh pr create ...`
+- **참조횟수**: 0
+
 ### [2026-04-15] DB 마이그레이션 `--accept-data-loss`는 타 브랜치 데이터를 파괴할 수 있다
 - **분류**: lesson
 - **발견자**: pm

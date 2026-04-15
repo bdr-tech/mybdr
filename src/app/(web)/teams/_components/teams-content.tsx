@@ -225,6 +225,9 @@ export function TeamsContent({
               const cardData = {
                 id: BigInt(team.id),
                 name: team.name,
+                // Phase 2C: 한/영 병기용 — 그대로 snake_case로 전달 (TeamCardData가 name_en/name_primary 수용)
+                name_en: team.name_en,
+                name_primary: team.name_primary,
                 primaryColor: team.primary_color,
                 secondaryColor: team.secondary_color,
                 // 로고 URL — snake_case(logo_url) → camelCase(logoUrl) 변환하여 전달

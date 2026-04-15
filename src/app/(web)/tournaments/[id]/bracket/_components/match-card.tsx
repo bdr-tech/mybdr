@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import type { BracketMatch, TeamSlot } from "@/lib/tournaments/bracket-builder";
+// Phase 2C: 대진표 카드는 공간이 좁아 대표 언어 기준 한 줄만 표기
+import { getTeamSingleName } from "@/lib/utils/team-display";
 
 type MatchCardProps = {
   match: BracketMatch;
@@ -134,7 +136,8 @@ function TeamRow({
               {team.seedNumber}
             </span>
           )}
-          <span className="truncate">{team.team.name}</span>
+          {/* Phase 2C: 대표 언어 기준 한 줄 (namePrimary="en"이면 영문, 그 외 한글) */}
+          <span className="truncate">{getTeamSingleName(team.team.name, team.team.nameEn, team.team.namePrimary)}</span>
         </Link>
       ) : (
         <span
@@ -294,7 +297,8 @@ export function MobileMatchCard({
                 #{match.homeTeam.seedNumber}
               </span>
             )}
-            <span className="truncate">{match.homeTeam.team.name}</span>
+            {/* Phase 2C: 모바일 카드도 한 줄 대표 언어 표기 */}
+            <span className="truncate">{getTeamSingleName(match.homeTeam.team.name, match.homeTeam.team.nameEn, match.homeTeam.team.namePrimary)}</span>
           </Link>
         ) : (
           // Phase 2C: 홈팀 슬롯 라벨 우선 표시 (예: "1위")

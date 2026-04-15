@@ -25,8 +25,9 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
       where: { tournamentId: id },
       orderBy: { scheduledAt: "asc" },
       include: {
-        homeTeam: { include: { team: { select: { name: true } } } },
-        awayTeam: { include: { team: { select: { name: true } } } },
+        // Phase 2C: 일정 카드 팀명 한/영 표시를 위해 name_en/name_primary 포함
+        homeTeam: { include: { team: { select: { name: true, name_en: true, name_primary: true } } } },
+        awayTeam: { include: { team: { select: { name: true, name_en: true, name_primary: true } } } },
       },
     }),
     // 일정 탭: 참가팀 목록
@@ -34,7 +35,8 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
       where: { tournamentId: id },
       select: {
         id: true,
-        team: { select: { name: true } },
+        // Phase 2C: 팀 필터 버튼 라벨 한/영 표시
+        team: { select: { name: true, name_en: true, name_primary: true } },
       },
       orderBy: { team: { name: "asc" } },
     }),
@@ -44,7 +46,12 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   const serializedMatches = matches.map((m) => ({
     id: m.id.toString(),
     homeTeamName: m.homeTeam?.team.name ?? null,
+    // Phase 2C: 일정 카드에서 한 줄 대표 언어 표기용
+    homeTeamNameEn: m.homeTeam?.team.name_en ?? null,
+    homeTeamNamePrimary: m.homeTeam?.team.name_primary ?? null,
     awayTeamName: m.awayTeam?.team.name ?? null,
+    awayTeamNameEn: m.awayTeam?.team.name_en ?? null,
+    awayTeamNamePrimary: m.awayTeam?.team.name_primary ?? null,
     homeScore: m.homeScore,
     awayScore: m.awayScore,
     status: m.status,
@@ -56,6 +63,9 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   const serializedTeams = teams.map((t) => ({
     id: t.id.toString(),
     name: t.team.name,
+    // Phase 2C: 팀 필터 버튼 한 줄 대표 언어 표기용
+    nameEn: t.team.name_en,
+    namePrimary: t.team.name_primary,
   }));
 
   return apiSuccess({ matches: serializedMatches, teams: serializedTeams });

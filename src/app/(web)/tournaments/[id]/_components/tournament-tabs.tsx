@@ -277,6 +277,9 @@ function TeamsTabContent({ tournamentId }: { tournamentId: string }) {
     id: string;
     teamId: string;
     teamName: string;
+    // Phase 2C: 한/영 병기를 위해 API가 내려주는 영문명/대표언어 필드
+    teamNameEn: string | null;
+    teamNamePrimary: string | null;
     primaryColor: string | null;
     secondaryColor: string | null;
     logoUrl: string | null;
@@ -298,6 +301,9 @@ function TeamsTabContent({ tournamentId }: { tournamentId: string }) {
             team={{
               id: BigInt(t.teamId),
               name: t.teamName,
+              // Phase 2C: TeamCard가 한/영 병기를 렌더링하도록 name_en/name_primary 전달 (snake_case key)
+              name_en: t.teamNameEn,
+              name_primary: t.teamNamePrimary,
               logoUrl: t.logoUrl,
               primaryColor: t.primaryColor,
               secondaryColor: t.secondaryColor,

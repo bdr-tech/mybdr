@@ -17,7 +17,14 @@ export type TeamSlot = {
   // 시드 번호: 리그 최종 순위(1=1위, 2=2위, ...). 시드 미배정 팀은 null
   // MatchCard에서 "#1", "#4" 뱃지로 표시
   seedNumber: number | null;
-  team: { name: string; primaryColor: string | null };
+  // Phase 2C: 대진표 카드에서 한/영 대표 언어 기준 한 줄 표기용
+  // nameEn이 없거나 namePrimary가 "ko"면 한글(name) 사용
+  team: {
+    name: string;
+    nameEn: string | null;
+    namePrimary: string | null;
+    primaryColor: string | null;
+  };
 } | null;
 
 export type BracketMatch = {
@@ -76,13 +83,24 @@ type DbMatch = {
     id: bigint;
     teamId: bigint;
     seedNumber: number | null; // DB TournamentTeam.seed_number
-    team: { name: string; primaryColor: string | null };
+    // Phase 2C: name_en/name_primary도 받을 수 있도록 (옵셔널로 안전 처리)
+    team: {
+      name: string;
+      name_en?: string | null;
+      name_primary?: string | null;
+      primaryColor: string | null;
+    };
   } | null;
   awayTeam: {
     id: bigint;
     teamId: bigint;
     seedNumber: number | null;
-    team: { name: string; primaryColor: string | null };
+    team: {
+      name: string;
+      name_en?: string | null;
+      name_primary?: string | null;
+      primaryColor: string | null;
+    };
   } | null;
 };
 
@@ -97,6 +115,9 @@ function toTeamSlot(
     seedNumber: t.seedNumber ?? null,
     team: {
       name: t.team.name,
+      // Phase 2C: DB snake_case → BracketMatch camelCase로 변환 (undefined는 null로 통일)
+      nameEn: t.team.name_en ?? null,
+      namePrimary: t.team.name_primary ?? null,
       primaryColor: t.team.primaryColor,
     },
   };

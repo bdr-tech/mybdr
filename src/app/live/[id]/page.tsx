@@ -2,6 +2,16 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
+// 헤더 우측에 테마 토글 버튼을 배치하기 위해 공통 컴포넌트 재사용
+import { ThemeToggle } from "@/components/shared/theme-toggle";
+
+// 2026-04-15: 쿼터별 스탯 — 쿼터 필터 버튼용. API에서 snake_case로 내려옴.
+interface QuarterStat {
+  min: number; min_seconds: number; pts: number;
+  fgm: number; fga: number; tpm: number; tpa: number; ftm: number; fta: number;
+  oreb: number; dreb: number; reb: number;
+  ast: number; stl: number; blk: number; to: number; fouls: number; plus_minus: number;
+}
 
 interface PlayerRow {
   id: number;
@@ -28,6 +38,8 @@ interface PlayerRow {
   plus_minus?: number;
   // 0414: DNP(Did Not Play) — NBA 미출전 표시
   dnp?: boolean;
+  // 2026-04-15: 쿼터별 집계 — 키 "1"=Q1, "5"=OT1. 없는 쿼터는 키 자체 없음.
+  quarter_stats?: Record<string, QuarterStat>;
 }
 
 interface PlayByPlayRow {
@@ -56,12 +68,19 @@ interface MatchData {
     home: { q1: number; q2: number; q3: number; q4: number; ot: number[] };
     away: { q1: number; q2: number; q3: number; q4: number; ot: number[] };
   } | null;
-  home_team: { id: number; name: string; color: string };
-  away_team: { id: number; name: string; color: string };
+  // 티빙 스타일 스코어카드 — 팀 로고 URL 추가 (없으면 null → 팀색 원 + 이니셜 fallback)
+  home_team: { id: number; name: string; color: string; logo_url: string | null };
+  away_team: { id: number; name: string; color: string; logo_url: string | null };
   home_players: PlayerRow[];
   away_players: PlayerRow[];
   play_by_plays: PlayByPlayRow[];
   updated_at: string;
+  // 2026-04-15: 4/11~12 게임 클럭 부정확 시기 안내 분기에 사용 — API가 optional로 내려줌
+  scheduled_at?: string | null;
+  started_at?: string | null;
+  // 티빙 스타일 — 경기장명(없으면 null) + 현재 진행 쿼터(라이브 아닐 때 null)
+  venue_name?: string | null;
+  current_quarter?: number | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -109,7 +128,170 @@ function getQuarterLabel(q: number): string {
   return `OT${q - 4}`;
 }
 
+/**
+ * 경기 상태 → 중앙 정보 블록에 표시할 라벨.
+ * 이유: 헤더의 "LIVE"/상태 칩과 별개로, 스코어카드 가운데에 "지금 이 경기가 어떤 단계인지"를
+ * 한눈에 보여주기 위함 (티빙 중계 스타일). live/in_progress이고 current_quarter가 있으면
+ * 구체적 쿼터("3쿼터")로 대체해 중계 몰입감 제공.
+ */
+function getCenterStatusLabel(
+  status: string,
+  currentQuarter: number | null | undefined,
+): { text: string; highlight: boolean } {
+  if (status === "live" || status === "in_progress") {
+    if (currentQuarter && currentQuarter > 0) {
+      // 4쿼터까지는 "N쿼터", 5 이상은 연장 (OT1 == 연장1)
+      const text = currentQuarter <= 4 ? `${currentQuarter}쿼터` : `연장${currentQuarter - 4}`;
+      return { text, highlight: true };
+    }
+    return { text: "경기 중", highlight: true };
+  }
+  if (status === "halftime") return { text: "하프타임", highlight: true };
+  if (status === "warmup") return { text: "워밍업", highlight: false };
+  if (status === "scheduled") return { text: "경기 전", highlight: false };
+  if (status === "finished" || status === "completed") return { text: "경기 종료", highlight: false };
+  // 알 수 없는 상태 — 기존 STATUS_LABEL fallback
+  return { text: STATUS_LABEL[status] ?? status, highlight: false };
+}
+
+/**
+ * ISO 시각을 "YYYY.MM.DD HH:MM" 형식으로 포맷.
+ * 이유: 중앙 정보 블록에 "언제 치러진/치러질 경기인지" 표시하기 위함.
+ * 우선순위: scheduled_at(예정) → started_at(실제 시작). 둘 다 없으면 null 반환 → UI에서 숨김.
+ * 타임존: 브라우저 로컬(클라이언트 컴포넌트라 자연스러움).
+ */
+function formatMatchDateTime(
+  scheduledAt: string | null | undefined,
+  startedAt: string | null | undefined,
+): string | null {
+  const iso = scheduledAt ?? startedAt ?? null;
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  const yyyy = d.getFullYear();
+  const MM = String(d.getMonth() + 1).padStart(2, "0");
+  const DD = String(d.getDate()).padStart(2, "0");
+  const HH = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${yyyy}.${MM}.${DD} ${HH}:${mm}`;
+}
+
+// 팀명에서 이니셜 추출 — 로고가 없을 때 원형 배지 안에 표기
+// 규칙:
+//  - 마지막 토큰이 영문 대문자/숫자(2~4자) 약어면 그대로 사용 ("원주 DB" → "DB", "부산 KCC" → "KCC")
+//  - 그 외에는 각 토큰 첫 글자 2~3개 ("BDR Eagles" → "BE", "서울 삼성 썬더스" → "서삼썬")
+function getTeamInitials(name: string): string {
+  const tokens = name.trim().split(/\s+/);
+  if (tokens.length === 0) return "?";
+  const last = tokens[tokens.length - 1];
+  if (/^[A-Z0-9]{2,4}$/.test(last)) return last;
+  return tokens.map((t) => t.charAt(0)).join("").slice(0, 3);
+}
+
+/**
+ * "#RRGGBB" 또는 "#RGB" hex를 RGB로. 실패 시 null.
+ * 이유: 팀색이 "#FFF" 같은 단축형으로 들어올 수도 있어 두 형식 모두 지원.
+ */
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  if (!hex) return null;
+  const clean = hex.replace("#", "").trim();
+  if (clean.length === 3) {
+    // 3자리 단축형("FFF") → 각 문자를 2번 반복 ("FFFFFF")
+    const r = parseInt(clean[0] + clean[0], 16);
+    const g = parseInt(clean[1] + clean[1], 16);
+    const b = parseInt(clean[2] + clean[2], 16);
+    if ([r, g, b].some((v) => isNaN(v))) return null;
+    return { r, g, b };
+  }
+  if (clean.length === 6) {
+    const r = parseInt(clean.slice(0, 2), 16);
+    const g = parseInt(clean.slice(2, 4), 16);
+    const b = parseInt(clean.slice(4, 6), 16);
+    if ([r, g, b].some((v) => isNaN(v))) return null;
+    return { r, g, b };
+  }
+  return null;
+}
+
+/**
+ * 팀색(hex)의 perceived brightness (0=검정 ~ 1=흰색).
+ * ITU-R BT.601 luma 공식 사용 (간단 + 실용적).
+ * 이유: 사람 눈은 빨강/초록/파랑을 균등하게 보지 않기 때문에 단순 평균보다 luma가 체감에 맞음.
+ */
+function getColorBrightness(hex: string): number {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 0.5; // 파싱 실패 시 중간값 (안전한 기본)
+  return (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+}
+
+/**
+ * 팀 플레이스홀더 뱃지 스타일:
+ * - fg: 배경과 대비되는 텍스트 색 (밝은 배경엔 검정, 어두운 배경엔 흰)
+ * - needsBorder: 배경이 극단 명도라 테마 배경과 동화될 위험이 있는 경우 테두리 필요
+ *   (흰 유니폼이 라이트 모드에서 안 보이거나, 검정 유니폼이 다크 모드에서 안 보이는 문제 해결)
+ */
+function getTeamBadgeStyle(teamColor: string): { fg: string; needsBorder: boolean } {
+  const brightness = getColorBrightness(teamColor);
+  const fg = brightness > 0.5 ? "#1a1a1a" : "#ffffff";
+  const needsBorder = brightness > 0.9 || brightness < 0.1;
+  return { fg, needsBorder };
+}
+
+// 팀 로고 컴포넌트 — 로고 URL 있으면 이미지, 없으면 팀색 원 + 이니셜
+// size는 px 단위. 모바일에서 작게 쓰려면 호출부에서 반응형 처리.
+function TeamLogo({
+  team,
+  size = 64,
+}: {
+  team: { name: string; color: string; logo_url: string | null };
+  size?: number;
+}) {
+  const px = `${size}px`;
+  if (team.logo_url) {
+    return (
+      <div
+        className="relative rounded-full overflow-hidden"
+        // 이미지 로딩 전/실패 시 팀색이 슬쩍 비치도록 surface 배경 깔아둠
+        style={{ width: px, height: px, backgroundColor: "var(--color-surface)" }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={team.logo_url} alt={team.name} className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+  // 로고 없음 → 팀색 원 + 이니셜
+  // adaptive 처리(2026-04-15):
+  //  - 글자색: 팀색 brightness 기반으로 검정/흰색 자동 선택 (흰 유니폼에서 흰 글자 안보이는 문제 해결)
+  //  - 극단 명도(거의 흰색 또는 검정): var(--color-border)로 테두리 추가 → 테마 배경과 동화 방지
+  const initials = getTeamInitials(team.name);
+  const { fg, needsBorder } = getTeamBadgeStyle(team.color);
+  return (
+    <div
+      className="flex items-center justify-center rounded-full font-bold"
+      style={{
+        width: px,
+        height: px,
+        backgroundColor: team.color,
+        color: fg, // adaptive: brightness > 0.5면 검정, 아니면 흰
+        fontSize: size >= 64 ? "20px" : "16px",
+        // 극단 명도(흰/검)일 때만 테두리 — 중간 명도 팀색은 테두리 불필요
+        border: needsBorder ? "2px solid var(--color-border)" : undefined,
+        // border 추가 시 전체 크기 유지 (width/height 안에 border 포함)
+        boxSizing: "border-box",
+      }}
+    >
+      {initials}
+    </div>
+  );
+}
+
 const POLL_INTERVAL = 3_000; // 3초
+
+// 얼룩무늬(zebra stripe) 배경색 — 중립 회색 알파를 쓰면 다크/라이트 모두에서 은은하게 보임.
+// 라이트 배경(흰색)에서는 살짝 어둡게, 다크 배경(#0A)에서는 살짝 밝게 동시에 보이도록 중간 회색 사용.
+const ZEBRA_BG = "rgba(127, 127, 127, 0.06)";
+// TOTAL 합산 행 전용 — 조금 더 진하게 구분
+const TOTAL_ROW_BG = "rgba(127, 127, 127, 0.10)";
 
 export default function LiveBoxScorePage() {
   const { id } = useParams<{ id: string }>();
@@ -160,23 +342,47 @@ export default function LiveBoxScorePage() {
   }, [fetchMatch]);
 
   if (error) {
+    // 에러 화면도 테마 반응형이 되도록 CSS 변수로 배경/텍스트 지정
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center text-white">
+      <div
+        className="min-h-screen flex items-center justify-center"
+        // 2026-04-15: zoom 1.25 — 전체 UI 125% 확대 (박스스코어 가독성)
+        style={{ backgroundColor: "var(--color-background)", color: "var(--color-text-primary)", zoom: "1.25" }}
+      >
         <div className="text-center">
           <div className="text-5xl mb-4">🏀</div>
-          <p className="text-gray-400">{error}</p>
+          <p style={{ color: "var(--color-text-secondary)" }}>{error}</p>
         </div>
       </div>
     );
   }
 
   if (!match) {
+    // 로딩 스피너: 주황 → BDR 기본 primary 사용 (테마 중립)
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+      <div
+        className="min-h-screen flex items-center justify-center"
+        // 2026-04-15: zoom 1.25 적용
+        style={{ backgroundColor: "var(--color-background)", zoom: "1.25" }}
+      >
+        <div
+          className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin"
+          style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }}
+        />
       </div>
     );
   }
+
+  // 2026-04-15: 4/11~12 게임 클럭 부정확 시기 판정
+  // 이 기간에 치러진 경기는 box score의 MIN 값이 정확하지 않아 테이블 하단에 안내 문구를 노출한다.
+  // 우선순위: scheduled_at(예정일) → started_at(실제 시작) → updated_at(최종 갱신). 하나라도 2026-04-11/12 이면 true.
+  const matchDateStr = match.scheduled_at || match.started_at || match.updated_at;
+  const matchDate = matchDateStr ? new Date(matchDateStr) : null;
+  const isLegacyClockIssue = matchDate
+    ? matchDate.getFullYear() === 2026 &&
+      matchDate.getMonth() === 3 /* 0-indexed: 3 === 4월 */ &&
+      (matchDate.getDate() === 11 || matchDate.getDate() === 12)
+    : false;
 
   const qs = match.quarter_scores;
   const qh = qs?.home;
@@ -194,116 +400,265 @@ export default function LiveBoxScorePage() {
   ];
 
   return (
-    <div className="min-h-screen text-white" style={{ backgroundColor: '#0A0A0F' }}>
-      {/* 헤더 */}
-      <div className="border-b border-white/10 px-4 py-3 flex items-center justify-between" style={{ backgroundColor: '#141416' }}>
+    // 페이지 최상단 컨테이너 — 배경/글자 기본색은 모두 CSS 변수 사용 (테마 전환 대응)
+    // 2026-04-15: zoom 1.25로 전체 UI 125% 확대 (박스스코어 가독성 개선)
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor: "var(--color-background)", color: "var(--color-text-primary)", zoom: "1.25" }}
+    >
+      {/* 헤더 — border와 배경을 모두 CSS 변수로 */}
+      <div
+        className="px-4 py-3 flex items-center justify-between border-b"
+        style={{
+          backgroundColor: "var(--color-card)",
+          borderColor: "var(--color-border)",
+        }}
+      >
         <div className="flex items-center gap-3 min-w-0">
-          <button onClick={() => window.history.back()} className="shrink-0 text-gray-400 hover:text-white transition-colors">
+          <button
+            onClick={() => window.history.back()}
+            className="shrink-0 transition-colors"
+            style={{ color: "var(--color-text-secondary)" }}
+          >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
-          <span className="text-sm text-gray-400 truncate">{match.tournament_name}</span>
+          {/* 토너먼트명: text-sm → text-base (두 단계 확대의 헤더 버전) */}
+          <span className="text-base truncate" style={{ color: "var(--color-text-secondary)" }}>
+            {match.tournament_name}
+          </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {isLive && (
-            <span className="flex items-center gap-1 text-xs text-red-400 font-semibold">
-              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            // LIVE 인디케이터: 상태 시맨틱 변수 사용 (text-xs → text-sm)
+            <span
+              className="flex items-center gap-1 text-sm font-semibold"
+              style={{ color: "var(--color-status-live)" }}
+            >
+              <span
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{ backgroundColor: "var(--color-status-live)" }}
+              />
               LIVE
             </span>
           )}
-          <span className="text-xs text-gray-500">
+          {/* 상태 라벨: text-xs → text-sm */}
+          <span className="text-sm" style={{ color: "var(--color-text-muted)" }}>
             {STATUS_LABEL[match.status] ?? match.status}
           </span>
-          <button onClick={fetchMatch} className="text-gray-500 hover:text-white transition-colors ml-1" title="새로고침">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
-          </button>
+          {/* 헤더 우측: 테마 토글만 유지. 새로고침 버튼은 스코어카드 가운데로 이동 (Phase 1) */}
+          <ThemeToggle />
         </div>
       </div>
 
-      {/* 스코어 카드 */}
+      {/* 스코어 카드 — 티빙 중계 스타일 (5단 가로 레이아웃)
+          [홈 로고+팀명] [홈 점수] [중앙] [원정 점수] [원정 로고+팀명]
+          이미지 목표대로 각 요소가 독립 영역으로 가로 나열되어야 점수가 가운데에 큼직하게 보임 */}
       <div className="px-4 py-6">
-        <div className="flex items-center justify-between gap-4">
-          {/* 홈팀 */}
-          <div className="flex-1 text-center">
-            <div
-              className="w-3 h-3 rounded-full mx-auto mb-2"
-              style={{ backgroundColor: match.home_team.color }}
-            />
-            <p className="text-sm text-gray-300 font-medium truncate">
-              {match.home_team.name}
-            </p>
+        {/* 스코어카드 + 쿼터 테이블 75% 래퍼: 모바일 100% / sm(640+) 이상에서 75% 폭 중앙.
+            이유: 데스크톱에서 스코어카드/쿼터 테이블이 너무 넓게 퍼져 정보 밀도가 떨어지므로
+            좌우를 좁혀 시선 집중시키기. 박스스코어는 이 래퍼 밖이라 영향 없음. */}
+        <div className="mx-auto w-full sm:w-3/4">
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
+          {/* 1. 홈 영역: 로고 + 🏠아이콘+팀명 */}
+          <div className="flex flex-col items-center gap-2 min-w-0 flex-shrink-0">
+            {/* 큰 원형 로고 (모바일 56 / sm 이상 72) — Tailwind에서 sm:size 동적 변경이 어려워 두 사이즈를 분기 렌더 */}
+            <div className="sm:hidden">
+              <TeamLogo team={match.home_team} size={56} />
+            </div>
+            <div className="hidden sm:block">
+              <TeamLogo team={match.home_team} size={72} />
+            </div>
+            {/* 팀명 — 이전보다 크기 축소(text-sm sm:text-base)로 로고/점수 대비 약하게.
+                홈팀 표기를 위해 Material Symbols home 아이콘을 팀명 앞에 gap-1로 배치 */}
             <p
-              className={`text-6xl font-black mt-1 transition-all duration-300 ${homeFlash ? "scale-125 brightness-150" : "scale-100"}`}
-              style={{ color: match.home_team.color }}
+              className="text-sm sm:text-base font-medium flex items-center gap-1 truncate max-w-[120px] sm:max-w-[160px]"
+              style={{ color: "var(--color-text-primary)" }}
             >
-              {match.home_score}
+              <span
+                className="material-symbols-outlined shrink-0"
+                style={{ fontSize: "16px", color: "var(--color-text-muted)" }}
+              >
+                home
+              </span>
+              <span className="truncate">{match.home_team.name}</span>
             </p>
           </div>
 
-          {/* 가운데 */}
-          <div className="text-center px-2">
-            <p className="text-gray-600 text-xl font-light">:</p>
-            {match.round_name && (
-              <p className="text-xs text-gray-500 mt-1">{match.round_name}</p>
+          {/* 2. 홈 점수 — 팀 영역에서 분리되어 독립 배치. 플래시 애니메이션 className 유지 */}
+          <p
+            className={`text-5xl sm:text-6xl font-black transition-all duration-300 ${homeFlash ? "scale-125 brightness-150" : "scale-100"}`}
+            style={{ color: "var(--color-text-primary)" }}
+          >
+            {match.home_score}
+          </p>
+
+          {/* 3. 중앙 정보 블록 — 상태 라벨 / 일시 / 장소 (2026-04-15 글자 확대 + 🔄 제거)
+              이유: 라운드명은 정보 밀도 낮아 제거, 대신 "경기 상태(N쿼터/경기 전/종료)"와 "일시"를
+              티빙 중계처럼 상단에 배치해 방문자가 현재 경기가 어느 단계인지 즉시 파악 가능하게.
+              🔄 새로고침 버튼 제거: fetchMatch가 3초 폴링으로 자동 갱신되므로 수동 버튼 불필요.
+              글자 확대: 이미지 5처럼 중앙 정보가 또렷하게 보이도록 상태/일시/장소 폰트 크기 상향. */}
+          <div className="flex flex-col items-center gap-2 px-1 min-w-0">
+            {/* ① 상태 라벨 — 헬퍼가 { text, highlight } 반환. highlight=true면 빨강+bold+xl, false면 muted+lg */}
+            {(() => {
+              const { text, highlight } = getCenterStatusLabel(match.status, match.current_quarter);
+              return (
+                <span
+                  className={`whitespace-nowrap ${highlight ? "text-xl font-semibold" : "text-lg"}`}
+                  style={{ color: highlight ? "var(--color-primary)" : "var(--color-text-muted)" }}
+                >
+                  {text}
+                </span>
+              );
+            })()}
+
+            {/* ② 일시 — scheduled_at 우선, 없으면 started_at, 둘 다 없으면 숨김. text-xs → text-base */}
+            {(() => {
+              const dt = formatMatchDateTime(match.scheduled_at, match.started_at);
+              return dt ? (
+                <span
+                  className="text-base whitespace-nowrap"
+                  style={{ color: "var(--color-text-muted)" }}
+                >
+                  {dt}
+                </span>
+              ) : null;
+            })()}
+
+            {/* ③ 경기장명 — API에서 venue_name으로 받아옴 (없으면 숨김). text-xs → text-base, 글자 커지니 max-w도 확대 */}
+            {match.venue_name && (
+              <span
+                className="text-base truncate max-w-[220px] text-center"
+                style={{ color: "var(--color-text-muted)" }}
+              >
+                {match.venue_name}
+              </span>
             )}
+            {/* ④ 새로고침 버튼은 제거됨 — 3초 폴링(POLL_INTERVAL)으로 자동 갱신 */}
           </div>
 
-          {/* 원정팀 */}
-          <div className="flex-1 text-center">
-            <div
-              className="w-3 h-3 rounded-full mx-auto mb-2"
-              style={{ backgroundColor: match.away_team.color }}
-            />
-            <p className="text-sm text-gray-300 font-medium truncate">
-              {match.away_team.name}
-            </p>
+          {/* 4. 원정 점수 */}
+          <p
+            className={`text-5xl sm:text-6xl font-black transition-all duration-300 ${awayFlash ? "scale-125 brightness-150" : "scale-100"}`}
+            style={{ color: "var(--color-text-primary)" }}
+          >
+            {match.away_score}
+          </p>
+
+          {/* 5. 원정 영역: 로고 + 팀명 (홈 아이콘 없음) */}
+          <div className="flex flex-col items-center gap-2 min-w-0 flex-shrink-0">
+            <div className="sm:hidden">
+              <TeamLogo team={match.away_team} size={56} />
+            </div>
+            <div className="hidden sm:block">
+              <TeamLogo team={match.away_team} size={72} />
+            </div>
             <p
-              className={`text-6xl font-black mt-1 transition-all duration-300 ${awayFlash ? "scale-125 brightness-150" : "scale-100"}`}
-              style={{ color: match.away_team.color }}
+              className="text-sm sm:text-base font-medium truncate max-w-[120px] sm:max-w-[160px] text-center"
+              style={{ color: "var(--color-text-primary)" }}
             >
-              {match.away_score}
+              {match.away_team.name}
             </p>
           </div>
         </div>
 
-        {/* 쿼터별 점수 */}
+        {/* 쿼터별 점수 — 테이블 폭 100% 롤백 (mx-auto w-3/4 제거).
+            진행 쿼터(파랑) / 미도래(회색+"-") 시각 분기는 isLive일 때만 적용.
+            종료 경기는 모든 쿼터가 완료이므로 실제 값/기본색 그대로 노출 */}
         {quarters.some((q) => q.home > 0 || q.away > 0) && (
-          <div className="mt-4 bg-[#141416] rounded-md overflow-hidden">
-            <table className="w-full text-sm">
+          <div
+            className="mt-4 rounded-md overflow-hidden"
+            style={{ backgroundColor: "var(--color-card)" }}
+          >
+            {/* 쿼터 테이블: text-lg(18px) 상속. 좌우 끝 px-2, 쿼터 셀 px-1로 축소 */}
+            <table className="w-full text-lg">
               <thead>
-                <tr className="border-b border-white/10">
-                  <th className="py-2 px-3 text-left text-gray-500 font-normal">팀</th>
-                  {quarters.map((q) => (
-                    <th key={q.label} className="py-2 px-2 text-center text-gray-500 font-normal">
-                      {q.label}
-                    </th>
-                  ))}
-                  <th className="py-2 px-3 text-center text-gray-400 font-semibold">합계</th>
+                <tr className="border-b" style={{ borderColor: "var(--color-border)" }}>
+                  <th className="py-2 px-2 text-left font-normal" style={{ color: "var(--color-text-muted)" }}>팀</th>
+                  {quarters.map((q, idx) => {
+                    // 라이브 중일 때만 진행/미도래 판정. current_quarter는 1-based (1=Q1).
+                    const currentIdx = isLive && match.current_quarter ? match.current_quarter - 1 : -1;
+                    const isCurrent = isLive && idx === currentIdx;
+                    const isFuture = isLive && match.current_quarter != null && idx > currentIdx;
+                    // 진행: info 파랑 + semibold / 미도래: muted 회색 / 나머지: 기본 muted
+                    const color = isCurrent
+                      ? "var(--color-info)"
+                      : "var(--color-text-muted)";
+                    return (
+                      <th
+                        key={q.label}
+                        className={`py-2 px-1 text-center ${isCurrent ? "font-semibold" : "font-normal"} ${isFuture ? "opacity-60" : ""}`}
+                        style={{ color }}
+                      >
+                        {q.label}
+                      </th>
+                    );
+                  })}
+                  <th className="py-2 px-2 text-center font-semibold" style={{ color: "var(--color-text-secondary)" }}>합계</th>
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-white/5">
-                  <td className="py-2 px-3 text-gray-300 text-xs truncate max-w-[60px]">
+                <tr className="border-b" style={{ borderColor: "var(--color-border)" }}>
+                  {/* 팀명 셀: 명시 text-base 제거 → 부모 text-lg 상속 */}
+                  <td className="py-2 px-2 truncate max-w-[60px]" style={{ color: "var(--color-text-primary)" }}>
                     {match.home_team.name}
                   </td>
-                  {quarters.map((q) => (
-                    <td key={q.label} className="py-2 px-2 text-center text-gray-300">
-                      {q.home}
-                    </td>
-                  ))}
-                  <td className="py-2 px-3 text-center font-bold" style={{ color: match.home_team.color }}>
+                  {quarters.map((q, idx) => {
+                    const currentIdx = isLive && match.current_quarter ? match.current_quarter - 1 : -1;
+                    const isCurrent = isLive && idx === currentIdx;
+                    const isFuture = isLive && match.current_quarter != null && idx > currentIdx;
+                    // 미도래 셀 값은 "-" 로 표시 (실제 DB값이 0이어도 시각적으로 "아직 안 함" 구분)
+                    const cellValue = isFuture ? "-" : q.home;
+                    const color = isCurrent
+                      ? "var(--color-info)"
+                      : isFuture
+                        ? "var(--color-text-muted)"
+                        : "var(--color-text-primary)";
+                    return (
+                      <td
+                        key={q.label}
+                        className={`py-2 px-1 text-center ${isCurrent ? "font-semibold" : ""}`}
+                        style={{ color }}
+                      >
+                        {cellValue}
+                      </td>
+                    );
+                  })}
+                  {/* 합계: 메인 점수와 동일하게 text-primary로 통일 (font-bold로 강조) */}
+                  <td
+                    className="py-2 px-2 text-center font-bold"
+                    style={{ color: "var(--color-text-primary)" }}
+                  >
                     {match.home_score}
                   </td>
                 </tr>
                 <tr>
-                  <td className="py-2 px-3 text-gray-300 text-xs truncate max-w-[60px]">
+                  <td className="py-2 px-2 truncate max-w-[60px]" style={{ color: "var(--color-text-primary)" }}>
                     {match.away_team.name}
                   </td>
-                  {quarters.map((q) => (
-                    <td key={q.label} className="py-2 px-2 text-center text-gray-300">
-                      {q.away}
-                    </td>
-                  ))}
-                  <td className="py-2 px-3 text-center font-bold" style={{ color: match.away_team.color }}>
+                  {quarters.map((q, idx) => {
+                    const currentIdx = isLive && match.current_quarter ? match.current_quarter - 1 : -1;
+                    const isCurrent = isLive && idx === currentIdx;
+                    const isFuture = isLive && match.current_quarter != null && idx > currentIdx;
+                    const cellValue = isFuture ? "-" : q.away;
+                    const color = isCurrent
+                      ? "var(--color-info)"
+                      : isFuture
+                        ? "var(--color-text-muted)"
+                        : "var(--color-text-primary)";
+                    return (
+                      <td
+                        key={q.label}
+                        className={`py-2 px-1 text-center ${isCurrent ? "font-semibold" : ""}`}
+                        style={{ color }}
+                      >
+                        {cellValue}
+                      </td>
+                    );
+                  })}
+                  <td
+                    className="py-2 px-2 text-center font-bold"
+                    style={{ color: "var(--color-text-primary)" }}
+                  >
                     {match.away_score}
                   </td>
                 </tr>
@@ -311,9 +666,11 @@ export default function LiveBoxScorePage() {
             </table>
           </div>
         )}
+        </div>
+        {/* /75% 래퍼 닫기 */}
       </div>
 
-      {/* 박스스코어 (프린트 영역) */}
+      {/* 박스스코어 (프린트 영역) — 프린트 CSS에서 검정 잉크로 강제 변환되므로 인라인 색상은 유지 */}
       <div id="box-score-print-area" className="px-4 pb-4 space-y-4">
         {/* 프린트 전용: 팀별 독립 페이지 */}
         {[
@@ -321,7 +678,7 @@ export default function LiveBoxScorePage() {
           { team: match.away_team, players: match.away_players, score: match.away_score, opponentName: match.home_team.name, opponentScore: match.home_score },
         ].map(({ team, players, score, opponentName, opponentScore }) => (
           <div key={team.id} className="print-team-page">
-            {/* 프린트 전용 헤더 */}
+            {/* 프린트 전용 헤더 — 인라인 색상(#000/#666/#999)은 프린트 잉크용이라 그대로 유지 */}
             <div data-print-show className="hidden">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "4px" }}>
                 <div>
@@ -333,7 +690,7 @@ export default function LiveBoxScorePage() {
                   {match.round_name && <span style={{ fontSize: "10px", color: "#999", marginLeft: "6px" }}>{match.round_name}</span>}
                 </div>
               </div>
-              {/* 쿼터별 점수 인라인 */}
+              {/* 쿼터별 점수 인라인 — 프린트 전용 */}
               <div style={{ display: "flex", gap: "12px", fontSize: "9px", color: "#666", borderBottom: "1px solid #ccc", paddingBottom: "3px", marginBottom: "2px" }}>
                 <span style={{ fontWeight: 700, color: "#000", fontSize: "12px" }}>{score} : {opponentScore}</span>
                 {quarters.map((q) => {
@@ -344,20 +701,40 @@ export default function LiveBoxScorePage() {
               </div>
             </div>
 
-            {/* 박스스코어 테이블 */}
+            {/* 박스스코어 테이블 — hasOT: OT 쿼터가 존재하면 쿼터 필터 버튼에 OT 버튼도 노출 */}
             <BoxScoreTable
               teamName={team.name}
               color={team.color}
               players={players}
+              hasOT={quarters.some((q) => q.label.startsWith("OT"))}
             />
           </div>
         ))}
       </div>
-      {/* 프린트 버튼 */}
+
+      {/* 2026-04-15: 4/11~12 경기 클럭 부정확 안내 — 두 팀 박스스코어 모두 아래 한 번만 표시
+          프린트 시에는 숨김(data-print-hide). 좌측 정렬 + 아이콘 + muted 색상 */}
+      {isLegacyClockIssue && (
+        <div
+          data-print-hide
+          className="px-4 pb-2 flex items-start gap-2 text-sm italic"
+          style={{ color: "var(--color-text-muted)" }}
+        >
+          <span className="material-symbols-outlined text-base leading-tight">info</span>
+          <span>경기시간 집계 시스템 오류로 경기시간이 정확하지 않은 부분 양해바랍니다.</span>
+        </div>
+      )}
+
+      {/* 프린트 버튼 — 기본 text-sm → text-base 확대, 배경/텍스트는 CSS 변수로 */}
       <div data-print-hide className="px-4 pb-8">
         <button
           onClick={() => window.print()}
-          className="w-full py-3 rounded-xl text-sm font-semibold text-gray-300 bg-white/5 hover:bg-white/10 border border-white/10 transition-colors flex items-center justify-center gap-2"
+          className="w-full py-3 rounded-xl text-base font-semibold border transition-colors flex items-center justify-center gap-2"
+          style={{
+            color: "var(--color-text-primary)",
+            backgroundColor: "var(--color-card)",
+            borderColor: "var(--color-border)",
+          }}
         >
           <span className="material-symbols-outlined text-lg">print</span>
           박스스코어 프린트
@@ -369,12 +746,20 @@ export default function LiveBoxScorePage() {
         <PbpSection match={match} />
       )}
 
-      {/* 하단 갱신 정보 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#0A0A0F]/90 backdrop-blur border-t border-white/10 px-4 py-2 flex items-center justify-between">
-        <span className="text-xs text-gray-600">
+      {/* 하단 갱신 정보 — fixed bar. backdrop-blur 유지, 배경은 CSS 변수 + rgba로 직접 합성 */}
+      <div
+        className="fixed bottom-0 left-0 right-0 backdrop-blur px-4 py-2 flex items-center justify-between border-t"
+        style={{
+          // backgroundColor만으로 테마별 투명도를 표현하기 어려우므로 --color-card를 그대로 + 블러에 맡김
+          backgroundColor: "color-mix(in srgb, var(--color-background) 90%, transparent)",
+          borderColor: "var(--color-border)",
+        }}
+      >
+        {/* 하단 정보 text-xs → text-sm */}
+        <span className="text-sm" style={{ color: "var(--color-text-muted)" }}>
           🏀 BDR Live Score
         </span>
-        <span className="text-xs text-gray-600">
+        <span className="text-sm" style={{ color: "var(--color-text-muted)" }}>
           {lastUpdated
             ? `${lastUpdated.getHours().toString().padStart(2, "0")}:${lastUpdated.getMinutes().toString().padStart(2, "0")} 기준`
             : "로딩중..."}
@@ -388,115 +773,254 @@ function BoxScoreTable({
   teamName,
   color,
   players,
+  hasOT = false,
 }: {
   teamName: string;
   color: string;
   players: PlayerRow[];
+  // 2026-04-15: OT 쿼터 존재 여부 — 쿼터 필터 버튼에 "OT" 버튼 노출 분기
+  hasOT?: boolean;
 }) {
+  // 2026-04-15: 쿼터 필터 state — "all" | "1" | "2" | "3" | "4" | "5"(OT1)
+  // 이유: 사용자가 특정 쿼터만 집중해서 보고 싶을 때 활용. "all"은 전체 합계(기본값).
+  const [quarterFilter, setQuarterFilter] = useState<string>("all");
+
   if (!players || players.length === 0) return null;
 
+  // 2026-04-15: 쿼터 필터 헬퍼
+  // 이유: "all"이면 원본 그대로, 특정 쿼터면 해당 쿼터의 quarter_stats만 노출.
+  // 해당 쿼터에 기록이 없는 선수는 모든 스탯을 0으로 치환(UI에서 0%·- 표시됨).
+  // dnp 필드는 원본 유지(쿼터 필터와 무관하게 "등록됐으나 출전 전무"한 선수 구분).
+  const applyQuarterFilter = (p: PlayerRow): PlayerRow => {
+    if (quarterFilter === "all") return p;
+    const qs = p.quarter_stats?.[quarterFilter];
+    if (!qs) {
+      return { ...p, min: 0, min_seconds: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fouls: 0, plus_minus: 0 };
+    }
+    return {
+      ...p,
+      min: qs.min, min_seconds: qs.min_seconds, pts: qs.pts,
+      fgm: qs.fgm, fga: qs.fga, tpm: qs.tpm, tpa: qs.tpa, ftm: qs.ftm, fta: qs.fta,
+      oreb: qs.oreb, dreb: qs.dreb, reb: qs.reb,
+      ast: qs.ast, stl: qs.stl, blk: qs.blk, to: qs.to, fouls: qs.fouls,
+      plus_minus: qs.plus_minus,
+    };
+  };
+
   // 0414: DNP(NBA: Did Not Play) 분리 — 테이블 본체는 출전 선수만, 하단에 DNP 리스트
-  const activePlayers = players.filter((p) => !p.dnp);
+  // 2026-04-15: activePlayers에만 쿼터 필터 적용 (DNP 판정은 원본 p.dnp로 유지)
+  const activePlayers = players.filter((p) => !p.dnp).map(applyQuarterFilter);
   const dnpPlayers = players.filter((p) => p.dnp);
   // dev: 득점 내림차순 정렬 + FG/3P/FT 퍼센트 헬퍼
   const sorted = [...activePlayers].sort((a, b) => b.pts - a.pts);
   const pct = (made: number, attempted: number) =>
     attempted > 0 ? Math.round((made / attempted) * 100) : 0;
 
+  // 2026-04-15: PTS 셀 — 팀색은 좌측 띠(3px)로만 표기하고 숫자는 텍스트 기본색을 사용
+  // 라이트 모드에서 흰색에 가까운 팀 컬러가 안 보이는 문제(NBA.com 스타일로 해결)
+  // 셀 높이의 60%만 차지하도록 상하 20% 여백, 반올림 2px로 살짝 부드럽게
+  const PtsTeamBar = () => (
+    <span
+      aria-hidden
+      style={{
+        position: "absolute",
+        left: 0,
+        top: "20%",
+        bottom: "20%",
+        width: "3px",
+        backgroundColor: color,
+        borderRadius: "2px",
+      }}
+    />
+  );
+
   return (
     <div className="print-team-table-wrap">
-      <div className="flex items-center gap-2 mb-2 print:hidden">
+      <div className="flex items-center gap-2 mb-2 print:hidden flex-wrap">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-        <span className="text-sm font-semibold text-gray-200">{teamName}</span>
+        {/* 팀명 헤더: text-sm → text-lg (두 단계 확대) */}
+        <span className="text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
+          {teamName}
+        </span>
+        {/* 2026-04-15: 쿼터 필터 버튼 그룹 — 전체/1Q/2Q/3Q/4Q/OT(있을 때만)
+            이유: 특정 쿼터의 스탯만 보고 싶을 때 사용. print에서는 숨김(모든 쿼터 정보는 별도 방식으로).
+            선택된 버튼은 primary 배경+흰색 글자, 나머지는 surface 배경+muted 글자로 시각 구분. */}
+        <div className="ml-auto flex items-center gap-1 print:hidden">
+          {[
+            { key: "all", label: "전체" },
+            { key: "1", label: "1Q" },
+            { key: "2", label: "2Q" },
+            { key: "3", label: "3Q" },
+            { key: "4", label: "4Q" },
+            ...(hasOT ? [{ key: "5", label: "OT" }] : []),
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setQuarterFilter(key)}
+              className="px-2 py-1 text-xs rounded transition-colors"
+              style={{
+                backgroundColor: quarterFilter === key ? "var(--color-primary)" : "var(--color-surface)",
+                color: quarterFilter === key ? "#ffffff" : "var(--color-text-muted)",
+                border: `1px solid ${quarterFilter === key ? "var(--color-primary)" : "var(--color-border)"}`,
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="bg-[#141416] rounded-md overflow-hidden">
+      <div
+        className="rounded-md overflow-hidden"
+        style={{ backgroundColor: "var(--color-card)" }}
+      >
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          {/* 박스스코어 전체 text-xs → text-base (두 단계 확대) */}
+          <table className="w-full text-base">
             <thead>
-              <tr className="border-b border-white/10 text-gray-500">
-                <th className="py-2 px-3 text-left font-normal sticky left-0 bg-[#141416] print:static print:bg-transparent">#</th>
-                <th className="py-2 px-1 text-left font-normal sticky left-8 bg-[#141416] min-w-[70px] print:static print:bg-transparent">이름</th>
-                <th className="py-2 px-1 text-center font-semibold text-gray-300">PTS</th>
-                <th className="py-2 px-1 text-center font-normal">FG</th>
-                <th className="py-2 px-1 text-center font-normal">FG%</th>
-                <th className="py-2 px-1 text-center font-normal">3P</th>
-                <th className="py-2 px-1 text-center font-normal">3P%</th>
-                <th className="py-2 px-1 text-center font-normal">FT</th>
-                <th className="py-2 px-1 text-center font-normal">FT%</th>
-                <th className="py-2 px-1 text-center font-normal">OR</th>
-                <th className="py-2 px-1 text-center font-normal">DR</th>
-                <th className="py-2 px-1 text-center font-normal">REB</th>
-                <th className="py-2 px-1 text-center font-normal">AST</th>
-                <th className="py-2 px-1 text-center font-normal">STL</th>
-                <th className="py-2 px-1 text-center font-normal">BLK</th>
-                <th className="py-2 px-1 text-center font-normal">TO</th>
-                <th className="py-2 px-1 text-center font-normal">PF</th>
-                <th className="py-2 px-1 text-center font-normal">+/-</th>
+              <tr className="border-b" style={{ borderColor: "var(--color-border)", color: "var(--color-text-muted)" }}>
+                {/* sticky 셀: 라이트/다크 모두 card 색으로 배경 칠해줘야 투명해지지 않음 */}
+                <th
+                  className="py-2 px-3 text-left font-normal sticky left-0 print:static print:bg-transparent"
+                  style={{ backgroundColor: "var(--color-card)" }}
+                >#</th>
+                <th
+                  className="py-2 px-1 text-left font-normal sticky left-8 min-w-[70px] print:static print:bg-transparent"
+                  style={{ backgroundColor: "var(--color-card)" }}
+                >이름</th>
+                {/* 2026-04-15: MIN 복원 — 이름 바로 다음, PTS 앞 */}
+                <th className="py-2 px-0.5 text-center font-normal">MIN</th>
+                <th className="py-2 px-0.5 text-center font-semibold" style={{ color: "var(--color-text-primary)" }}>PTS</th>
+                <th className="py-2 px-0.5 text-center font-normal">FG</th>
+                <th className="py-2 px-0.5 text-center font-normal">FG%</th>
+                <th className="py-2 px-0.5 text-center font-normal">3P</th>
+                <th className="py-2 px-0.5 text-center font-normal">3P%</th>
+                <th className="py-2 px-0.5 text-center font-normal">FT</th>
+                <th className="py-2 px-0.5 text-center font-normal">FT%</th>
+                <th className="py-2 px-0.5 text-center font-normal">OR</th>
+                <th className="py-2 px-0.5 text-center font-normal">DR</th>
+                <th className="py-2 px-0.5 text-center font-normal">REB</th>
+                <th className="py-2 px-0.5 text-center font-normal">AST</th>
+                <th className="py-2 px-0.5 text-center font-normal">STL</th>
+                <th className="py-2 px-0.5 text-center font-normal">BLK</th>
+                <th className="py-2 px-0.5 text-center font-normal">TO</th>
+                <th className="py-2 px-0.5 text-center font-normal">PF</th>
+                <th className="py-2 px-0.5 text-center font-normal">+/-</th>
               </tr>
             </thead>
             <tbody>
               {sorted.map((p, i) => (
                 <tr
                   key={p.id}
-                  className={`border-b border-white/5 ${i % 2 === 0 ? "" : "bg-white/[0.02]"}`}
+                  className="border-b"
+                  style={{
+                    borderColor: "var(--color-border)",
+                    // 얼룩무늬: 짝수 행은 투명, 홀수 행은 중립 회색 알파
+                    backgroundColor: i % 2 === 0 ? "transparent" : ZEBRA_BG,
+                  }}
                 >
-                  <td className="py-2 px-3 text-gray-500 sticky left-0 bg-inherit print:static print:bg-transparent">
+                  {/* sticky 셀은 zebra 배경을 bg-inherit로 따라가게 함 */}
+                  <td
+                    className="py-2 px-3 sticky left-0 bg-inherit print:static print:bg-transparent"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
                     {p.jersey_number ?? "-"}
                   </td>
-                  <td className="py-2 px-1 text-gray-200 sticky left-8 bg-inherit min-w-[70px] truncate max-w-[70px] print:static print:bg-transparent print:max-w-none">
+                  <td
+                    className="py-2 px-1 sticky left-8 bg-inherit min-w-[70px] truncate max-w-[70px] print:static print:bg-transparent print:max-w-none"
+                    style={{ color: "var(--color-text-primary)" }}
+                  >
                     {p.name}
                   </td>
-                  <td className="py-2 px-1 text-center font-bold" style={{ color }}>
+                  {/* MIN — muted 색으로 살짝 약하게 (스탯만큼 강조 X) */}
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-muted)" }}>
+                    {formatGameClock(p.min_seconds ?? p.min * 60)}
+                  </td>
+                  {/* PTS — 팀색 좌측 띠 + 텍스트 기본색. 부모 td에 relative 필수 */}
+                  <td
+                    className="py-2 px-0.5 text-center font-bold relative"
+                    style={{ color: "var(--color-text-primary)" }}
+                  >
+                    <PtsTeamBar />
                     {p.pts}
                   </td>
-                  <td className="py-2 px-1 text-center text-gray-400">
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>
                     {p.fgm}/{p.fga}
                   </td>
-                  <td className="py-2 px-1 text-center text-gray-400">
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>
                     {pct(p.fgm, p.fga)}%
                   </td>
-                  <td className="py-2 px-1 text-center text-gray-400">
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>
                     {p.tpm}/{p.tpa}
                   </td>
-                  <td className="py-2 px-1 text-center text-gray-400">
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>
                     {pct(p.tpm, p.tpa)}%
                   </td>
-                  <td className="py-2 px-1 text-center text-gray-400">
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>
                     {p.ftm}/{p.fta}
                   </td>
-                  <td className="py-2 px-1 text-center text-gray-400">
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>
                     {pct(p.ftm, p.fta)}%
                   </td>
-                  <td className="py-2 px-1 text-center text-gray-300">{p.oreb}</td>
-                  <td className="py-2 px-1 text-center text-gray-300">{p.dreb}</td>
-                  <td className="py-2 px-1 text-center text-gray-300 font-semibold">{p.reb}</td>
-                  <td className="py-2 px-1 text-center text-gray-300">{p.ast}</td>
-                  <td className="py-2 px-1 text-center text-gray-300">{p.stl}</td>
-                  <td className="py-2 px-1 text-center text-gray-300">{p.blk}</td>
-                  <td className="py-2 px-1 text-center text-gray-300">{p.to}</td>
-                  <td className="py-2 px-1 text-center text-gray-300">{p.fouls}</td>
-                  <td className="py-2 px-1 text-center text-gray-300">
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{p.oreb}</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{p.dreb}</td>
+                  <td className="py-2 px-0.5 text-center font-semibold" style={{ color: "var(--color-text-primary)" }}>{p.reb}</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{p.ast}</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{p.stl}</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{p.blk}</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{p.to}</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{p.fouls}</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>
                     {p.plus_minus != null ? (p.plus_minus > 0 ? `+${p.plus_minus}` : p.plus_minus) : "-"}
                   </td>
                 </tr>
               ))}
-              {/* 0414: DNP 인라인 행 — 본체 테이블 안에서 표시, 스탯 영역 colspan */}
+              {/* 2026-04-15: DNP 행 재구조화 — colSpan 제거, NBA 스타일로 셀마다 채움.
+                  MIN 셀에 "DNP" 표시, 나머지 스탯 16개는 모두 "-" */}
               {dnpPlayers.map((p, i) => (
                 <tr
                   key={`dnp-${p.id}`}
-                  className={`border-b border-white/5 ${(sorted.length + i) % 2 === 0 ? "" : "bg-white/[0.02]"}`}
+                  className="border-b"
+                  style={{
+                    borderColor: "var(--color-border)",
+                    backgroundColor: (sorted.length + i) % 2 === 0 ? "transparent" : ZEBRA_BG,
+                  }}
                 >
-                  <td className="py-2 px-3 text-gray-600 sticky left-0 bg-inherit print:static print:bg-transparent">
+                  <td
+                    className="py-2 px-3 sticky left-0 bg-inherit print:static print:bg-transparent"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
                     {p.jersey_number ?? "-"}
                   </td>
-                  <td className="py-2 px-1 text-gray-500 sticky left-8 bg-inherit min-w-[70px] truncate max-w-[70px] print:static print:bg-transparent print:max-w-none">
+                  <td
+                    className="py-2 px-1 sticky left-8 bg-inherit min-w-[70px] truncate max-w-[70px] print:static print:bg-transparent print:max-w-none"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
                     {p.name}
                   </td>
-                  <td colSpan={16} className="py-2 px-1 text-center">
-                    <span className="text-[10px] font-semibold tracking-[0.2em] text-gray-500 uppercase">
-                      DNP &mdash; Did Not Play
-                    </span>
+                  {/* MIN 셀에 "DNP" — text-xs + semibold + muted 색으로 시각적 구분 */}
+                  <td
+                    className="py-2 px-0.5 text-center text-xs font-semibold tracking-wider"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    DNP
                   </td>
+                  {/* 나머지 16개 스탯 셀은 모두 "-" */}
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-muted)" }}>-</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-muted)" }}>-</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-muted)" }}>-</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-muted)" }}>-</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-muted)" }}>-</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-muted)" }}>-</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-muted)" }}>-</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-muted)" }}>-</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-muted)" }}>-</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-muted)" }}>-</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-muted)" }}>-</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-muted)" }}>-</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-muted)" }}>-</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-muted)" }}>-</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-muted)" }}>-</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-muted)" }}>-</td>
                 </tr>
               ))}
               {/* TOTAL 합산 행 — 출전 선수만 집계 (DNP 제외) */}
@@ -523,26 +1047,51 @@ function BoxScoreTable({
                   }),
                   { min: 0, min_seconds: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fouls: 0 }
                 );
+                // TOTAL 행: sticky 셀에 elevated 배경을 지정해 라이트/다크 모두 투명해지지 않음
+                const totalStickyBg = "var(--color-elevated)";
                 return (
-                  <tr className="border-t border-white/20 bg-white/[0.04] font-semibold print-total-row">
-                    <td className="py-2 px-3 text-gray-400 sticky left-0 bg-[#111118] print:static print:bg-transparent" />
-                    <td className="py-2 px-1 text-gray-200 sticky left-8 bg-[#111118] print:static print:bg-transparent">TOTAL</td>
-                    <td className="py-2 px-1 text-center" style={{ color }}>{total.pts}</td>
-                    <td className="py-2 px-1 text-center text-gray-300">{total.fgm}/{total.fga}</td>
-                    <td className="py-2 px-1 text-center text-gray-300">{pct(total.fgm, total.fga)}%</td>
-                    <td className="py-2 px-1 text-center text-gray-300">{total.tpm}/{total.tpa}</td>
-                    <td className="py-2 px-1 text-center text-gray-300">{pct(total.tpm, total.tpa)}%</td>
-                    <td className="py-2 px-1 text-center text-gray-300">{total.ftm}/{total.fta}</td>
-                    <td className="py-2 px-1 text-center text-gray-300">{pct(total.ftm, total.fta)}%</td>
-                    <td className="py-2 px-1 text-center text-gray-300">{total.oreb}</td>
-                    <td className="py-2 px-1 text-center text-gray-300">{total.dreb}</td>
-                    <td className="py-2 px-1 text-center text-gray-300">{total.reb}</td>
-                    <td className="py-2 px-1 text-center text-gray-300">{total.ast}</td>
-                    <td className="py-2 px-1 text-center text-gray-300">{total.stl}</td>
-                    <td className="py-2 px-1 text-center text-gray-300">{total.blk}</td>
-                    <td className="py-2 px-1 text-center text-gray-300">{total.to}</td>
-                    <td className="py-2 px-1 text-center text-gray-300">{total.fouls}</td>
-                    <td className="py-2 px-1 text-center text-gray-400">-</td>
+                  <tr
+                    className="border-t font-semibold print-total-row"
+                    style={{
+                      borderColor: "var(--color-border)",
+                      backgroundColor: TOTAL_ROW_BG,
+                    }}
+                  >
+                    <td
+                      className="py-2 px-3 sticky left-0 print:static print:bg-transparent"
+                      style={{ color: "var(--color-text-secondary)", backgroundColor: totalStickyBg }}
+                    />
+                    <td
+                      className="py-2 px-1 sticky left-8 print:static print:bg-transparent"
+                      style={{ color: "var(--color-text-primary)", backgroundColor: totalStickyBg }}
+                    >TOTAL</td>
+                    {/* MIN — TOTAL 행은 secondary 색으로 강조 */}
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>
+                      {formatGameClock(total.min_seconds)}
+                    </td>
+                    {/* PTS — TOTAL 행도 동일하게 팀색 좌측 띠 + 텍스트 기본색 */}
+                    <td
+                      className="py-2 px-0.5 text-center relative"
+                      style={{ color: "var(--color-text-primary)" }}
+                    >
+                      <PtsTeamBar />
+                      {total.pts}
+                    </td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{total.fgm}/{total.fga}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{pct(total.fgm, total.fga)}%</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{total.tpm}/{total.tpa}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{pct(total.tpm, total.tpa)}%</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{total.ftm}/{total.fta}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{pct(total.ftm, total.fta)}%</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{total.oreb}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{total.dreb}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{total.reb}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{total.ast}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{total.stl}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{total.blk}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{total.to}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{total.fouls}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>-</td>
                   </tr>
                 );
               })()}
@@ -565,14 +1114,19 @@ function PbpSection({ match }: { match: MatchData }) {
   return (
     <div className="px-4 pb-8">
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-sm font-semibold text-gray-200">Play-by-Play</span>
-        <span className="text-xs text-gray-500">({pbps.length})</span>
+        {/* PBP 섹션 헤더: text-sm → text-lg (두 단계 확대) */}
+        <span className="text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>Play-by-Play</span>
+        <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>({pbps.length})</span>
       </div>
-      <div className="bg-[#111118] rounded-xl overflow-hidden">
+      <div
+        className="rounded-xl overflow-hidden"
+        style={{ backgroundColor: "var(--color-elevated)" }}
+      >
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          {/* PBP 테이블 전체 text-xs → text-base (두 단계 확대) */}
+          <table className="w-full text-base">
             <thead>
-              <tr className="border-b border-white/10 text-gray-500">
+              <tr className="border-b" style={{ borderColor: "var(--color-border)", color: "var(--color-text-muted)" }}>
                 <th className="py-2 px-2 text-left font-normal w-[60px]">시간</th>
                 <th className="py-2 px-2 text-center font-normal w-[32px]">팀</th>
                 <th className="py-2 px-2 text-center font-normal w-[32px]">#</th>
@@ -589,10 +1143,14 @@ function PbpSection({ match }: { match: MatchData }) {
                 return (
                   <tr
                     key={pbp.id}
-                    className={`border-b border-white/5 ${i % 2 === 0 ? "" : "bg-white/[0.02]"}`}
+                    className="border-b"
+                    style={{
+                      borderColor: "var(--color-border)",
+                      backgroundColor: i % 2 === 0 ? "transparent" : ZEBRA_BG,
+                    }}
                   >
-                    <td className="py-1.5 px-2 text-gray-500 whitespace-nowrap">
-                      <span className="text-gray-600">{getQuarterLabel(pbp.quarter)}</span>{" "}
+                    <td className="py-1.5 px-2 whitespace-nowrap" style={{ color: "var(--color-text-muted)" }}>
+                      <span style={{ color: "var(--color-text-muted)" }}>{getQuarterLabel(pbp.quarter)}</span>{" "}
                       {formatGameClock(pbp.game_clock_seconds)}
                     </td>
                     <td className="py-1.5 px-2 text-center">
@@ -601,15 +1159,15 @@ function PbpSection({ match }: { match: MatchData }) {
                         style={{ backgroundColor: teamColor }}
                       />
                     </td>
-                    <td className="py-1.5 px-2 text-center text-gray-400">
+                    <td className="py-1.5 px-2 text-center" style={{ color: "var(--color-text-secondary)" }}>
                       {pbp.jersey_number ?? "-"}
                     </td>
-                    <td className="py-1.5 px-2 text-gray-300">
+                    <td className="py-1.5 px-2" style={{ color: "var(--color-text-primary)" }}>
                       {actionLabel}
                     </td>
-                    <td className="py-1.5 px-2 text-center text-gray-400 whitespace-nowrap">
+                    <td className="py-1.5 px-2 text-center whitespace-nowrap" style={{ color: "var(--color-text-secondary)" }}>
                       <span style={{ color: match.home_team.color }}>{pbp.home_score_at_time}</span>
-                      <span className="text-gray-600 mx-0.5">:</span>
+                      <span className="mx-0.5" style={{ color: "var(--color-text-muted)" }}>:</span>
                       <span style={{ color: match.away_team.color }}>{pbp.away_score_at_time}</span>
                     </td>
                   </tr>
@@ -621,7 +1179,11 @@ function PbpSection({ match }: { match: MatchData }) {
         {hasMore && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="w-full py-2.5 text-xs text-gray-400 hover:text-gray-200 hover:bg-white/5 transition-colors border-t border-white/5"
+            className="w-full py-2.5 text-xs transition-colors border-t"
+            style={{
+              color: "var(--color-text-secondary)",
+              borderColor: "var(--color-border)",
+            }}
           >
             {expanded ? "접기" : `더보기 (${pbps.length - PBP_COLLAPSED_COUNT}건)`}
           </button>

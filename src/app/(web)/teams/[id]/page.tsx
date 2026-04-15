@@ -9,6 +9,8 @@ import { RosterTab } from "./_tabs/roster-tab";
 import { GamesTab } from "./_tabs/games-tab";
 import { TournamentsTab } from "./_tabs/tournaments-tab";
 import { Breadcrumb } from "@/components/shared/breadcrumb";
+// Phase 2C: 팀 상세 히어로에서 한/영 병기 표시
+import { getTeamDisplayNames } from "@/lib/utils/team-display";
 
 export const revalidate = 60;
 
@@ -86,6 +88,12 @@ export default async function TeamDetailPage({
   const accent = resolveAccent(team.primaryColor, team.secondaryColor);
   const memberCount = team.teamMembers.length;
   const location = [team.city, team.district].filter(Boolean).join(" ");
+  // Phase 2C: 히어로 h1에 메인 팀명 + 그 아래 작은 부제(반대 언어) 표시
+  const { primary: teamDisplayPrimary, secondary: teamDisplaySecondary } = getTeamDisplayNames(
+    team.name,
+    team.name_en,
+    team.name_primary,
+  );
 
   // 이 팀의 모든 TournamentTeam ID를 조회 (대회 참가 이력)
   const tournamentTeamIds = await prisma.tournamentTeam.findMany({
@@ -122,9 +130,10 @@ export default async function TeamDetailPage({
     <div className="space-y-0">
 
       {/* 브레드크럼: PC에서만 표시, 모바일은 뒤로가기 버튼이 대신 */}
+      {/* Phase 2C: 브레드크럼은 좁으므로 메인 언어 1개만 */}
       <Breadcrumb items={[
         { label: "팀", href: "/teams" },
-        { label: team.name },
+        { label: teamDisplayPrimary },
       ]} />
 
       {/* ===== 히어로 배너 ===== */}
@@ -176,11 +185,12 @@ export default async function TeamDetailPage({
               {/* 팀명 + 메타 정보 */}
               <div>
                 <div className="flex flex-wrap items-center gap-3 mb-1">
+                  {/* 메인 팀명 — 대표 언어 기준 (namePrimary="en"이면 영문이 h1) */}
                   <h1
                     className="text-xl sm:text-3xl font-bold text-white lg:text-4xl"
                     style={{ fontFamily: "var(--font-heading)" }}
                   >
-                    {team.name}
+                    {teamDisplayPrimary}
                   </h1>
                   {/* 디비전 텍스트 배지 (아웃라인 스타일) */}
                   {division && (
@@ -189,6 +199,10 @@ export default async function TeamDetailPage({
                     </span>
                   )}
                 </div>
+                {/* Phase 2C: 부제(반대 언어) — 영문명이 있을 때만 h1 바로 아래 작게 표시 */}
+                {teamDisplaySecondary && (
+                  <p className="text-xs sm:text-sm text-white/70 mb-1">{teamDisplaySecondary}</p>
+                )}
 
                 {/* 메타 정보: 지역 / 멤버수 / 창단일 */}
                 <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-white/70">
