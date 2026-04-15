@@ -497,9 +497,9 @@ export default function LiveBoxScorePage() {
       <div
         data-live-root
         className="min-h-screen flex items-center justify-center"
-        // 2026-04-15: zoom 1.25 — 전체 UI 125% 확대 (박스스코어 가독성)
+        // 2026-04-15: zoom 1.1 — 전체 UI 110% 확대 (박스스코어 가독성)
         // 2026-04-16: data-live-root — 프린트 CSS가 이 컨테이너의 자식 중 프린트 영역만 남기고 제거
-        style={{ backgroundColor: "var(--color-background)", color: "var(--color-text-primary)", zoom: "1.25" }}
+        style={{ backgroundColor: "var(--color-background)", color: "var(--color-text-primary)", zoom: "1.1" }}
       >
         <div className="text-center">
           <div className="text-5xl mb-4">🏀</div>
@@ -515,9 +515,9 @@ export default function LiveBoxScorePage() {
       <div
         data-live-root
         className="min-h-screen flex items-center justify-center"
-        // 2026-04-15: zoom 1.25 적용
+        // 2026-04-15: zoom 1.1 적용
         // 2026-04-16: data-live-root — 프린트 CSS 타겟
-        style={{ backgroundColor: "var(--color-background)", zoom: "1.25" }}
+        style={{ backgroundColor: "var(--color-background)", zoom: "1.1" }}
       >
         <div
           className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin"
@@ -555,12 +555,12 @@ export default function LiveBoxScorePage() {
 
   return (
     // 페이지 최상단 컨테이너 — 배경/글자 기본색은 모두 CSS 변수 사용 (테마 전환 대응)
-    // 2026-04-15: zoom 1.25로 전체 UI 125% 확대 (박스스코어 가독성 개선)
+    // 2026-04-15: zoom 1.1로 전체 UI 110% 확대 (박스스코어 가독성 개선)
     // 2026-04-16: data-live-root — 프린트 CSS가 자식 중 #box-score-print-area만 남기고 제거
     <div
       data-live-root
       className="min-h-screen"
-      style={{ backgroundColor: "var(--color-background)", color: "var(--color-text-primary)", zoom: "1.25" }}
+      style={{ backgroundColor: "var(--color-background)", color: "var(--color-text-primary)", zoom: "1.1" }}
     >
       {/* 헤더 — border와 배경을 모두 CSS 변수로 */}
       <div

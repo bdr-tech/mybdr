@@ -478,7 +478,7 @@ html.light .watermark-text {
   * { color: #000 !important; background: #fff !important; border-color: #ccc !important; box-shadow: none !important; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
 
-  /* 라이브 페이지 전체 zoom 1.25 해제 — 프린트에서는 정상 배율 유지 */
+  /* 라이브 페이지 전체 zoom 1.1 해제 — 프린트에서는 정상 배율 유지 */
   [data-live-root] { zoom: 1 !important; }
 
   /* 핵심: 최상위 컨테이너의 자식 중 프린트 영역만 남기고 나머지는 display:none으로 완전 제거
