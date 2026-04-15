@@ -96,7 +96,7 @@ interface MatchData {
   venue_name?: string | null;
   current_quarter?: number | null;
   // 2026-04-16: 쿼터별 이벤트 기반 상세 스탯 존재 여부
-  // false면 Flutter "최종 스탯 입력 모드"로 기록된 경기 → 쿼터 필터 활성 시 안내 배너 + 스탯 "—" 처리
+  // false면 Flutter "최종 스탯 입력 모드"로 기록된 경기 → 쿼터 필터 활성 시 안내 배너 + 스탯 "-" 처리
   has_quarter_event_detail: boolean;
 }
 
@@ -794,7 +794,7 @@ export default function LiveBoxScorePage() {
         ].map(({ team, players }) => (
           <div key={team.id}>
             {/* 박스스코어 테이블 — hasOT: OT 쿼터가 존재하면 쿼터 필터 버튼에 OT 버튼도 노출
-                hasQuarterEventDetail: false면 쿼터 필터 활성 시 안내 배너 + MIN/+- 외 스탯 "—" 처리 */}
+                hasQuarterEventDetail: false면 쿼터 필터 활성 시 안내 배너 + MIN/+- 외 스탯 "-" 처리 */}
             <BoxScoreTable
               teamName={team.name}
               color={team.color}
@@ -923,7 +923,7 @@ function BoxScoreTable({
   // 2026-04-15: OT 쿼터 존재 여부 — 쿼터 필터 버튼에 "OT" 버튼 노출 분기
   hasOT?: boolean;
   // 2026-04-16: 쿼터별 이벤트 상세 스탯 존재 여부
-  // false + quarterFilter !== "all" → 안내 배너 + MIN/+- 외 스탯 "—" 처리
+  // false + quarterFilter !== "all" → 안내 배너 + MIN/+- 외 스탯 "-" 처리
   hasQuarterEventDetail?: boolean;
 }) {
   // 2026-04-15: 쿼터 필터 state — "all" | "1" | "2" | "3" | "4" | "5"(OT1)
@@ -932,9 +932,9 @@ function BoxScoreTable({
 
   if (!players || players.length === 0) return null;
 
-  // 2026-04-16: 이벤트 없는 경기에서 쿼터 필터를 활성화한 경우 — MIN/+-만 유효, 나머지 스탯은 "—"로 표시
+  // 2026-04-16: 이벤트 없는 경기에서 쿼터 필터를 활성화한 경우 — MIN/+-만 유효, 나머지 스탯은 "-"로 표시
   // 이유: Flutter "최종 스탯 입력 모드"는 match_events 없이 MatchPlayerStat.quarterStatsJson의 min/pm만 저장.
-  // 쿼터별 PTS/FG/REB 등은 데이터가 없으므로 0 대신 "—"로 표시해야 사용자 혼동이 없다.
+  // 쿼터별 PTS/FG/REB 등은 데이터가 없으므로 0 대신 "-"로 표시해야 사용자 혼동이 없다.
   const showPlaceholder = !hasQuarterEventDetail && quarterFilter !== "all";
 
   // 2026-04-15: 쿼터 필터 헬퍼
@@ -1034,7 +1034,7 @@ function BoxScoreTable({
         </div>
       </div>
       {/* 2026-04-16: 이벤트 없는 경기 + 쿼터 필터 활성 안내 배너
-          이유: 데이터가 없어 PTS/FG 등이 "—"로 표시되는 이유를 사용자에게 명확히 알림.
+          이유: 데이터가 없어 PTS/FG 등이 "-"로 표시되는 이유를 사용자에게 명확히 알림.
           프린트 시에는 숨김(print:hidden). */}
       {showPlaceholder && (
         <div
@@ -1116,41 +1116,41 @@ function BoxScoreTable({
                     {formatGameClock(p.min_seconds ?? p.min * 60)}
                   </td>
                   {/* PTS — 팀색 좌측 띠 + 텍스트 기본색. 부모 td에 relative 필수
-                      2026-04-16: showPlaceholder 시 "—"만 표시하고 팀색 띠는 생략 (PTS 숫자가 없어 띠의 의미가 없음) */}
+                      2026-04-16: showPlaceholder 시 "-"만 표시하고 팀색 띠는 생략 (PTS 숫자가 없어 띠의 의미가 없음) */}
                   <td
                     className="py-2 px-0.5 text-center font-bold relative"
                     style={{ color: showPlaceholder ? "var(--color-text-muted)" : "var(--color-text-primary)" }}
                   >
                     {!showPlaceholder && <PtsTeamBar />}
-                    {showPlaceholder ? "—" : p.pts}
+                    {showPlaceholder ? "-" : p.pts}
                   </td>
-                  {/* 이하 스탯 셀들 — showPlaceholder 시 모두 "—" (MIN과 +/-만 예외) */}
+                  {/* 이하 스탯 셀들 — showPlaceholder 시 모두 "-" (MIN과 +/-만 예외) */}
                   <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>
-                    {showPlaceholder ? "—" : `${p.fgm}/${p.fga}`}
-                  </td>
-                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>
-                    {showPlaceholder ? "—" : `${pct(p.fgm, p.fga)}%`}
+                    {showPlaceholder ? "-" : `${p.fgm}/${p.fga}`}
                   </td>
                   <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>
-                    {showPlaceholder ? "—" : `${p.tpm}/${p.tpa}`}
+                    {showPlaceholder ? "-" : `${pct(p.fgm, p.fga)}%`}
                   </td>
                   <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>
-                    {showPlaceholder ? "—" : `${pct(p.tpm, p.tpa)}%`}
+                    {showPlaceholder ? "-" : `${p.tpm}/${p.tpa}`}
                   </td>
                   <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>
-                    {showPlaceholder ? "—" : `${p.ftm}/${p.fta}`}
+                    {showPlaceholder ? "-" : `${pct(p.tpm, p.tpa)}%`}
                   </td>
                   <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>
-                    {showPlaceholder ? "—" : `${pct(p.ftm, p.fta)}%`}
+                    {showPlaceholder ? "-" : `${p.ftm}/${p.fta}`}
                   </td>
-                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : p.oreb}</td>
-                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : p.dreb}</td>
-                  <td className="py-2 px-0.5 text-center font-semibold" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : p.reb}</td>
-                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : p.ast}</td>
-                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : p.stl}</td>
-                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : p.blk}</td>
-                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : p.to}</td>
-                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : p.fouls}</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>
+                    {showPlaceholder ? "-" : `${pct(p.ftm, p.fta)}%`}
+                  </td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : p.oreb}</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : p.dreb}</td>
+                  <td className="py-2 px-0.5 text-center font-semibold" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : p.reb}</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : p.ast}</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : p.stl}</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : p.blk}</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : p.to}</td>
+                  <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : p.fouls}</td>
                   <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>
                     {p.plus_minus != null ? (p.plus_minus > 0 ? `+${p.plus_minus}` : p.plus_minus) : "-"}
                   </td>
@@ -1252,29 +1252,29 @@ function BoxScoreTable({
                       {formatGameClock(total.min_seconds)}
                     </td>
                     {/* PTS — TOTAL 행도 동일하게 팀색 좌측 띠 + 텍스트 기본색
-                        2026-04-16: showPlaceholder 시 "—"만 표시, 팀색 띠 생략 */}
+                        2026-04-16: showPlaceholder 시 "-"만 표시, 팀색 띠 생략 */}
                     <td
                       className="py-2 px-0.5 text-center relative"
                       style={{ color: showPlaceholder ? "var(--color-text-muted)" : "var(--color-text-primary)" }}
                     >
                       {!showPlaceholder && <PtsTeamBar />}
-                      {showPlaceholder ? "—" : total.pts}
+                      {showPlaceholder ? "-" : total.pts}
                     </td>
-                    {/* 나머지 TOTAL 스탯 셀 — showPlaceholder 시 모두 "—" */}
-                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : `${total.fgm}/${total.fga}`}</td>
-                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : `${pct(total.fgm, total.fga)}%`}</td>
-                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : `${total.tpm}/${total.tpa}`}</td>
-                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : `${pct(total.tpm, total.tpa)}%`}</td>
-                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : `${total.ftm}/${total.fta}`}</td>
-                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : `${pct(total.ftm, total.fta)}%`}</td>
-                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : total.oreb}</td>
-                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : total.dreb}</td>
-                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : total.reb}</td>
-                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : total.ast}</td>
-                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : total.stl}</td>
-                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : total.blk}</td>
-                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : total.to}</td>
-                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "—" : total.fouls}</td>
+                    {/* 나머지 TOTAL 스탯 셀 — showPlaceholder 시 모두 "-" */}
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : `${total.fgm}/${total.fga}`}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : `${pct(total.fgm, total.fga)}%`}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : `${total.tpm}/${total.tpa}`}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : `${pct(total.tpm, total.tpa)}%`}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : `${total.ftm}/${total.fta}`}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : `${pct(total.ftm, total.fta)}%`}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : total.oreb}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : total.dreb}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : total.reb}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : total.ast}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : total.stl}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : total.blk}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : total.to}</td>
+                    <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-primary)" }}>{showPlaceholder ? "-" : total.fouls}</td>
                     <td className="py-2 px-0.5 text-center" style={{ color: "var(--color-text-secondary)" }}>-</td>
                   </tr>
                 );
@@ -1456,7 +1456,7 @@ function PrintOptionsDialog({
             className="mt-3 text-xs"
             style={{ color: "var(--color-text-muted)" }}
           >
-            이 경기는 실시간 이벤트 기록이 없어 쿼터별 세부 스탯이 "—"로 표시됩니다.
+            이 경기는 실시간 이벤트 기록이 없어 쿼터별 세부 스탯이 "-"로 표시됩니다.
           </p>
         )}
 
@@ -1590,7 +1590,7 @@ function TeamSection({
  * 2026-04-16: 프린트 전용 박스스코어 테이블
  * - 화면용 BoxScoreTable과 달리 쿼터 필터 버튼은 없음 (filter prop으로 고정)
  * - 페이지 상단에 "팀명 vs 상대 — 누적 기록 / 1쿼터 등" 라벨을 크게 표시
- * - filter !== "all" + hasQuarterEventDetail=false → MIN/+- 외 모든 스탯 "—"
+ * - filter !== "all" + hasQuarterEventDetail=false → MIN/+- 외 모든 스탯 "-"
  */
 function PrintBoxScoreTable({
   teamName,
@@ -1748,21 +1748,21 @@ function PrintBoxScoreTable({
                 <td>{p.jersey_number ?? "-"}</td>
                 <td style={{ textAlign: "left" }}>{p.name}</td>
                 <td>{formatGameClock(p.min_seconds ?? p.min * 60)}</td>
-                <td style={{ fontWeight: 700 }}>{showPlaceholder ? "—" : p.pts}</td>
-                <td>{showPlaceholder ? "—" : `${p.fgm}/${p.fga}`}</td>
-                <td>{showPlaceholder ? "—" : `${pct(p.fgm, p.fga)}%`}</td>
-                <td>{showPlaceholder ? "—" : `${p.tpm}/${p.tpa}`}</td>
-                <td>{showPlaceholder ? "—" : `${pct(p.tpm, p.tpa)}%`}</td>
-                <td>{showPlaceholder ? "—" : `${p.ftm}/${p.fta}`}</td>
-                <td>{showPlaceholder ? "—" : `${pct(p.ftm, p.fta)}%`}</td>
-                <td>{showPlaceholder ? "—" : p.oreb}</td>
-                <td>{showPlaceholder ? "—" : p.dreb}</td>
-                <td>{showPlaceholder ? "—" : p.reb}</td>
-                <td>{showPlaceholder ? "—" : p.ast}</td>
-                <td>{showPlaceholder ? "—" : p.stl}</td>
-                <td>{showPlaceholder ? "—" : p.blk}</td>
-                <td>{showPlaceholder ? "—" : p.to}</td>
-                <td>{showPlaceholder ? "—" : p.fouls}</td>
+                <td style={{ fontWeight: 700 }}>{showPlaceholder ? "-" : p.pts}</td>
+                <td>{showPlaceholder ? "-" : `${p.fgm}/${p.fga}`}</td>
+                <td>{showPlaceholder ? "-" : `${pct(p.fgm, p.fga)}%`}</td>
+                <td>{showPlaceholder ? "-" : `${p.tpm}/${p.tpa}`}</td>
+                <td>{showPlaceholder ? "-" : `${pct(p.tpm, p.tpa)}%`}</td>
+                <td>{showPlaceholder ? "-" : `${p.ftm}/${p.fta}`}</td>
+                <td>{showPlaceholder ? "-" : `${pct(p.ftm, p.fta)}%`}</td>
+                <td>{showPlaceholder ? "-" : p.oreb}</td>
+                <td>{showPlaceholder ? "-" : p.dreb}</td>
+                <td>{showPlaceholder ? "-" : p.reb}</td>
+                <td>{showPlaceholder ? "-" : p.ast}</td>
+                <td>{showPlaceholder ? "-" : p.stl}</td>
+                <td>{showPlaceholder ? "-" : p.blk}</td>
+                <td>{showPlaceholder ? "-" : p.to}</td>
+                <td>{showPlaceholder ? "-" : p.fouls}</td>
                 <td>{p.plus_minus != null ? (p.plus_minus > 0 ? `+${p.plus_minus}` : p.plus_minus) : "-"}</td>
               </tr>
             ))}
@@ -1781,21 +1781,21 @@ function PrintBoxScoreTable({
               <td></td>
               <td style={{ textAlign: "left" }}>TOTAL</td>
               <td>{formatGameClock(total.min_seconds)}</td>
-              <td>{showPlaceholder ? "—" : total.pts}</td>
-              <td>{showPlaceholder ? "—" : `${total.fgm}/${total.fga}`}</td>
-              <td>{showPlaceholder ? "—" : `${pct(total.fgm, total.fga)}%`}</td>
-              <td>{showPlaceholder ? "—" : `${total.tpm}/${total.tpa}`}</td>
-              <td>{showPlaceholder ? "—" : `${pct(total.tpm, total.tpa)}%`}</td>
-              <td>{showPlaceholder ? "—" : `${total.ftm}/${total.fta}`}</td>
-              <td>{showPlaceholder ? "—" : `${pct(total.ftm, total.fta)}%`}</td>
-              <td>{showPlaceholder ? "—" : total.oreb}</td>
-              <td>{showPlaceholder ? "—" : total.dreb}</td>
-              <td>{showPlaceholder ? "—" : total.reb}</td>
-              <td>{showPlaceholder ? "—" : total.ast}</td>
-              <td>{showPlaceholder ? "—" : total.stl}</td>
-              <td>{showPlaceholder ? "—" : total.blk}</td>
-              <td>{showPlaceholder ? "—" : total.to}</td>
-              <td>{showPlaceholder ? "—" : total.fouls}</td>
+              <td>{showPlaceholder ? "-" : total.pts}</td>
+              <td>{showPlaceholder ? "-" : `${total.fgm}/${total.fga}`}</td>
+              <td>{showPlaceholder ? "-" : `${pct(total.fgm, total.fga)}%`}</td>
+              <td>{showPlaceholder ? "-" : `${total.tpm}/${total.tpa}`}</td>
+              <td>{showPlaceholder ? "-" : `${pct(total.tpm, total.tpa)}%`}</td>
+              <td>{showPlaceholder ? "-" : `${total.ftm}/${total.fta}`}</td>
+              <td>{showPlaceholder ? "-" : `${pct(total.ftm, total.fta)}%`}</td>
+              <td>{showPlaceholder ? "-" : total.oreb}</td>
+              <td>{showPlaceholder ? "-" : total.dreb}</td>
+              <td>{showPlaceholder ? "-" : total.reb}</td>
+              <td>{showPlaceholder ? "-" : total.ast}</td>
+              <td>{showPlaceholder ? "-" : total.stl}</td>
+              <td>{showPlaceholder ? "-" : total.blk}</td>
+              <td>{showPlaceholder ? "-" : total.to}</td>
+              <td>{showPlaceholder ? "-" : total.fouls}</td>
               <td>-</td>
             </tr>
           </tbody>
