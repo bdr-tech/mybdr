@@ -1,15 +1,10 @@
 # 작업 스크래치패드
 
 ## 현재 작업
-- **요청**: 티빙 스타일 스코어카드 리디자인 — Phase 1 (API 확장 + 레이아웃)
+- **요청**: 티빙 이미지에 최대한 유사하게 — 5단 레이아웃 + 🏠 + 쿼터 테이블 100% + 쿼터 강조
 - **상태**: developer 위임
 - **현재 담당**: developer
-- **사용자 결정 (AACAA)**:
-  - Phase 1→2→3 순차
-  - 로고 없으면 팀색 원 + 팀명 이니셜
-  - 홈/원정 아이콘 생략
-  - 경기장명 match.venue_name → tournament.venue_name fallback, 없으면 숨김
-  - 헤더 새로고침 제거 → 중앙 둥근 버튼으로 이동
+- **사용자 피드백**: 이전 결정 일부 뒤집음 (🏠 추가, 쿼터 테이블 100%로), Phase 1 레이아웃 재조정 + Phase 2 쿼터 강조 통합
 
 ## 전체 프로젝트 현황 대시보드 (2026-04-15)
 | 항목 | 수치 |
@@ -43,6 +38,49 @@
 - 영구 복구는 `"/c/Program Files/GitHub CLI/gh.exe" auth login`
 
 ## 구현 기록 (developer)
+
+### 티빙 이미지 매칭 재조정 — 5단 레이아웃 + 쿼터 강조 (2026-04-15)
+
+📝 변경:
+- 스코어카드: `[로고+팀명+점수]` 2열(flex-1) 세로 → `[로고+팀명][점수][중앙][점수][로고+팀명]` 5단 독립 가로 배치
+- 홈팀 팀명 앞에 Material Symbols `home` 아이콘 (16px, muted 색)
+- 팀명 크기 `text-lg sm:text-2xl` → `text-sm sm:text-base`로 축소 (로고/점수 대비 약화)
+- 쿼터 테이블 래퍼 `mx-auto w-3/4` 제거 → 전체 폭 100%로 롤백
+- 쿼터 헤더/셀 진행 상태 분기: `isLive`이고 `current_quarter`가 있을 때만
+  - 진행 쿼터(idx === current_quarter-1): `var(--color-info)` 파랑 + font-semibold
+  - 미도래(idx > current_quarter-1): muted 회색 + 셀 값 `-`로 치환 + 헤더 opacity-60
+  - 지나간 쿼터: 기본색 (text-primary / text-muted) 유지
+- 종료 경기(`isLive === false`) 또는 `current_quarter === null`: 모든 쿼터 실제값 + 기본색 (강조/회색 미적용)
+
+| 파일 | 변경 내용 | 신규/수정 |
+|------|----------|----------|
+| src/app/live/[id]/page.tsx | 스코어카드 335~430행 5단 구조 재작성 + 쿼터 테이블 444~555행 진행/미도래 판정 로직 삽입 (thead + home/away tbody 3군데) | 수정 |
+
+🔎 자체 검증:
+- `npx tsc --noEmit` → exit=0, 에러 0건
+- grep `mx-auto w-3/4` → 주석 1건만 (실제 className에서는 제거됨 확인)
+- grep `material-symbols-outlined` → 356행(home 아이콘) + 600/616행(기존 info/print) 기대대로
+- grep `current_quarter` → 판정 로직 3군데(459/486/519행) 정상 삽입
+- 5단 요소 independent flex children: `flex-shrink-0` 2개(좌/우 팀 영역) + 가변 2개(점수 p 태그) + 가변 1개(중앙) → 반응형 줄어듦
+
+💡 PM/tester 참고:
+- **테스트 방법**: `/live/[경기ID]` 접속
+  1. 라이브 경기(status=live, current_quarter=3) → 쿼터 테이블에서 Q3 헤더/셀이 **파란색 + bold**, Q4 헤더는 **회색+opacity60**, Q4 셀 값 **"-"** 표시
+  2. 라이브 경기 current_quarter=4 (OT 없음) → Q4만 파랑, Q1~Q3 기본색
+  3. 종료 경기(finished) → 모든 쿼터 실제값 + 기본색 (강조/회색 미적용)
+  4. 홈팀 팀명 앞에 🏠 아이콘 노출, 원정팀은 아이콘 없음
+  5. 점수가 팀 영역 바깥으로 분리되어 **가운데 큼직하게** 나란히 배치되는지
+  6. 모바일(375~) 가로 밀리지 않음 / 태블릿(640+) 로고 56→72px로 커짐
+  7. 긴 팀명은 `max-w-[120px] sm:max-w-[160px]` + truncate
+- **정상 동작**: 이미지의 티빙 중계 화면처럼 `[로고+팀명][점수][쿼터/경기장][점수][로고+팀명]` 5단 가로 레이아웃
+- **tsc 결과**: exit=0
+
+⚠️ reviewer 참고:
+- 쿼터 판정 로직을 3번 반복 기술(thead, home tr, away tr)했음. 헬퍼로 추출할 수도 있으나 **가독성 우선** + map 콜백 내부 지역변수라 각 위치의 분기 의도가 명확해 중복 유지함.
+- 홈 아이콘은 Material Symbols home. `color`는 muted로 팀명보다 약하게.
+- 점수 p 태그에 `flex-shrink`를 걸지 않아 모바일 text-5xl(48px)에서는 자체 폭 차지함 — 실기기에서 `flex-shrink-0` 필요 여부 확인 권장.
+
+---
 
 ### 티빙 스타일 Phase 1 — 스코어카드 리디자인 (2026-04-15)
 
@@ -241,6 +279,7 @@
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-15 | developer | /live/[id] 티빙 이미지 매칭 재조정 — 5단 가로 레이아웃 + 🏠 + 쿼터 100% + 진행쿼터 파랑/미도래 회색"-" | ✅ 완료 |
 | 04-15 | developer | /live/[id] 박스스코어 MIN 복원 + DNP 19셀 재구조화 + PTS 좌측 띠 + px-0.5 축소 + 4/11~12 안내 | ✅ 완료 |
 | 04-15 | developer | /live/[id] 라이트모드 + 글자 2단계 확대 + ThemeToggle 헤더 추가 | ✅ 완료 |
 | 04-15 | pm | knowledge 갱신 (errors +1, lessons +2) + scratchpad Phase 2 완료 처리 | ✅ 완료 |

@@ -332,41 +332,50 @@ export default function LiveBoxScorePage() {
         </div>
       </div>
 
-      {/* 스코어 카드 — 티빙 중계 스타일 (Phase 1)
-          [큰 원형 로고 + 팀명 + 점수] 좌/우 + [쿼터 / 경기장명 / 새로고침] 중앙 */}
+      {/* 스코어 카드 — 티빙 중계 스타일 (5단 가로 레이아웃)
+          [홈 로고+팀명] [홈 점수] [중앙] [원정 점수] [원정 로고+팀명]
+          이미지 목표대로 각 요소가 독립 영역으로 가로 나열되어야 점수가 가운데에 큼직하게 보임 */}
       <div className="px-4 py-6">
-        <div className="flex items-center justify-between gap-3">
-          {/* 홈팀 */}
-          <div className="flex-1 flex flex-col items-center gap-2">
-            {/* 큰 원형 로고 (모바일 56 / sm 이상 64) — Tailwind에서 sm:size 동적 변경이 어려워 두 사이즈를 분기 렌더 */}
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
+          {/* 1. 홈 영역: 로고 + 🏠아이콘+팀명 */}
+          <div className="flex flex-col items-center gap-2 min-w-0 flex-shrink-0">
+            {/* 큰 원형 로고 (모바일 56 / sm 이상 72) — Tailwind에서 sm:size 동적 변경이 어려워 두 사이즈를 분기 렌더 */}
             <div className="sm:hidden">
               <TeamLogo team={match.home_team} size={56} />
             </div>
             <div className="hidden sm:block">
               <TeamLogo team={match.home_team} size={72} />
             </div>
-            {/* 팀명 — truncate로 길어지면 잘림. max-w로 카드 폭 보호 */}
+            {/* 팀명 — 이전보다 크기 축소(text-sm sm:text-base)로 로고/점수 대비 약하게.
+                홈팀 표기를 위해 Material Symbols home 아이콘을 팀명 앞에 gap-1로 배치 */}
             <p
-              className="text-lg sm:text-2xl font-medium truncate max-w-[140px] text-center"
+              className="text-sm sm:text-base font-medium flex items-center gap-1 truncate max-w-[120px] sm:max-w-[160px]"
               style={{ color: "var(--color-text-primary)" }}
             >
-              {match.home_team.name}
-            </p>
-            {/* 메인 점수 — 플래시 애니메이션 className 로직 유지 */}
-            <p
-              className={`text-5xl sm:text-6xl font-black transition-all duration-300 ${homeFlash ? "scale-125 brightness-150" : "scale-100"}`}
-              style={{ color: "var(--color-text-primary)" }}
-            >
-              {match.home_score}
+              <span
+                className="material-symbols-outlined shrink-0"
+                style={{ fontSize: "16px", color: "var(--color-text-muted)" }}
+              >
+                home
+              </span>
+              <span className="truncate">{match.home_team.name}</span>
             </p>
           </div>
 
-          {/* 가운데 — 진행 쿼터(빨강) / 경기장명(회색) / 새로고침 원형 버튼 3단 */}
-          <div className="flex flex-col items-center justify-center gap-1 px-1 min-w-[80px]">
+          {/* 2. 홈 점수 — 팀 영역에서 분리되어 독립 배치. 플래시 애니메이션 className 유지 */}
+          <p
+            className={`text-5xl sm:text-6xl font-black transition-all duration-300 ${homeFlash ? "scale-125 brightness-150" : "scale-100"}`}
+            style={{ color: "var(--color-text-primary)" }}
+          >
+            {match.home_score}
+          </p>
+
+          {/* 3. 중앙 정보 블록 — 진행 쿼터 / 라운드명 / 경기장명 / 새로고침 */}
+          <div className="flex flex-col items-center gap-1 px-1 min-w-0">
             {/* 진행 쿼터: 라이브이고 current_quarter가 양수일 때만 표시. 5 이상은 OT */}
             {isLive && match.current_quarter && match.current_quarter > 0 && (
               <span
-                className="text-sm font-semibold"
+                className="text-sm font-semibold whitespace-nowrap"
                 style={{ color: "var(--color-primary)" }}
               >
                 {match.current_quarter <= 4
@@ -374,22 +383,25 @@ export default function LiveBoxScorePage() {
                   : `연장${match.current_quarter - 4}`}
               </span>
             )}
-            {/* 라운드명 — 기존에 있던 정보 유지 (예: "결승", "8강") */}
+            {/* 라운드명 — 기존 정보 유지 (예: "결승", "8강") */}
             {match.round_name && (
-              <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+              <span
+                className="text-xs truncate max-w-[120px]"
+                style={{ color: "var(--color-text-muted)" }}
+              >
                 {match.round_name}
               </span>
             )}
             {/* 경기장명 — API에서 venue_name 또는 fallback으로 받아옴 */}
             {match.venue_name && (
               <span
-                className="text-xs truncate max-w-[120px] text-center"
+                className="text-xs truncate max-w-[140px] text-center"
                 style={{ color: "var(--color-text-muted)" }}
               >
                 {match.venue_name}
               </span>
             )}
-            {/* 새로고침 원형 버튼 — 헤더에서 이동. surface 배경 + border로 가벼운 둘레 */}
+            {/* 새로고침 원형 버튼 — 작게(14×14 아이콘) 유지. surface 배경 + border */}
             <button
               onClick={fetchMatch}
               title="새로고침"
@@ -400,12 +412,20 @@ export default function LiveBoxScorePage() {
                 border: "1px solid var(--color-border)",
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
             </button>
           </div>
 
-          {/* 원정팀 */}
-          <div className="flex-1 flex flex-col items-center gap-2">
+          {/* 4. 원정 점수 */}
+          <p
+            className={`text-5xl sm:text-6xl font-black transition-all duration-300 ${awayFlash ? "scale-125 brightness-150" : "scale-100"}`}
+            style={{ color: "var(--color-text-primary)" }}
+          >
+            {match.away_score}
+          </p>
+
+          {/* 5. 원정 영역: 로고 + 팀명 (홈 아이콘 없음) */}
+          <div className="flex flex-col items-center gap-2 min-w-0 flex-shrink-0">
             <div className="sm:hidden">
               <TeamLogo team={match.away_team} size={56} />
             </div>
@@ -413,36 +433,46 @@ export default function LiveBoxScorePage() {
               <TeamLogo team={match.away_team} size={72} />
             </div>
             <p
-              className="text-lg sm:text-2xl font-medium truncate max-w-[140px] text-center"
+              className="text-sm sm:text-base font-medium truncate max-w-[120px] sm:max-w-[160px] text-center"
               style={{ color: "var(--color-text-primary)" }}
             >
               {match.away_team.name}
             </p>
-            <p
-              className={`text-5xl sm:text-6xl font-black transition-all duration-300 ${awayFlash ? "scale-125 brightness-150" : "scale-100"}`}
-              style={{ color: "var(--color-text-primary)" }}
-            >
-              {match.away_score}
-            </p>
           </div>
         </div>
 
-        {/* 쿼터별 점수 */}
+        {/* 쿼터별 점수 — 테이블 폭 100% 롤백 (mx-auto w-3/4 제거).
+            진행 쿼터(파랑) / 미도래(회색+"-") 시각 분기는 isLive일 때만 적용.
+            종료 경기는 모든 쿼터가 완료이므로 실제 값/기본색 그대로 노출 */}
         {quarters.some((q) => q.home > 0 || q.away > 0) && (
           <div
-            className="mt-4 mx-auto w-3/4 rounded-md overflow-hidden"
+            className="mt-4 rounded-md overflow-hidden"
             style={{ backgroundColor: "var(--color-card)" }}
           >
-            {/* 쿼터 테이블: text-sm → text-lg (18px)로 상속. 좌우 끝 셀 px-3→px-2, 쿼터 셀 px-2→px-1로 축소 */}
+            {/* 쿼터 테이블: text-lg(18px) 상속. 좌우 끝 px-2, 쿼터 셀 px-1로 축소 */}
             <table className="w-full text-lg">
               <thead>
                 <tr className="border-b" style={{ borderColor: "var(--color-border)" }}>
                   <th className="py-2 px-2 text-left font-normal" style={{ color: "var(--color-text-muted)" }}>팀</th>
-                  {quarters.map((q) => (
-                    <th key={q.label} className="py-2 px-1 text-center font-normal" style={{ color: "var(--color-text-muted)" }}>
-                      {q.label}
-                    </th>
-                  ))}
+                  {quarters.map((q, idx) => {
+                    // 라이브 중일 때만 진행/미도래 판정. current_quarter는 1-based (1=Q1).
+                    const currentIdx = isLive && match.current_quarter ? match.current_quarter - 1 : -1;
+                    const isCurrent = isLive && idx === currentIdx;
+                    const isFuture = isLive && match.current_quarter != null && idx > currentIdx;
+                    // 진행: info 파랑 + semibold / 미도래: muted 회색 / 나머지: 기본 muted
+                    const color = isCurrent
+                      ? "var(--color-info)"
+                      : "var(--color-text-muted)";
+                    return (
+                      <th
+                        key={q.label}
+                        className={`py-2 px-1 text-center ${isCurrent ? "font-semibold" : "font-normal"} ${isFuture ? "opacity-60" : ""}`}
+                        style={{ color }}
+                      >
+                        {q.label}
+                      </th>
+                    );
+                  })}
                   <th className="py-2 px-2 text-center font-semibold" style={{ color: "var(--color-text-secondary)" }}>합계</th>
                 </tr>
               </thead>
@@ -452,11 +482,27 @@ export default function LiveBoxScorePage() {
                   <td className="py-2 px-2 truncate max-w-[60px]" style={{ color: "var(--color-text-primary)" }}>
                     {match.home_team.name}
                   </td>
-                  {quarters.map((q) => (
-                    <td key={q.label} className="py-2 px-1 text-center" style={{ color: "var(--color-text-primary)" }}>
-                      {q.home}
-                    </td>
-                  ))}
+                  {quarters.map((q, idx) => {
+                    const currentIdx = isLive && match.current_quarter ? match.current_quarter - 1 : -1;
+                    const isCurrent = isLive && idx === currentIdx;
+                    const isFuture = isLive && match.current_quarter != null && idx > currentIdx;
+                    // 미도래 셀 값은 "-" 로 표시 (실제 DB값이 0이어도 시각적으로 "아직 안 함" 구분)
+                    const cellValue = isFuture ? "-" : q.home;
+                    const color = isCurrent
+                      ? "var(--color-info)"
+                      : isFuture
+                        ? "var(--color-text-muted)"
+                        : "var(--color-text-primary)";
+                    return (
+                      <td
+                        key={q.label}
+                        className={`py-2 px-1 text-center ${isCurrent ? "font-semibold" : ""}`}
+                        style={{ color }}
+                      >
+                        {cellValue}
+                      </td>
+                    );
+                  })}
                   {/* 합계: 메인 점수와 동일하게 text-primary로 통일 (font-bold로 강조) */}
                   <td
                     className="py-2 px-2 text-center font-bold"
@@ -469,11 +515,26 @@ export default function LiveBoxScorePage() {
                   <td className="py-2 px-2 truncate max-w-[60px]" style={{ color: "var(--color-text-primary)" }}>
                     {match.away_team.name}
                   </td>
-                  {quarters.map((q) => (
-                    <td key={q.label} className="py-2 px-1 text-center" style={{ color: "var(--color-text-primary)" }}>
-                      {q.away}
-                    </td>
-                  ))}
+                  {quarters.map((q, idx) => {
+                    const currentIdx = isLive && match.current_quarter ? match.current_quarter - 1 : -1;
+                    const isCurrent = isLive && idx === currentIdx;
+                    const isFuture = isLive && match.current_quarter != null && idx > currentIdx;
+                    const cellValue = isFuture ? "-" : q.away;
+                    const color = isCurrent
+                      ? "var(--color-info)"
+                      : isFuture
+                        ? "var(--color-text-muted)"
+                        : "var(--color-text-primary)";
+                    return (
+                      <td
+                        key={q.label}
+                        className={`py-2 px-1 text-center ${isCurrent ? "font-semibold" : ""}`}
+                        style={{ color }}
+                      >
+                        {cellValue}
+                      </td>
+                    );
+                  })}
                   <td
                     className="py-2 px-2 text-center font-bold"
                     style={{ color: "var(--color-text-primary)" }}
