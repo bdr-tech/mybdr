@@ -5,7 +5,7 @@
 // - OAuth/이메일 로그인 후 항상 /referee 로 복귀하도록 redirect 를 /referee 로 고정
 // - signupAction, loginAction 은 기존 actions/auth.ts 로직 그대로 재사용
 
-import { useState, useActionState, useEffect } from "react";
+import { useState, useActionState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { loginAction, devLoginAction } from "@/app/actions/auth";
@@ -21,7 +21,7 @@ const OAUTH_ERRORS: Record<string, string> = {
   no_permission: "해당 페이지에 접근할 권한이 없습니다.",
 };
 
-export default function RefereeLoginPage() {
+function RefereeLoginContent() {
   // 이메일 로그인 모달 토글
   const [showEmailModal, setShowEmailModal] = useState(false);
   // 비밀번호 표시/숨김 토글
@@ -232,5 +232,13 @@ export default function RefereeLoginPage() {
         .animate-fade-in { animation: fade-in 0.2s ease-out; }
       `}</style>
     </div>
+  );
+}
+
+export default function RefereeLoginPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-[100vh] items-center justify-center" style={{ backgroundColor: "var(--color-bg)" }} />}>
+      <RefereeLoginContent />
+    </Suspense>
   );
 }

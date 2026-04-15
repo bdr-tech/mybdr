@@ -5,7 +5,7 @@
 // - signupAction 은 기존 actions/auth.ts 그대로 재사용 → 가입 성공 시 /profile/complete 로 이동
 // - OAuth 경로로 가입 시에만 redirect 쿠키로 /referee 복귀가 동작 (기존 구현 활용)
 
-import { useActionState } from "react";
+import { useActionState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { signupAction } from "@/app/actions/auth";
@@ -19,7 +19,7 @@ const OAUTH_ERRORS: Record<string, string> = {
   google_fail: "구글 로그인 중 오류가 발생했습니다.",
 };
 
-export default function RefereeSignupPage() {
+function RefereeSignupContent() {
   // 회원가입 서버 액션 상태
   const [state, formAction, pending] = useActionState(signupAction, null);
   const searchParams = useSearchParams();
@@ -177,5 +177,13 @@ export default function RefereeSignupPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function RefereeSignupPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-[100vh] items-center justify-center" style={{ backgroundColor: "var(--color-bg)" }} />}>
+      <RefereeSignupContent />
+    </Suspense>
   );
 }

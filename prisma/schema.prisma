@@ -159,9 +159,6 @@ model User {
   // 심판 플랫폼: 1:1 (User 하나당 Referee 0~1). back-relation 1줄만 추가.
   referee                                                                   Referee?
 
-  // 심판 플랫폼: 1:1 (User 하나당 Referee 0~1). back-relation 1줄만 추가.
-  referee Referee?
-
   @@unique([provider, uid], map: "index_users_on_provider_and_uid")
   @@index([createdAt], map: "index_users_on_created_at")
   @@index([membershipType], map: "index_users_on_membership_type")
