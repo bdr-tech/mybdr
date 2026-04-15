@@ -1028,11 +1028,11 @@ function BoxScoreTable({
               <tr className="border-b" style={{ borderColor: "var(--color-border)", color: "var(--color-text-muted)" }}>
                 {/* sticky 셀: 라이트/다크 모두 card 색으로 배경 칠해줘야 투명해지지 않음 */}
                 <th
-                  className="py-2 px-3 text-left font-normal sticky left-0 print:static print:bg-transparent"
+                  className="py-2 px-3 text-left font-normal sticky left-0 z-10 print:static print:bg-transparent"
                   style={{ backgroundColor: "var(--color-card)" }}
                 >#</th>
                 <th
-                  className="py-2 px-1 text-left font-normal sticky left-8 min-w-[70px] print:static print:bg-transparent"
+                  className="py-2 px-1 text-left font-normal sticky left-8 z-10 min-w-[70px] print:static print:bg-transparent"
                   style={{ backgroundColor: "var(--color-card)" }}
                 >이름</th>
                 {/* 2026-04-15: MIN 복원 — 이름 바로 다음, PTS 앞 */}
@@ -1068,13 +1068,13 @@ function BoxScoreTable({
                 >
                   {/* sticky 셀은 zebra 배경을 bg-inherit로 따라가게 함 */}
                   <td
-                    className="py-2 px-3 sticky left-0 bg-inherit print:static print:bg-transparent"
+                    className="py-2 px-3 sticky left-0 z-10 bg-inherit print:static print:bg-transparent"
                     style={{ color: "var(--color-text-muted)" }}
                   >
                     {p.jersey_number ?? "-"}
                   </td>
                   <td
-                    className="py-2 px-1 sticky left-8 bg-inherit min-w-[70px] truncate max-w-[70px] print:static print:bg-transparent print:max-w-none"
+                    className="py-2 px-1 sticky left-8 z-10 bg-inherit min-w-[70px] truncate max-w-[70px] print:static print:bg-transparent print:max-w-none"
                     style={{ color: "var(--color-text-primary)" }}
                   >
                     {p.name}
@@ -1136,13 +1136,13 @@ function BoxScoreTable({
                   }}
                 >
                   <td
-                    className="py-2 px-3 sticky left-0 bg-inherit print:static print:bg-transparent"
+                    className="py-2 px-3 sticky left-0 z-10 bg-inherit print:static print:bg-transparent"
                     style={{ color: "var(--color-text-muted)" }}
                   >
                     {p.jersey_number ?? "-"}
                   </td>
                   <td
-                    className="py-2 px-1 sticky left-8 bg-inherit min-w-[70px] truncate max-w-[70px] print:static print:bg-transparent print:max-w-none"
+                    className="py-2 px-1 sticky left-8 z-10 bg-inherit min-w-[70px] truncate max-w-[70px] print:static print:bg-transparent print:max-w-none"
                     style={{ color: "var(--color-text-muted)" }}
                   >
                     {p.name}
@@ -1208,11 +1208,11 @@ function BoxScoreTable({
                     }}
                   >
                     <td
-                      className="py-2 px-3 sticky left-0 print:static print:bg-transparent"
+                      className="py-2 px-3 sticky left-0 z-10 print:static print:bg-transparent"
                       style={{ color: "var(--color-text-secondary)", backgroundColor: totalStickyBg }}
                     />
                     <td
-                      className="py-2 px-1 sticky left-8 print:static print:bg-transparent"
+                      className="py-2 px-1 sticky left-8 z-10 print:static print:bg-transparent"
                       style={{ color: "var(--color-text-primary)", backgroundColor: totalStickyBg }}
                     >TOTAL</td>
                     {/* MIN — TOTAL 행은 secondary 색으로 강조 */}
