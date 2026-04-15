@@ -2,6 +2,38 @@
 <!-- 담당: debugger, tester | 최대 30항목 -->
 <!-- 이 프로젝트에서 반복되는 에러 패턴, 함정, 주의사항을 기록 -->
 
+### [2026-04-16] sticky 셀 가로 스크롤 겹침 — 배경 투명 + z-index 누락 이중 원인
+- **분류**: error (UI)
+- **발견자**: pm
+- **증상**: 박스스코어 모바일 가로 스크롤 시 sticky 번호/이름 컬럼 뒤로 다른 스탯 숫자가 비쳐 겹쳐 보임
+- **원인 2개 동시 발생**:
+  1. `<tr>` 배경이 `transparent` → sticky 셀 `bg-inherit`도 투명 → 뒤 콘텐츠 비침
+  2. sticky 셀에 `z-index` 없음(기본 auto) → 스크롤되는 셀이 앞 레이어에 그려짐
+- **해결**: (a) 모든 tr 배경 불투명화(`var(--color-card)` + `color-mix`로 zebra), (b) sticky 셀에 `z-10` 명시
+- **재발 방지**: sticky 셀 규칙 — **불투명 배경 + 명시적 z-index** 쌍은 항상 같이
+- **참조**: conventions.md "sticky 셀 규칙"
+- **참조횟수**: 0
+
+### [2026-04-16] Chrome @page CSS를 가상 프린터(Hancom PDF)가 무시
+- **분류**: error (platform limit)
+- **발견자**: pm (사용자 제보)
+- **증상**: `@page { size: A4 landscape }` 지정해도 **Hancom PDF 프린터**로 저장하면 세로 방향 PDF 생성
+- **원인**: Chrome "PDF로 저장"은 @page를 존중하지만, Hancom PDF 같은 Windows 가상 프린터는 OS 드라이버를 경유해 @page를 무시하고 드라이버 기본값 사용
+- **해결**: 웹에서 강제 불가 (브라우저/OS 레벨). 사용자에게 "프린터를 Chrome 'PDF로 저장'으로 변경" 안내 배너 + "인쇄 방향: 가로" 수동 선택 가이드
+- **잘못된 시도**: `html, body { width: 297mm !important }` 강제 → Chrome PDF 메타데이터 더 깨짐 (롤백)
+- **재발 방지**: 프린트 기능 추가 시 **표준 @page 키워드**(A4 landscape)만 쓰고 불가능한 OS 제어는 UI 안내로 대체
+- **참조**: lessons.md "브라우저 프린트 API 한계"
+- **참조횟수**: 0
+
+### [2026-04-16] 프린트 `<th>` center vs `<td>` left 기본값 불일치 — 정렬 깨짐
+- **분류**: error (UI)
+- **발견자**: pm (사용자 제보)
+- **증상**: 프린트된 박스스코어에서 헤더와 데이터 행의 숫자 컬럼이 살짝 어긋남
+- **원인**: HTML 기본 정렬이 `<th>` center, `<td>` left. 숫자 컬럼(MIN/PTS/FG)이 서로 다른 축으로 정렬됨. 추가로 `td:nth-child(2) { max-width }`만 적용하고 `th`엔 미적용이라 이름 폭 차이로 뒤 컬럼 밀림
+- **해결**: 프린트 영역 th/td 모두 `text-align: center` + `table-layout: fixed` + `th:nth-child(n)`와 `td:nth-child(n)` 폭 둘 다 제어
+- **재발 방지**: 프린트 테이블은 **table-layout: fixed + 명시적 정렬/폭** 쌍으로
+- **참조횟수**: 0
+
 ### [2026-04-15] 신규 파일 git add 누락 → 로컬은 OK인데 원격 Vercel 빌드 실패
 - **분류**: error
 - **발견자**: pm (원영 핫픽스 `d94beb6`로 문제 파악)

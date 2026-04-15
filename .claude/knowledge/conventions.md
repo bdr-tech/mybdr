@@ -1,6 +1,45 @@
 # 코딩 규칙 및 스타일
 <!-- 담당: developer, reviewer | 최대 30항목 -->
 
+### [2026-04-16] sticky 테이블 셀 규칙 — 불투명 배경 + z-10 쌍
+- **분류**: convention
+- **내용**: `<td className="sticky left-0 ...">` 같은 sticky 셀은 **반드시 두 가지 같이 적용**:
+  1. **불투명 배경** — `bg-inherit` 사용 시 부모 `<tr>` 배경도 불투명이어야 함. zebra stripe는 `color-mix(in srgb, var(--color-card), #7f7f7f 6%)`로 불투명화
+  2. **명시적 z-index** — `z-10` 클래스 (기본 auto는 스크롤 중인 셀 아래 깔림)
+- **예**: `<td className="sticky left-0 z-10 bg-inherit ...">`
+- **배경 불투명화 상수 패턴**:
+  ```tsx
+  const ROW_EVEN_BG = "var(--color-card)";
+  const ZEBRA_BG = "color-mix(in srgb, var(--color-card), #7f7f7f 6%)";
+  ```
+- **참조**: errors.md "sticky 셀 가로 스크롤 겹침"
+
+### [2026-04-16] 프린트 CSS 규칙 — 표준 @page 키워드 + table-layout: fixed
+- **분류**: convention
+- **내용**: `@media print` 블록 규칙:
+  1. `@page { size: A4 landscape; margin: 8mm; }` **표준 키워드만 사용** (297mm 치수 강제 ✗)
+  2. `html, body { width: ... !important }` 같은 프린트 레이아웃 강제 **금지** (Chrome PDF 메타데이터 충돌)
+  3. 프린트 테이블은 `table-layout: fixed` + **th/td 모두 text-align 명시** (기본값 불일치 방지) + **th:nth-child(n)과 td:nth-child(n) 폭 둘 다 제어**
+  4. 가상 프린터(Hancom PDF 등) 한계는 코드로 해결 불가 → **UI 안내 배너**로 대체
+- **참조**: errors.md "프린트 th vs td 정렬 깨짐", lessons.md "브라우저 프린트 API 한계"
+
+### [2026-04-16] 모바일/데스크톱 듀얼 렌더 패턴 (`sm:hidden` + `hidden sm:flex`)
+- **분류**: convention
+- **내용**: 가로폭 제약이 심한 레이아웃(예: 5단 가로 스코어카드)은 **모바일/데스크톱 별도 렌더**
+  ```tsx
+  <div className="sm:hidden">{/* 모바일 2행 */}</div>
+  <div className="hidden sm:flex">{/* 데스크톱 5단 */}</div>
+  ```
+- **중복 최소화**: 공통 요소(TeamBlock/ScoreDisplay/CenterInfoBlock)를 **서브 컴포넌트 추출**
+- **언제 쓰나**: Tailwind flex-wrap/responsive gap으로 해결 안 되는 구조적 차이(행 수가 다름)일 때
+- **참조**: lessons.md "모바일 UI는 데스크톱 확대에 희생되면 안 됨"
+
+### [2026-04-16] 플레이스홀더 기호는 짧은 hyphen `-` 통일 (em-dash `—` 금지)
+- **분류**: convention
+- **내용**: 테이블에서 값이 없을 때 `-` (hyphen, U+002D) 하나만 사용. `—` (em-dash, U+2014) 금지
+- **이유**: DNP 행과 기타 빈 스탯 행이 **동일한 시각 패턴**으로 보여야 혼동 없음
+- **적용 범위**: 화면 UI + 프린트 영역 + 쿼터 필터 showPlaceholder 모두
+
 ### [2026-04-14] 경기결과 실시간 집계 패턴 (Team.wins 필드 무시)
 - **분류**: convention
 - **발견자**: developer

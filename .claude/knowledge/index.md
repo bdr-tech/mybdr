@@ -1,28 +1,31 @@
 # 프로젝트 지식 목차
-> 최종 갱신: 2026-04-15 (Phase 2C 완료 + 신규 파일 add 누락 에러 + gh 인증 우회)
-> 최종 갱신: 2026-04-15 (헬스체크 cron 2차 구현 완료 — check3 내부 호출 예외 기록)
+> 최종 갱신: 2026-04-16 (라이브 페이지 전면 개편 + 모바일 UI + 프린트 PDF + sticky 규칙)
 
 ## 파일별 요약
 | 파일 | 항목 수 | 최종 업데이트 | 설명 |
 |------|--------|------------|------|
-| architecture.md | 22 | 2026-04-15 | 페이지별 구조, 대회 상세 개편, 대진표 4단계, 팀명 2필드, Referee 시스템 통합 |
-| conventions.md | 15 | 2026-04-14 | 디자인 시스템, 디비전, 대회 상태 4종, admin UI, --color-on-*, 경기결과 집계, camelCase 변환, TeamCard 공통 |
-| decisions.md | 30 | 2026-04-14 | 기술 결정 (KBL 순위/대진표 자동 생성/userId 연결/전역 Link/대회 프리셋/맞춤설정/픽업게임/위키/앰배서더/리포트/3x3/히트맵) |
-| errors.md | 11 | 2026-04-15 | 에러 패턴 (신규 파일 add 누락 빌드 실패, DB 사고, Turbopack, apiSuccess .data, categories JSON, 개발서버 hung) |
-| lessons.md | 8 | 2026-04-15 | 삽질 경험 (신규 파일 add 체크, gh 인증 우회, db push 위험, snake/camel 변환, YouTube API, 테마 전환, ISR, DB 리전) |
-| architecture.md | 18 | 2026-04-12 | 페이지별 구조, admin 개편, 프론트-백엔드 연결맵, 맞춤설정 시스템, 심판 플랫폼 v2(6모델 + 17API) |
-| conventions.md | 11 | 2026-03-28 | 디자인 시스템, 디비전 체계, 대회 상태 4종, admin UI 패턴 |
-| decisions.md | 44 | 2026-04-15 | 기술 결정 (… v3 3건 + **헬스체크 cron self-fetch 병렬**) |
-| errors.md | 6 | 2026-04-12 | 에러 패턴, 함정, 주의사항 (+ Prisma schema drift / users.gender 복원) |
-| lessons.md | 4 | 2026-03-28 | 삽질 경험, 효과적 접근법 |
-| toss-design-analysis.md | 10 | 2026-03-28 | 토스 디자인 시스템 심층 분석 (색상/폰트/간격/컴포넌트/레이아웃) |
-| ux-audit-report.md | 28 | 2026-03-28 | UI/UX 사용성 심층 조사 (11개 영역, 28개 개선안, 우선순위 정리) |
-| project-structure-audit.md | 10 | 2026-03-28 | 전체 구조 분석 (미사용 파일/API + 페이지 연결맵 + 사용자 흐름 + 사각지대) |
+| architecture.md | 29 | 2026-04-15 | 페이지 구조, 대회/대진표, 팀명 2필드, Referee 시스템, Flutter API 호환 |
+| conventions.md | 21 | 2026-04-16 | 디자인/색상/경기집계/TeamCard/sticky규칙/프린트CSS/듀얼렌더/hyphen통일 |
+| decisions.md | 63 | 2026-04-15 | 기술 결정 (KBL 순위/대진표/userId 연결/전역 Link/프리셋/Referee v2/헬스체크 cron) |
+| errors.md | 15 | 2026-04-16 | 에러 패턴 (sticky 투명/z-index, @page Hancom PDF, th/td 정렬, DB 사고, add 누락) |
+| lessons.md | 11 | 2026-04-16 | 교훈 (프린트 API 한계, 모바일 zoom, 브랜치 drift, add 체크, gh 우회 등) |
+| toss-design-analysis.md | 10 | 2026-03-28 | 토스 디자인 시스템 심층 분석 |
+| ux-audit-report.md | 28 | 2026-03-28 | UI/UX 사용성 심층 조사 |
+| project-structure-audit.md | 10 | 2026-03-28 | 전체 구조 분석 |
 
 ## 최근 추가된 지식 (최근 10건)
-- [04-15] errors: **신규 파일 git add 누락 → 로컬 OK인데 원격 Vercel 빌드 실패** — 커밋 전 git status --short의 ?? 표시 확인 필수
-- [04-15] lessons: 신규 파일 add 누락 방지 — 커밋 전 `git status --short`로 `??` 확인 습관화
-- [04-15] lessons: gh 인증 풀렸을 때 `git credential fill`로 GH_TOKEN 세션 주입 우회
+- [04-16] errors: **sticky 셀 가로 스크롤 겹침** — 배경 투명 + z-index 누락 이중 원인
+- [04-16] errors: **Chrome @page를 가상 프린터(Hancom PDF)가 무시** — 웹 API로 제어 불가, UI 안내가 유일한 해결책
+- [04-16] errors: 프린트 th center vs td left 기본값 불일치 → 정렬 깨짐 (table-layout: fixed + text-align 명시 필요)
+- [04-16] lessons: 브라우저 프린트 API는 OS/드라이버 제어 불가 — Chrome "PDF로 저장" 유도가 최선
+- [04-16] lessons: 모바일 UI는 데스크톱 확대에 희생되면 안 됨 — 듀얼 렌더(sm:hidden) + zoom 절충(1.1)
+- [04-16] lessons: 개인 브랜치 drift 해소 — reset --hard origin/dev + push --force-with-lease
+- [04-16] conventions: sticky 셀 규칙 — 불투명 배경 + z-10 쌍
+- [04-16] conventions: 프린트 CSS 표준 @page 키워드 + table-layout: fixed
+- [04-16] conventions: 모바일/데스크톱 듀얼 렌더 패턴 (`sm:hidden` + `hidden sm:flex`)
+- [04-16] conventions: 플레이스홀더 기호는 `-` 통일 (em-dash `—` 금지)
+- [04-15] errors: 신규 파일 git add 누락 → Vercel 빌드 실패
+- [04-15] lessons: gh 인증 풀렸을 때 `git credential fill`로 GH_TOKEN 세션 주입
 - [04-15] errors: **prisma db push --accept-data-loss로 타 브랜치 Referee 테이블 4개 drop 사고** — 개발 DB라도 db push 전 migrate diff 필수
 - [04-15] lessons: DB 마이그레이션 --accept-data-loss는 타 브랜치 데이터 파괴 가능 — migrate dev --create-only로 SQL 먼저 확인
 - [04-15] architecture: 팀명 2필드 구조 (Team.name_en + name_primary "ko"/"en") + Referee 시스템 14개 모델 schema 통합

@@ -2,6 +2,36 @@
 <!-- 담당: 전체 에이전트 | 최대 30항목 -->
 <!-- 삽질 경험, 다음에 피해야 할 것, 효과적이었던 접근법을 기록 -->
 
+### [2026-04-16] 브라우저 프린트 API는 OS/드라이버 제어 불가 — UI 안내가 유일한 해결책
+- **분류**: lesson
+- **내용**: `window.print()` / `@page` CSS는 **Chrome 내부 PDF 엔진에만 힌트**. Hancom PDF 등 Windows 가상 프린터는 자체 드라이버 기본값을 우선하고 @page를 무시함
+- **교훈**:
+  1. 프린트 방향/크기를 코드로 "강제"할 방법은 없음
+  2. 사용자가 프린터를 **"PDF로 저장"**(Chrome 기본)으로 선택하도록 **UI 안내**가 최선
+  3. `html, body { width: 297mm !important }` 같은 억지 강제는 오히려 Chrome PDF 엔진 헷갈리게 함 (롤백 필요)
+  4. 대안: jsPDF 같은 클라이언트 PDF 라이브러리 도입 → 방향 완전 제어 (구현 복잡도 큼)
+- **참조**: errors.md "Chrome @page CSS를 가상 프린터가 무시"
+- **참조횟수**: 0
+
+### [2026-04-16] 모바일 UI는 데스크톱 확대에 희생되면 안 됨 — 듀얼 렌더 + zoom 절충
+- **분류**: lesson
+- **내용**: 데스크톱 가독성 위해 `zoom: 1.25` 적용했더니 모바일 viewport 300px 실효로 5단 가로 레이아웃이 겹침/잘림. zoom은 전체 영향을 주므로 디바이스 무시 불가
+- **교훈**:
+  1. `zoom`은 데스크톱만 올리지 말고 **모두 동시 영향** 주는 것으로 취급 → 절충값(1.1)이 양쪽 타협점
+  2. 모바일 레이아웃이 좁아 가로로 안 될 때는 **듀얼 렌더** (`sm:hidden` + `hidden sm:flex`) 가 가장 안전. CSS flex-wrap은 중앙 정보 블록의 겹침을 막지 못함
+  3. 서브 컴포넌트 추출(TeamBlock/ScoreDisplay/CenterInfoBlock)로 듀얼 렌더의 중복 최소화
+- **참조**: errors.md(없음, UI 관찰 기반), conventions.md "듀얼 렌더 패턴"
+- **참조횟수**: 0
+
+### [2026-04-16] 개인 브랜치 drift 해소 — reset + force-with-lease가 안전
+- **분류**: lesson
+- **내용**: subin 브랜치가 PR 머지 후에도 이전 커밋들을 유지한 채 dev에서 뒤처지니 nostalgic drift 발생 (referee 시스템 96파일 삭제 위험). 수빈 3커밋은 이미 dev에 내용 반영됨
+- **교훈**:
+  1. 개인 브랜치는 **dev 머지 후 즉시 `git reset --hard origin/dev` + `push --force-with-lease`** 로 동기화해 다음 작업 출발점 깔끔히
+  2. `--force-with-lease`는 원격이 내 로컬 예상과 일치할 때만 push 허용 → 안전
+  3. PR 분리를 위해 cherry-pick 시도는 scratchpad.md 충돌 지뢰밭 → 차라리 dev 기반 새 브랜치에서 파일 덮어쓰기가 단순
+- **참조횟수**: 0
+
 ### [2026-04-15] 신규 파일 add 누락 방지 — 커밋 전 `git status --short`로 `??` 확인
 - **분류**: lesson
 - **발견자**: pm
