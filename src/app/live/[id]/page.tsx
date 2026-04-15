@@ -26,6 +26,8 @@ interface PlayerRow {
   to: number;
   fouls: number;
   plus_minus?: number;
+  // 0414: DNP(Did Not Play) — NBA 미출전 표시
+  dnp?: boolean;
 }
 
 interface PlayByPlayRow {
@@ -393,7 +395,11 @@ function BoxScoreTable({
 }) {
   if (!players || players.length === 0) return null;
 
-  const sorted = [...players].sort((a, b) => b.pts - a.pts);
+  // 0414: DNP(NBA: Did Not Play) 분리 — 테이블 본체는 출전 선수만, 하단에 DNP 리스트
+  const activePlayers = players.filter((p) => !p.dnp);
+  const dnpPlayers = players.filter((p) => p.dnp);
+  // dev: 득점 내림차순 정렬 + FG/3P/FT 퍼센트 헬퍼
+  const sorted = [...activePlayers].sort((a, b) => b.pts - a.pts);
   const pct = (made: number, attempted: number) =>
     attempted > 0 ? Math.round((made / attempted) * 100) : 0;
 
@@ -474,9 +480,28 @@ function BoxScoreTable({
                   </td>
                 </tr>
               ))}
-              {/* TOTAL 합산 행 */}
+              {/* 0414: DNP 인라인 행 — 본체 테이블 안에서 표시, 스탯 영역 colspan */}
+              {dnpPlayers.map((p, i) => (
+                <tr
+                  key={`dnp-${p.id}`}
+                  className={`border-b border-white/5 ${(sorted.length + i) % 2 === 0 ? "" : "bg-white/[0.02]"}`}
+                >
+                  <td className="py-2 px-3 text-gray-600 sticky left-0 bg-inherit print:static print:bg-transparent">
+                    {p.jersey_number ?? "-"}
+                  </td>
+                  <td className="py-2 px-1 text-gray-500 sticky left-8 bg-inherit min-w-[70px] truncate max-w-[70px] print:static print:bg-transparent print:max-w-none">
+                    {p.name}
+                  </td>
+                  <td colSpan={16} className="py-2 px-1 text-center">
+                    <span className="text-[10px] font-semibold tracking-[0.2em] text-gray-500 uppercase">
+                      DNP &mdash; Did Not Play
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {/* TOTAL 합산 행 — 출전 선수만 집계 (DNP 제외) */}
               {(() => {
-                const total = players.reduce(
+                const total = activePlayers.reduce(
                   (acc, p) => ({
                     min: acc.min + p.min,
                     min_seconds: acc.min_seconds + (p.min_seconds ?? p.min * 60),
