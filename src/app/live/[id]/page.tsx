@@ -400,6 +400,10 @@ export default function LiveBoxScorePage() {
       away: qa?.ot?.[i] ?? 0,
     })),
   ];
+  // 합계: 쿼터 합산값을 우선 사용. DB의 home_score/away_score가 0(미기록)이어도 올바른 총점을 표시.
+  const homeTotal = quarters.reduce((sum, q) => sum + q.home, 0) || match.home_score;
+  const awayTotal = quarters.reduce((sum, q) => sum + q.away, 0) || match.away_score;
+
   const hasOT = quarters.some((q) => q.label.startsWith("OT"));
   const quarterFilterOptions = [
     { key: "all", label: "전체" },
@@ -501,7 +505,7 @@ export default function LiveBoxScorePage() {
             className={`text-5xl sm:text-6xl font-black transition-all duration-300 ${homeFlash ? "scale-125 brightness-150" : "scale-100"}`}
             style={{ color: "var(--color-text-primary)" }}
           >
-            {match.home_score}
+            {homeTotal}
           </p>
 
           {/* 3. 중앙 정보 블록 — 상태 라벨 / 일시 / 장소 (2026-04-15 글자 확대 + 🔄 제거)
@@ -553,7 +557,7 @@ export default function LiveBoxScorePage() {
             className={`text-5xl sm:text-6xl font-black transition-all duration-300 ${awayFlash ? "scale-125 brightness-150" : "scale-100"}`}
             style={{ color: "var(--color-text-primary)" }}
           >
-            {match.away_score}
+            {awayTotal}
           </p>
 
           {/* 5. 원정 영역: 로고 + 팀명 (홈 아이콘 없음) */}
@@ -635,12 +639,12 @@ export default function LiveBoxScorePage() {
                       </td>
                     );
                   })}
-                  {/* 합계: 메인 점수와 동일하게 text-primary로 통일 (font-bold로 강조) */}
+                  {/* 합계: 쿼터 합산값 우선 (DB home_score가 0이어도 정확히 표시) */}
                   <td
                     className="py-2 px-2 text-center font-bold"
                     style={{ color: "var(--color-text-primary)" }}
                   >
-                    {match.home_score}
+                    {homeTotal}
                   </td>
                 </tr>
                 <tr>
@@ -671,7 +675,7 @@ export default function LiveBoxScorePage() {
                     className="py-2 px-2 text-center font-bold"
                     style={{ color: "var(--color-text-primary)" }}
                   >
-                    {match.away_score}
+                    {awayTotal}
                   </td>
                 </tr>
               </tbody>
@@ -707,8 +711,8 @@ export default function LiveBoxScorePage() {
 
         {/* 프린트 전용: 팀별 독립 페이지 */}
         {[
-          { team: match.home_team, players: match.home_players, score: match.home_score, opponentName: match.away_team.name, opponentScore: match.away_score },
-          { team: match.away_team, players: match.away_players, score: match.away_score, opponentName: match.home_team.name, opponentScore: match.home_score },
+          { team: match.home_team, players: match.home_players, score: homeTotal, opponentName: match.away_team.name, opponentScore: awayTotal },
+          { team: match.away_team, players: match.away_players, score: awayTotal, opponentName: match.home_team.name, opponentScore: homeTotal },
         ].map(({ team, players, score, opponentName, opponentScore }) => (
           <div key={team.id} className="print-team-page">
             {/* 프린트 전용 헤더 — 인라인 색상(#000/#666/#999)은 프린트 잉크용이라 그대로 유지 */}
