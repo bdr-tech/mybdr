@@ -465,17 +465,19 @@ export default function LiveBoxScorePage() {
   //       afterprint 이벤트로 원래 title 복원.
   useEffect(() => {
     if (printOptions && match) {
-      // 파일명용 날짜: scheduled_at 우선 → started_at → 현재
+      // 파일명용 날짜/시간: scheduled_at 우선 → started_at → 현재
+      // HH는 경기 시작 시간(24시간 형식), 브라우저 로컬 타임존 기준
       const dateStr = match.scheduled_at ?? match.started_at ?? new Date().toISOString();
       const d = new Date(dateStr);
       const yy = String(d.getFullYear()).slice(2);
       const mm = String(d.getMonth() + 1).padStart(2, "0");
       const dd = String(d.getDate()).padStart(2, "0");
+      const hh = String(d.getHours()).padStart(2, "0"); // 24h
       // 파일명 안전 문자만: 공백/특수문자 → _, 한글 허용
       const safe = (s: string) => s.replace(/[\s\\/:*?"<>|]+/g, "_").trim() || "team";
       const homeName = safe(match.home_team.name);
       const awayName = safe(match.away_team.name);
-      const printTitle = `${yy}${mm}${dd}_${homeName}_${awayName}`;
+      const printTitle = `${yy}${mm}${dd}${hh}_${homeName}_${awayName}`;
 
       const originalTitle = document.title;
       document.title = printTitle;
@@ -1457,6 +1459,18 @@ function PrintOptionsDialog({
             이 경기는 실시간 이벤트 기록이 없어 쿼터별 세부 스탯이 "—"로 표시됩니다.
           </p>
         )}
+
+        {/* 프린트 레이아웃 안내 — Chrome PDF 저장에서 세로로 저장되는 경우 사용자 가이드 */}
+        <p
+          className="mt-3 text-xs flex items-start gap-1"
+          style={{ color: "var(--color-text-muted)" }}
+        >
+          <span className="material-symbols-outlined shrink-0" style={{ fontSize: "14px" }}>info</span>
+          <span>
+            프린트 대화상자에서 <strong>레이아웃: 가로</strong>로 설정해주세요.
+            세로로 저장되면 내용이 90도 회전됩니다.
+          </span>
+        </p>
 
         {/* 하단 버튼 */}
         <div className="flex justify-end gap-2 mt-6">

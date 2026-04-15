@@ -473,8 +473,17 @@ html.light .watermark-text {
    display:none 방식으로 변경. data-live-root의 자식 중 프린트 영역만 남기고 완전히 제거. */
 @media print {
   /* A4 landscape 명시적 치수(297mm × 210mm)로 지정 — `size: A4 landscape`보다
-     Chrome "PDF로 저장"에서 가로 방향을 더 확실히 인식 */
+     Chrome "PDF로 저장"에서 가로 방향을 더 확실히 인식.
+     주의: Chrome은 @page size를 기본 힌트로만 사용. 사용자가 프린트 대화상자에서
+           "레이아웃: 세로"를 명시 선택하면 이를 무시함. 다이얼로그에 안내 문구 표시. */
   @page { size: 297mm 210mm; margin: 8mm; }
+  @page :first { size: 297mm 210mm; }
+
+  /* 본문 컨테이너를 명시적 landscape 치수로 고정 — Chrome이 가로 콘텐츠를 자동 인식하도록 힌트 */
+  html, body {
+    width: 297mm !important;
+    max-width: 297mm !important;
+  }
 
   /* 색상 강제 변환: 모든 요소 검정 글자/흰 배경/회색 테두리, 그림자 제거 */
   * { color: #000 !important; background: #fff !important; border-color: #ccc !important; box-shadow: none !important; }
