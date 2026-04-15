@@ -293,16 +293,21 @@ export default function LiveBoxScorePage() {
               className="w-3 h-3 rounded-full mx-auto mb-2"
               style={{ backgroundColor: match.home_team.color }}
             />
-            {/* 팀명 헤더: text-sm → text-lg (두 단계 확대) */}
+            {/* 팀명 헤더: text-lg → text-2xl (추가 확대) */}
             <p
-              className="text-lg font-medium truncate"
+              className="text-2xl font-medium truncate"
               style={{ color: "var(--color-text-primary)" }}
             >
               {match.home_team.name}
             </p>
+            {/* 메인 점수: 팀색 유지 + text-shadow outline으로 라이트/다크 양쪽 경계 보장
+                (안쪽 1px은 text-primary, 바깥 3px은 background 색으로 2겹 보강) */}
             <p
               className={`text-6xl font-black mt-1 transition-all duration-300 ${homeFlash ? "scale-125 brightness-150" : "scale-100"}`}
-              style={{ color: match.home_team.color }}
+              style={{
+                color: match.home_team.color,
+                textShadow: "0 0 1px var(--color-text-primary), 0 0 3px var(--color-background)",
+              }}
             >
               {match.home_score}
             </p>
@@ -325,14 +330,18 @@ export default function LiveBoxScorePage() {
               style={{ backgroundColor: match.away_team.color }}
             />
             <p
-              className="text-lg font-medium truncate"
+              className="text-2xl font-medium truncate"
               style={{ color: "var(--color-text-primary)" }}
             >
               {match.away_team.name}
             </p>
+            {/* 원정팀 메인 점수: 홈과 동일한 text-shadow 방식 */}
             <p
               className={`text-6xl font-black mt-1 transition-all duration-300 ${awayFlash ? "scale-125 brightness-150" : "scale-100"}`}
-              style={{ color: match.away_team.color }}
+              style={{
+                color: match.away_team.color,
+                textShadow: "0 0 1px var(--color-text-primary), 0 0 3px var(--color-background)",
+              }}
             >
               {match.away_score}
             </p>
@@ -345,43 +354,57 @@ export default function LiveBoxScorePage() {
             className="mt-4 rounded-md overflow-hidden"
             style={{ backgroundColor: "var(--color-card)" }}
           >
-            <table className="w-full text-sm">
+            {/* 쿼터 테이블: text-sm → text-lg (18px)로 상속. 좌우 끝 셀 px-3→px-2, 쿼터 셀 px-2→px-1로 축소 */}
+            <table className="w-full text-lg">
               <thead>
                 <tr className="border-b" style={{ borderColor: "var(--color-border)" }}>
-                  <th className="py-2 px-3 text-left font-normal" style={{ color: "var(--color-text-muted)" }}>팀</th>
+                  <th className="py-2 px-2 text-left font-normal" style={{ color: "var(--color-text-muted)" }}>팀</th>
                   {quarters.map((q) => (
-                    <th key={q.label} className="py-2 px-2 text-center font-normal" style={{ color: "var(--color-text-muted)" }}>
+                    <th key={q.label} className="py-2 px-1 text-center font-normal" style={{ color: "var(--color-text-muted)" }}>
                       {q.label}
                     </th>
                   ))}
-                  <th className="py-2 px-3 text-center font-semibold" style={{ color: "var(--color-text-secondary)" }}>합계</th>
+                  <th className="py-2 px-2 text-center font-semibold" style={{ color: "var(--color-text-secondary)" }}>합계</th>
                 </tr>
               </thead>
               <tbody>
                 <tr className="border-b" style={{ borderColor: "var(--color-border)" }}>
-                  {/* 팀명 셀: text-xs → text-base (두 단계 확대) */}
-                  <td className="py-2 px-3 text-base truncate max-w-[60px]" style={{ color: "var(--color-text-primary)" }}>
+                  {/* 팀명 셀: 명시 text-base 제거 → 부모 text-lg 상속 */}
+                  <td className="py-2 px-2 truncate max-w-[60px]" style={{ color: "var(--color-text-primary)" }}>
                     {match.home_team.name}
                   </td>
                   {quarters.map((q) => (
-                    <td key={q.label} className="py-2 px-2 text-center" style={{ color: "var(--color-text-primary)" }}>
+                    <td key={q.label} className="py-2 px-1 text-center" style={{ color: "var(--color-text-primary)" }}>
                       {q.home}
                     </td>
                   ))}
-                  <td className="py-2 px-3 text-center font-bold" style={{ color: match.home_team.color }}>
+                  {/* 합계: 메인 점수와 동일한 text-shadow 방식(크기 작으니 바깥 반경 2px로 약하게) */}
+                  <td
+                    className="py-2 px-2 text-center font-bold"
+                    style={{
+                      color: match.home_team.color,
+                      textShadow: "0 0 1px var(--color-text-primary), 0 0 2px var(--color-background)",
+                    }}
+                  >
                     {match.home_score}
                   </td>
                 </tr>
                 <tr>
-                  <td className="py-2 px-3 text-base truncate max-w-[60px]" style={{ color: "var(--color-text-primary)" }}>
+                  <td className="py-2 px-2 truncate max-w-[60px]" style={{ color: "var(--color-text-primary)" }}>
                     {match.away_team.name}
                   </td>
                   {quarters.map((q) => (
-                    <td key={q.label} className="py-2 px-2 text-center" style={{ color: "var(--color-text-primary)" }}>
+                    <td key={q.label} className="py-2 px-1 text-center" style={{ color: "var(--color-text-primary)" }}>
                       {q.away}
                     </td>
                   ))}
-                  <td className="py-2 px-3 text-center font-bold" style={{ color: match.away_team.color }}>
+                  <td
+                    className="py-2 px-2 text-center font-bold"
+                    style={{
+                      color: match.away_team.color,
+                      textShadow: "0 0 1px var(--color-text-primary), 0 0 2px var(--color-background)",
+                    }}
+                  >
                     {match.away_score}
                   </td>
                 </tr>
