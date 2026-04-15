@@ -61,6 +61,19 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
             team: { select: { name: true, name_en: true, name_primary: true, primaryColor: true } },
           },
         },
+        // 핫픽스(2026-04-16): Flutter "최종 스탯 입력 모드"로 저장된 경기는
+        // TournamentMatch.homeScore/awayScore가 0인 채로 저장되는 경우가 있어서
+        // 리그 순위표 wins/losses 집계가 전부 0으로 나오는 버그가 있음.
+        // MatchPlayerStat.points 합산을 fallback으로 쓰기 위해 include 추가.
+        // points와 tournamentTeamId만 가져와서 응답 크기 부담 최소화.
+        playerStats: {
+          select: {
+            points: true,
+            tournamentTeamPlayer: {
+              select: { tournamentTeamId: true },
+            },
+          },
+        },
       },
     }),
     // 참가팀
@@ -105,8 +118,20 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     if (m.status !== "completed" && m.status !== "live") continue;
     const hid = m.homeTeamId.toString();
     const aid = m.awayTeamId.toString();
-    const hs = m.homeScore ?? 0;
-    const as_ = m.awayScore ?? 0;
+
+    // 핫픽스(2026-04-16): DB 점수가 0이면 MatchPlayerStat.points 합산으로 fallback
+    // Flutter 최종 스탯 입력 모드로 저장된 경기 대응 (homeScore/awayScore=0인 채 저장됨)
+    // BigInt 비교: ps.tournamentTeamPlayer.tournamentTeamId와 m.homeTeamId 모두 bigint라 === 가능
+    const homePtsSum = (m.playerStats ?? [])
+      .filter((ps) => ps.tournamentTeamPlayer?.tournamentTeamId === m.homeTeamId)
+      .reduce((s, p) => s + (p.points ?? 0), 0);
+    const awayPtsSum = (m.playerStats ?? [])
+      .filter((ps) => ps.tournamentTeamPlayer?.tournamentTeamId === m.awayTeamId)
+      .reduce((s, p) => s + (p.points ?? 0), 0);
+
+    // DB 점수가 0보다 크면 그대로 사용, 아니면 playerStats 합산으로 대체
+    const hs = m.homeScore && m.homeScore > 0 ? m.homeScore : homePtsSum;
+    const as_ = m.awayScore && m.awayScore > 0 ? m.awayScore : awayPtsSum;
 
     if (teamStats[hid]) { teamStats[hid].pointsFor += hs; teamStats[hid].pointsAgainst += as_; }
     if (teamStats[aid]) { teamStats[aid].pointsFor += as_; teamStats[aid].pointsAgainst += hs; }
