@@ -301,6 +301,8 @@ export default function LiveBoxScorePage() {
   const [isLive, setIsLive] = useState(false);
   const [homeFlash, setHomeFlash] = useState(false);
   const [awayFlash, setAwayFlash] = useState(false);
+  // 쿼터 필터 — 두 팀 공유 (박스스코어 + 프린트 동시 적용)
+  const [quarterFilter, setQuarterFilter] = useState<string>("all");
   const prevScoreRef = useRef<{ home: number; away: number } | null>(null);
 
   const fetchMatch = useCallback(async () => {
@@ -398,6 +400,16 @@ export default function LiveBoxScorePage() {
       away: qa?.ot?.[i] ?? 0,
     })),
   ];
+  const hasOT = quarters.some((q) => q.label.startsWith("OT"));
+  const quarterFilterOptions = [
+    { key: "all", label: "전체" },
+    { key: "1", label: "1Q" },
+    { key: "2", label: "2Q" },
+    { key: "3", label: "3Q" },
+    { key: "4", label: "4Q" },
+    ...(hasOT ? [{ key: "5", label: "OT" }] : []),
+  ];
+  const currentFilterLabel = quarterFilterOptions.find((o) => o.key === quarterFilter)?.label ?? "전체";
 
   return (
     // 페이지 최상단 컨테이너 — 배경/글자 기본색은 모두 CSS 변수 사용 (테마 전환 대응)
@@ -672,6 +684,27 @@ export default function LiveBoxScorePage() {
 
       {/* 박스스코어 (프린트 영역) — 프린트 CSS에서 검정 잉크로 강제 변환되므로 인라인 색상은 유지 */}
       <div id="box-score-print-area" className="px-4 pb-4 space-y-4">
+        {/* 쿼터 필터 버튼 — 두 팀 공유, 프린트 시 숨김 */}
+        <div data-print-hide className="flex items-center gap-2 flex-wrap">
+          <span className="text-base font-semibold" style={{ color: "var(--color-text-secondary)" }}>쿼터 필터</span>
+          <div className="flex items-center gap-1">
+            {quarterFilterOptions.map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setQuarterFilter(key)}
+                className="px-2.5 py-1 text-sm rounded transition-colors"
+                style={{
+                  backgroundColor: quarterFilter === key ? "var(--color-primary)" : "var(--color-surface)",
+                  color: quarterFilter === key ? "#ffffff" : "var(--color-text-muted)",
+                  border: `1px solid ${quarterFilter === key ? "var(--color-primary)" : "var(--color-border)"}`,
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* 프린트 전용: 팀별 독립 페이지 */}
         {[
           { team: match.home_team, players: match.home_players, score: match.home_score, opponentName: match.away_team.name, opponentScore: match.away_score },
@@ -684,29 +717,42 @@ export default function LiveBoxScorePage() {
                 <div>
                   <span style={{ fontSize: "14px", fontWeight: 800 }}>{team.name}</span>
                   <span style={{ fontSize: "11px", marginLeft: "8px", color: "#666" }}>vs {opponentName}</span>
+                  {/* 쿼터 필터 선택 시 표시 */}
+                  {quarterFilter !== "all" && (
+                    <span style={{ fontSize: "11px", marginLeft: "8px", color: "#000", fontWeight: 700, border: "1px solid #999", padding: "1px 5px", borderRadius: "3px" }}>
+                      {currentFilterLabel}
+                    </span>
+                  )}
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <span style={{ fontSize: "11px", color: "#666" }}>{match.tournament_name}</span>
                   {match.round_name && <span style={{ fontSize: "10px", color: "#999", marginLeft: "6px" }}>{match.round_name}</span>}
                 </div>
               </div>
-              {/* 쿼터별 점수 인라인 — 프린트 전용 */}
+              {/* 쿼터별 점수 인라인 — 프린트 전용. 선택된 쿼터 강조 */}
               <div style={{ display: "flex", gap: "12px", fontSize: "9px", color: "#666", borderBottom: "1px solid #ccc", paddingBottom: "3px", marginBottom: "2px" }}>
                 <span style={{ fontWeight: 700, color: "#000", fontSize: "12px" }}>{score} : {opponentScore}</span>
                 {quarters.map((q) => {
                   const myScore = team.id === match.home_team.id ? q.home : q.away;
                   const oppScore = team.id === match.home_team.id ? q.away : q.home;
-                  return <span key={q.label}>{q.label} {myScore}-{oppScore}</span>;
+                  // 선택된 쿼터는 볼드+검정 강조
+                  const qKey = q.label.startsWith("OT") ? "5" : String(quarters.indexOf(q) + 1);
+                  const isSelected = quarterFilter === qKey;
+                  return (
+                    <span key={q.label} style={isSelected ? { fontWeight: 700, color: "#000" } : undefined}>
+                      {q.label} {myScore}-{oppScore}
+                    </span>
+                  );
                 })}
               </div>
             </div>
 
-            {/* 박스스코어 테이블 — hasOT: OT 쿼터가 존재하면 쿼터 필터 버튼에 OT 버튼도 노출 */}
+            {/* 박스스코어 테이블 — 페이지 레벨 quarterFilter 전달 */}
             <BoxScoreTable
               teamName={team.name}
               color={team.color}
               players={players}
-              hasOT={quarters.some((q) => q.label.startsWith("OT"))}
+              quarterFilter={quarterFilter}
             />
           </div>
         ))}
@@ -725,7 +771,7 @@ export default function LiveBoxScorePage() {
         </div>
       )}
 
-      {/* 프린트 버튼 — 기본 text-sm → text-base 확대, 배경/텍스트는 CSS 변수로 */}
+      {/* 프린트 버튼 — 선택된 쿼터에 따라 라벨 변경 */}
       <div data-print-hide className="px-4 pb-8">
         <button
           onClick={() => window.print()}
@@ -737,7 +783,7 @@ export default function LiveBoxScorePage() {
           }}
         >
           <span className="material-symbols-outlined text-lg">print</span>
-          박스스코어 프린트
+          {quarterFilter === "all" ? "전체 박스스코어 프린트" : `${currentFilterLabel} 박스스코어 프린트`}
         </button>
       </div>
 
@@ -773,18 +819,14 @@ function BoxScoreTable({
   teamName,
   color,
   players,
-  hasOT = false,
+  quarterFilter,
 }: {
   teamName: string;
   color: string;
   players: PlayerRow[];
-  // 2026-04-15: OT 쿼터 존재 여부 — 쿼터 필터 버튼에 "OT" 버튼 노출 분기
-  hasOT?: boolean;
+  // 페이지 레벨에서 전달받은 쿼터 필터 — "all" | "1" | "2" | "3" | "4" | "5"(OT1)
+  quarterFilter: string;
 }) {
-  // 2026-04-15: 쿼터 필터 state — "all" | "1" | "2" | "3" | "4" | "5"(OT1)
-  // 이유: 사용자가 특정 쿼터만 집중해서 보고 싶을 때 활용. "all"은 전체 합계(기본값).
-  const [quarterFilter, setQuarterFilter] = useState<string>("all");
-
   if (!players || players.length === 0) return null;
 
   // 2026-04-15: 쿼터 필터 헬퍼
@@ -836,38 +878,21 @@ function BoxScoreTable({
 
   return (
     <div className="print-team-table-wrap">
-      <div className="flex items-center gap-2 mb-2 print:hidden flex-wrap">
-        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-        {/* 팀명 헤더: text-sm → text-lg (두 단계 확대) */}
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
+        <div className="w-2 h-2 rounded-full print:hidden" style={{ backgroundColor: color }} />
+        {/* 팀명 헤더 */}
         <span className="text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
           {teamName}
         </span>
-        {/* 2026-04-15: 쿼터 필터 버튼 그룹 — 전체/1Q/2Q/3Q/4Q/OT(있을 때만)
-            이유: 특정 쿼터의 스탯만 보고 싶을 때 사용. print에서는 숨김(모든 쿼터 정보는 별도 방식으로).
-            선택된 버튼은 primary 배경+흰색 글자, 나머지는 surface 배경+muted 글자로 시각 구분. */}
-        <div className="ml-auto flex items-center gap-1 print:hidden">
-          {[
-            { key: "all", label: "전체" },
-            { key: "1", label: "1Q" },
-            { key: "2", label: "2Q" },
-            { key: "3", label: "3Q" },
-            { key: "4", label: "4Q" },
-            ...(hasOT ? [{ key: "5", label: "OT" }] : []),
-          ].map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setQuarterFilter(key)}
-              className="px-2 py-1 text-xs rounded transition-colors"
-              style={{
-                backgroundColor: quarterFilter === key ? "var(--color-primary)" : "var(--color-surface)",
-                color: quarterFilter === key ? "#ffffff" : "var(--color-text-muted)",
-                border: `1px solid ${quarterFilter === key ? "var(--color-primary)" : "var(--color-border)"}`,
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        {/* 선택된 쿼터 뱃지 — "전체"일 때는 숨김 */}
+        {quarterFilter !== "all" && (
+          <span
+            className="text-xs px-1.5 py-0.5 rounded font-semibold"
+            style={{ backgroundColor: "var(--color-primary)", color: "#fff" }}
+          >
+            {quarterFilter === "5" ? "OT" : `${quarterFilter}Q`}
+          </span>
+        )}
       </div>
       <div
         className="rounded-md overflow-hidden"
