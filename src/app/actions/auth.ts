@@ -13,6 +13,23 @@ import {
   clearLoginAttempts,
 } from "@/lib/security/login-attempts";
 import { DUMMY_HASH } from "@/lib/security/constants";
+import { findUnmatchedReferee, executeMatch } from "@/lib/services/referee-matching";
+
+/**
+ * 로그인 성공 후 사전 등록 심판 자동 매칭 시도.
+ * 매칭 실패가 로그인을 방해하면 안 됨 — try-catch로 감싸서 에러 시 무시.
+ */
+async function tryAutoMatch(userId: bigint, name: string | null, phone: string | null) {
+  if (!name || !phone) return;
+  try {
+    const referee = await findUnmatchedReferee(name, phone);
+    if (referee) {
+      await executeMatch(referee.id, userId);
+    }
+  } catch {
+    // 매칭 실패는 로그인에 영향 없음 — 조용히 무시
+  }
+}
 
 const isProduction = process.env.NODE_ENV === "production";
 const COOKIE_OPTIONS = {
@@ -36,6 +53,8 @@ async function getRequestIp(): Promise<string> {
 export async function loginAction(_prevState: { error: string } | null, formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
+  // 로그인 성공 후 돌아갈 경로 (로그인 페이지에서 hidden input으로 전달)
+  const redirectTo = formData.get("redirect") as string | null;
 
   if (!email || !password) {
     return { error: "이메일과 비밀번호를 입력하세요." };
@@ -78,13 +97,19 @@ export async function loginAction(_prevState: { error: string } | null, formData
     console.log("[loginAction] SUCCESS:", email, "cookie:", WEB_SESSION_COOKIE);
     const cookieStore = await cookies();
     cookieStore.set(WEB_SESSION_COOKIE, token, COOKIE_OPTIONS);
+
+    // 사전 등록 심판 자동 매칭 시도 (로그인 성공 후)
+    await tryAutoMatch(user.id, user.name ?? null, user.phone ?? null);
   } catch (err) {
     console.error("[loginAction] ERROR:", err);
     return { error: "로그인 중 오류가 발생했습니다." };
   }
 
   revalidatePath("/", "layout");
-  redirect("/");
+
+  // redirect 경로가 유효하면 해당 경로로, 아니면 홈으로
+  const validRedirect = redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//");
+  redirect(validRedirect ? redirectTo : "/");
 }
 
 export async function signupAction(_prevState: { error: string } | null, formData: FormData) {

@@ -352,7 +352,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { setLoggedIn } = usePreferFilter();
-  const [user, setUser] = useState<{ name: string; role: string; prefer_filter_enabled?: boolean; hidden_menus?: string[] } | null>(null);
+  const [user, setUser] = useState<{ name: string; role: string; prefer_filter_enabled?: boolean; hidden_menus?: string[]; is_referee?: boolean } | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   /* 슬라이드 메뉴 열림/닫힘 상태 ("더보기" 탭용) */
   const [slideMenuOpen, setSlideMenuOpen] = useState(false);
@@ -443,17 +443,30 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
 
         {/* 하단: 관리 링크 (로그인) 또는 로그인 버튼 (비로그인) */}
         <div className="border-t border-[var(--color-border)] p-3 space-y-2">
-          {user?.role === "super_admin" ? (
-            <Link href="/admin"
-              className="flex items-center gap-3 px-3 py-2.5 text-sm font-black uppercase tracking-wide text-[var(--color-primary)] hover:bg-[var(--color-surface)] transition-colors border-l-4 border-transparent hover:border-[var(--color-primary)]">
-              <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
-              ADMIN
-            </Link>
-          ) : !user ? (
+          {user ? (
+            <>
+              {/* 심판 플랫폼 바로가기: Referee 매칭 유저에게만 조건부 표시 */}
+              {user.is_referee && (
+                <Link href="/referee"
+                  className="flex items-center gap-3 px-3 py-2.5 text-sm font-black uppercase tracking-wide text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] transition-colors border-l-4 border-transparent hover:border-[var(--color-text-secondary)]">
+                  <span className="material-symbols-outlined text-lg">sports</span>
+                  심판 플랫폼
+                </Link>
+              )}
+              {/* 관리 링크: super_admin만 표시 */}
+              {user.role === "super_admin" && (
+                <Link href="/admin"
+                  className="flex items-center gap-3 px-3 py-2.5 text-sm font-black uppercase tracking-wide text-[var(--color-primary)] hover:bg-[var(--color-surface)] transition-colors border-l-4 border-transparent hover:border-[var(--color-primary)]">
+                  <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
+                  ADMIN
+                </Link>
+              )}
+            </>
+          ) : (
             <Link href="/login" className="block w-full bg-[var(--color-primary)] py-3 text-center text-sm font-black uppercase tracking-wider text-white rounded-sm shadow-glow-primary hover:bg-[var(--color-primary-hover)] transition-colors">
               로그인
             </Link>
-          ) : null}
+          )}
         </div>
       </aside>
 
@@ -609,6 +622,7 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
         role={user?.role}
         name={user?.name}
         hiddenMenus={user?.hidden_menus}
+        isReferee={user?.is_referee}
       />
     </div>
   );

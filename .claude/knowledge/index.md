@@ -1,5 +1,6 @@
 # 프로젝트 지식 목차
 > 최종 갱신: 2026-04-15 (Phase 2C 완료 + 신규 파일 add 누락 에러 + gh 인증 우회)
+> 최종 갱신: 2026-04-15 (헬스체크 cron 2차 구현 완료 — check3 내부 호출 예외 기록)
 
 ## 파일별 요약
 | 파일 | 항목 수 | 최종 업데이트 | 설명 |
@@ -9,6 +10,11 @@
 | decisions.md | 30 | 2026-04-14 | 기술 결정 (KBL 순위/대진표 자동 생성/userId 연결/전역 Link/대회 프리셋/맞춤설정/픽업게임/위키/앰배서더/리포트/3x3/히트맵) |
 | errors.md | 11 | 2026-04-15 | 에러 패턴 (신규 파일 add 누락 빌드 실패, DB 사고, Turbopack, apiSuccess .data, categories JSON, 개발서버 hung) |
 | lessons.md | 8 | 2026-04-15 | 삽질 경험 (신규 파일 add 체크, gh 인증 우회, db push 위험, snake/camel 변환, YouTube API, 테마 전환, ISR, DB 리전) |
+| architecture.md | 18 | 2026-04-12 | 페이지별 구조, admin 개편, 프론트-백엔드 연결맵, 맞춤설정 시스템, 심판 플랫폼 v2(6모델 + 17API) |
+| conventions.md | 11 | 2026-03-28 | 디자인 시스템, 디비전 체계, 대회 상태 4종, admin UI 패턴 |
+| decisions.md | 44 | 2026-04-15 | 기술 결정 (… v3 3건 + **헬스체크 cron self-fetch 병렬**) |
+| errors.md | 6 | 2026-04-12 | 에러 패턴, 함정, 주의사항 (+ Prisma schema drift / users.gender 복원) |
+| lessons.md | 4 | 2026-03-28 | 삽질 경험, 효과적 접근법 |
 | toss-design-analysis.md | 10 | 2026-03-28 | 토스 디자인 시스템 심층 분석 (색상/폰트/간격/컴포넌트/레이아웃) |
 | ux-audit-report.md | 28 | 2026-03-28 | UI/UX 사용성 심층 조사 (11개 영역, 28개 개선안, 우선순위 정리) |
 | project-structure-audit.md | 10 | 2026-03-28 | 전체 구조 분석 (미사용 파일/API + 페이지 연결맵 + 사용자 흐름 + 사각지대) |
@@ -52,6 +58,7 @@
 | 대회, 대진표, 브라켓 | 대회 페이지 구조 분석 |
 | 커뮤니티, 게시글, 댓글 | 커뮤니티 페이지 구조 분석 |
 | admin, 라우트 그룹 | admin 라우트 그룹 분리 |
+| 심판, referee, 경기원, 자격증 | 심판 플랫폼 라우트 그룹 (referee) 설계 |
 | 랭킹, rankings, 팀, 개인 | 랭킹 페이지 구조 설계 |
 | BDR 랭킹, 외부, xlsx, proxy | 외부 BDR 랭킹 연동 구조 설계 |
 | 하드코딩, API 연결 | 하드코딩 vs DB/API 전체 분석 |
@@ -100,6 +107,11 @@
 | ISR, getWebSession, CDN | 홈 ISR 활성화 — getWebSession 분리 |
 | Google Places, 사진, 캐시 | Google Places 사진 연동 3단계 캐시 |
 | admin, 모달, 탭, 개편 | admin UI 전면 개편 |
+| 카드, 컴팩트, 그라디언트 | 카드 컴팩트화 + 유형별 그라디언트 |
+| 상수, 통일, 공통파일 | 프론트/admin/API 상수 공통 import 원칙 |
+| 대회 상태, 4종 | 준비중/접수중/진행중/종료 4종 통일 |
+| admin, 모달, 탭, 개편 | admin UI 전면 개편 — 컴팩트 테이블+플로팅 모달 |
+| 심판, Referee, 샌드위치, User 0수정 | 심판 플랫폼 샌드위치 구조 / User 모델 1줄 / 브랜치 격리 DB |
 
 ### 에러/함정을 알고 싶을 때 → errors.md
 | 키워드 | 항목 제목 |
@@ -130,3 +142,38 @@
 |------|------|------|
 | DESIGN.md | Dev/design/DESIGN.md | 디자인 시스템 통합 문서 (색상/폰트/레이아웃/컴포넌트) |
 | Stitch 원본 | Dev/design/0. 레이아웃/DESIGN.md | Stitch에서 내보낸 원본 디자인 규격 |
+
+## 최근 추가된 지식 (최근 10건)
+- [04-15] decisions: 헬스체크 cron 2차 — self-fetch + Promise.allSettled 병렬 + 실패해도 끝까지 진행 (내부 함수 호출 대비 유저 경로 검증 이점)
+- [04-12] architecture: 심판 플랫폼 재설계 v2 — 6모델(Association/AssociationAdmin/Referee/Certificate/Assignment/Settlement) + 17API + Excel 2단계 업로드, users 0수정 CREATE 6건만
+- [04-12] decisions: v2 협회 계층형 Association — self-relation, 20개 시드(KBA+시도17+KBL/WKBL), REGIONS 재사용
+- [04-12] decisions: v2 자격증 파일 업로드 제거 — cert_number + 실명/생년월일/전화 교차검증으로 대체
+- [04-12] decisions: v2 Excel 일괄 + 개별 토글 2-way — preview/confirm 2단계, 5MB/500행 제한, 파일 미저장
+- [04-12] decisions: v2 심판 공개 목록 제거 — /registry 삭제, 본인 profile + admin members 두 컨텍스트만
+- [04-12] decisions: v2 실명 노출 — User.name 사용, verified_* 스냅샷을 Referee에 저장
+- [04-12] decisions: v2 배정/정산 조회 전용 포함 — RefereeAssignment+Settlement 스키마 1차 확정, tournament_match_id/game_id 분리 FK
+- [04-12] decisions: v2 AssociationAdmin 매핑 테이블 — users 0수정(ALTER 회피), admin_role 기존값 재사용, 1인 1협회 unique
+- [04-12] architecture: 심판 플랫폼 라우트 그룹 (referee) — v1 초안 (registry 포함, 2 모델)
+- [04-12] decisions: 심판 플랫폼 샌드위치 구조 — v1 초안 (신규 테이블 2개만, 1인 1 Referee 원칙)
+- [04-02] decisions: 맞춤 설정 강화 — 실력 7단계 + 메뉴 토글 + 카테고리 분리 (DB 변경 최소, 하위 호환 유지)
+- [04-02] architecture: 맞춤 설정 시스템 구조 분석 — preference-form + API + context + 필터 적용 흐름 + SKILL_LABEL 중복 4곳
+- [03-29] decisions: GPS 히트맵 — Canvas 오버레이 + simpleheat (카카오맵 히트맵 미지원, court_sessions 시간대 집계)
+- [03-29] decisions: 3x3 이벤트 — tournament 완전 분리, court_events 4테이블 신설 (코트 종속 경량 대회)
+- [03-29] decisions: 앰배서더 — court_ambassadors 테이블 + 위키 바이패스 (코트별 동네 관리자)
+- [03-29] decisions: 주간 리포트 — DB 없이 court_sessions 실시간 집계 + Vercel Cron (1차 앱내 알림)
+- [03-29] decisions: 코트 유저 위키 — court_edit_suggestions 1테이블 + changes JSON diff (reports와 분리, 승인 시 XP 10)
+- [03-29] decisions: 픽업게임 모집 — 별도 pickup_games 테이블 신설 (games 분리, 즉시 확정 참가, 코트 직접 연결)
+- [03-29] decisions: 코트 데이터 품질 정리 기준 — 658개 추정 데이터 null 초기화 + 유저 위키 시스템
+- [03-28] project-structure-audit: 전체 구조 분석 — 미사용 API 6개/고립 페이지 4개/TODO 3건/레거시 3쌍 발견
+- [03-28] ux-audit-report: UI/UX 사용성 심층 조사 — 11개 영역/28개 개선안/단기10+중기8+장기5 우선순위
+- [03-28] toss-design-analysis: 토스 디자인 시스템 심층 분석 — 색상/폰트/간격/컴포넌트/레이아웃 전수치 + MyBDR 매핑 테이블
+- [03-28] decisions: admin UI 전면 개편 — 컴팩트 테이블 + 플로팅 모달 + 상태 탭
+- [03-28] conventions: admin UI 패턴 — 서버page + 클라이언트content 분리
+- [03-28] conventions: 대회 상태 4종 통일 (준비중/접수중/진행중/종료)
+- [03-28] architecture: admin 누락 관리 기능 4개 추가 (경기/커뮤니티/팀/코트)
+- [03-28] decisions: 프론트/admin/API 상수 통일 — 공통 상수 파일 import 원칙
+- [03-28] conventions: BDR 디비전 체계 3단계 (성별→종별→디비전) 표준 규격
+- [03-28] errors: categories JSON boolean/array 혼용 — Array.isArray 체크 필수
+- [03-28] lessons: ISR 캐시 무효화 — getWebSession()의 cookies()가 원인
+- [03-27] decisions: 홈 ISR 활성화 — getWebSession 분리로 CDN 캐시 가능
+- [03-27] decisions: Google Places 사진 연동 — 서버 proxy + 3단계 캐시

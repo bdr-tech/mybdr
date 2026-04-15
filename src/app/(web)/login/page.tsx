@@ -24,6 +24,8 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
 
   const oauthError = searchParams.get("error");
+  // 로그인 후 돌아갈 경로 (예: /referee → layout에서 redirect=/referee로 보냄)
+  const redirectTo = searchParams.get("redirect");
 
   // 모달 열릴 때 body 스크롤 방지
   useEffect(() => {
@@ -63,7 +65,7 @@ export default function LoginPage() {
           <div className="flex flex-col gap-2.5">
             {/* 카카오: 고유 브랜드 색상 유지 */}
             <a
-              href="/api/auth/login?provider=kakao"
+              href={`/api/auth/login?provider=kakao${redirectTo ? `&redirect=${encodeURIComponent(redirectTo)}` : ""}`}
               className="flex h-12 items-center justify-center gap-2 rounded-[12px] transition-opacity hover:opacity-90"
               style={{ backgroundColor: "#FEE500", color: "#191919" }}
             >
@@ -80,7 +82,7 @@ export default function LoginPage() {
             </div>
             {/* 구글: 테두리/배경 CSS 변수 */}
             <a
-              href="/api/auth/login?provider=google"
+              href={`/api/auth/login?provider=google${redirectTo ? `&redirect=${encodeURIComponent(redirectTo)}` : ""}`}
               className="flex h-12 items-center justify-center gap-2 rounded-[12px] border transition-colors"
               style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)' }}
             >
@@ -158,6 +160,8 @@ export default function LoginPage() {
 
             {/* 로그인 폼: 입력 필드 테두리/배경 CSS 변수 */}
             <form action={loginFormAction} className="space-y-3">
+              {/* 로그인 성공 후 복귀할 경로를 hidden input으로 전달 */}
+              {redirectTo && <input type="hidden" name="redirect" value={redirectTo} />}
               <input name="email" type="email" required placeholder="이메일"
                 className="w-full rounded-[12px] border px-4 py-3 text-sm focus:outline-none focus:ring-2"
                 style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)', color: 'var(--color-text-primary)' }} />

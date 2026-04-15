@@ -20,6 +20,8 @@ model User {
   height                                                                    Int?
   weight                                                                    Int?
   birth_date                                                                DateTime?                     @db.Date
+  // DB drift 복원: 기존 users.gender 컬럼 유지 (schema 누락분)
+  gender                                                                    String?                       @db.VarChar
   city                                                                      String?                       @db.VarChar
   district                                                                  String?                       @db.VarChar
   bio                                                                       String?
@@ -154,6 +156,8 @@ model User {
   // 광고 파트너: 소유한 파트너사 / 파트너 멤버
   partners_owned                                                            partners[]                    @relation("partner_owner")
   partner_members                                                           partner_members[]
+  // 심판 플랫폼: 1:1 (User 하나당 Referee 0~1). back-relation 1줄만 추가.
+  referee                                                                   Referee?
 
   // 심판 플랫폼: 1:1 (User 하나당 Referee 0~1). back-relation 1줄만 추가.
   referee Referee?
@@ -285,7 +289,7 @@ model Team {
   name                                                            String                  @db.VarChar
   // 신규: 영문 팀명 (선택). 국제 대회/영문 검색 매칭용. null 허용, unique 아님.
   name_en                                                         String?                 @db.VarChar
-  // 신규: 대표 언어 코드 ("ko" | "en"). UI에서 어느 언어를 상단에 크게 보여줄지 결정. 기본값 "ko".
+  // 대표 언어 코드 ("ko" | "en"). UI에서 어느 언어를 상단에 크게 보여줄지 결정. 기본값 "ko".
   name_primary                                                    String?                 @default("ko") @db.VarChar(10)
   slug                                                            String?                 @unique(map: "index_teams_on_slug") @db.VarChar
   description                                                     String?
@@ -2155,6 +2159,11 @@ model DuoSession {
   @@map("duo_sessions")
 }
 
+// ============================================================================
+// 심판 플랫폼 (Referee Platform) — 2026-04-12 Commit 1
+// 6개 신규 모델: Association / AssociationAdmin / Referee / RefereeCertificate
+//                / RefereeAssignment / RefereeSettlement
+// 원칙: 기존 테이블 ALTER 0건. 신규 CREATE TABLE 6건만 발생.
 // 운영 안전을 위해 users 수정은 `referee Referee?` back-relation 1줄뿐.
 // ============================================================================
 
@@ -2495,4 +2504,54 @@ model DailyAssignmentPool {
   @@index([tournament_id, date])
   @@index([association_id])
   @@map("daily_assignment_pools")
+}
+
+// ============================================================================
+// 헬스체크 봇 — 2026-04-13 1차
+// HealthCheckRun   : 1회 실행 세션 (cron/manual 트리거)
+// HealthCheckResult: 각 체크 항목별 결과 (패스/실패 + 에러 메시지)
+// 운영 안전: 신규 CREATE TABLE 2건만 발생. 기존 테이블 ALTER 0건.
+// ============================================================================
+
+// 헬스체크 1회 실행 세션. hourly/daily/manual 트리거 구분.
+// status: running → passed/failed/partial 로 최종화
+model HealthCheckRun {
+  id            BigInt    @id @default(autoincrement())
+  run_type      String    @db.VarChar // hourly/daily/manual
+  started_at    DateTime  @default(now()) @db.Timestamp(6)
+  finished_at   DateTime? @db.Timestamp(6)
+  status        String    @default("running") @db.VarChar // running/passed/failed/partial
+  total_checks  Int       @default(0)
+  passed_checks Int       @default(0)
+  failed_checks Int       @default(0)
+  duration_ms   Int?
+  triggered_by  String    @default("cron") @db.VarChar // cron/manual/admin 등
+
+  checks HealthCheckResult[]
+
+  @@index([started_at(sort: Desc)])
+  @@index([status])
+  @@map("health_check_runs")
+}
+
+// 개별 체크 결과. run_id당 수십~수백 건.
+// category: auth/api/page/security/data/perf (향후 확장)
+// onDelete: Cascade → Run 삭제 시 결과도 일괄 정리
+model HealthCheckResult {
+  id            BigInt   @id @default(autoincrement())
+  run_id        BigInt
+  category      String   @db.VarChar // auth/api/page/security/data/perf
+  name          String   @db.VarChar
+  target_url    String?  @db.VarChar
+  passed        Boolean
+  status_code   Int?
+  duration_ms   Int?
+  error_message String?  @db.Text
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+
+  run HealthCheckRun @relation(fields: [run_id], references: [id], onDelete: Cascade)
+
+  @@index([run_id])
+  @@index([passed, created_at(sort: Desc)])
+  @@map("health_check_results")
 }

@@ -64,6 +64,190 @@
 - **결정**: (1) public-bracket API에서 tournament.format을 반환하여 프론트에서 대회 형식별 UI 분기. (2) 조별 경기(group_name 있는 경기)를 별도로 조회하여 groupMatches로 반환. (3) GroupStandings의 wins/losses를 tournament_teams 테이블에서 읽지 않고 경기 결과에서 직접 집계 (public-standings와 동일 패턴). (4) format 분기: round_robin=조편성+경기결과만, single_elimination/double_elimination=토너먼트 트리만, group_stage=조별리그+토너먼트 트리 둘 다.
 - **이유**: (1) tournament_teams.wins/losses가 갱신되지 않는 문제를 public-standings에서 이미 경기결과 집계로 우회함 → 동일 패턴 적용. (2) 현재 API가 format을 안 읽어서 프론트가 대회 형식을 모름 → 리그전/토너먼트 구분 불가. (3) 조별 경기는 group_name만 있고 round_number/bracket_position이 없어서 현재 bracketOnlyMatches 필터에서 제외됨.
 - **대안 기각**: (A) tournament_teams.wins/losses를 경기 완료 시 자동 갱신하도록 수정 — DB 트리거 또는 API 후처리 필요, 기존 Flutter 앱과의 호환성 문제. (B) 별도 API 엔드포인트 신설 — 기존 public-bracket을 확장하는 것이 더 단순.
+### [2026-04-15] 헬스체크 cron 2차 — self-fetch + Promise.allSettled 병렬
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: `/api/cron/referee-healthcheck`의 8항목 점검을 (1) **self-fetch 방식으로 자기 도메인 API를 실제 호출**, (2) **Promise.allSettled로 병렬 실행**, (3) **실패해도 끝까지 진행 후 종합 기록**하도록 결정.
+- **대안 검토**:
+  (A) 내부 함수 직접 호출 (prisma + 서비스 함수 호출) → 빠르지만 미들웨어/라우팅/쿠키 경로를 건너뛰어 "실제 유저 경로 고장"을 못 잡음. 헬스체크 본래 목적과 어긋남.
+  (B) **[채택]** self-fetch + Promise.allSettled 병렬 + 개별 5초 타임아웃 → 실제 유저와 동일 경로 검증 + 8항목 5~7초 완료 + Vercel Hobby 10초 제한 내.
+  (C) 순차 실행 → 총 시간 40초+로 Vercel 10초 제한 초과. 실패 1건이 뒤를 막음.
+- **이유**: (1) "진짜 문 열어보기" — cron은 관측자 역할이므로 미들웨어 버그/인증 쿠키/라우팅 설정까지 전부 통과한 경로를 재현해야 의미가 있다. (2) 8항목이 서로 독립이라 병렬이 자연스럽고, allSettled는 1건 실패가 나머지를 막지 않음. (3) 중단 없이 끝까지 감 — 헬스체크의 목적은 "어디가 고장났는지" 전부 파악. (4) Vercel self-fetch는 공식 지원, cold start는 매시간 유지되는 cron 특성상 warm 상태.
+- **부차 결정**:
+  (1) 봇 로그인은 Admin/Referee 각 1회만 실행 후 set-cookie 파싱해 이후 점검에 재사용 — 매번 로그인 시 5배 지연.
+  (2) HealthCheckRun은 시작 시 running 생성 → 끝에 passed/partial/failed 업데이트. 결과 8건은 createMany 1회 batch.
+  (3) 개별 타임아웃 5초 (AbortController) — 심각한 지연의 명확한 지표, 전체 10초 안에 수렴.
+  (4) baseUrl 선택 우선순위: `APP_URL` → `VERCEL_URL` → `req.nextUrl.origin`.
+- **구현 예외 (2026-04-15 구현 시 조정)**:
+  check3(봇 로그인)만 self-fetch가 아닌 **내부 함수 호출**로 대체. 이유: 프로젝트의 웹 로그인이 Server Action(`loginAction`) 기반이라 JSON POST 엔드포인트가 없음. cron의 `performBotLogin`은 `loginAction`의 4단계(findUnique → status 확인 → bcrypt.compare → generateToken)를 동일 순서로 재현하여 로그인 계약 회귀는 충분히 탐지. check4/5/6/7/8은 설계대로 self-fetch 유지.
+- **참조횟수**: 0
+
+### [2026-04-13] 심판 알림 — 신규 Notification 모델 만들지 않고 기존 `notifications` 재사용
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: 신규 RefereeNotification 모델을 만들지 않고 **기존 Rails 호환 `notifications` 테이블 그대로 사용**.
+- **대안 검토**:
+  (A) RefereeNotification 신규 모델 (필드 축소형) → 조회 분리로 쿼리 단순, 그러나 테이블 2개 관리, 통합 벨 UI 시 union 쿼리 필요.
+  (B) **[채택]** 기존 notifications 재사용 + NOTIFICATION_TYPES에 referee.* 5종 추가 → 모델 0 추가, 헬퍼/UI 완전 재사용, bdr 웹과 심판 플랫폼 알림 통합 가능.
+  (C) Referee 자체 소셜 알림함 구축 → 과잉 설계.
+- **이유**: 기존 `src/lib/notifications/create.ts` 인프라 + createNotificationBulk + tournament-reminders cron 패턴이 완비됨. Referee는 User.id 갖고 있으므로 user_id 기반 조회로 자연 통합. 향후 mybdr 본체 알림과 한 벨에서 보는 것이 UX에 유리.
+- **부차 결정**:
+  (1) 공고 마감은 **lazy close 우선 + Cron 2차** — 목록 GET 시 updateMany 1회로 99% 커버, Cron은 새벽 누락분 정리용.
+  (2) 정산 상태 5종 중 **paid/cancelled/refunded 3종만 알림** — pending/scheduled는 내부 상태라 알림 피로도 방지.
+  (3) 알림 생성 실패는 **메인 트랜잭션 외부 try/catch** — 선정/배정 성공이 우선, 알림 에러는 로그만.
+  (4) Flutter 앱 알림은 기존 v1 API 체계와 분리 — 이번 단계는 웹 플랫폼 내부 벨만.
+- **참조횟수**: 0
+
+### [2026-04-13] 심판 배정 워크플로우 — 기존 RefereeAssignment를 "현장 배정" 단계로 재정의 + 앞단 4모델 추가
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: 기존 1모델 CRUD를 버리지 않고 **앞단에 공고/신청/선정/책임자 4모델을 쌓는** 방식 채택. RefereeAssignment에는 pool_id FK 1개만 nullable 추가.
+- **대안 검토**:
+  (A) RefereeAssignment 폐기 + 신규 모델로 전면 교체 → 기존 데이터/페이지/API 모두 이관 필요. 작업량 2~3배.
+  (B) **[채택]** RefereeAssignment 유지 + pool_id nullable 추가 + 앞단만 신설 → 기존 0변경, 점진 마이그레이션 가능, 과도기 2경로 운영 가능.
+  (C) Announcement 하나에 모든 것 때려넣기 (dates/applications/pool을 JSON으로) → 검색/조인 불가, 인덱스 불가.
+- **이유**: 바이브 코더 원칙(단순성 + 작동하는 코드 리팩토링 금지 + 점진적 확장). 기존 assignments 페이지가 이미 운영 중이라 중단 리스크 회피 필요. pool_id를 nullable로 두면 "기존 방식 배정"과 "신규 풀 기반 배정"이 공존 가능.
+- **부차 결정**:
+  (1) is_chief를 DailyAssignmentPool 컬럼 1개로 처리 (별도 Chief 테이블 X) — 조인 절감 + 단순성 우선.
+  (2) dates는 Postgres `DateTime[] @db.Date` 배열 사용 (JSON 대신) — 인덱스 가능, 쿼리 편의.
+  (3) required_count만 JSON — "일자 → {referee: N, scorer: M}" 형태로 키가 동적.
+  (4) 새 권한 키 추가 안 함 — 기존 `assignment_manage` 재사용. 공고/신청/선정/책임자 지정 모두 팀장급 동일 권한.
+- **참조횟수**: 0
+
+### [2026-04-14] 서류 이미지 저장 + OCR + 업로드 방식 확정
+- **분류**: decision
+- **발견자**: pm (사용자 확정)
+- **결정**: (1) 이미지: sharp 1500px+그레이스케일+JPEG Q70 → ~200KB/장, AES-256 암호화 DB 저장. (2) OCR: **Naver Clova OCR** (한국 서버, 개인정보 보안 최우선). (3) 신분증 OCR 미사용 (수동 입력). (4) 업로드 주체: **개인이 직접 업로드가 기본**, 관리자도 대리 업로드 가능.
+- **이유**: (1) Clova는 한국 서버라 개인정보 국외이전 이슈 없음. 한국 서류 템플릿 보유. (2) 개인이 자기 서류를 직접 올리는 게 개인정보 자기결정권 원칙에 부합. (3) 비용 월 100건 무료 + 건당 5원, 충분히 저렴.
+- **참조횟수**: 0
+
+### [2026-04-13] v3 협회 주도 사전 등록 + 유저 매칭 시스템
+- **분류**: decision
+- **발견자**: pm (planner-architect 분석 + 사용자 확정)
+- **결정**: 심판/경기원은 "자기 등록" 방식에서 "협회 관리자가 사전 등록 → 유저 매칭" 방식으로 전환. Referee.user_id를 nullable로 변경하여 User 없이도 Referee 레코드 생성 가능. 매칭 키는 이름+전화번호. 자기 등록은 1차에서 제외.
+- **이유**: (1) 실제 심판 자격은 협회가 부여하는 것이지 자기 선언이 아님. (2) 정산용 주민번호 등 민감 정보는 관리자가 입력해야 안전. (3) 기존 mybdr 유저 + 신규 가입 유저 모두 자연스럽게 매칭 가능.
+- **참조횟수**: 0
+
+### [2026-04-13] 협회 관리자 역할 9종 세분화 (임원 열람 전용)
+- **분류**: decision
+- **발견자**: pm (사용자 확정)
+- **결정**: AssociationAdmin에 role 필드 추가. 임원 3종(president/vice_president/director)은 모든 기능 열람만. 실무 6종(secretary_general/staff/referee_chief/referee_clerk/game_chief/game_clerk)이 실제 관리 수행. 관리자 추가/삭제 + 주민번호 열람은 회장+사무국장만.
+- **이유**: 실제 협회 조직 구조 반영. 임원은 의사결정 레벨이라 실무 관여 안 함.
+- **참조횟수**: 0
+
+### [2026-04-13] 심판 플랫폼 아키텍처 — 분리형 + 도메인/DB 공유
+- **분류**: decision
+- **발견자**: pm (planner-architect 분석 + 사용자 승인)
+- **결정**: 심판/경기원 플랫폼은 메인 사이트와 "분리형"으로 운영. 단, 도메인(mybdr.co.kr/referee)과 DB(단일 PostgreSQL)는 공유. Next.js App Router의 `(referee)` 라우트 그룹 + 독립 셸(referee-shell.tsx)로 코드 레벨 분리.
+- **이유**: (1) 심판 플랫폼은 "업무 도구"(배정/정산/자격증)이므로 일반 유저 UX와 섞이면 혼란. (2) DB 공유 필수 — User/Tournament/Game 참조가 핵심(분리 시 크로스 DB 조인 불가). (3) 같은 도메인이라 인증(쿠키/세션) 자동 공유. (4) Vercel 단일 앱 배포로 운영 단순. (5) 이미 11페이지+17 API가 분리형으로 구현 완료.
+- **대안 기각**: (A) 통합형(메인 네비에 심판 메뉴 추가) — 일반 유저에 불필요한 메뉴 노출, 기존 구현 롤백 비용 큼. (B) DB 분리 — User 조회용 별도 API, 크로스 DB 조인 불가, Prisma 멀티 DB 복잡도 급증. (C) 서브도메인(referee.mybdr.co.kr) — 쿠키 공유 설정 변경 필요, localhost 테스트 까다로움, 실익 없음.
+- **향후 확장**: 트래픽 폭증 시 서브도메인 → 별도 Vercel 앱 → DB 읽기 복제본 순으로 단계적 분리 가능. 현재 규모(심판 수백명)에서는 수년간 불필요.
+- **참조횟수**: 0
+
+### [2026-04-12] 심판 플랫폼 v2 최종확정 - 관리자-협회 연결은 매핑 테이블(옵션 B)
+- **분류**: decision
+- **발견자**: pm (사용자 승인)
+- **결정**: `users` 테이블에 `managed_association_id` 컬럼을 추가하지 않고, 별도 `association_admins(user_id unique, association_id)` 매핑 테이블 1개로 해결. ALTER TABLE 0건 유지.
+- **이유**: (1) 브랜치 격리 DB 전략의 핵심 원칙 "기존 테이블 0수정" 일관성. (2) 한 사람 = 한 협회 1차 제약도 `user_id unique`로 동일하게 강제 가능. (3) 향후 복수 협회 관리 확장 시 unique만 제거하면 됨.
+- **대안 기각**: 옵션 A(users ADD COLUMN managed_association_id) — ALTER TABLE 1건 발생, 운영 DB 공유 환경에서 위험.
+- **참조횟수**: 0
+
+### [2026-04-12] 심판 플랫폼 v2 최종확정 - Referee↔User 관계는 v1 양방향 (User 1줄 추가)
+- **분류**: decision
+- **발견자**: pm (사용자 승인)
+- **결정**: `prisma/schema.prisma`의 User 모델에 `referee Referee?` 1줄만 추가하고, Referee 모델에는 `user User @relation(fields: [user_id], references: [id], onDelete: Cascade)` 선언. DB users 테이블은 컬럼/인덱스/FK 전혀 건드리지 않음(Prisma 메타데이터일 뿐).
+- **이유**: (1) `referees.user_id`에 DB 레벨 FK 제약이 생겨 "존재하지 않는 user_id로 Referee 생성" 불가. 앱 레벨 검증보다 훨씬 안전. (2) User 모델 1줄 추가는 users 테이블 스키마 영향 0 — "기존 테이블 수정 금지" 원칙의 예외로 인정. (3) Prisma Client에서 `user.referee` nested include 가능 → 코드 단순화.
+- **대안 기각**: v2(단방향 FK 없음) — 무결성 앱 책임으로 구멍 발생 위험.
+- **참조횟수**: 0
+
+### [2026-04-12] 심판 플랫폼 v2 최종확정 - RefereeAssignment는 TournamentMatch 단독 FK
+- **분류**: decision
+- **발견자**: pm (사용자 결정)
+- **결정**: `RefereeAssignment.game_id` 필드 제거. `tournament_match_id BigInt NOT NULL`만 남김. 일반 경기(`games` 테이블, 픽업/친선)는 심판 배정 대상이 아님.
+- **이유**: (1) 사용자가 "일반경기는 배정 기능 필요 없음"이라고 명시. (2) CHECK 제약(둘 중 하나만 채움) zod 로직 불필요 → 코드 단순화. (3) KBL/WKBL 포함 모든 공식 배정 대상은 `tournament_matches`로 집약. (4) NOT NULL로 만들 수 있어 데이터 무결성 강화.
+- **대안 기각**: (A) game_id + tournament_match_id 동시 보유 — 실제 사용 없음, 복잡도만 증가. (B) game_id 단독 — 공식 대회 배정 불가.
+- **참조횟수**: 0
+
+### [2026-04-12] 심판 플랫폼 v2 - 협회 계층형 모델 (Association)
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: Association 모델을 계층형(self-relation parent_id)으로 설계, 총 20개 시드(KBA 1 + 시도 17 + KBL/WKBL 2). level 필드로 national/sido/pro_league 구분. code는 KBA-XX (ISO 3166-2:KR 기반) + KBL/WKBL. KBL/WKBL은 KBA 산하가 아닌 독립 pro_league로 parent_id=null.
+- **이유**: (1) 추후 시군구 협회 확장을 자체 구조 변경 없이 수용 가능 (parent_id만 추가). (2) 시도 17개는 src/lib/constants/regions.ts의 REGIONS 키와 정확히 일치하므로 단일 소스 오브 트루스로 재사용. (3) 프로리그는 시도 체계와 직교하므로 level 필드로 분리하는 게 가장 단순.
+- **대안 기각**: (A) 평면 Association 테이블(parent_id 없음) — 시군구 확장 불가. (B) enum으로 고정 20개 — 추후 조직 변경 시 마이그레이션 필요.
+- **참조횟수**: 0
+
+### [2026-04-12] 심판 플랫폼 v2 - 자격증 파일 업로드 제거 + 교차검증
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: RefereeCertificate.file_url 필드 완전 제거. 대신 cert_number + User(name/birth_date/phone) 조합으로 협회 측 명단과 교차검증하여 verified=true 설정.
+- **이유**: (1) 파일 업로드는 Vercel Blob/S3 설정 + 개인정보 저장 + 열람 권한 설계가 필요해 1차 범위 초과. (2) 협회 측이 공식 자격증 명단을 Excel로 보유 중 — 파일보다 데이터 매칭이 검증으로 더 강력. (3) 위변조 파일 수동 검토 부담 제거.
+- **대안 기각**: (A) file_url + verified 병행 — 검증 기준 이중화로 혼선. (B) PDF OCR — 정확도/구현 비용 과다.
+- **참조횟수**: 0
+
+### [2026-04-12] 심판 플랫폼 v2 - Excel 일괄 + 개별 토글 2-way 검증
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: 협회 관리자의 자격증 검증 방식을 두 가지 모두 제공. (1) Excel 업로드: 9컬럼 xlsx → preview(파싱+매칭, DB미변경) → confirm(트랜잭션 일괄 verified=true) 2단계. (2) 개별 토글: admin/members/[id]에서 자격증별 PATCH /verify 엔드포인트로 버튼 클릭 토글. Excel은 5MB/500행 제한, 파일은 저장하지 않고 즉시 폐기.
+- **이유**: (1) 대량 신규 등록 시 Excel이 효율적, (2) 예외 케이스(오타/이력 변경)는 개별 토글이 필요. (3) 2단계 UX는 실수 롤백 가능성 확보. (4) 파일 미저장은 개인정보 최소수집 원칙 준수.
+- **대안 기각**: (A) Excel만 — 예외 처리 불가. (B) 개별만 — 초기 대량 검증 비효율. (C) 1단계 즉시 반영 — 실수 복구 불가.
+- **참조횟수**: 0
+
+### [2026-04-12] 심판 플랫폼 v2 - 심판 공개 목록 제거
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: /referee/registry 경로 삭제. 심판 목록은 (a) 본인 profile/ 조회 + (b) admin/members/ 관리자 목록 두 컨텍스트만. 일반 유저는 심판 목록 페이지 접근 불가. 1차에선 경기 배정 UI도 없으므로 실제 노출 경로는 0개.
+- **이유**: (1) 개인정보 보호 — 실명/생년월일/자격증 번호는 공개 목록에 부적합. (2) 심판은 "경기 배정 도구"로만 노출되어야 하며, 시장 탐색용 디렉터리가 아님. (3) 공개 목록은 스팸/괴롭힘 대상이 될 수 있음. (4) 경기 배정 기능이 구현되면 그 안에서만 드러나도록 격리.
+- **대안 기각**: (A) 로그인 필수 공개 목록 — 여전히 개인정보 유출 리스크. (B) 닉네임만 공개 — 2-way 검증에 실명이 필요하므로 모델 분리가 복잡.
+- **참조횟수**: 0
+
+### [2026-04-12] 심판 플랫폼 v2 - 실명 노출 (User.name)
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: Referee 표시 이름은 User.name(실명) 사용. 기존 User 모델에 name(String?), birth_date, phone이 모두 존재하므로 그대로 활용. verified_name/verified_birth_date/verified_phone은 검증 시점 스냅샷으로 Referee에 별도 저장(추후 User 변경 감지용).
+- **이유**: (1) 심판은 공식 자격으로 활동하므로 실명 식별이 필수. nickname은 커뮤니티용. (2) Excel 교차검증 키(실명+생년월일+전화번호)와 일치해야 함. (3) User 필드가 이미 존재 → 별도 컬럼 추가 불필요. (4) 스냅샷을 Referee에 두면 User 변경 시 재검증 필요 여부 감지 가능.
+- **대안 기각**: (A) Referee에 real_name 별도 컬럼 — User.name과 중복, 동기화 부담. (B) nickname 노출 — 검증 시스템과 불일치.
+- **참조횟수**: 0
+
+### [2026-04-12] 심판 플랫폼 v2 - 배정/정산 조회 전용 1차 포함
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: RefereeAssignment + RefereeSettlement 2모델을 1차 범위에 포함. 단 생성 로직(관리자 배정 UI, 정산 계산 자동화)은 2차로 분리. 1차엔 조회 API + 본인 페이지만 구현, 테스트 데이터는 DB 수동 insert 또는 seed 확장. 경기 엔티티 FK는 tournament_match_id / game_id 2개 분리 컬럼(어느 한쪽만 채움), Prisma @relation은 선언하지 않음(기존 games/TournamentMatch 모델 0수정).
+- **이유**: (1) 스키마를 미리 확정하면 나중에 배정 생성 로직 추가 시 테이블 변경 없이 API만 추가 가능. (2) 본인 대시보드에서 "최근 배정"/"미정산 금액"을 1차부터 보여주는 UX 가치가 큼. (3) 경기 엔티티 FK 분리는 pickup games와 공식 tournament 둘 다 배정 대상이 될 수 있어 양쪽 지원. (4) @relation 생략은 기존 모델 수정 금지 원칙 준수의 대가 — 조회 시 별도 쿼리 2회 발생하지만 1차 볼륨에선 무시할 만함.
+- **대안 기각**: (A) 2차로 전체 연기 — 본인 대시보드 가치 미확보. (B) 단일 `entity_type + entity_id` 폴리모픽 — 타입 안정성 저하 + 인덱스 효율 낮음. (C) games/TournamentMatch에 역방향 relation 추가 — 기존 모델 수정, 원칙 위반.
+- **참조횟수**: 0
+
+### [2026-04-12] 심판 플랫폼 v2 - AssociationAdmin 매핑 테이블 (User 0수정)
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: 협회 관리자(association_admin)의 소속 협회 식별을 위해 User에 컬럼을 추가하지 않고 **AssociationAdmin(user_id unique, association_id)** 매핑 테이블을 신설. 권한 체크는 `User.admin_role === "association_admin"` AND `AssociationAdmin` 행 존재 이중 조건. admin_role 필드는 기존에 있으므로 값만 "association_admin" 추가하여 컬럼 변경 0건.
+- **이유**: (1) users 테이블은 73 컬럼으로 이미 비대 — 추가 ALTER 최소화. (2) subin-referee 브랜치 격리 DB 전략과 일관: "CREATE TABLE만 허용, ALTER 금지". (3) 1인 1협회 제약은 user_id unique로 강제. (4) 추후 1인 다협회 확장 시 unique만 해제하면 되어 유연. (5) admin_role 기존 값("super_admin"/"org_admin"/"content_admin")에 값 하나 추가하는 것은 컬럼 변경 아님.
+- **검증**: `prisma db push --dry-run` 결과가 `ALTER TABLE users`를 포함하면 즉시 중단. 정상이면 CREATE 6건(associations/association_admins/referees/referee_certificates/referee_assignments/referee_settlements)만 출력.
+- **대안 기각**: (A) users에 managed_association_id BigInt? 컬럼 추가 — ALTER 1건 발생, 운영 DB 공유 환경에서 위험. (B) admin_role에 "association_admin:123" 같은 복합 값 저장 — 파싱 필요, 인덱스 불가, 스키마 오염.
+- **참조횟수**: 0
+
+### [2026-04-12] 심판 플랫폼 샌드위치 구조 (referee 라우트 그룹 + 2 신규 테이블)
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: (1) `(referee)` 라우트 그룹 신설, 기존 `(web)`/`(admin)`/`(site)` 건드리지 않음. (2) Prisma 신규 테이블 2개(`referees`, `referee_certificates`)만 추가, 기존 테이블 0건 수정. (3) Referee 셸 레이아웃은 `(web)/layout.tsx`를 재활용하지 않고 독자 구현. (4) 한 유저 1 Referee 프로필 원칙(1:1), role_type 단일값. (5) 자격증 파일 업로드는 1차에서 file_url(외부 링크)만. (6) verified 플래그는 관리자 수동 승인(admin UI 없음), API에선 verified 수정 금지.
+- **이유**: (1) 기존 layout은 거대한 "use client" 파일로 검색/알림/슬라이드메뉴 로직이 섞여 있어 referee에 과함 + 의존성 분리가 어렵다. 자체 셸이 단순하고 격리된다. (2) 신규 테이블만 추가하면 `prisma db push`가 기존 데이터 파괴 없이 CREATE TABLE만 실행 — 브랜치 격리 DB 전략(아래 항목)과 결합해 운영 안전. (3) 1:1 원칙은 role_type을 certificates로 옮겨 처리 가능하므로 모델 복잡도 감소. (4) 파일 업로드는 Vercel Blob/S3 설정이 별도 필요하므로 2차 분리.
+- **대안 기각**: (A) (web)에 /referee 경로로 섞기 — 기존 layout 의존성 증가, 사이드바에 "심판 플랫폼" 추가 필요 → (web) 수정 금지 제약 위반. (B) User 모델에 referee_level/license 컬럼 직접 추가 — User 테이블 ALTER 발생 + 100+ 필드 User 더 비대해짐. (C) RefereeRole 다중 프로필 — YAGNI, 1차 스코프 밖.
+- **참조횟수**: 0
+
+### [2026-04-12] 심판 플랫폼 DB 전략: User 모델 0줄 수정 + 단방향 relation
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: (1) User 모델에 `referee Referee?` back-relation을 **선언하지 않는다**. (2) Referee 쪽에서만 `user_id BigInt @unique`로 FK 보유(단방향). (3) Prisma 6는 단방향 relation에 경고를 낼 수 있으나, referee 쪽에서 `@relation`을 선언하지 않고 순수 FK 컬럼으로만 두면 Prisma는 User와의 관계를 인식하지 않음 → User 모델 파일 diff 0줄. (4) 쿼리 시 join이 필요하면 `prisma.user.findUnique({ where: { id }})` + `prisma.referee.findUnique({ where: { user_id }})`를 두 번 쿼리하거나, Referee include에서 별도 로드.
+- **이유**: (1) User.id 타입이 BigInt라 Referee.user_id도 BigInt 필수 — 이 점만 맞으면 @relation 선언 없이도 FK 무결성을 DB 제약으로는 강제 가능하나 Prisma Client의 nested include가 안 됨. **대안 채택**: Referee 쪽에만 `@relation`을 선언하되 `references: [id]`로 User를 참조하면 Prisma는 User 쪽 back-relation을 요구한다. 따라서 **최종 결정**: User 모델에 `referee Referee?` 1줄만 추가(다른 필드/속성 전부 보존). `prisma db push`는 이 1줄로 **ALTER TABLE을 발생시키지 않는다** (순수 Prisma-level 관계 선언, DB 스키마 영향 0).
+- **검증**: Prisma의 relation 선언은 DB 마이그레이션 SQL을 생성하지 않음. FK 제약은 Referee 모델의 `@relation` + `references`로 정의되며, `referees` 테이블 CREATE 시 `REFERENCES users(id)` 제약으로 추가됨. `users` 테이블은 미변경.
+- **대안 기각**: (A) User 모델 전체 미수정(단방향) — Prisma가 검증 시 에러. (B) User에 referee 필드 + 다른 커스텀 필드 — 스코프 넘침.
+- **참조횟수**: 0
+
+### [2026-04-12] 심판 플랫폼 브랜치 격리 DB 전략
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: (1) 개발/운영 DB가 물리적으로 분리되어 있지 않으므로, subin-referee 브랜치에서 `prisma db push` 실행 시 **오직 신규 테이블 추가만 발생**해야 한다. (2) Prisma 모델 추가 후 반드시 `prisma db push --dry-run`으로 DROP/ALTER 여부를 먼저 확인하고, 순수 CREATE TABLE 2건만 나오는지 검증한 후 실제 push. (3) 기존 테이블/컬럼은 절대 수정하지 않음 (User 관계 추가조차 Prisma-level). (4) 브랜치 머지 시 main → dev → main 워크플로 따름, dev 브랜치에서 통합 검증.
+- **이유**: (1) 운영 DB와 개발 DB가 같은 인스턴스를 공유한다면 테이블 변경은 즉시 운영에 반영됨 — 파괴적 변경 절대 금지. (2) CREATE TABLE은 기존 데이터에 영향이 0이므로 안전. (3) dry-run 체크는 planner가 강제 규칙으로 넣어서 developer가 실수로 DROP을 실행하지 못하게 함.
+- **대안 기각**: (A) 별도 DB 신설 — 인프라 작업 범위 밖. (B) shadow database로 마이그레이션 — Prisma Migrate를 쓰려면 history 관리 필요, 현재 프로젝트는 `db push` 기반이라 history 불일치 위험.
 - **참조횟수**: 0
 
 ### [2026-04-02] 맞춤 설정 강화: 실력 7단계 + 메뉴 토글 + 카테고리 분리

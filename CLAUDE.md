@@ -34,6 +34,7 @@ git push origin subin
 - **개발 DB**: Supabase 개발 전용 인스턴스 (운영과 분리)
 - **개발 프리뷰**: https://mybdr-git-dev-mybdr.vercel.app/ (Vercel, `dev` 브랜치 연동)
 - **로컬 포트**: `http://localhost:3001` (`package.json`의 `dev` 스크립트에 `--port 3001` 고정)
+- **referee 브랜치 포트**: `subin-referee` 브랜치 작업 시 `--port 3002` 사용 (메인 개발서버 3001과 동시 실행 가능)
 - **.env**: 개발 DB URL + localhost 주소. **운영 DB URL 사용 금지**
 - **.env.local**: 로컬 port 3001용 auth/CORS/APP_URL 오버라이드 (gitignored)
 
@@ -54,6 +55,15 @@ git push origin subin
 ## 프로젝트 개요
 Rails 8.0 기반 BDR Platform을 Next.js 15로 전환한 프로젝트.
 보안 최우선, Flutter 앱(bdr_stat) API 100% 호환.
+
+## 심판/경기원 플랫폼 아키텍처 (2026-04-13 확정)
+- **구조**: 분리형 — 메인 사이트(web)와 심판 플랫폼(referee)은 독립된 UX/셸을 가짐
+- **도메인**: 공유 — mybdr.co.kr/referee (Path 기반, 서브도메인 아님)
+- **DB**: 공유 — 단일 PostgreSQL, User/Tournament/Game 등 기존 테이블 참조
+- **인증**: 공유 — 같은 JWT + 웹세션 (같은 도메인이라 쿠키 자동 공유)
+- **코드 분리**: Next.js App Router의 `(referee)` 라우트 그룹 + `referee-shell.tsx` 독립 셸
+- **원칙**: 같은 건물(도메인) 안의 별도 사무실(라우트 그룹). 전기/수도(DB/인증)는 공유, 인테리어(UI)는 독립
+- **포트**: `subin-referee` 브랜치 작업 시 `--port 3002` (메인 개발서버 3001과 동시 실행)
 
 ## 기술 스택
 - **Framework**: Next.js 15 (App Router, TypeScript strict)
