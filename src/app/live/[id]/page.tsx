@@ -302,13 +302,106 @@ function TeamLogo({
   );
 }
 
+// ─────────────────────────────────────────────────────────────
+// 스코어카드 서브 컴포넌트 (2026-04-15 모바일 2행 레이아웃 재설계)
+// 이유: 기존 5단(로고/점수/중앙/점수/로고) 가로 배치가 모바일에서 가로폭 부족으로
+// 점수·중앙정보가 쪼그라들어 가독성이 떨어짐.
+// 해결: 모바일은 Row1(팀 좌우) + Row2(점수-중앙정보-점수) 2행 구조, 데스크톱은 5단 유지.
+// 공통 빌딩블록으로 뽑아 모바일/데스크톱 양쪽에서 재사용.
+// ─────────────────────────────────────────────────────────────
+
+// 팀 블록: 로고 + 팀명(+홈 아이콘)
+// logoSize는 호출부에서 모바일 48 / 데스크톱 72로 지정
+function TeamBlock({
+  team,
+  isHome,
+  logoSize,
+}: {
+  team: MatchData["home_team"];
+  isHome: boolean;
+  logoSize: number;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-2 min-w-0">
+      <TeamLogo team={team} size={logoSize} />
+      {/* 팀명: 모바일은 max-w 100px(좁게), 데스크톱은 160px. 홈팀만 home 아이콘 prepend */}
+      <p
+        className="text-sm sm:text-base font-medium flex items-center gap-1 truncate max-w-[100px] sm:max-w-[160px]"
+        style={{ color: "var(--color-text-primary)" }}
+      >
+        {isHome && (
+          <span
+            className="material-symbols-outlined shrink-0"
+            style={{ fontSize: "16px", color: "var(--color-text-muted)" }}
+          >
+            home
+          </span>
+        )}
+        {team.name}
+      </p>
+    </div>
+  );
+}
+
+// 점수 표시: 플래시 애니메이션(점수 변경 시 scale+brightness) 유지
+function ScoreDisplay({ value, flash }: { value: number; flash: boolean }) {
+  return (
+    <p
+      className={`text-5xl sm:text-6xl font-black transition-all duration-300 ${flash ? "scale-125 brightness-150" : "scale-100"}`}
+      style={{ color: "var(--color-text-primary)" }}
+    >
+      {value}
+    </p>
+  );
+}
+
+// 중앙 정보 블록: 상태 라벨 + 일시 + 장소
+// 기존 5단 레이아웃 내 JSX 블록을 그대로 추출. getCenterStatusLabel / formatMatchDateTime 재사용
+function CenterInfoBlock({ match, isLive }: { match: MatchData; isLive: boolean }) {
+  void isLive; // 현재는 상태 라벨 헬퍼가 match.status/current_quarter만 쓰지만, 추후 확장 대비 시그니처 유지
+  const { text, highlight } = getCenterStatusLabel(match.status, match.current_quarter);
+  const dt = formatMatchDateTime(match.scheduled_at, match.started_at);
+  return (
+    <div className="flex flex-col items-center gap-2 px-1 min-w-0">
+      {/* 상태 라벨 — highlight(진행 중 쿼터 등)면 primary red + 크게 */}
+      <span
+        className={`whitespace-nowrap ${highlight ? "text-xl font-semibold" : "text-lg"}`}
+        style={{ color: highlight ? "var(--color-primary)" : "var(--color-text-muted)" }}
+      >
+        {text}
+      </span>
+      {/* 일시 — 모바일은 text-sm으로 한 단계 축소 (좁은 가로폭 대응) */}
+      {dt && (
+        <span
+          className="text-sm sm:text-base whitespace-nowrap"
+          style={{ color: "var(--color-text-muted)" }}
+        >
+          {dt}
+        </span>
+      )}
+      {/* 장소 — 모바일은 max-w 180px, 데스크톱 220px */}
+      {match.venue_name && (
+        <span
+          className="text-sm sm:text-base truncate max-w-[180px] sm:max-w-[220px] text-center"
+          style={{ color: "var(--color-text-muted)" }}
+        >
+          {match.venue_name}
+        </span>
+      )}
+    </div>
+  );
+}
+
 const POLL_INTERVAL = 3_000; // 3초
 
-// 얼룩무늬(zebra stripe) 배경색 — 중립 회색 알파를 쓰면 다크/라이트 모두에서 은은하게 보임.
-// 라이트 배경(흰색)에서는 살짝 어둡게, 다크 배경(#0A)에서는 살짝 밝게 동시에 보이도록 중간 회색 사용.
-const ZEBRA_BG = "rgba(127, 127, 127, 0.06)";
-// TOTAL 합산 행 전용 — 조금 더 진하게 구분
-const TOTAL_ROW_BG = "rgba(127, 127, 127, 0.10)";
+// 얼룩무늬(zebra stripe) 배경색 — card 위에 중립 회색 6%를 섞어 불투명화.
+// 모바일 가로 스크롤 시 sticky 셀(bg-inherit)이 투명해지면 뒤 콘텐츠가 비치는 문제 해결.
+// color-mix는 모던 브라우저(Chrome 111+, Safari 16.2+, Firefox 113+) 모두 지원.
+const ZEBRA_BG = "color-mix(in srgb, var(--color-card), #7f7f7f 6%)";
+// TOTAL 합산 행 전용 — 조금 더 진하게 구분 (card 위에 10%)
+const TOTAL_ROW_BG = "color-mix(in srgb, var(--color-card), #7f7f7f 10%)";
+// 짝수 행(홀수 번째가 아닌) 기본 배경 — 카드 색 그대로 쓰되 sticky 셀도 불투명 상속받도록 명시
+const ROW_EVEN_BG = "var(--color-card)";
 
 export default function LiveBoxScorePage() {
   const { id } = useParams<{ id: string }>();
@@ -521,107 +614,34 @@ export default function LiveBoxScorePage() {
             이유: 데스크톱에서 스코어카드/쿼터 테이블이 너무 넓게 퍼져 정보 밀도가 떨어지므로
             좌우를 좁혀 시선 집중시키기. 박스스코어는 이 래퍼 밖이라 영향 없음. */}
         <div className="mx-auto w-full sm:w-3/4">
-        <div className="flex items-center justify-between gap-2 sm:gap-4">
-          {/* 1. 홈 영역: 로고 + 🏠아이콘+팀명 */}
-          <div className="flex flex-col items-center gap-2 min-w-0 flex-shrink-0">
-            {/* 큰 원형 로고 (모바일 56 / sm 이상 72) — Tailwind에서 sm:size 동적 변경이 어려워 두 사이즈를 분기 렌더 */}
-            <div className="sm:hidden">
-              <TeamLogo team={match.home_team} size={56} />
-            </div>
-            <div className="hidden sm:block">
-              <TeamLogo team={match.home_team} size={72} />
-            </div>
-            {/* 팀명 — 이전보다 크기 축소(text-sm sm:text-base)로 로고/점수 대비 약하게.
-                홈팀 표기를 위해 Material Symbols home 아이콘을 팀명 앞에 gap-1로 배치 */}
-            <p
-              className="text-sm sm:text-base font-medium flex items-center gap-1 truncate max-w-[120px] sm:max-w-[160px]"
-              style={{ color: "var(--color-text-primary)" }}
-            >
-              <span
-                className="material-symbols-outlined shrink-0"
-                style={{ fontSize: "16px", color: "var(--color-text-muted)" }}
-              >
-                home
-              </span>
-              <span className="truncate">{match.home_team.name}</span>
-            </p>
+        {/* 스코어카드 레이아웃 분기 (2026-04-15 모바일 2행 재설계)
+            - 모바일(sm 미만): 2행 — Row1 [홈팀 | 원정팀], Row2 [홈점수 | 중앙정보 | 원정점수]
+            - 데스크톱(sm 이상): 기존 5단 — [홈팀 | 홈점수 | 중앙정보 | 원정점수 | 원정팀]
+            이유: 모바일에서 점수·중앙정보가 좁은 가로폭에 짓눌려 판독성이 떨어지는 문제를 해결.
+            가로폭이 넉넉한 데스크톱은 한 줄로 보는 편이 시선 흐름이 자연스러워 기존 유지. */}
+
+        {/* 모바일 전용: 2행 레이아웃 */}
+        <div className="sm:hidden">
+          {/* Row1: 홈팀 / 원정팀 좌우 배치. justify-around로 여백 균등 */}
+          <div className="flex items-center justify-around mb-4">
+            <TeamBlock team={match.home_team} isHome logoSize={48} />
+            <TeamBlock team={match.away_team} isHome={false} logoSize={48} />
           </div>
-
-          {/* 2. 홈 점수 — 팀 영역에서 분리되어 독립 배치. 플래시 애니메이션 className 유지 */}
-          <p
-            className={`text-5xl sm:text-6xl font-black transition-all duration-300 ${homeFlash ? "scale-125 brightness-150" : "scale-100"}`}
-            style={{ color: "var(--color-text-primary)" }}
-          >
-            {match.home_score}
-          </p>
-
-          {/* 3. 중앙 정보 블록 — 상태 라벨 / 일시 / 장소 (2026-04-15 글자 확대 + 🔄 제거)
-              이유: 라운드명은 정보 밀도 낮아 제거, 대신 "경기 상태(N쿼터/경기 전/종료)"와 "일시"를
-              티빙 중계처럼 상단에 배치해 방문자가 현재 경기가 어느 단계인지 즉시 파악 가능하게.
-              🔄 새로고침 버튼 제거: fetchMatch가 3초 폴링으로 자동 갱신되므로 수동 버튼 불필요.
-              글자 확대: 이미지 5처럼 중앙 정보가 또렷하게 보이도록 상태/일시/장소 폰트 크기 상향. */}
-          <div className="flex flex-col items-center gap-2 px-1 min-w-0">
-            {/* ① 상태 라벨 — 헬퍼가 { text, highlight } 반환. highlight=true면 빨강+bold+xl, false면 muted+lg */}
-            {(() => {
-              const { text, highlight } = getCenterStatusLabel(match.status, match.current_quarter);
-              return (
-                <span
-                  className={`whitespace-nowrap ${highlight ? "text-xl font-semibold" : "text-lg"}`}
-                  style={{ color: highlight ? "var(--color-primary)" : "var(--color-text-muted)" }}
-                >
-                  {text}
-                </span>
-              );
-            })()}
-
-            {/* ② 일시 — scheduled_at 우선, 없으면 started_at, 둘 다 없으면 숨김. text-xs → text-base */}
-            {(() => {
-              const dt = formatMatchDateTime(match.scheduled_at, match.started_at);
-              return dt ? (
-                <span
-                  className="text-base whitespace-nowrap"
-                  style={{ color: "var(--color-text-muted)" }}
-                >
-                  {dt}
-                </span>
-              ) : null;
-            })()}
-
-            {/* ③ 경기장명 — API에서 venue_name으로 받아옴 (없으면 숨김). text-xs → text-base, 글자 커지니 max-w도 확대 */}
-            {match.venue_name && (
-              <span
-                className="text-base truncate max-w-[220px] text-center"
-                style={{ color: "var(--color-text-muted)" }}
-              >
-                {match.venue_name}
-              </span>
-            )}
-            {/* ④ 새로고침 버튼은 제거됨 — 3초 폴링(POLL_INTERVAL)으로 자동 갱신 */}
+          {/* Row2: 점수 - 중앙정보 - 점수. justify-between로 양 끝 정렬 */}
+          <div className="flex items-center justify-between gap-2 px-2">
+            <ScoreDisplay value={match.home_score} flash={homeFlash} />
+            <CenterInfoBlock match={match} isLive={isLive} />
+            <ScoreDisplay value={match.away_score} flash={awayFlash} />
           </div>
+        </div>
 
-          {/* 4. 원정 점수 */}
-          <p
-            className={`text-5xl sm:text-6xl font-black transition-all duration-300 ${awayFlash ? "scale-125 brightness-150" : "scale-100"}`}
-            style={{ color: "var(--color-text-primary)" }}
-          >
-            {match.away_score}
-          </p>
-
-          {/* 5. 원정 영역: 로고 + 팀명 (홈 아이콘 없음) */}
-          <div className="flex flex-col items-center gap-2 min-w-0 flex-shrink-0">
-            <div className="sm:hidden">
-              <TeamLogo team={match.away_team} size={56} />
-            </div>
-            <div className="hidden sm:block">
-              <TeamLogo team={match.away_team} size={72} />
-            </div>
-            <p
-              className="text-sm sm:text-base font-medium truncate max-w-[120px] sm:max-w-[160px] text-center"
-              style={{ color: "var(--color-text-primary)" }}
-            >
-              {match.away_team.name}
-            </p>
-          </div>
+        {/* 데스크톱 전용: 기존 5단 가로 레이아웃 */}
+        <div className="hidden sm:flex items-center justify-between gap-4">
+          <TeamBlock team={match.home_team} isHome logoSize={72} />
+          <ScoreDisplay value={match.home_score} flash={homeFlash} />
+          <CenterInfoBlock match={match} isLive={isLive} />
+          <ScoreDisplay value={match.away_score} flash={awayFlash} />
+          <TeamBlock team={match.away_team} isHome={false} logoSize={72} />
         </div>
 
         {/* 쿼터별 점수 — 테이블 폭 100% 롤백 (mx-auto w-3/4 제거).
@@ -1043,7 +1063,7 @@ function BoxScoreTable({
                   style={{
                     borderColor: "var(--color-border)",
                     // 얼룩무늬: 짝수 행은 투명, 홀수 행은 중립 회색 알파
-                    backgroundColor: i % 2 === 0 ? "transparent" : ZEBRA_BG,
+                    backgroundColor: i % 2 === 0 ? ROW_EVEN_BG : ZEBRA_BG,
                   }}
                 >
                   {/* sticky 셀은 zebra 배경을 bg-inherit로 따라가게 함 */}
@@ -1112,7 +1132,7 @@ function BoxScoreTable({
                   className="border-b"
                   style={{
                     borderColor: "var(--color-border)",
-                    backgroundColor: (sorted.length + i) % 2 === 0 ? "transparent" : ZEBRA_BG,
+                    backgroundColor: (sorted.length + i) % 2 === 0 ? ROW_EVEN_BG : ZEBRA_BG,
                   }}
                 >
                   <td
@@ -1278,7 +1298,7 @@ function PbpSection({ match }: { match: MatchData }) {
                     className="border-b"
                     style={{
                       borderColor: "var(--color-border)",
-                      backgroundColor: i % 2 === 0 ? "transparent" : ZEBRA_BG,
+                      backgroundColor: i % 2 === 0 ? ROW_EVEN_BG : ZEBRA_BG,
                     }}
                   >
                     <td className="py-1.5 px-2 whitespace-nowrap" style={{ color: "var(--color-text-muted)" }}>
