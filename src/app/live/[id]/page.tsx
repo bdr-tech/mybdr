@@ -178,6 +178,55 @@ function getTeamInitials(name: string): string {
   return tokens.map((t) => t.charAt(0)).join("").slice(0, 3);
 }
 
+/**
+ * "#RRGGBB" 또는 "#RGB" hex를 RGB로. 실패 시 null.
+ * 이유: 팀색이 "#FFF" 같은 단축형으로 들어올 수도 있어 두 형식 모두 지원.
+ */
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  if (!hex) return null;
+  const clean = hex.replace("#", "").trim();
+  if (clean.length === 3) {
+    // 3자리 단축형("FFF") → 각 문자를 2번 반복 ("FFFFFF")
+    const r = parseInt(clean[0] + clean[0], 16);
+    const g = parseInt(clean[1] + clean[1], 16);
+    const b = parseInt(clean[2] + clean[2], 16);
+    if ([r, g, b].some((v) => isNaN(v))) return null;
+    return { r, g, b };
+  }
+  if (clean.length === 6) {
+    const r = parseInt(clean.slice(0, 2), 16);
+    const g = parseInt(clean.slice(2, 4), 16);
+    const b = parseInt(clean.slice(4, 6), 16);
+    if ([r, g, b].some((v) => isNaN(v))) return null;
+    return { r, g, b };
+  }
+  return null;
+}
+
+/**
+ * 팀색(hex)의 perceived brightness (0=검정 ~ 1=흰색).
+ * ITU-R BT.601 luma 공식 사용 (간단 + 실용적).
+ * 이유: 사람 눈은 빨강/초록/파랑을 균등하게 보지 않기 때문에 단순 평균보다 luma가 체감에 맞음.
+ */
+function getColorBrightness(hex: string): number {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 0.5; // 파싱 실패 시 중간값 (안전한 기본)
+  return (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+}
+
+/**
+ * 팀 플레이스홀더 뱃지 스타일:
+ * - fg: 배경과 대비되는 텍스트 색 (밝은 배경엔 검정, 어두운 배경엔 흰)
+ * - needsBorder: 배경이 극단 명도라 테마 배경과 동화될 위험이 있는 경우 테두리 필요
+ *   (흰 유니폼이 라이트 모드에서 안 보이거나, 검정 유니폼이 다크 모드에서 안 보이는 문제 해결)
+ */
+function getTeamBadgeStyle(teamColor: string): { fg: string; needsBorder: boolean } {
+  const brightness = getColorBrightness(teamColor);
+  const fg = brightness > 0.5 ? "#1a1a1a" : "#ffffff";
+  const needsBorder = brightness > 0.9 || brightness < 0.1;
+  return { fg, needsBorder };
+}
+
 // 팀 로고 컴포넌트 — 로고 URL 있으면 이미지, 없으면 팀색 원 + 이니셜
 // size는 px 단위. 모바일에서 작게 쓰려면 호출부에서 반응형 처리.
 function TeamLogo({
@@ -200,8 +249,12 @@ function TeamLogo({
       </div>
     );
   }
-  // 로고 없음 → 팀색 원 + 이니셜 (밝은 팀색일 경우 가독성 후속 Phase에서 adaptive 처리)
+  // 로고 없음 → 팀색 원 + 이니셜
+  // adaptive 처리(2026-04-15):
+  //  - 글자색: 팀색 brightness 기반으로 검정/흰색 자동 선택 (흰 유니폼에서 흰 글자 안보이는 문제 해결)
+  //  - 극단 명도(거의 흰색 또는 검정): var(--color-border)로 테두리 추가 → 테마 배경과 동화 방지
   const initials = getTeamInitials(team.name);
+  const { fg, needsBorder } = getTeamBadgeStyle(team.color);
   return (
     <div
       className="flex items-center justify-center rounded-full font-bold"
@@ -209,8 +262,12 @@ function TeamLogo({
         width: px,
         height: px,
         backgroundColor: team.color,
-        color: "#ffffff",
+        color: fg, // adaptive: brightness > 0.5면 검정, 아니면 흰
         fontSize: size >= 64 ? "20px" : "16px",
+        // 극단 명도(흰/검)일 때만 테두리 — 중간 명도 팀색은 테두리 불필요
+        border: needsBorder ? "2px solid var(--color-border)" : undefined,
+        // border 추가 시 전체 크기 유지 (width/height 안에 border 포함)
+        boxSizing: "border-box",
       }}
     >
       {initials}
@@ -422,16 +479,18 @@ export default function LiveBoxScorePage() {
             {match.home_score}
           </p>
 
-          {/* 3. 중앙 정보 블록 — 상태 라벨 / 일시 / 장소 / 새로고침 (2026-04-15 재구성)
+          {/* 3. 중앙 정보 블록 — 상태 라벨 / 일시 / 장소 (2026-04-15 글자 확대 + 🔄 제거)
               이유: 라운드명은 정보 밀도 낮아 제거, 대신 "경기 상태(N쿼터/경기 전/종료)"와 "일시"를
-              티빙 중계처럼 상단에 배치해 방문자가 현재 경기가 어느 단계인지 즉시 파악 가능하게. */}
-          <div className="flex flex-col items-center gap-1 px-1 min-w-0">
-            {/* ① 상태 라벨 — 헬퍼가 { text, highlight } 반환. highlight=true면 빨강+bold, false면 muted */}
+              티빙 중계처럼 상단에 배치해 방문자가 현재 경기가 어느 단계인지 즉시 파악 가능하게.
+              🔄 새로고침 버튼 제거: fetchMatch가 3초 폴링으로 자동 갱신되므로 수동 버튼 불필요.
+              글자 확대: 이미지 5처럼 중앙 정보가 또렷하게 보이도록 상태/일시/장소 폰트 크기 상향. */}
+          <div className="flex flex-col items-center gap-2 px-1 min-w-0">
+            {/* ① 상태 라벨 — 헬퍼가 { text, highlight } 반환. highlight=true면 빨강+bold+xl, false면 muted+lg */}
             {(() => {
               const { text, highlight } = getCenterStatusLabel(match.status, match.current_quarter);
               return (
                 <span
-                  className={`text-sm whitespace-nowrap ${highlight ? "font-semibold" : ""}`}
+                  className={`whitespace-nowrap ${highlight ? "text-xl font-semibold" : "text-lg"}`}
                   style={{ color: highlight ? "var(--color-primary)" : "var(--color-text-muted)" }}
                 >
                   {text}
@@ -439,12 +498,12 @@ export default function LiveBoxScorePage() {
               );
             })()}
 
-            {/* ② 일시 — scheduled_at 우선, 없으면 started_at, 둘 다 없으면 숨김 */}
+            {/* ② 일시 — scheduled_at 우선, 없으면 started_at, 둘 다 없으면 숨김. text-xs → text-base */}
             {(() => {
               const dt = formatMatchDateTime(match.scheduled_at, match.started_at);
               return dt ? (
                 <span
-                  className="text-xs whitespace-nowrap"
+                  className="text-base whitespace-nowrap"
                   style={{ color: "var(--color-text-muted)" }}
                 >
                   {dt}
@@ -452,29 +511,16 @@ export default function LiveBoxScorePage() {
               ) : null;
             })()}
 
-            {/* ③ 경기장명 — API에서 venue_name으로 받아옴 (없으면 숨김) */}
+            {/* ③ 경기장명 — API에서 venue_name으로 받아옴 (없으면 숨김). text-xs → text-base, 글자 커지니 max-w도 확대 */}
             {match.venue_name && (
               <span
-                className="text-xs truncate max-w-[140px] text-center"
+                className="text-base truncate max-w-[220px] text-center"
                 style={{ color: "var(--color-text-muted)" }}
               >
                 {match.venue_name}
               </span>
             )}
-
-            {/* ④ 새로고침 원형 버튼 — 기존 스타일 그대로 유지 */}
-            <button
-              onClick={fetchMatch}
-              title="새로고침"
-              className="mt-1 flex items-center justify-center w-9 h-9 rounded-full transition-colors"
-              style={{
-                backgroundColor: "var(--color-surface)",
-                color: "var(--color-text-muted)",
-                border: "1px solid var(--color-border)",
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
-            </button>
+            {/* ④ 새로고침 버튼은 제거됨 — 3초 폴링(POLL_INTERVAL)으로 자동 갱신 */}
           </div>
 
           {/* 4. 원정 점수 */}

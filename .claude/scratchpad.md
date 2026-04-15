@@ -1,10 +1,9 @@
 # 작업 스크래치패드
 
 ## 현재 작업
-- **요청**: 가운데 정보 블록 상태 기반 재구성 (경기전/중/종료 + 일시 + 장소) + 스코어카드 좌우폭 75%
+- **요청**: 중앙 🔄 제거+글자확대 + TeamLogo 글자색 adaptive + 극단 명도 테두리
 - **상태**: developer 위임
 - **현재 담당**: developer
-- **사용자 결정**: 라운드명 제거, 모바일 100% / sm 이상 75%
 
 ## 전체 프로젝트 현황 대시보드 (2026-04-15)
 | 항목 | 수치 |
@@ -38,6 +37,45 @@
 - 영구 복구는 `"/c/Program Files/GitHub CLI/gh.exe" auth login`
 
 ## 구현 기록 (developer)
+
+### 중앙 🔄 제거 + 글자 확대 + TeamLogo adaptive (2026-04-15)
+
+📝 변경:
+- 중앙 정보: 🔄 새로고침 버튼 제거 (3초 폴링 자동 갱신으로 수동 버튼 불필요, onClick={fetchMatch}는 이 버튼뿐이었음)
+- 글자 확대: 상태라벨 text-sm→text-xl(highlight)/text-lg, 일시 text-xs→text-base, 장소 text-xs→text-base + max-w-[140px]→[220px], 래퍼 gap-1→gap-2
+- TeamLogo 플레이스홀더: 팀색 brightness(ITU-R BT.601 luma) 기반 adaptive
+  * brightness > 0.5: 검정 글자(#1a1a1a) / 아니면 흰 글자(#ffffff)
+  * brightness > 0.9 || < 0.1: var(--color-border) 2px 테두리 + box-sizing:border-box (극단 명도 → 테마 배경 동화 방지)
+- 헬퍼 3개 추가(getTeamInitials 아래): hexToRgb, getColorBrightness, getTeamBadgeStyle
+- 로고 있는 img 경로는 건드리지 않음 (요청대로 플레이스홀더 한정)
+
+| 파일 | 변경 | 신규/수정 |
+|------|------|----------|
+| src/app/live/[id]/page.tsx | 헬퍼 3개 + TeamLogo 플레이스홀더 adaptive 로직 + 중앙 블록 글자 확대 + 🔄 제거 | 수정 |
+
+🔎 자체 검증:
+- `npx tsc --noEmit` → exit=0, 에러 0건
+- grep `fetchMatch` → 정의 1 + polling 2 + 주석 1, onClick 사용처 0 (버튼 완전 제거 확인)
+- grep `getTeamBadgeStyle|getColorBrightness|hexToRgb` → 정의 3 + 내부 호출 2 + TeamLogo 사용 1
+
+💡 PM/tester:
+- **TeamLogo 테스트 케이스** (팀색 변경 없이 DB team.color 기준):
+  * 흰색 `#FFFFFF` (brightness=1.0): 글자 검정 + 2px 테두리 (라이트 모드에서 배지 구분)
+  * 검정 `#000000` (brightness=0): 글자 흰색 + 2px 테두리 (다크 모드에서 배지 구분)
+  * BDR Red `#E31B23` (brightness≈0.26): 글자 흰색 + 테두리 없음
+  * 연두 `#ADFF2F` (brightness≈0.84): 글자 검정 + 테두리 없음
+- **중앙 정보 블록**:
+  * 🔄 버튼 사라짐, 점수는 3초마다 여전히 자동 갱신
+  * 상태라벨(경기 중/N쿼터/하프타임 등)이 text-xl로 또렷해짐
+  * 일시/장소도 text-base로 확대, 장소 긴 이름은 max-w-[220px]까지 한 줄 표시
+- **기존 동작 유지**: 점수 플래시, 쿼터 테이블, 박스스코어 모두 영향 없음
+
+⚠️ reviewer:
+- `getColorBrightness` 파싱 실패 시 0.5 반환 → fg=흰색, needsBorder=false로 안전하게 fallback
+- "3자리 hex(#FFF)" 입력도 지원하지만 프로젝트 DB는 6자리 저장이라 실질 경로는 6자리
+- 테두리 2px은 `box-sizing: border-box`로 48/56/64/72 원형 전체 크기 유지 (레이아웃 깨짐 없음)
+
+---
 
 ### /live/[id] 중앙 정보 상태기반 + 폭 75% (2026-04-15)
 
