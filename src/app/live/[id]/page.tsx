@@ -400,9 +400,14 @@ export default function LiveBoxScorePage() {
       away: qa?.ot?.[i] ?? 0,
     })),
   ];
-  // 합계: 쿼터 합산값을 우선 사용. DB의 home_score/away_score가 0(미기록)이어도 올바른 총점을 표시.
-  const homeTotal = quarters.reduce((sum, q) => sum + q.home, 0) || match.home_score;
-  const awayTotal = quarters.reduce((sum, q) => sum + q.away, 0) || match.away_score;
+  // 합계 우선순위: playerStats 합산(가장 정확) → quarter 합산(fallback) → DB home_score(최후 수단)
+  // 이유: quarter_scores DB 데이터가 잘못 기록된 경우가 있어 player pts 합산이 가장 신뢰도 높음.
+  const homePlayerSum = match.home_players.reduce((sum, p) => sum + (p.pts ?? 0), 0);
+  const awayPlayerSum = match.away_players.reduce((sum, p) => sum + (p.pts ?? 0), 0);
+  const homeQSum = quarters.reduce((sum, q) => sum + q.home, 0);
+  const awayQSum = quarters.reduce((sum, q) => sum + q.away, 0);
+  const homeTotal = homePlayerSum || homeQSum || match.home_score;
+  const awayTotal = awayPlayerSum || awayQSum || match.away_score;
 
   const hasOT = quarters.some((q) => q.label.startsWith("OT"));
   const quarterFilterOptions = [
