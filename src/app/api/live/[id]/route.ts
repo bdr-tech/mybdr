@@ -82,6 +82,12 @@ export async function GET(
       },
     });
 
+    // 2026-04-16: 쿼터별 "이벤트 기반 상세 스탯"이 존재하는지 판정.
+    // 이유: Flutter "최종 스탯 입력 모드"는 match_events를 만들지 않고 MatchPlayerStat.quarterStatsJson에
+    // min/pm만 저장한다. 그 결과 쿼터 필터를 눌러도 PTS/FG/REB 등이 모두 0으로 표시되어 사용자가 혼동한다.
+    // → 이벤트가 1건이라도 있으면 true, 0건이면 false. 프론트가 이 값으로 안내 배너 + "—" 처리 분기한다.
+    const hasQuarterEventDetail = allEvents.length > 0;
+
     // 쿼터별 스탯 집계 헬퍼 — playerId → { "1": {...}, "2": {...}, ... }
     // min/min_seconds/plus_minus는 이벤트만으로 계산 불가하므로 0 고정 (프론트가 0 → "-" 표시)
     type QuarterStatEntry = {
@@ -188,18 +194,22 @@ export async function GET(
       const filterRoster = (p: { role?: string | null; is_active?: boolean | null }) =>
         (p.role ?? "player") === "player" && p.is_active !== false;
 
+      // 2026-04-15: roster에 isStarter 포함 (TournamentTeamPlayer.isStarter fallback 용)
+      // 아래 playerStats 루프에서 MatchPlayerStat.isStarter로 덮어쓰기 가능
       const allPlayers = [
         ...(match.homeTeam?.players ?? []).filter(filterRoster).map((p) => ({
           id: Number(p.id),
           jerseyNumber: p.jerseyNumber,
           name: p.users?.nickname ?? p.users?.name ?? p.player_name ?? `#${p.jerseyNumber ?? "-"}`,
           teamId: Number(p.tournamentTeamId),
+          isStarter: p.isStarter ?? false,
         })),
         ...(match.awayTeam?.players ?? []).filter(filterRoster).map((p) => ({
           id: Number(p.id),
           jerseyNumber: p.jerseyNumber,
           name: p.users?.nickname ?? p.users?.name ?? p.player_name ?? `#${p.jerseyNumber ?? "-"}`,
           teamId: Number(p.tournamentTeamId),
+          isStarter: p.isStarter ?? false,
         })),
       ];
 
@@ -213,6 +223,8 @@ export async function GET(
           teamId: p.teamId,
           min: 0, min_seconds: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0,
           oreb: 0, dreb: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fouls: 0, plus_minus: 0,
+          // TournamentTeamPlayer.isStarter 초기값 — 아래 playerStats에서 덮어쓰기 가능
+          isStarter: p.isStarter,
         });
       }
 
@@ -298,6 +310,7 @@ export async function GET(
         const row = statsMap.get(pid);
         if (!row) continue;
         // 1) quarterStatsJson에서 초 합산 (2인 모드)
+        //    2026-04-15: 집계뿐 아니라 "쿼터별" min/pm을 row.quarter_stats에도 주입하여 쿼터 필터 지원
         let resolved = false;
         if (stat.quarterStatsJson) {
           try {
@@ -308,6 +321,28 @@ export async function GET(
               row.min = Math.round(total / 60);
               resolved = true;
             }
+            // 쿼터별 min/pm → quarter_stats[qKey] 덮어쓰기
+            // JSON 키 "Q1"→"1", ..., "OT1"→"5" 매핑 (현행 quarter_stats 키 체계와 통일)
+            if (!row.quarter_stats) row.quarter_stats = {};
+            for (const [jsonKey, qv] of Object.entries(parsed)) {
+              const qKey = jsonKey.startsWith("OT")
+                ? String(4 + Number(jsonKey.slice(2))) // "OT1"→"5", "OT2"→"6"
+                : jsonKey.replace(/^Q/, ""); // "Q1"→"1"
+              if (!qKey) continue;
+              if (!row.quarter_stats[qKey]) {
+                // 이벤트 기반 집계가 없던 쿼터 — 0 초기값으로 생성해서 MIN/PM만 채움
+                row.quarter_stats[qKey] = {
+                  min: 0, min_seconds: 0, pts: 0,
+                  fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0,
+                  oreb: 0, dreb: 0, reb: 0,
+                  ast: 0, stl: 0, blk: 0, to: 0, fouls: 0, plus_minus: 0,
+                };
+              }
+              const minSec = qv.min ?? 0;
+              row.quarter_stats[qKey].min_seconds = minSec;
+              row.quarter_stats[qKey].min = Math.round(minSec / 60);
+              row.quarter_stats[qKey].plus_minus = qv.pm ?? 0;
+            }
           } catch {}
         }
         // 2) fallback: minutesPlayed (초 단위)
@@ -315,9 +350,13 @@ export async function GET(
           row.min_seconds = stat.minutesPlayed;
           row.min = Math.round(stat.minutesPlayed / 60);
         }
-        // +/- 보강
+        // +/- 보강 (전체 집계 레벨)
         if (stat.plusMinus != null) {
           row.plus_minus = stat.plusMinus;
+        }
+        // 2026-04-15: MatchPlayerStat.isStarter가 있으면 TournamentTeamPlayer fallback을 덮어쓰기
+        if (stat.isStarter != null) {
+          row.isStarter = stat.isStarter;
         }
       }
 
@@ -384,12 +423,40 @@ export async function GET(
           to: stat.turnovers ?? 0,
           fouls: stat.personal_fouls ?? 0,
           plus_minus: stat.plusMinus ?? 0,
+          // 2026-04-15: 스타팅 여부 — MatchPlayerStat 우선, TournamentTeamPlayer fallback
+          isStarter: stat.isStarter ?? player.isStarter ?? false,
         };
         row.dnp = isDnpRow(row);
         // 쿼터별 집계 주입 (종료 경기 분기) — tournamentTeamPlayerId로 Map 조회
         const qs = quarterStatsByPlayer.get(Number(player.id));
         if (qs && Object.keys(qs).length > 0) {
           row.quarter_stats = qs;
+        }
+        // 2026-04-15: quarterStatsJson의 쿼터별 min(초)/pm을 quarter_stats에 주입
+        // "Q1"→"1", "OT1"→"5" 키 매핑. 이벤트 기반에 해당 쿼터가 없으면 0초기화 후 MIN/PM만 채움.
+        if (stat.quarterStatsJson) {
+          try {
+            const parsed = JSON.parse(stat.quarterStatsJson) as Record<string, { min?: number; pm?: number }>;
+            if (!row.quarter_stats) row.quarter_stats = {};
+            for (const [jsonKey, qv] of Object.entries(parsed)) {
+              const qKey = jsonKey.startsWith("OT")
+                ? String(4 + Number(jsonKey.slice(2)))
+                : jsonKey.replace(/^Q/, "");
+              if (!qKey) continue;
+              if (!row.quarter_stats[qKey]) {
+                row.quarter_stats[qKey] = {
+                  min: 0, min_seconds: 0, pts: 0,
+                  fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0,
+                  oreb: 0, dreb: 0, reb: 0,
+                  ast: 0, stl: 0, blk: 0, to: 0, fouls: 0, plus_minus: 0,
+                };
+              }
+              const minSec = qv.min ?? 0;
+              row.quarter_stats[qKey].min_seconds = minSec;
+              row.quarter_stats[qKey].min = Math.round(minSec / 60);
+              row.quarter_stats[qKey].plus_minus = qv.pm ?? 0;
+            }
+          } catch {}
         }
         return row;
       };
@@ -481,12 +548,20 @@ export async function GET(
     // 경기장명: tournament_matches.venue_name 우선 → 없으면 tournament.venue_name fallback
     const venueName = match.venue_name ?? match.tournament?.venue_name ?? null;
 
+    // 합계 점수: DB homeScore가 0이면 playerStats 합산으로 fallback
+    // 이유: 종료된 경기에서 homeScore/awayScore가 sync 안 된 경우 있음 (e.g. match 102)
+    // 우선순위: DB homeScore(>0) > playerStats pts 합산
+    const homePlayerPts = homePlayers.reduce((sum, p) => sum + p.pts, 0);
+    const awayPlayerPts = awayPlayers.reduce((sum, p) => sum + p.pts, 0);
+    const finalHomeScore = (match.homeScore && match.homeScore > 0) ? match.homeScore : homePlayerPts;
+    const finalAwayScore = (match.awayScore && match.awayScore > 0) ? match.awayScore : awayPlayerPts;
+
     return apiSuccess({
       match: {
         id: Number(match.id),
         status: match.status ?? "scheduled",
-        homeScore: match.homeScore ?? 0,
-        awayScore: match.awayScore ?? 0,
+        homeScore: finalHomeScore,
+        awayScore: finalAwayScore,
         roundName: match.roundName,
         quarterScores,
         // 경기 날짜 필드 — 프런트에서 4/11~12 게임 클럭 부정확 안내 분기에 사용
@@ -497,6 +572,9 @@ export async function GET(
         // 티빙 스타일 스코어카드 신규 필드 — 경기장명 + 진행 쿼터
         venueName,
         currentQuarter,
+        // 2026-04-16: 쿼터별 이벤트 기반 상세 스탯 존재 여부 (프론트 안내 배너 + "—" 처리용)
+        // apiSuccess가 camelCase → snake_case 변환하므로 클라이언트는 has_quarter_event_detail로 수신
+        hasQuarterEventDetail,
         homeTeam: {
           id: Number(match.homeTeam?.id ?? 0),
           name: match.homeTeam?.team?.name ?? "홈",
@@ -547,6 +625,9 @@ interface PlayerRow {
   plus_minus?: number;
   // 0414: DNP(Did Not Play) — 등록됐으나 출전 0 + 스탯 0
   dnp?: boolean;
+  // 2026-04-15: 스타팅 5 여부 — 박스스코어 상단 정렬에 사용
+  // 우선순위: MatchPlayerStat.isStarter → TournamentTeamPlayer.isStarter fallback → false
+  isStarter?: boolean;
   // 2026-04-15: 쿼터별 스탯 (박스스코어 쿼터 필터 버튼용)
   // 키: "1"=Q1, "2"=Q2, ..., "5"=OT1. 해당 쿼터에 기록이 없으면 키 자체가 없음.
   quarter_stats?: Record<string, {
