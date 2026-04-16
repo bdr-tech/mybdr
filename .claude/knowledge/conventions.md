@@ -1,6 +1,18 @@
 # 코딩 규칙 및 스타일
 <!-- 담당: developer, reviewer | 최대 30항목 -->
 
+### [2026-04-17] 공식 기록 쿼리 — `officialMatchWhere` 유틸 필수 사용
+- **분류**: convention
+- **내용**: "이미 치러진 공식 경기만 집계해야 하는" 쿼리는 `src/lib/tournaments/official-match.ts`의 3함수 중 맥락에 맞는 것 사용
+  1. **`officialMatchWhere(extra?)`** — 표준 (대부분 이거). status `[completed, live]` + `scheduledAt <= NOW()` + `scheduledAt IS NOT NULL`
+  2. **`officialMatchNestedFilter()`** — MatchPlayerStat → tournamentMatch 조인용 (getPlayerStats 패턴)
+  3. **`pastOrOngoingSchedule()`** — status가 특수할 때 (기존에 `in_progress` 포함 등). scheduledAt 가드만 반환
+  4. **`OFFICIAL_MATCH_SQL_CONDITION`** — raw SQL용 상수 (tm alias 기준)
+- **적용 대상**: 순위표, 선수 커리어/승률, 팀 승패 집계, 팀 최근경기, 서브도메인 결과
+- **적용 제외**: 대진표/일정 뷰(예정 경기 필요), admin 편집/생성/CRUD, 기록원/심판 API, seeding/builder
+- **이유**: Flutter 테스트 데이터(미래 scheduledAt + status=live)가 공식 집계 오염 방어. 3조건 중 1개라도 누락 시 `id=120` 같은 버그 재발
+- **참조**: decisions.md "공식 기록 가드 전역 적용"
+
 ### [2026-04-16] sticky 테이블 셀 규칙 — 불투명 배경 + z-10 쌍
 - **분류**: convention
 - **내용**: `<td className="sticky left-0 ...">` 같은 sticky 셀은 **반드시 두 가지 같이 적용**:

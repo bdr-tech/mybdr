@@ -1,22 +1,27 @@
 # 프로젝트 지식 목차
-> 최종 갱신: 2026-04-17 (열혈SEASON2 일회성 백필/팀 병합 + 2026-04-16 hook 결정 정정)
+> 최종 갱신: 2026-04-17 (Phase 3 공식 기록 가드 + 열혈SEASON2 일회성 정리)
 
 ## 파일별 요약
 | 파일 | 항목 수 | 최종 업데이트 | 설명 |
 |------|--------|------------|------|
 | architecture.md | 29 | 2026-04-15 | 페이지 구조, 대회/대진표, 팀명 2필드, Referee 시스템, Flutter API 호환 |
-| conventions.md | 21 | 2026-04-16 | 디자인/색상/경기집계/TeamCard/sticky규칙/프린트CSS/듀얼렌더/hyphen통일 |
-| decisions.md | 65 | 2026-04-17 | 기술 결정 (KBL 순위/대진표/userId 연결/전역 Link/프리셋/Referee v2/헬스체크 cron/**열혈SEASON2 일회성 정리**) |
-| errors.md | 16 | 2026-04-17 | 에러 패턴 (sticky 투명/z-index, @page Hancom PDF, th/td 정렬, DB 사고, add 누락, **next/image 외부 호스트 미허용**) |
-| lessons.md | 11 | 2026-04-16 | 교훈 (프린트 API 한계, 모바일 zoom, 브랜치 drift, add 체크, gh 우회 등) |
+| conventions.md | 22 | 2026-04-17 | 디자인/색상/경기집계/sticky/프린트CSS/듀얼렌더/hyphen/**공식 기록 가드(officialMatchWhere)** |
+| decisions.md | 66 | 2026-04-17 | 기술 결정 (KBL 순위/대진표/userId 연결/Referee v2/헬스체크 cron/열혈SEASON2 정리/**공식 기록 가드 전역 적용**) |
+| errors.md | 16 | 2026-04-17 | 에러 패턴 (sticky, @page Hancom PDF, th/td 정렬, DB 사고, add 누락, next/image 외부 호스트) |
+| lessons.md | 14 | 2026-04-17 | 교훈 (프린트 API, 모바일 zoom, 브랜치 drift, **Flutter 테스트 오염**, **팀 병합 logo 이관**, **동명이인 닉네임 힌트**) |
 | toss-design-analysis.md | 10 | 2026-03-28 | 토스 디자인 시스템 심층 분석 |
 | ux-audit-report.md | 28 | 2026-03-28 | UI/UX 사용성 심층 조사 |
 | project-structure-audit.md | 10 | 2026-03-28 | 전체 구조 분석 |
 
 ## 최근 추가된 지식 (최근 10건)
-- [04-17] errors: **Next.js 16 next/image 외부 호스트 미허용** — `img1/t1.kakaocdn.net` remotePatterns 누락 → 카카오 기본 프로필 이미지 깨짐. OAuth 추가 시 CDN 도메인까지 동시 등록 + `pathname` 제한 권장
-- [04-17] decisions: **열혈농구단 SEASON2 일회성 백필 + 팀 병합** — 25건 userId UPDATE + MatchPlayerStat 197건 자동연결 + 4개 팀 2개로 soft merge, DELETE 0 (2026-04-13 B안 확장)
-- [04-17] decisions: 2026-04-16 "회원가입 hook 자동 연결" 결정 **⛔ 정정** — 일회성 처리로 대체, hook 미구현 확정
+- [04-17] decisions: **공식 기록 가드 전역 적용** — `officialMatchWhere` 공통 유틸 3함수+SQL상수로 9개 지점(순위/선수기록/팀승패/라이브) 일관 적용. Flutter 테스트 데이터(미래 live) 오염 방어
+- [04-17] conventions: **공식 기록 쿼리 — officialMatchWhere 필수 사용** — 맥락별 3갈래 분기 (표준/nested/status-override) + raw SQL 상수
+- [04-17] lessons: **Flutter 테스트 데이터가 공식 기록 오염** — 미래 scheduledAt + status=live 자주 발생 → scheduledAt 가드 필수
+- [04-17] lessons: **팀 병합 시 logo_url/banner_url 이관 체크** — FK UPDATE만 하고 UI 컨텐츠 필드 빠뜨리기 쉬움
+- [04-17] lessons: **동명이인은 닉네임 팀/역할 힌트로 구분** — "(셋업주장)" 같은 패턴이 수동 확인을 쉽게 함
+- [04-17] errors: Next.js 16 next/image 외부 호스트 미허용 — `img1/t1.kakaocdn.net` remotePatterns 누락
+- [04-17] decisions: 열혈농구단 SEASON2 일회성 백필 + 팀 병합 — 25건 userId + 4개 팀 2개 soft merge, DELETE 0
+- [04-17] decisions: 2026-04-16 "회원가입 hook 자동 연결" ⛔ 정정 — 일회성 처리로 대체
 - [04-16] errors: **sticky 셀 가로 스크롤 겹침** — 배경 투명 + z-index 누락 이중 원인
 - [04-16] errors: **Chrome @page를 가상 프린터(Hancom PDF)가 무시** — 웹 API로 제어 불가, UI 안내가 유일한 해결책
 - [04-16] errors: 프린트 th center vs td left 기본값 불일치 → 정렬 깨짐 (table-layout: fixed + text-align 명시 필요)
