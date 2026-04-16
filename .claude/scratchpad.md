@@ -44,6 +44,7 @@
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-17 | pm | 토큰 절약 효율화 — 글로벌 CLAUDE.md 초보자 비유 제거, 프로젝트 CLAUDE.md 40% 슬림화(192→115줄), 스크립트 템플릿 3종, Agent 호출 기준 conventions 추가 | ✅ |
 | 04-17 | pm | 권한 부여 (nonggudan 대회 열람 + cobby8 슈퍼관리자 + phone 010-9167-8117) | ✅ |
 | 04-17 | developer | Phase 3 공식 기록 가드 — `official-match.ts` 신규(3함수+SQL상수) + 7파일 적용, 기존 status 보존 | ✅ tsc 통과 |
 | 04-17 | developer | 팀 개요탭 "최근 경기" 위젯 — TournamentMatch 연합 조회 (병합 후 상위 5건) | ✅ |
@@ -53,4 +54,3 @@
 | 04-17 | pm | 열혈SEASON2 Phase A+B+C+D (선수 백필 25건 / endDate / 팀 병합 2쌍 / 포트 3001) | ✅ |
 | 04-16 | pm | PR #24 플레이스홀더 `—` → `-` 통일 | ✅ |
 | 04-16 | pm | PR #23 프린트 방향 안내 (Hancom PDF 회피) | ✅ |
-| 04-16 | pm | PR #22 파일명 YYMMDDHH + 가로 방향 강화 | ✅ |

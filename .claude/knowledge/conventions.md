@@ -1,6 +1,29 @@
 # 코딩 규칙 및 스타일
 <!-- 담당: developer, reviewer | 최대 30항목 -->
 
+### [2026-04-17] 에이전트 호출 최소화 기준 (토큰 절약)
+- **분류**: convention
+- **내용**: 불필요한 Agent 호출 방지. 각 Agent는 자체 컨텍스트 로드로 토큰 소비가 크므로 PM 직접 처리 가능한 건 직접.
+- **호출 기준**:
+
+| 담당 | 조건 |
+|------|------|
+| **PM 직접** | 파일 1~2개 단순 수정, grep/read 1~2회, DB 조회 1회성, 스크립트 1개 작성+실행 |
+| **Explore** | 파일 3개 이상 검색, 키워드 애매, 여러 경로에서 교차 확인 필요 |
+| **planner-architect** | 구조적 결정, 다수 영향 분석, 새 기능 설계, decisions.md 등재 필요 |
+| **developer** | 2파일 이상 연계 수정, 비즈니스 로직, 복잡한 타입 리팩토링 |
+| **debugger** | 30분+ 삽질 예상, 에러 패턴 errors.md 등재 필요, 재발 위험 |
+| **tester+reviewer** | 파일 3개+ 수정 시 병렬. 소규모는 tester만 or 생략(tsc 통과만으로) |
+
+- **잘못된 예**: "grep 한 번이면 끝나는데 Explore 호출", "한 줄 수정에 developer 호출"
+- **권장 패턴**: 먼저 PM이 파일 확인 → 복잡하면 Agent. 무조건 Agent부터 X
+
+### [2026-04-17] 일회성 DB 스크립트 템플릿 재사용
+- **분류**: convention
+- **내용**: `scripts/_templates/` 폴더의 3가지 템플릿 활용 — `verify-tournament`, `backfill-players`, `merge-teams`
+- **패턴**: 템플릿 복사 → 파라미터(TOURNAMENT_ID 등) 교체 → dry-run → `--execute` → 완료 후 삭제
+- **원칙**: DELETE 금지, UPDATE only, 트랜잭션 + 사전/사후 카운트
+
 ### [2026-04-17] 공식 기록 쿼리 — `officialMatchWhere` 유틸 필수 사용
 - **분류**: convention
 - **내용**: "이미 치러진 공식 경기만 집계해야 하는" 쿼리는 `src/lib/tournaments/official-match.ts`의 3함수 중 맥락에 맞는 것 사용

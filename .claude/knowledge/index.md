@@ -5,7 +5,7 @@
 | 파일 | 항목 수 | 최종 업데이트 | 설명 |
 |------|--------|------------|------|
 | architecture.md | 29 | 2026-04-15 | 페이지 구조, 대회/대진표, 팀명 2필드, Referee 시스템, Flutter API 호환 |
-| conventions.md | 22 | 2026-04-17 | 디자인/색상/경기집계/sticky/프린트CSS/듀얼렌더/hyphen/**공식 기록 가드(officialMatchWhere)** |
+| conventions.md | 24 | 2026-04-17 | 디자인/색상/경기집계/sticky/프린트CSS/공식 기록 가드/**에이전트 호출 기준**/**스크립트 템플릿 재사용** |
 | decisions.md | 66 | 2026-04-17 | 기술 결정 (KBL 순위/대진표/userId 연결/Referee v2/헬스체크 cron/열혈SEASON2 정리/**공식 기록 가드 전역 적용**) |
 | errors.md | 16 | 2026-04-17 | 에러 패턴 (sticky, @page Hancom PDF, th/td 정렬, DB 사고, add 누락, next/image 외부 호스트) |
 | lessons.md | 14 | 2026-04-17 | 교훈 (프린트 API, 모바일 zoom, 브랜치 drift, **Flutter 테스트 오염**, **팀 병합 logo 이관**, **동명이인 닉네임 힌트**) |
@@ -14,6 +14,8 @@
 | project-structure-audit.md | 10 | 2026-03-28 | 전체 구조 분석 |
 
 ## 최근 추가된 지식 (최근 10건)
+- [04-17] conventions: **에이전트 호출 최소화 기준** — PM 직접/Explore/planner/developer/debugger 담당 범위 표. 토큰 절약 + 불필요 호출 방지
+- [04-17] conventions: **일회성 DB 스크립트 템플릿 재사용** — `scripts/_templates/`에 verify/backfill/merge 3종 (UPDATE only, DELETE 금지)
 - [04-17] decisions: **공식 기록 가드 전역 적용** — `officialMatchWhere` 공통 유틸 3함수+SQL상수로 9개 지점(순위/선수기록/팀승패/라이브) 일관 적용. Flutter 테스트 데이터(미래 live) 오염 방어
 - [04-17] conventions: **공식 기록 쿼리 — officialMatchWhere 필수 사용** — 맥락별 3갈래 분기 (표준/nested/status-override) + raw SQL 상수
 - [04-17] lessons: **Flutter 테스트 데이터가 공식 기록 오염** — 미래 scheduledAt + status=live 자주 발생 → scheduledAt 가드 필수
