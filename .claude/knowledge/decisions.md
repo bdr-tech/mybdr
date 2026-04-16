@@ -2,6 +2,14 @@
 <!-- 담당: planner-architect | 최대 30항목 -->
 <!-- "왜 A 대신 B를 선택했는지" 기술 결정의 배경과 이유를 기록 -->
 
+### [2026-04-17] 공식 기록 가드 전역 적용 (officialMatchWhere 공통 유틸)
+- **분류**: decision
+- **발견자**: planner-architect
+- **결정**: 순위/선수기록/팀기록/서브도메인 경기결과/최근 경기 위젯 등 **"이미 치러진 공식 경기"만 집계해야 하는 쿼리**에 다음 3조건을 공통 유틸로 강제 적용 — (1) `status IN (completed, live)` (2) `scheduledAt <= NOW()` (3) `scheduledAt IS NOT NULL`. 유틸 위치: `src/lib/tournaments/official-match.ts` → `officialMatchWhere(extra?)` + nested용 `officialMatchNestedFilter()`. **적용 대상(subin 범위)**: teams/[id]/page.tsx 승패집계, overview-tab/games-tab 최근경기(이미 수동 적용 → 유틸로 교체), public-standings 순위 탭, services/user.ts getPlayerStats aggregate 2회+ raw SQL 승률, api/live/route.ts recentCompleted, _site/results+_site/page.tsx. **적용 제외**: 대진표·일정 뷰(예정 경기 노출 필요), admin/편집/생성/CRUD, 기록원/심판/예약 API, sync/seeding/league-generator 빌더. **원영 담당 분리**: public-bracket/route.ts는 PR #16 homeScore fallback 로직과 중첩이라 원영 선처리 후 적용 협의. tournament-tabs.tsx는 prisma 미사용(API fetch)이라 가드 무관.
+- **근거**: (a) Flutter 앱에서 미래 경기를 `status=live`로 세팅하는 테스트 케이스 실측(id=120, 2026-04-18) — 순위표/커리어 평균을 오염시킴. (b) games-tab/overview-tab 2곳만 수동 방어 중 → 나머지 영역(공식 랭킹/커리어 스탯) 구멍 잔존. (c) 유틸화하지 않으면 새 페이지 추가 시 3조건 중 1개 빠뜨릴 위험. (d) raw SQL 1곳(user.ts L188) 포함해 9개 지점 일관 적용.
+- **대안 비교**: ① Prisma middleware로 전역 필터 — 거부(대진표/일정/편집 쿼리까지 잘라내 부작용 큼). ② DB에 check constraint/뷰 — 거부(Rails 호환 schema 수정 금지 + live에서 미래를 막으면 Flutter 테스트 흐름도 깨짐). ③ 각 쿼리마다 인라인 3조건 반복 — 채택 안 함(3회째 중복 발생 + 누락 위험). → **공통 유틸 함수**로 채택: Prisma WhereInput을 그대로 반환하므로 Prisma 타입 추론/컴파일 체크가 그대로 동작, 단위 테스트도 단순.
+- **참조횟수**: 0
+
 ### [2026-04-16] ⛔ 정정됨 — 대회 선수 userId 자동 연결 v2 (회원가입 hook) **미구현 확정**
 - **분류**: decision(취소)
 - **발견자**: planner-architect → **정정: pm(사용자 지시)**

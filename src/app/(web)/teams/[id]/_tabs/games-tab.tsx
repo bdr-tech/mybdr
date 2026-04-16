@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
+// Phase 3: 공식 기록 가드 (status + scheduledAt 조건 통합)
+import { officialMatchWhere } from "@/lib/tournaments/official-match";
 
 interface GamesTabProps {
   teamId: bigint;
@@ -48,21 +50,18 @@ export async function GamesTab({ teamId, accent }: GamesTabProps) {
   const ttIds = tournamentTeams.map((tt) => tt.id);
 
   // 이 팀이 참가한 대회 경기 중 "이미 치러진 공식 기록"만
-  // - scheduledAt <= NOW: 미래 예정 경기 제외 (Flutter 테스트 데이터 방어)
-  // - scheduledAt IS NOT NULL: 날짜 없는 더미/초안 제외
-  // - status IN ('completed','live'): 예정(scheduled) 제외, 진행 중도 현재 스코어로 표시
+  // Phase 3: officialMatchWhere 공통 유틸로 가드 일원화
+  // (status IN completed/live + scheduledAt <= NOW + NOT NULL)
   const tournamentMatches =
     ttIds.length > 0
       ? await prisma.tournamentMatch
           .findMany({
-            where: {
+            where: officialMatchWhere({
               OR: [
                 { homeTeamId: { in: ttIds } },
                 { awayTeamId: { in: ttIds } },
               ],
-              status: { in: ["completed", "live"] },
-              scheduledAt: { lte: new Date(), not: null },
-            },
+            }),
             include: {
               homeTeam: { include: { team: { select: { id: true, name: true } } } },
               awayTeam: { include: { team: { select: { id: true, name: true } } } },

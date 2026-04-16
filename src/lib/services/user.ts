@@ -5,6 +5,11 @@
  */
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
+// Phase 3: 공식 기록 가드 (nested filter + raw SQL용)
+import {
+  officialMatchNestedFilter,
+  OFFICIAL_MATCH_SQL_CONDITION,
+} from "@/lib/tournaments/official-match";
 
 // ---------------------------------------------------------------------------
 // Select 상수
@@ -151,7 +156,12 @@ export async function getPlayerStats(userId: bigint) {
 
   const [aggregate, maxStats] = await Promise.all([
     prisma.matchPlayerStat.aggregate({
-      where: { tournamentTeamPlayerId: { in: playerIds } },
+      // Phase 3: nested tournamentMatch 필터로 공식 기록(치러진 경기)만 집계.
+      // 미래 Flutter 테스트 데이터(예: 2030년 예약) + NULL 날짜 방어.
+      where: {
+        tournamentTeamPlayerId: { in: playerIds },
+        tournamentMatch: officialMatchNestedFilter(),
+      },
       _avg: {
         points: true,
         total_rebounds: true,
@@ -163,7 +173,11 @@ export async function getPlayerStats(userId: bigint) {
       _count: { id: true },
     }),
     prisma.matchPlayerStat.aggregate({
-      where: { tournamentTeamPlayerId: { in: playerIds } },
+      // Phase 3: 시즌 최고 기록도 동일하게 공식 기록만 (테스트 데이터 제외)
+      where: {
+        tournamentTeamPlayerId: { in: playerIds },
+        tournamentMatch: officialMatchNestedFilter(),
+      },
       _max: {
         points: true,
         total_rebounds: true,
@@ -183,6 +197,9 @@ export async function getPlayerStats(userId: bigint) {
     // raw SQL로 승률을 DB에서 직접 계산
     // - 결과 확정 경기(winner_team_id IS NOT NULL)만 대상
     // - winner_team_id = 선수 소속팀 ID이면 승리
+    // - Phase 3: OFFICIAL_MATCH_SQL_CONDITION 삽입
+    //   → status IN (completed, live) + scheduled_at <= NOW() + NOT NULL
+    //   → Flutter 미래 테스트 데이터(id=120 사례) 방어
     const winRateResult = await prisma.$queryRaw<
       Array<{ total: bigint; wins: bigint }>
     >`
@@ -196,6 +213,7 @@ export async function getPlayerStats(userId: bigint) {
       JOIN tournament_team_players ttp ON ttp.id = mps.tournament_team_player_id
       WHERE mps.tournament_team_player_id IN (${Prisma.join(playerIds)})
         AND tm.winner_team_id IS NOT NULL
+        AND ${Prisma.raw(OFFICIAL_MATCH_SQL_CONDITION)}
     `;
 
     const { total, wins } = winRateResult[0];

@@ -11,6 +11,8 @@ import { TournamentsTab } from "./_tabs/tournaments-tab";
 import { Breadcrumb } from "@/components/shared/breadcrumb";
 // Phase 2C: 팀 상세 히어로에서 한/영 병기 표시
 import { getTeamDisplayNames } from "@/lib/utils/team-display";
+// Phase 3: 공식 기록 가드 (미래 경기 + NULL 날짜 제외)
+import { officialMatchWhere } from "@/lib/tournaments/official-match";
 
 export const revalidate = 60;
 
@@ -103,13 +105,13 @@ export default async function TeamDetailPage({
   const ttIds = tournamentTeamIds.map(t => t.id);
 
   // 해당 TournamentTeam이 참여한 완료/라이브 경기에서 스코어 조회
+  // Phase 3: officialMatchWhere로 status + scheduledAt 가드 통합 적용
   const completedMatches = ttIds.length > 0 ? await prisma.tournamentMatch.findMany({
-    where: {
+    where: officialMatchWhere({
       OR: [{ homeTeamId: { in: ttIds } }, { awayTeamId: { in: ttIds } }],
-      status: { in: ["completed", "live"] },
       homeTeamId: { not: null },
       awayTeamId: { not: null },
-    },
+    }),
     select: { homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true },
   }) : [];
 
