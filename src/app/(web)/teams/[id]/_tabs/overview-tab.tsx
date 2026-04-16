@@ -18,16 +18,25 @@ interface OverviewTabProps {
 }
 
 export async function OverviewTab({ teamId, accent, team }: OverviewTabProps) {
-  // 먼저 멤버 ID 목록 조회 (recentGames의 선행 조건)
-  const memberIds = await prisma.teamMember.findMany({
-    where: { teamId, status: "active" },
-    select: { userId: true },
-  });
+  // 이유: 최근 경기 위젯도 games-tab과 동일하게 픽업 경기 + 토너먼트 경기를 함께 보여줘야
+  // 대회 기록만 있는 팀이 "기록 없음"으로 보이지 않는다.
+  // 선행 조회 2건(멤버 ID, 참가 대회 ID)은 서로 독립이라 Promise.all로 병렬 실행한다.
+  const [memberIds, tournamentTeams] = await Promise.all([
+    prisma.teamMember.findMany({
+      where: { teamId, status: "active" },
+      select: { userId: true },
+    }),
+    // TournamentMatch.homeTeamId/awayTeamId는 Team.id가 아니라 TournamentTeam.id이므로
+    // 먼저 이 팀의 모든 TournamentTeam.id 목록을 구한다 (games-tab과 동일 패턴)
+    prisma.tournamentTeam
+      .findMany({ where: { teamId }, select: { id: true } })
+      .catch(() => [] as { id: bigint }[]),
+  ]);
   const userIds = memberIds.map((m) => m.userId);
+  const ttIds = tournamentTeams.map((tt) => tt.id);
 
-  // recentGames와 topMembers는 서로 독립적이므로 Promise.all로 병렬 실행
-  // (기존: recentGames 완료 후 topMembers 순차 실행 → 불필요한 대기 제거)
-  const fetchRecentGames = () => prisma.games.findMany({
+  // 본조회 3건 병렬 실행: 픽업 경기 / 토너먼트 경기 / 주요 스쿼드
+  const fetchPickupGames = () => prisma.games.findMany({
     where: { organizer_id: { in: userIds } },
     orderBy: { scheduled_at: "desc" },
     take: 5,
@@ -40,23 +49,82 @@ export async function OverviewTab({ teamId, accent, team }: OverviewTabProps) {
       game_type: true,
     },
   });
+  // 이 팀이 참가한 대회 경기 중 "이미 치러진 공식 기록"만 조회
+  // (games-tab과 동일 조건: scheduledAt <= now, not null, status in completed/live)
+  const fetchTournamentMatches = () => prisma.tournamentMatch.findMany({
+    where: {
+      OR: [
+        { homeTeamId: { in: ttIds } },
+        { awayTeamId: { in: ttIds } },
+      ],
+      status: { in: ["completed", "live"] },
+      scheduledAt: { lte: new Date(), not: null },
+    },
+    include: {
+      homeTeam: { include: { team: { select: { id: true, name: true } } } },
+      awayTeam: { include: { team: { select: { id: true, name: true } } } },
+      tournament: { select: { id: true, name: true } },
+    },
+    orderBy: { scheduledAt: "desc" },
+    take: 5,
+  });
   const fetchTopMembers = () => prisma.teamMember.findMany({
     where: { teamId, status: "active" },
     include: { user: { select: { id: true, nickname: true, name: true, position: true } } },
     orderBy: [{ role: "asc" }, { createdAt: "asc" }],
     take: 6,
   });
-  type RecentGames = Awaited<ReturnType<typeof fetchRecentGames>>;
+  type PickupGames = Awaited<ReturnType<typeof fetchPickupGames>>;
+  type TournamentMatches = Awaited<ReturnType<typeof fetchTournamentMatches>>;
   type TopMembers = Awaited<ReturnType<typeof fetchTopMembers>>;
 
-  const [recentGames, topMembers] = await Promise.all([
-    fetchRecentGames().catch(() => [] as RecentGames),
+  const [pickupGames, tournamentMatches, topMembers] = await Promise.all([
+    fetchPickupGames().catch(() => [] as PickupGames),
+    // ttIds가 비어 있으면 OR 조건이 의미 없으므로 쿼리 자체를 스킵
+    ttIds.length > 0
+      ? fetchTournamentMatches().catch(() => [] as TournamentMatches)
+      : Promise.resolve([] as TournamentMatches),
     fetchTopMembers().catch(() => [] as TopMembers),
   ]);
 
-  // 경기 결과 라벨/스타일
+  // ───── 두 소스 병합 → 날짜 DESC 정렬 → 최대 5건 ─────
+  // 이유: 통합 타임라인 느낌으로 보여주기 위해 병합 후 일괄 정렬 (games-tab과 동일 패턴)
+  type PickupItem = {
+    kind: "pickup";
+    key: string;
+    sortDate: number; // 정렬용 epoch ms
+    data: PickupGames[number];
+  };
+  type TournamentItem = {
+    kind: "tournament";
+    key: string;
+    sortDate: number;
+    data: TournamentMatches[number];
+  };
+  type RecentItem = PickupItem | TournamentItem;
+
+  const recentItems: RecentItem[] = [
+    ...pickupGames.map<PickupItem>((g) => ({
+      kind: "pickup",
+      key: `pickup-${g.id.toString()}`,
+      sortDate: g.scheduled_at ? g.scheduled_at.getTime() : 0,
+      data: g,
+    })),
+    ...tournamentMatches.map<TournamentItem>((m) => ({
+      kind: "tournament",
+      key: `tm-${m.id.toString()}`,
+      sortDate: m.scheduledAt ? m.scheduledAt.getTime() : 0,
+      data: m,
+    })),
+  ]
+    .sort((a, b) => b.sortDate - a.sortDate)
+    .slice(0, 5);
+
+  // 경기 결과 라벨/스타일 (픽업 경기용 — 기존 유지)
   const STATUS_LABEL: Record<number, string> = { 0: "임시", 1: "모집중", 2: "확정", 3: "완료", 4: "취소" };
   const GAME_TYPE_LABEL: Record<number, string> = { 0: "픽업", 1: "게스트", 2: "팀대결" };
+  // 토너먼트 경기 상태 라벨
+  const TM_STATUS_LABEL: Record<string, string> = { completed: "종료", live: "진행중" };
 
   const total = team.wins + team.losses;
 
@@ -156,9 +224,86 @@ export async function OverviewTab({ teamId, accent, team }: OverviewTabProps) {
             </Link>
           </div>
 
-          {recentGames.length > 0 ? (
+          {recentItems.length > 0 ? (
             <div className="divide-y divide-[var(--color-border-subtle)]">
-              {recentGames.map((g) => {
+              {recentItems.map((item) => {
+                // ───── (A) 토너먼트 경기 카드 ─────
+                if (item.kind === "tournament") {
+                  const m = item.data;
+                  // 이 팀이 홈/원정 중 어느 쪽인지 판별 (승패 표기용)
+                  const isHome = m.homeTeamId !== null && ttIds.some((id) => id === m.homeTeamId);
+                  const myScore = isHome ? m.homeScore ?? 0 : m.awayScore ?? 0;
+                  const oppScore = isHome ? m.awayScore ?? 0 : m.homeScore ?? 0;
+
+                  // 승/패/진행중 판단 — live 상태는 "진행중"으로 표기
+                  let outcomeLabel = "-";
+                  let outcomeColor = "text-[var(--color-text-muted)] bg-[var(--color-surface-high)]";
+                  if (m.status === "live") {
+                    outcomeLabel = TM_STATUS_LABEL.live;
+                    outcomeColor = "text-yellow-500 bg-yellow-500/10";
+                  } else if (myScore > oppScore) {
+                    outcomeLabel = "승";
+                    outcomeColor = "text-green-500 bg-green-500/10";
+                  } else if (myScore < oppScore) {
+                    outcomeLabel = "패";
+                    outcomeColor = "text-red-500 bg-red-500/10";
+                  }
+
+                  const homeName = m.homeTeam?.team?.name ?? "미정";
+                  const awayName = m.awayTeam?.team?.name ?? "미정";
+                  const tournamentName = m.tournament?.name ?? "대회";
+                  const dateLabel = m.scheduledAt
+                    ? m.scheduledAt.toLocaleDateString("ko-KR", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        timeZone: "Asia/Seoul",
+                      })
+                    : "-";
+
+                  // 토너먼트 상세 페이지로 이동 (games-tab과 동일)
+                  const href = `/tournaments/${m.tournament?.id}`;
+
+                  return (
+                    <Link
+                      key={item.key}
+                      href={href}
+                      className="flex items-center justify-between p-5 transition-colors hover:bg-[var(--color-surface-bright)]"
+                    >
+                      <div className="flex items-center gap-4 min-w-0 flex-1">
+                        {/* T 배지 — accent 색상으로 토너먼트 경기임을 표시 */}
+                        <span
+                          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded text-sm font-bold text-white"
+                          style={{ backgroundColor: accent }}
+                          title="토너먼트 경기"
+                        >
+                          T
+                        </span>
+                        <div className="min-w-0">
+                          {/* 1줄: 홈 vs 원정 + 스코어 (내 팀은 굵게) */}
+                          <p className="truncate text-sm font-bold text-[var(--color-text-primary)]">
+                            <span className={isHome ? "" : "font-medium"}>{homeName}</span>
+                            <span className="mx-2 text-[var(--color-text-muted)]">
+                              {m.homeScore ?? 0} : {m.awayScore ?? 0}
+                            </span>
+                            <span className={!isHome ? "" : "font-medium"}>{awayName}</span>
+                          </p>
+                          {/* 2줄: 대회명 · 날짜 */}
+                          <p className="text-xs text-[var(--color-text-muted)] truncate">
+                            {tournamentName} · {dateLabel}
+                          </p>
+                        </div>
+                      </div>
+                      {/* 우측: 승/패/진행중 배지 */}
+                      <span className={`ml-3 flex-shrink-0 rounded px-2 py-0.5 text-xs font-bold ${outcomeColor}`}>
+                        {outcomeLabel}
+                      </span>
+                    </Link>
+                  );
+                }
+
+                // ───── (B) 픽업 경기 카드 — 기존 UI 그대로 ─────
+                const g = item.data;
                 const href = `/games/${g.uuid?.slice(0, 8) ?? g.id}`;
                 const statusNum = g.status;
                 // 완료된 경기는 초록, 취소는 빨강, 나머지는 기본색
@@ -169,7 +314,7 @@ export async function OverviewTab({ teamId, accent, team }: OverviewTabProps) {
 
                 return (
                   <Link
-                    key={g.id.toString()}
+                    key={item.key}
                     href={href}
                     className="flex items-center justify-between p-5 transition-colors hover:bg-[var(--color-surface-bright)]"
                   >

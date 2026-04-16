@@ -234,7 +234,10 @@
       "Bash('/c/Program Files/GitHub CLI/gh.exe' pr create --base dev --head subin --title '모바일 UI 전수 최적화 + 대회 순위표/일정 버그 수정' --body ':*)",
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth status)",
       "Bash(\"/c/Program Files/GitHub:*)",
-      "Bash(tee /tmp/drift-diag.sql)"
+      "Bash(tee /tmp/drift-diag.sql)",
+      "Bash(findstr \":3001 \")",
+      "Bash(findstr \":3002 \")",
+      "Bash(echo \"EXIT: $?\")"
     ]
   }
 }
