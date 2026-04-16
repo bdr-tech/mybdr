@@ -2,6 +2,24 @@
 <!-- 담당: 전체 에이전트 | 최대 30항목 -->
 <!-- 삽질 경험, 다음에 피해야 할 것, 효과적이었던 접근법을 기록 -->
 
+### [2026-04-17] HTTP 5xx 에러 시 "실패" 단정 금지 — Git/DB 실상 확인 후 판단
+- **분류**: lesson
+- **시나리오**: `gh pr merge 37` 호출 시 **502 Bad Gateway** 에러 반환 → 재시도했더니 `Pull Request is not mergeable` + `mergeStateStatus: DIRTY/CONFLICTING` 응답. 실제로는 **첫 번째 요청이 이미 머지에 성공**(main에 9a1abbe 커밋 존재), 502는 nginx↔백엔드 응답 중계 실패였을 뿐
+- **원인**: GitHub API 게이트웨이(nginx)가 백엔드와 통신 실패 → 요청은 백엔드에 도달해 **처리 완료**, 응답만 클라이언트에 전달 실패. 분산 시스템 대표 함정 "요청 처리됐는데 응답이 실패"
+- **교훈**:
+  1. HTTP 5xx/timeout → **자동 "실패" 간주 금지**. 실제 리소스(git log, DB)로 사실 확인
+  2. API 응답 상태(`mergeable`, `mergeStateStatus`)는 해석 모호할 수 있음 — **진실 소스는 Git commit 자체**
+  3. 멱등한 작업(PR 머지)은 재시도 안전하지만, 비멱등(결제/삭제)은 중복 실행 위험 → 상태 조회 우선
+- **권장 패턴**:
+  ```bash
+  # 머지 시도
+  gh pr merge <N> --merge
+  # 5xx 에러 시: 재시도 전 상태 조회
+  gh pr view <N> --json state,mergeCommit
+  # state=MERGED면 성공 스킵, OPEN+conflict 없으면 재시도
+  ```
+- **참조**: conventions.md "Agent 호출 기준" / errors.md (있으면 추가)
+
 ### [2026-04-17] Flutter 테스트 데이터가 공식 기록을 오염시킨다 — 전역 가드 필수
 - **분류**: lesson
 - **내용**: Flutter 앱 개발 중 "미래 경기를 status=live로 세팅"하는 테스트가 자주 발생 (id=120, 2026-04-18 경기 사례). 이 데이터가 순위표/선수 커리어 스탯에 그대로 반영되어 **잘못된 공식 기록**으로 노출됨
