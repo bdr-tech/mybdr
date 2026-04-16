@@ -8,12 +8,13 @@
 | conventions.md | 24 | 2026-04-17 | 디자인/색상/경기집계/sticky/프린트CSS/공식 기록 가드/**에이전트 호출 기준**/**스크립트 템플릿 재사용** |
 | decisions.md | 66 | 2026-04-17 | 기술 결정 (KBL 순위/대진표/userId 연결/Referee v2/헬스체크 cron/열혈SEASON2 정리/**공식 기록 가드 전역 적용**) |
 | errors.md | 16 | 2026-04-17 | 에러 패턴 (sticky, @page Hancom PDF, th/td 정렬, DB 사고, add 누락, next/image 외부 호스트) |
-| lessons.md | 14 | 2026-04-17 | 교훈 (프린트 API, 모바일 zoom, 브랜치 drift, **Flutter 테스트 오염**, **팀 병합 logo 이관**, **동명이인 닉네임 힌트**) |
+| lessons.md | 15 | 2026-04-17 | 교훈 (프린트 API, 모바일 zoom, 브랜치 drift, Flutter 테스트 오염, 팀 병합 logo 이관, 동명이인 닉네임 힌트, **HTTP 5xx + git 실상 확인**) |
 | toss-design-analysis.md | 10 | 2026-03-28 | 토스 디자인 시스템 심층 분석 |
 | ux-audit-report.md | 28 | 2026-03-28 | UI/UX 사용성 심층 조사 |
 | project-structure-audit.md | 10 | 2026-03-28 | 전체 구조 분석 |
 
 ## 최근 추가된 지식 (최근 10건)
+- [04-17] lessons: **HTTP 5xx 에러 시 "실패" 단정 금지** — nginx 502는 "응답만 실패, 처리는 완료"일 수 있음. git log/DB로 실상 확인 후 판단. 멱등 작업은 재시도 안전
 - [04-17] conventions: **에이전트 호출 최소화 기준** — PM 직접/Explore/planner/developer/debugger 담당 범위 표. 토큰 절약 + 불필요 호출 방지
 - [04-17] conventions: **일회성 DB 스크립트 템플릿 재사용** — `scripts/_templates/`에 verify/backfill/merge 3종 (UPDATE only, DELETE 금지)
 - [04-17] decisions: **공식 기록 가드 전역 적용** — `officialMatchWhere` 공통 유틸 3함수+SQL상수로 9개 지점(순위/선수기록/팀승패/라이브) 일관 적용. Flutter 테스트 데이터(미래 live) 오염 방어
