@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
+// Phase 3: 공식 기록 가드 (status + scheduledAt 조건 통합)
+import { officialMatchWhere } from "@/lib/tournaments/official-match";
 
 interface OverviewTabProps {
   teamId: bigint;
@@ -50,16 +52,14 @@ export async function OverviewTab({ teamId, accent, team }: OverviewTabProps) {
     },
   });
   // 이 팀이 참가한 대회 경기 중 "이미 치러진 공식 기록"만 조회
-  // (games-tab과 동일 조건: scheduledAt <= now, not null, status in completed/live)
+  // Phase 3: officialMatchWhere 공통 유틸로 가드 일원화
   const fetchTournamentMatches = () => prisma.tournamentMatch.findMany({
-    where: {
+    where: officialMatchWhere({
       OR: [
         { homeTeamId: { in: ttIds } },
         { awayTeamId: { in: ttIds } },
       ],
-      status: { in: ["completed", "live"] },
-      scheduledAt: { lte: new Date(), not: null },
-    },
+    }),
     include: {
       homeTeam: { include: { team: { select: { id: true, name: true } } } },
       awayTeam: { include: { team: { select: { id: true, name: true } } } },

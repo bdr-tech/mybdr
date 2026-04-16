@@ -1,6 +1,8 @@
 import { type NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { apiSuccess, apiError } from "@/lib/api/response";
+// Phase 3: scheduledAt 가드만 사용 (status는 [completed, in_progress, live] 유지해야 함)
+import { pastOrOngoingSchedule } from "@/lib/tournaments/official-match";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -31,6 +33,9 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     prisma.tournamentMatch.findMany({
       where: {
         tournamentId: id,
+        // Phase 3: status는 기존 [completed, in_progress, live] 유지.
+        // scheduledAt 가드만 추가해 미래 테스트 데이터 / NULL 날짜 제외.
+        ...pastOrOngoingSchedule(),
         status: { in: ["completed", "in_progress", "live"] }, // 완료 + 진행중 + 라이브
         homeTeamId: { not: null },
         awayTeamId: { not: null },
