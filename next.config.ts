@@ -64,6 +64,12 @@ const nextConfig: NextConfig = {
       { protocol: "http", hostname: "k.kakaocdn.net" },
       { protocol: "https", hostname: "k.kakaocdn.net" },
       { protocol: "https", hostname: "p.kakaocdn.net" },
+      // 카카오 썸네일 프록시 (http/https 모두, /thumb/** 경로만)
+      { protocol: "http", hostname: "img1.kakaocdn.net", pathname: "/thumb/**" },
+      { protocol: "https", hostname: "img1.kakaocdn.net", pathname: "/thumb/**" },
+      // 카카오 기본 프로필 원본 이미지 (/account_images/** 경로만)
+      { protocol: "http", hostname: "t1.kakaocdn.net", pathname: "/account_images/**" },
+      { protocol: "https", hostname: "t1.kakaocdn.net", pathname: "/account_images/**" },
       { protocol: "https", hostname: "phinf.pstatic.net" },
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
     ],

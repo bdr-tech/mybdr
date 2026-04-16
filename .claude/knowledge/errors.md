@@ -2,6 +2,19 @@
 <!-- 담당: debugger, tester | 최대 30항목 -->
 <!-- 이 프로젝트에서 반복되는 에러 패턴, 함정, 주의사항을 기록 -->
 
+### [2026-04-17] Next.js 16 next/image 외부 호스트 미허용 (카카오 CDN 2종 누락)
+- **분류**: error
+- **발견자**: debugger
+- **증상**: `Invalid src prop (http://img1.kakaocdn.net/thumb/R640x640.q70/?fname=http://t1.kakaocdn.net/account_images/default_profile.jpeg) on next/image, hostname "img1.kakaocdn.net" is not configured under images in your next.config.js` — userId 2862 카카오 가입자 프로필 렌더링 중 발생
+- **원인**: `next.config.ts`의 `images.remotePatterns`에 `k.kakaocdn.net`, `p.kakaocdn.net`만 있고 **썸네일 프록시(`img1.kakaocdn.net`)**와 **기본 프로필 원본(`t1.kakaocdn.net`)**이 빠져 있었음. 카카오 OAuth 기본 프로필은 `img1.kakaocdn.net/thumb/R640x640.q70/?fname=http://t1.kakaocdn.net/account_images/default_profile.jpeg` 구조로, 실제로 2개 호스트를 동시에 타므로 둘 다 허용 필요. 추가로 에러 URL이 http였음 — OAuth 제공자가 http/https 섞어 내려주는 경우 있음.
+- **해결**: `remotePatterns`에 4개 엔트리 추가 — `img1.kakaocdn.net`(http/https × pathname=/thumb/**) + `t1.kakaocdn.net`(http/https × pathname=/account_images/**). `pathname` 제한으로 임의 경로 오남용 차단.
+- **재발 방지**:
+  1. OAuth 제공자(카카오/네이버/구글) 추가 시 **CDN 도메인 패턴을 함께 등록** — 로그인 CDN만이 아니라 프로필 썸네일 프록시까지
+  2. `remotePatterns`는 가능하면 `pathname: "/특정경로/**"`로 범위 제한 (보안 + 오남용 방지)
+  3. `next.config.ts` 수정 후 dev 서버 **재시작 필수** (HMR 미반영)
+- **참조**: conventions.md "next/image 외부 호스트 등록 패턴"(승격 후보)
+- **참조횟수**: 0
+
 ### [2026-04-16] sticky 셀 가로 스크롤 겹침 — 배경 투명 + z-index 누락 이중 원인
 - **분류**: error (UI)
 - **발견자**: pm
