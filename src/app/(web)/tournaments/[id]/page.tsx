@@ -12,16 +12,26 @@ import { Breadcrumb } from "@/components/shared/breadcrumb";
 // 탭 전환 컴포넌트 (클라이언트) — lazy loading 방식으로 변경
 import { TournamentTabs } from "./_components/tournament-tabs";
 
+// 비공개 대회 가드 — 관계자(organizer/admin member/super_admin)만 접근
+import { getWebSession } from "@/lib/auth/web-session";
+import { isTournamentInsider } from "@/lib/auth/tournament-auth";
+
 export const revalidate = 30;
 
 // SEO: 대회 상세 동적 메타데이터
+// 비공개 대회는 제목/설명/OG 이미지를 노출하지 않아 SNS 미리보기로 정보 유출 방지
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const tournament = await prisma.tournament.findUnique({
     where: { id },
-    select: { name: true, description: true, banner_url: true },
+    select: { name: true, description: true, banner_url: true, is_public: true },
   }).catch(() => null);
   if (!tournament) return { title: "대회 상세 | MyBDR" };
+
+  // 비공개 대회는 메타데이터도 최소화 (이름/설명/이미지 노출 금지)
+  if (tournament.is_public === false) {
+    return { title: "대회 상세 | MyBDR", robots: { index: false, follow: false } };
+  }
 
   const title = `${tournament.name} | MyBDR`;
   const description = tournament.description?.slice(0, 100) || `${tournament.name} 대회 일정, 참가 신청`;
@@ -56,7 +66,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
   }
 
   // ========================================
-  // 1) 대회 기본 정보 조회 (기존 쿼리 100% 유지)
+  // 1) 대회 기본 정보 조회 (is_public 포함 — 비공개 가드용)
   // ========================================
   const tournament = await prisma.tournament.findUnique({
     where: { id },
@@ -81,6 +91,8 @@ export default async function TournamentDetailPage({ params }: { params: Promise
       bank_account: true,
       bank_holder: true,
       maxTeams: true,
+      // 비공개 대회 접근 가드에 사용
+      is_public: true,
       // 디자인 템플릿 관련 필드
       design_template: true,
       logo_url: true,
@@ -93,6 +105,15 @@ export default async function TournamentDetailPage({ params }: { params: Promise
     },
   });
   if (!tournament) return notFound();
+
+  // 비공개 대회: 관계자(organizer/admin member/super_admin)만 접근, 아니면 존재 숨김(404)
+  if (tournament.is_public === false) {
+    const session = await getWebSession();
+    if (!session) return notFound();
+    const userId = BigInt(session.sub);
+    const insider = await isTournamentInsider(userId, id, session);
+    if (!insider) return notFound();
+  }
 
   // ========================================
   // 2) 탭별 lazy loading: 서버에서는 개요 탭 데이터만 조회

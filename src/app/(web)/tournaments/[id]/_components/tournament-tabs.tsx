@@ -51,15 +51,32 @@ type ApiResponse = Record<string, any>;
 
 // API fetcher: JSON 파싱 후 snake_case → camelCase 변환
 // apiSuccess()가 convertKeysToSnakeCase()를 적용하므로 클라이언트에서 되돌림
+// non-OK 응답은 throw → SWR error 상태 트리거 (이전엔 에러 JSON을 data로 반환해 silent failure 발생)
 const fetcher = (url: string): Promise<ApiResponse> =>
   fetch(url)
-    .then((r) => r.json())
+    .then((r) => {
+      if (!r.ok) throw new Error(`API ${r.status}`);
+      return r.json();
+    })
     .then((json) => convertKeysToCamelCase(json) as ApiResponse);
 
 interface TournamentTabsProps {
   tournamentId: string;
   // 개요 탭만 서버에서 렌더링하여 전달
   overviewContent: ReactNode;
+}
+
+// -- 공통 에러 상태 --
+function TabError({ message }: { message: string }) {
+  return (
+    <div
+      className="rounded-lg border p-8 text-center text-sm"
+      style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)", color: "var(--color-text-muted)" }}
+    >
+      <span className="material-symbols-outlined mb-2 block text-3xl" style={{ color: "var(--color-error)" }}>error_outline</span>
+      {message}
+    </div>
+  );
 }
 
 // -- 공통 로딩 스켈레톤 --
@@ -75,13 +92,14 @@ function TabSkeleton() {
 
 // -- 일정 탭 콘텐츠 (API로 lazy load) --
 function ScheduleTabContent({ tournamentId }: { tournamentId: string }) {
-  const { data, isLoading } = useSWR(
+  const { data, isLoading, error } = useSWR(
     `/api/web/tournaments/${tournamentId}/public-schedule`,
     fetcher,
     { revalidateOnFocus: false }
   );
 
   if (isLoading) return <TabSkeleton />;
+  if (error) return <TabError message="일정을 불러오는 중 오류가 발생했습니다." />;
 
   const rawMatches = data?.data?.matches ?? data?.matches ?? [];
   const matches: ScheduleMatch[] = rawMatches.map((m: Record<string, unknown>) => ({
@@ -153,13 +171,14 @@ function OverviewWithDashboard({ tournamentId, overviewContent }: { tournamentId
 
 // -- 대진표 탭 콘텐츠 (API로 lazy load) --
 function BracketTabContent({ tournamentId }: { tournamentId: string }) {
-  const { data, isLoading } = useSWR(
+  const { data, isLoading, error } = useSWR(
     `/api/web/tournaments/${tournamentId}/public-bracket`,
     fetcher,
     { revalidateOnFocus: false }
   );
 
   if (isLoading) return <TabSkeleton />;
+  if (error) return <TabError message="대진표를 불러오는 중 오류가 발생했습니다." />;
 
   // apiSuccess()는 .data 래핑 없이 직접 반환 + fetcher가 camelCase 변환 완료
   const d = data ?? {};
@@ -171,7 +190,8 @@ function BracketTabContent({ tournamentId }: { tournamentId: string }) {
   //   → 경기 일정은 "일정" 탭에 있으므로 대진표 탭에서 제거
   // - 조별+토너먼트(group_stage_knockout): 기존 GroupStandings + BracketView
   // - 순수 토너먼트(single_elimination 등): 기존 BracketView만
-  const format: string | null = d.format ?? null;
+  // 정규화: DB 값이 하이픈이나 대소문자가 달라도 매칭 (예: "full-league" → "full_league")
+  const format: string | null = d.format ? (d.format as string).toLowerCase().replace(/-/g, "_") : null;
   const isLeague =
     format === "round_robin" ||
     format === "full_league" ||

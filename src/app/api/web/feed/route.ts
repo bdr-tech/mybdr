@@ -39,8 +39,9 @@ export async function GET(_request: NextRequest) {
         },
       }),
 
-      // 대회 참가: 최근 참가팀 5건
+      // 대회 참가: 최근 참가팀 5건 — 비공개 대회(is_public=false)는 노출 금지
       prisma.tournamentTeam.findMany({
+        where: { tournament: { is_public: true } },
         orderBy: { createdAt: "desc" },
         take: 5,
         select: {

@@ -167,6 +167,19 @@ async function handler(req: NextRequest, ctx: AuthContext, tournamentId: string)
       },
     });
 
+    // 1-B. 경기 리셋 감지: status=scheduled + player_stats 없음 + play_by_plays 없음
+    // → 서버에 남은 이전 게임 PBP/stats 전체 삭제 (laive log 잔류 방지)
+    const isReset = match.status === "scheduled"
+      && (!player_stats || player_stats.length === 0)
+      && (!play_by_plays || play_by_plays.length === 0);
+    if (isReset) {
+      await Promise.all([
+        prisma.play_by_plays.deleteMany({ where: { tournament_match_id: matchId } }),
+        prisma.matchPlayerStat.deleteMany({ where: { tournamentMatchId: matchId } }),
+      ]);
+      console.log(`[match-sync] Reset detected matchId=${match.server_id} — cleared PBP & stats`);
+    }
+
     // 2. 선수 스탯 upsert (병렬 처리)
     if (player_stats && player_stats.length > 0) {
       const statPromises = player_stats.map((stat) => {

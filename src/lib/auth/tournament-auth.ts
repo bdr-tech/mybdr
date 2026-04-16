@@ -51,3 +51,32 @@ export async function getWebUser(): Promise<{ userId: bigint; sub: string } | nu
   if (!session) return null;
   return { userId: BigInt(session.sub), sub: session.sub };
 }
+
+/**
+ * 대회 관계자(insider) 판별 — 비공개 대회 접근 가드에서 사용.
+ * 관계자 = super_admin | organizerId | tournamentAdminMember(isActive)
+ * 참가팀 멤버는 차기에 확장.
+ */
+export async function isTournamentInsider(
+  userId: bigint,
+  tournamentId: string,
+  session?: { role?: string; admin_role?: string } | null
+): Promise<boolean> {
+  if (session?.role === "super_admin" || session?.admin_role === "super_admin") {
+    return true;
+  }
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { organizerId: true },
+  });
+  if (!tournament) return false;
+
+  if (tournament.organizerId === userId) return true;
+
+  const member = await prisma.tournamentAdminMember.findFirst({
+    where: { tournamentId, userId, isActive: true },
+    select: { id: true },
+  });
+  return Boolean(member);
+}

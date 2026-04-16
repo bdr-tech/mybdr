@@ -90,6 +90,10 @@ export interface TournamentListFilters {
   /** 맞춤 성별 필터 -- tournament.gender IN (...) 조건 (prefer=true 시 사용) */
   gender?: string[];
   take?: number;
+  /** 조회자 유저 ID -- 해당 유저가 관계자인 비공개 대회도 포함 */
+  viewerUserId?: bigint;
+  /** 조회자가 super_admin이면 is_public 필터 무시 */
+  viewerIsSuperAdmin?: boolean;
 }
 
 export interface CreateTournamentInput {
@@ -218,12 +222,28 @@ function toMyTournamentItem(
  * 대회 목록 (공개) — tournaments/page.tsx, 홈페이지에서 사용
  */
 export async function listTournaments(filters: TournamentListFilters = {}) {
-  const { status, cities, divisions, gender, take = 60 } = filters;
+  const { status, cities, divisions, gender, take = 60, viewerUserId, viewerIsSuperAdmin } = filters;
 
   // where 조건을 동적으로 구성
   const where: Record<string, unknown> = {
     status: status && status !== "all" ? status : { not: "draft" },
   };
+
+  // 공개 여부 필터 — super_admin이 아닌 경우에만 적용
+  // 비공개 대회(is_public=false)는 관계자(organizer/adminMember)인 경우에만 포함
+  if (!viewerIsSuperAdmin) {
+    const visibilityOr: unknown[] = [{ is_public: true }];
+    if (viewerUserId !== undefined) {
+      visibilityOr.push({ organizerId: viewerUserId });
+      visibilityOr.push({
+        adminMembers: { some: { userId: viewerUserId, isActive: true } },
+      });
+    }
+    where.AND = [
+      ...(Array.isArray(where.AND) ? (where.AND as unknown[]) : []),
+      { OR: visibilityOr },
+    ];
+  }
 
   // 맞춤 지역(cities) 필터: 선택한 지역이거나 지역이 아직 미정(null)인 대회도 포함
   // AND로 감싸서 status 조건과 충돌하지 않도록 한다

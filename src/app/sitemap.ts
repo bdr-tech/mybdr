@@ -90,8 +90,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
 
-    // 대회 목록: 모든 대회 (과거 대회도 검색엔진에 노출되면 좋음)
+    // 대회 목록: 공개 대회만 (비공개 대회는 검색엔진에 노출 금지)
     const tournaments = await prisma.tournament.findMany({
+      where: { is_public: true },
       select: { id: true, updatedAt: true },
       take: 500,
     });

@@ -29,12 +29,18 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") || undefined;
     const prefer = searchParams.get("prefer") === "true";
 
+    // 세션 조회 — 비공개 대회 포함 여부(관계자/super_admin) 판단에 사용
+    // prefer=true일 때는 맞춤 설정 추출에도 재사용
+    const session = await getWebSession();
+    const viewerUserId = session ? BigInt(session.sub) : undefined;
+    const viewerIsSuperAdmin =
+      session?.role === "super_admin" || session?.admin_role === "super_admin";
+
     // prefer=true일 때 로그인 유저의 맞춤 설정(지역, 종별, 성별)을 조회
     let preferredCities: string[] | undefined;
     let preferredDivisions: string[] | undefined;
     let preferredGender: string[] | undefined;
     if (prefer) {
-      const session = await getWebSession();
       if (session) {
         const user = await prisma.user.findUnique({
           where: { id: BigInt(session.sub) },
@@ -76,12 +82,15 @@ export async function GET(request: NextRequest) {
     }
 
     // 서비스 함수로 DB 조회 (prefer=true이면 cities + divisions + gender 파라미터 전달)
+    // viewerUserId/isSuperAdmin — 세션 유저가 관계자인 비공개 대회도 결과에 포함
     const rows = await listTournaments({
       status,
       cities: preferredCities,
       divisions: preferredDivisions,
       gender: preferredGender,
       take: 60,
+      viewerUserId,
+      viewerIsSuperAdmin,
     }).catch(() => []);
 
     // Date, Decimal 필드를 JSON 직렬화 가능하도록 변환
@@ -102,9 +111,14 @@ export async function GET(request: NextRequest) {
       teamCount: t._count.tournamentTeams,              // 참가팀 수
     }));
 
-    // 60초 캐시: 대회 목록은 비교적 정적이므로 중간 캐시 적용
+    // 60초 캐시: 비로그인은 공용 캐시(public), 로그인 유저는 개인화 결과라 private
+    // (관계자 계정에만 비공개 대회가 추가되므로 결과가 사용자마다 달라짐)
     const response = apiSuccess({ tournaments });
-    response.headers.set("Cache-Control", "public, s-maxage=60, max-age=60");
+    if (session) {
+      response.headers.set("Cache-Control", "private, max-age=60");
+    } else {
+      response.headers.set("Cache-Control", "public, s-maxage=60, max-age=60");
+    }
     return response;
   } catch (error) {
     console.error("[GET /api/web/tournaments] Error:", error);
