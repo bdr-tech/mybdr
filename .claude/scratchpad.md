@@ -32,6 +32,8 @@
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-17 | developer | 팀 개요탭 "최근 경기" 위젯 — TournamentMatch 연합 조회 추가 (games-tab과 동일 패턴, 병합 후 상위 5건) | ✅ tsc 통과 |
+| 04-17 | developer | 팀 상세 "경기" 탭 — TournamentMatch 병행 조회(미래/NULL 제외, completed+live) + 픽업과 날짜순 병합 표시 | ✅ tsc 통과 |
 | 04-17 | debugger | next.config remotePatterns에 카카오 CDN 2종(img1/t1) 추가 — 카카오 기본 프로필 이미지 next/image 에러 해결 | ✅ |
 | 04-17 | pm | 라이징이글스 공개 복구 + 쓰리포인트 로고 이관 (팀 병합 후속) | ✅ |
 | 04-17 | pm | 열혈SEASON2 Phase A+B+C+D (선수 백필 25건 / endDate 복구 / 팀 병합 2쌍 / 포트 3001 복구) | ✅ |
@@ -40,5 +42,3 @@
 | 04-16 | pm | PR #22 파일명 YYMMDDHH + 가로 방향 강화 | ✅ |
 | 04-16 | pm | PR #20 프린트 헤더/데이터 정렬 수정 | ✅ |
 | 04-16 | pm | PR #19 zoom 1.25 → 1.1 | ✅ |
-| 04-16 | pm | PR #18 sticky 셀 z-10 추가 | ✅ |
-| 04-16 | pm | PR #17 모바일 2행 레이아웃 + sticky 배경 불투명 | ✅ |

@@ -236,7 +236,8 @@
       "Bash(\"/c/Program Files/GitHub:*)",
       "Bash(tee /tmp/drift-diag.sql)",
       "Bash(findstr \":3001 \")",
-      "Bash(findstr \":3002 \")"
+      "Bash(findstr \":3002 \")",
+      "Bash(echo \"EXIT: $?\")"
     ]
   }
 }
