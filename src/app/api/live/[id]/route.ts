@@ -130,6 +130,7 @@ export async function GET(
 
       switch (p.action_type) {
         case "shot":
+          // 1인 모드 (game_recording_screen): is_made 로 성공/실패 구분
           if (isMade) {
             s.pts += pts;
             s.fgm += 1; s.fga += 1;
@@ -139,7 +140,14 @@ export async function GET(
             if (isThree) { s.tpa += 1; }
           }
           break;
+        case "made_shot":
+          // 2인 모드 (duo_recording_screen): 성공 슛은 made_shot 으로 기록됨
+          s.pts += pts;
+          s.fgm += 1; s.fga += 1;
+          if (isThree) { s.tpm += 1; s.tpa += 1; }
+          break;
         case "missed_shot":
+          // 2인 모드: 실패 슛은 missed_shot
           s.fga += 1;
           if (isThree) { s.tpa += 1; }
           break;
@@ -224,6 +232,12 @@ export async function GET(
               stat.fga += 1;
               if (isThree) { stat.tpa += 1; }
             }
+            break;
+          case "made_shot":
+            // 2인 모드: 성공 슛
+            stat.pts += pts;
+            stat.fgm += 1; stat.fga += 1;
+            if (isThree) { stat.tpm += 1; stat.tpa += 1; }
             break;
           case "missed_shot":
             stat.fga += 1;
