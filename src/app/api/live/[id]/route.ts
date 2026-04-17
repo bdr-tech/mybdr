@@ -130,6 +130,7 @@ export async function GET(
 
       switch (p.action_type) {
         case "shot":
+          // 1인 모드 (game_recording_screen): is_made 로 성공/실패 구분
           if (isMade) {
             s.pts += pts;
             s.fgm += 1; s.fga += 1;
@@ -139,7 +140,14 @@ export async function GET(
             if (isThree) { s.tpa += 1; }
           }
           break;
+        case "made_shot":
+          // 2인 모드 (duo_recording_screen): 성공 슛은 made_shot 으로 기록됨
+          s.pts += pts;
+          s.fgm += 1; s.fga += 1;
+          if (isThree) { s.tpm += 1; s.tpa += 1; }
+          break;
         case "missed_shot":
+          // 2인 모드: 실패 슛은 missed_shot
           s.fga += 1;
           if (isThree) { s.tpa += 1; }
           break;
@@ -224,6 +232,12 @@ export async function GET(
               stat.fga += 1;
               if (isThree) { stat.tpa += 1; }
             }
+            break;
+          case "made_shot":
+            // 2인 모드: 성공 슛
+            stat.pts += pts;
+            stat.fgm += 1; stat.fga += 1;
+            if (isThree) { stat.tpm += 1; stat.tpa += 1; }
             break;
           case "missed_shot":
             stat.fga += 1;
@@ -480,6 +494,27 @@ export async function GET(
     const finalHomeScore = (match.homeScore && match.homeScore > 0) ? match.homeScore : homePlayerPts;
     const finalAwayScore = (match.awayScore && match.awayScore > 0) ? match.awayScore : awayPlayerPts;
 
+    // 임시 디버그 (쿼터별 집계 불일치 진단용) — ?debug=1 시 PBP 샘플/매핑 노출
+    const debugEnabled = req.nextUrl.searchParams.get("debug") === "1";
+    const debugPayload = debugEnabled
+      ? {
+          pbp_count: allPbps.length,
+          pbp_sample: allPbps.slice(0, 10).map((p) => ({
+            player_id: p.tournament_team_player_id != null ? String(p.tournament_team_player_id) : null,
+            team_id:   p.tournament_team_id   != null ? String(p.tournament_team_id)   : null,
+            quarter: p.quarter,
+            action_type: p.action_type,
+            action_subtype: p.action_subtype,
+            is_made: p.is_made,
+            points_scored: p.points_scored,
+          })),
+          pbp_distinct_player_ids: Array.from(new Set(allPbps.map((p) => String(p.tournament_team_player_id)))),
+          map_keys: Array.from(quarterStatsByPlayer.keys()),
+          roster_player_ids_home: (match.homeTeam?.players ?? []).map((p) => String(p.id)),
+          roster_player_ids_away: (match.awayTeam?.players ?? []).map((p) => String(p.id)),
+        }
+      : undefined;
+
     return apiSuccess({
       match: {
         id: Number(match.id),
@@ -516,6 +551,7 @@ export async function GET(
         awayPlayers,
         playByPlays: [],
         updatedAt: match.updatedAt.toISOString(),
+        ...(debugPayload ? { _debug: debugPayload } : {}),
       },
     });
   } catch (err) {
