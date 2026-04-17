@@ -32,21 +32,21 @@ const batchPhotoFetcher = (key: string) => {
     .then((data) => (data.results ?? {}) as Record<string, string | null>);
 };
 
-// API 타입 (기존과 동일)
+// API 타입 (camelCase — /api/web/games 응답과 일치)
 interface GameFromApi {
   id: string;
   uuid: string | null;
   title: string | null;
   status: number;
-  game_type: number;
+  gameType: number;
   city: string | null;
-  venue_name: string | null;
-  scheduled_at: string | null;
-  current_participants: number | null;
-  max_participants: number | null;
-  fee_per_person: string | null;
-  skill_level: string | null;
-  author_nickname: string | null;
+  venueName: string | null;
+  scheduledAt: string | null;
+  currentParticipants: number | null;
+  maxParticipants: number | null;
+  feePerPerson: string | null;
+  skillLevel: string | null;
+  authorNickname: string | null;
 }
 
 interface GamesApiResponse {
@@ -56,8 +56,8 @@ interface GamesApiResponse {
 
 /* 상태 배지 계산 (기존과 동일) */
 function getStatusBadge(game: GameFromApi): { text: string; className: string } | null {
-  const cur = game.current_participants ?? 0;
-  const max = game.max_participants ?? 0;
+  const cur = game.currentParticipants ?? 0;
+  const max = game.maxParticipants ?? 0;
   const pct = max > 0 ? (cur / max) * 100 : 0;
 
   if (game.status === 3) {
@@ -66,8 +66,8 @@ function getStatusBadge(game: GameFromApi): { text: string; className: string } 
   if (pct >= 100) {
     return { text: "만석", className: "bg-[var(--color-text-disabled)] text-white" };
   }
-  if (game.status === 1 && game.scheduled_at) {
-    const hoursUntilStart = (new Date(game.scheduled_at).getTime() - Date.now()) / (1000 * 60 * 60);
+  if (game.status === 1 && game.scheduledAt) {
+    const hoursUntilStart = (new Date(game.scheduledAt).getTime() - Date.now()) / (1000 * 60 * 60);
     if (hoursUntilStart > 0 && hoursUntilStart <= 24) {
       return { text: "곧 시작", className: "bg-black text-white" };
     }
@@ -89,18 +89,18 @@ function GamesGridSkeleton() {
 /* ---- 경기 카드: 토스 스타일 (둥근 모서리, 가벼운 그림자, 리스트형) ---- */
 function GameCard({ game, photoUrl }: { game: GameFromApi; photoUrl?: string | null }) {
   const href = `/games/${game.uuid?.slice(0, 8) ?? game.id}`;
-  const badge = TYPE_BADGE[game.game_type] ?? TYPE_BADGE[0];
-  const skill = game.skill_level && game.skill_level !== "all" ? SKILL_BADGE[game.skill_level] : null;
-  const cur = game.current_participants ?? 0;
-  const max = game.max_participants ?? 0;
+  const badge = TYPE_BADGE[game.gameType] ?? TYPE_BADGE[0];
+  const skill = game.skillLevel && game.skillLevel !== "all" ? SKILL_BADGE[game.skillLevel] : null;
+  const cur = game.currentParticipants ?? 0;
+  const max = game.maxParticipants ?? 0;
   const pct = max > 0 ? Math.min((cur / max) * 100, 100) : 0;
-  const location = game.venue_name ?? game.city ?? "";
+  const location = game.venueName ?? game.city ?? "";
   const statusBadge = getStatusBadge(game);
   const isFullyBooked = statusBadge?.text === "만석";
-  const fee = game.fee_per_person && Number(game.fee_per_person) > 0
-    ? `${Number(game.fee_per_person).toLocaleString()}원`
+  const fee = game.feePerPerson && Number(game.feePerPerson) > 0
+    ? `${Number(game.feePerPerson).toLocaleString()}원`
     : "무료";
-  const scheduleStr = formatRelativeDateTime(game.scheduled_at);
+  const scheduleStr = formatRelativeDateTime(game.scheduledAt);
 
   return (
     <Link href={href}>
@@ -146,10 +146,10 @@ function GameCard({ game, photoUrl }: { game: GameFromApi; photoUrl?: string | n
             </div>
             {/* 작성자 + 장소 + 시간 */}
             <div className="flex items-center gap-3 text-xs text-[var(--color-text-muted)]">
-              {game.author_nickname && (
+              {game.authorNickname && (
                 <span className="flex items-center gap-0.5 truncate">
                   <span className="material-symbols-outlined text-xs">person</span>
-                  {game.author_nickname}
+                  {game.authorNickname}
                 </span>
               )}
               {location && (
@@ -239,7 +239,7 @@ export function GamesContent({
   // batch 사진 API (기존과 동일)
   const venueQueries = useMemo(() => {
     return games
-      .map((g) => g.venue_name ?? g.city ?? "")
+      .map((g) => g.venueName ?? g.city ?? "")
       .filter((v) => v.length >= 2);
   }, [games]);
 
@@ -307,7 +307,7 @@ export function GamesContent({
               <GameCard
                 key={g.id}
                 game={g}
-                photoUrl={photoMap === undefined ? undefined : (photoMap[g.venue_name ?? g.city ?? ""] ?? null)}
+                photoUrl={photoMap === undefined ? undefined : (photoMap[g.venueName ?? g.city ?? ""] ?? null)}
               />
             ))}
 
