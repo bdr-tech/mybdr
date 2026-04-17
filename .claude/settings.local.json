@@ -238,7 +238,10 @@
       "Bash(findstr \":3001 \")",
       "Bash(findstr \":3002 \")",
       "Bash(echo \"EXIT: $?\")",
-      "Bash(gh pr create --base dev --head subin --title '2026-04-17 열혈SEASON2 데이터 정리 + 카카오 CDN + 팀 경기 탭' --body ' *)"
+      "Bash(gh pr create --base dev --head subin --title '2026-04-17 열혈SEASON2 데이터 정리 + 카카오 CDN + 팀 경기 탭' --body ' *)",
+      "Bash(git stash *)",
+      "Bash(mkdir -p Dev/design/team-logos)",
+      "Bash(mv \"참가팀_로고모음/\"*.png Dev/design/team-logos/)"
     ]
   }
 }
