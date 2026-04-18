@@ -13,6 +13,8 @@ import { Breadcrumb } from "@/components/shared/breadcrumb";
 import { getTeamDisplayNames } from "@/lib/utils/team-display";
 // Phase 3: 공식 기록 가드 (미래 경기 + NULL 날짜 제외)
 import { officialMatchWhere } from "@/lib/tournaments/official-match";
+// 팀장 전용 "팀 관리" 버튼 노출 여부 판단에 현재 로그인 세션 필요
+import { getWebSession } from "@/lib/auth/web-session";
 
 export const revalidate = 60;
 
@@ -128,6 +130,24 @@ export default async function TeamDetailPage({
   const winRate = total > 0 ? Math.round((wins / total) * 100) : null;
   const division = computeDivision(wins);
 
+  // ===== 팀장 여부 판단 =====
+  // 이유: 히어로 CTA에 "팀 관리" 버튼을 팀장에게만 노출해야 하므로
+  //      서버 세션을 가져와 team.captainId(BigInt)와 비교한다.
+  // 방법: getWebSession()은 JwtPayload(sub: string) 또는 null을 반환 →
+  //      문자열 sub를 BigInt로 변환해 팀의 captainId와 정확 비교 (타입/값 모두 일치).
+  //      문자열 비교(team.captainId.toString() === session.sub)도 동일 결과지만
+  //      BigInt 비교가 더 명시적이고 실수 여지가 적다.
+  const session = await getWebSession();
+  let isCaptain = false;
+  if (session?.sub) {
+    try {
+      // JWT sub이 숫자 문자열이 아니면 BigInt 변환에서 예외 → try로 보호
+      isCaptain = BigInt(session.sub) === team.captainId;
+    } catch {
+      isCaptain = false;
+    }
+  }
+
   return (
     <div className="space-y-0">
 
@@ -230,6 +250,20 @@ export default async function TeamDetailPage({
 
             {/* 우측: CTA 버튼 그룹 */}
             <div className="flex items-center gap-3">
+              {/* 팀장 전용 "팀 관리" 버튼
+                  - 이유: 팀장에게만 관리 페이지 진입점을 히어로에서 제공 (일반 멤버·비로그인에는 미노출)
+                  - 스타일: BDR Red outline + rounded(4px) — 디자인 시스템 준수
+                  - 반응형: sm 미만은 아이콘만, sm 이상은 아이콘+텍스트 */}
+              {isCaptain && (
+                <Link
+                  href={`/teams/${id}/manage`}
+                  aria-label="팀 관리"
+                  className="inline-flex items-center gap-1.5 rounded border border-[var(--color-primary)] px-3 py-2 text-sm font-medium text-[var(--color-primary)] transition-colors hover:bg-[var(--color-primary)] hover:text-white"
+                >
+                  <span className="material-symbols-outlined text-base">settings</span>
+                  <span className="hidden sm:inline">팀 관리</span>
+                </Link>
+              )}
               <TeamJoinButton teamId={id} />
             </div>
           </div>
