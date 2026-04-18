@@ -468,6 +468,18 @@ html.light .watermark-text {
   color: rgba(0, 0, 0, 0.03);
 }
 
+/* 2026-04-17: state 기반 프린트 모드 (모바일/태블릿 호환) — @media print 와 별도로 동작.
+   일부 모바일 브라우저가 @media print 를 뷰포트 스냅샷 모드로 처리해 가시성 전환이 실행되지 않는
+   문제가 있어, JS 에서 [data-printing="true"] 를 토글하면 CSS 가 즉시 반영되는 방식으로 바꿈.
+   window.print() 호출 전 state 가 true → main 콘텐츠 숨김 + 프린트 영역 보임 → afterprint 에서 해제.
+   데스크톱 브라우저도 동일하게 동작하므로 @media print 블록과 결과는 같지만, 모바일에서도 확실히 반영됨. */
+[data-live-root][data-printing="true"] > *:not(#box-score-print-area) {
+  display: none !important;
+}
+[data-live-root][data-printing="true"] #box-score-print-area {
+  display: block !important;
+}
+
 /* 프린트: 박스스코어 A4 가로, 한 팀/한 기간 한 페이지
    2026-04-16 재작성: visibility:hidden 방식은 공간을 유지해 빈 페이지가 생성되는 버그가 있어
    display:none 방식으로 변경. data-live-root의 자식 중 프린트 영역만 남기고 완전히 제거. */

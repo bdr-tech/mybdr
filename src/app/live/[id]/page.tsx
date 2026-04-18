@@ -418,6 +418,11 @@ export default function LiveBoxScorePage() {
   //                값이 세팅되면 useEffect에서 DOM 업데이트 후 window.print() 호출.
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
   const [printOptions, setPrintOptions] = useState<PrintOptions | null>(null);
+  // 2026-04-17: state 기반 프린트 모드 토글 — 모바일/태블릿 브라우저 호환성 개선.
+  // 기존 @media print + Tailwind print:block 방식은 일부 모바일 브라우저가 뷰포트 스냅샷
+  // 모드로 처리해 hidden 그대로 유지되어 blank 출력되는 문제가 있었음.
+  // 이제 data-printing="true" 속성 기반 CSS가 @media 의존 없이 가시성 전환을 담당.
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const fetchMatch = useCallback(async () => {
     try {
@@ -482,9 +487,13 @@ export default function LiveBoxScorePage() {
       const originalTitle = document.title;
       document.title = printTitle;
 
+      // 2026-04-17: state 기반 프린트 모드 진입 — @media print 의존 없이 모바일 호환
+      setIsPrinting(true);
+
       // afterprint 이벤트 (사용자가 프린트/저장/취소 후) → title 복원 + state 초기화
       const handleAfterPrint = () => {
         document.title = originalTitle;
+        setIsPrinting(false);
         setPrintOptions(null);
         setPrintDialogOpen(false);
         window.removeEventListener("afterprint", handleAfterPrint);
@@ -497,9 +506,10 @@ export default function LiveBoxScorePage() {
 
       return () => {
         clearTimeout(t);
-        // 안전장치: cleanup 시 title 복원 + 리스너 제거
+        // 안전장치: cleanup 시 title 복원 + 리스너 제거 + 프린트 모드 해제
         window.removeEventListener("afterprint", handleAfterPrint);
         if (document.title === printTitle) document.title = originalTitle;
+        setIsPrinting(false);
       };
     }
   }, [printOptions, match]);
@@ -591,8 +601,9 @@ export default function LiveBoxScorePage() {
     // 2026-04-16: data-live-root — 프린트 CSS가 자식 중 #box-score-print-area만 남기고 제거
     <div
       data-live-root
+      data-printing={isPrinting ? "true" : undefined}
       className="min-h-screen"
-      style={{ backgroundColor: "var(--color-background)", color: "var(--color-text-primary)", zoom: "1.1" }}
+      style={{ backgroundColor: "var(--color-background)", color: "var(--color-text-primary)", zoom: isPrinting ? 1 : 1.1 }}
     >
       {/* 헤더 — border와 배경을 모두 CSS 변수로 */}
       <div

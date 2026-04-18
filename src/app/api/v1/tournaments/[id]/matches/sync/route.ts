@@ -245,9 +245,20 @@ async function handler(req: NextRequest, ctx: AuthContext, tournamentId: string)
       await Promise.all(statPromises);
     }
 
-    // 3. Play-by-Play upsert (병렬 처리)
+    // 3. Play-by-Play 동기화
     if (play_by_plays && play_by_plays.length > 0) {
-      // player_id=0인 PBP(타임아웃/쿼터시작 등)는 제외
+      // 2026-04-18: PBP snapshot replace — 앱 undo 가 서버에 즉시 반영되도록
+      // 앱 로컬 DB 에서 삭제된 PBP 는 sync data 에 없으므로, incoming local_id 목록에 없는 기존 서버 PBP 삭제.
+      // player_id=0 인 PBP(타임아웃/쿼터시작 등)도 incoming 에 있을 수 있으므로 먼저 전체 local_id 목록 수집.
+      const incomingLocalIds = play_by_plays.map((pbp) => pbp.local_id);
+      await prisma.play_by_plays.deleteMany({
+        where: {
+          tournament_match_id: matchId,
+          NOT: { local_id: { in: incomingLocalIds } },
+        },
+      });
+
+      // player_id=0인 PBP(타임아웃/쿼터시작 등)는 upsert 에서 제외
       const validPbps = play_by_plays.filter((pbp) => pbp.tournament_team_player_id > 0 && pbp.tournament_team_id > 0);
       const pbpPromises = validPbps.map((pbp) => {
         const pbpData = {
