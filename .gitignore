@@ -57,3 +57,5 @@ local_dump.sql
 
 # 디자인 원본 (.ai 등 — 로컬 보관, git 추적 제외)
 /참가팀_로고모음/
+tmp/
+!tmp/.gitkeep
