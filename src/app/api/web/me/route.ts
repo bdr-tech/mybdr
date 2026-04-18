@@ -25,6 +25,18 @@ export const GET = withWebAuth(async (ctx: WebAuthContext) => {
         prefer_filter_enabled: true,
         // 숨긴 메뉴 slug 배열 — 사이드/슬라이드 메뉴 필터링에 사용
         hidden_menus: true,
+        // 프로필 완성 배너 5단계 판정용 필드 (phone/position/height/profile_completed + 맞춤설정 5종)
+        // 이유: 클라이언트가 매번 별도 API 호출하지 않도록 me 응답에 포함
+        phone: true,
+        position: true,
+        height: true,
+        profile_completed: true,
+        preferred_divisions: true,
+        preferred_regions: true,
+        preferred_days: true,
+        preferred_time_slots: true,
+        preferred_skill_levels: true,
+        preferred_game_types: true,
       },
     }).catch(() => null),
     // Referee 테이블에서 현재 유저의 매칭 여부 확인 (SELECT id만 — 최소 비용)
@@ -79,5 +91,17 @@ export const GET = withWebAuth(async (ctx: WebAuthContext) => {
     is_referee: !!referee,
     // 관리자 정보 — 비관리자는 null. referee-shell에서 admin 메뉴 필터링에 사용
     admin_info: adminInfo,
+    // 프로필 완성 배너 5단계 판정용 원본 필드 (snake_case 변환 후 전달)
+    // 이유: 프로필 완성 배너가 이 값들로 어느 단계까지 채웠는지 계산
+    phone: user?.phone ?? null,
+    position: user?.position ?? null,
+    height: user?.height ?? null,
+    profile_completed: user?.profile_completed ?? false,
+    preferred_divisions: (user?.preferred_divisions as unknown) ?? [],
+    preferred_regions: (user?.preferred_regions as unknown) ?? [],
+    preferred_days: (user?.preferred_days as unknown) ?? [],
+    preferred_time_slots: (user?.preferred_time_slots as unknown) ?? [],
+    preferred_skill_levels: (user?.preferred_skill_levels as unknown) ?? [],
+    preferred_game_types: (user?.preferred_game_types as unknown) ?? [],
   });
 });
