@@ -1,9 +1,44 @@
 # 작업 스크래치패드
 
 ## 현재 작업
-- **상태**: ✅ **UX 세션 종료 (Dev/ 플래닝 커밋 + PR #45 MERGEABLE)** — W1 Quick Wins **12/12 완료 확인**, M1 Day 7 대기
-- **다음 작업**: 수빈 판단 — (a) M1 Day 7 `/profile` 허브 통합 대시보드 / (b) Phase 2b / (c) 오늘 종료
-- **현재 담당**: 대기 중
+- **요청**: `/games` 페이지 상단에 경기 유형 탭 (전체/픽업/게스트/연습경기) — PR #45에 추가 커밋
+- **상태**: 🏗️ developer 구현 중
+- **현재 담당**: developer
+- **결정사항**:
+  - 건수 뱃지 없이 시작 (1차)
+  - 플로팅 패널 "유형" 필터 제거 (탭과 중복 방지)
+  - PRACTICE 탭 포함 (Phase 2b로 데이터 늘어날 예정)
+- **근거**: 현재 60건이 모두 GUEST로 보임 → 유형 구분 UI 노출 필요. API/상수/카드 분기 이미 완비, UI만 추가.
+
+## 구현 기록 (developer)
+
+📝 구현: `/games` 페이지 상단 경기 유형 탭 (전체/픽업게임/게스트/연습경기)
+
+| 파일 | 변경 내용 | 신규/수정 |
+|------|----------|----------|
+| `src/app/(web)/games/_components/game-type-tabs.tsx` | 신규 클라이언트 컴포넌트. URL `?type` 조작, 활성 탭 배경은 `TYPE_BADGE[X].bg` 재사용. "전체"는 type delete. 모바일 가로 스크롤(`overflow-x-auto no-scrollbar` + `flex-shrink-0`/`whitespace-nowrap`) | 신규 |
+| `src/app/(web)/games/_components/games-content.tsx` | `GameTypeTabs` import + `{loading ? ... : ...}` 분기 **바깥**에 탭 배치 (로딩 중에도 탭 유지) | 수정 |
+| `src/app/(web)/games/games-filter.tsx` | `GAME_TYPES` 상수 제거, `filterConfigs`에서 type 항목 제거, `currentType`/activeCount에서 type 제외 (탭 전담) | 수정 |
+
+🔧 tsc: PASS (에러 0)
+
+💡 tester 참고:
+- **테스트 방법**: `/games` 접속 → 상단 탭 4개 클릭하며 URL/목록 변화 확인
+- **정상 동작**:
+  - "전체" 클릭 시 `?type=` 삭제 → 전체 목록
+  - "픽업게임" 클릭 시 `?type=0` 추가 → 픽업만 표시, 탭 배경 파랑(badge-blue)
+  - "게스트" 클릭 시 `?type=1` → 초록(badge-green)
+  - "연습경기" 클릭 시 `?type=2` → 황갈(badge-amber)
+  - 검색어 입력 후 탭 전환 시 `?q=...`가 유지되어야 함
+  - 플로팅 필터 패널 열어 "유형" 옵션이 사라졌는지 확인 (탭과 중복 방지)
+  - 로딩 중(새로고침 직후 ~1초)에도 탭이 노출되어야 함
+- **주의할 입력**: `?type=abc` 같이 유효하지 않은 값 → "전체" 탭 활성으로 fallback
+- **모바일**: 좁은 화면에서 가로 스크롤 동작 확인, 탭 줄바꿈 없이 한 줄 유지
+
+⚠️ reviewer 참고:
+- 비활성 탭 hover 효과는 inline style로는 구현이 까다로워 일단 생략. 필요 시 globals.css에 `.game-type-tab-inactive:hover` 클래스 추가 고려
+- 활성 "전체" 탭 배경은 `TYPE_BADGE`에 매핑이 없어 `var(--color-text-primary)` + `var(--color-card)`로 대비 확보 (다크/라이트 양쪽 자동)
+
 
 ### 🚀 다음 세션 — "오늘 작업 시작하자" 하면 PM이 할 일
 
