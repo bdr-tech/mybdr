@@ -33,7 +33,7 @@
  */
 
 import * as cheerio from "cheerio";
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { articleUrl, listUrl, type CafeBoard } from "./board-map";
 // fetcher.ts에서 export된 sleep / parseCafeDate 재사용 (코드 중복 방지)
@@ -84,6 +84,55 @@ export interface ArticleFetchResult {
   parseError: string | null;
   /** --debug 시 저장된 HTML 덤프 경로 */
   rawHtmlPath?: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 쿠키 로드 유틸 (Playwright storageState → Cookie 헤더)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Playwright storageState JSON → Cookie 헤더 문자열 변환.
+ *
+ * 왜:
+ *   수동으로 `document.cookie` 또는 Application 탭에서 쿠키를 복사할 때
+ *   HttpOnly 쿠키(TIARA/DID 등 다음 로그인 핵심)가 빠지는 문제가 반복 발생.
+ *   Playwright storageState는 브라우저의 **완전한 쿠키 세트**(HttpOnly 포함)를
+ *   내보내므로 이 방식이 영구 해결책.
+ *
+ * storageState 구조 (Playwright 표준):
+ *   { cookies: [{ name, value, domain, path, httpOnly, ... }, ...], origins: [...] }
+ *
+ * m.cafe.daum.net 접근에 필요한 쿠키 필터:
+ *   - domain이 ".daum.net"로 끝남 (TIARA, DID 등 전역 쿠키 포함)
+ *   - 또는 m.cafe.daum.net / cafe.daum.net / logins.daum.net 정확 매칭
+ *
+ * 실패(파일 없음/파싱 실패/해당 쿠키 없음) 시 null 반환 → 호출자가 env fallback.
+ */
+function loadCookiesFromStorageState(statePath: string): string | null {
+  if (!existsSync(statePath)) return null;
+  try {
+    const raw = readFileSync(statePath, "utf8");
+    const state = JSON.parse(raw) as {
+      cookies?: Array<{ name: string; value: string; domain: string }>;
+    };
+    if (!state.cookies || !Array.isArray(state.cookies)) return null;
+
+    const relevant = state.cookies.filter((c) => {
+      const d = c.domain;
+      return (
+        d.endsWith(".daum.net") ||
+        d === "m.cafe.daum.net" ||
+        d === "cafe.daum.net" ||
+        d === "logins.daum.net"
+      );
+    });
+    if (relevant.length === 0) return null;
+    return relevant.map((c) => `${c.name}=${c.value}`).join("; ");
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`⚠️  storageState 파싱 실패 (${statePath}): ${msg}`);
+    return null;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -348,11 +397,32 @@ export async function fetchArticle(
   const url = articleUrl(board, dataid);
 
   // 쿠키 로드 — 값 자체는 로그에 남기지 않음 (보안)
-  const cookie = process.env.DAUM_CAFE_COOKIE ?? "";
+  //
+  // 우선순위:
+  //   1. .auth/cafe-state.json (Playwright storageState, HttpOnly 포함) ← 권장
+  //   2. DAUM_CAFE_COOKIE env var (레거시 수동 추출, HttpOnly 누락 가능)
+  //
+  // 경로 override: DAUM_CAFE_STORAGE_STATE env var
+  const stateDefaultPath = resolve(process.cwd(), ".auth", "cafe-state.json");
+  const stateOverridePath = process.env.DAUM_CAFE_STORAGE_STATE;
+  const statePath = stateOverridePath ?? stateDefaultPath;
+
+  let cookie = loadCookiesFromStorageState(statePath);
+  let cookieSource: "storageState" | "env" | "none" = "storageState";
+
+  if (!cookie) {
+    cookie = process.env.DAUM_CAFE_COOKIE ?? "";
+    cookieSource = cookie ? "env" : "none";
+  }
+
   if (!cookie) {
     console.warn(
-      `⚠️  DAUM_CAFE_COOKIE 미설정 — 본문 접근 403 예상 (board=${board.id}, dataid=${dataid})`,
+      `⚠️  쿠키 없음 — .auth/cafe-state.json 또는 DAUM_CAFE_COOKIE 중 하나 필요. ` +
+        `cafe-login.ts 실행으로 storageState 생성 권장 (board=${board.id}, dataid=${dataid})`,
     );
+  } else if (options.debug) {
+    // 값 자체는 절대 로그 금지. 길이와 소스만 표시.
+    console.log(`  cookie source  : ${cookieSource} (${cookie.length}자)`);
   }
 
   // AbortController로 10초 timeout

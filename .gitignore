@@ -59,4 +59,8 @@ local_dump.sql
 /참가팀_로고모음/
 tmp/
 !tmp/.gitkeep
+
+# Playwright storageState (세션 쿠키, 민감) — .gitkeep은 유지
+.auth/*.json
+!.auth/.gitkeep
 test-results/
