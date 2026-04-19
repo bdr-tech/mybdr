@@ -275,7 +275,8 @@
       "Bash(gh --version)",
       "Bash(gh auth *)",
       "Bash(git merge-tree *)",
-      "Bash(awk 'NR==1 || /^\\\\| 04-1[789] \\\\|/' .claude/scratchpad.md)"
+      "Bash(awk 'NR==1 || /^\\\\| 04-1[789] \\\\|/' .claude/scratchpad.md)",
+      "Bash(git pull *)"
     ]
   }
 }
