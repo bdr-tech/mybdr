@@ -1,8 +1,8 @@
 /**
- * 다음카페 3개 게시판 동기화 실행기 (Phase 1 목록 + Phase 2a 본문 dry-run).
+ * 다음카페 3개 게시판 동기화 실행기 (Phase 1 목록 + Phase 2a 본문 + Phase 2b DB 쓰기).
  *
  * ──────────────────────────────────────────────────────────────────────────────
- * 9가드 체크리스트 (Phase 1 + 2a 범위)
+ * 9가드 체크리스트 (Phase 1 + 2a + 2b 범위)
  * ──────────────────────────────────────────────────────────────────────────────
  *   [x] 1. 요청 간격 3초 유지       — fetchBoardList/fetchArticle 내 sleep(3000)
  *   [x] 2. 새벽 1~6시 회피          — 수동 실행. Phase 3 cron에서 강제
@@ -20,26 +20,54 @@
  *   npx tsx scripts/sync-cafe.ts --board=IVHA --limit=5             # IVHA 5건만
  *   npx tsx scripts/sync-cafe.ts --board=IVHA --limit=5 --debug     # 디버그 (응답 HTML 저장)
  *   npx tsx scripts/sync-cafe.ts --board=IVHA --limit=3 --with-body --article-limit=2
- *                                                                    # 목록 3 + 본문 2 파싱
+ *                                                                    # 목록 3 + 본문 2 파싱 (dry-run)
+ *   npx tsx --env-file=.env.local scripts/sync-cafe.ts --board=IVHA --limit=5 --with-body --execute
+ *                                                                    # Phase 2b — 실제 DB 쓰기
  *
- * Phase 2a 원칙:
- *   - DB 쓰기 0 (prisma import 금지)
- *   - --execute 플래그 여전히 차단 (Phase 2b에서 해제)
- *   - 콘솔 출력만 (본문 앞 300자는 마스킹 후 표시)
+ * Phase 2b 동작:
+ *   - --execute **없으면** dry-run (DB 쓰기 0, upsert 미리보기만 출력)
+ *   - --execute **있으면** 실제 cafe_posts + games upsert
+ *   - 운영 DB 가드 2중 (본 스크립트 + upsert.ts). 개발 DB 식별자 미포함 시 abort.
+ *   - 20건+ 처리 시 4초 카운트다운 (Ctrl+C 기회).
  */
 
 import { CAFE_BOARDS, CafeBoard, getBoardById } from "../src/lib/cafe-sync/board-map";
 import { fetchBoardList, BoardItem } from "../src/lib/cafe-sync/fetcher";
 import { fetchArticle, ArticleFetchResult } from "../src/lib/cafe-sync/article-fetcher";
 import { maskPersonalInfo } from "../src/lib/security/mask-personal-info";
+import {
+  upsertCafeSyncedGame,
+  previewUpsert,
+  type CafeSyncInput,
+  type CafeSyncResult,
+} from "../src/lib/cafe-sync/upsert";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// --execute 가드 (Phase 1은 dry-run 전용)
+// 실행 모드 판정 — --execute 여부로 DB 쓰기 활성화
 // ─────────────────────────────────────────────────────────────────────────────
 
-if (process.argv.includes("--execute")) {
-  console.error("⚠️ --execute는 Phase 2b 이후에 지원됩니다. Phase 2a는 dry-run 전용 (DB 쓰기 0).");
-  process.exit(1);
+/**
+ * Phase 2b부터 --execute 허용. 없으면 종전처럼 dry-run (DB 쓰기 0).
+ *
+ * 중요:
+ *   이 플래그가 true라도 upsert.ts 내부 가드에서 한 번 더 검증한다(2중 방어).
+ */
+const EXECUTE_MODE = process.argv.includes("--execute");
+
+// 운영 DB 가드 — 개발 DB 식별자가 DATABASE_URL에 포함되어야 --execute 허용.
+// 같은 상수를 upsert.ts에도 두어 2중 가드를 이룬다 (DRY보다 안전성 우선).
+const DEV_DB_IDENTIFIER = "bwoorsgoijvlgutkrcvs";
+
+if (EXECUTE_MODE) {
+  const url = process.env.DATABASE_URL ?? "";
+  if (!url.includes(DEV_DB_IDENTIFIER)) {
+    console.error(
+      `🛑 운영 DB 가드(sync-cafe.ts): DATABASE_URL이 개발 DB가 아닙니다.\n` +
+        `   개발 DB 식별자 "${DEV_DB_IDENTIFIER}"를 포함해야 --execute 실행 가능합니다.\n` +
+        `   실수로 운영 DB가 들어간 .env를 사용하지 않는지 확인하세요.`,
+    );
+    process.exit(1);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -191,26 +219,67 @@ function isFieldFilled(v: unknown): boolean {
 // 메인
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * 20건+ 실행 시 4초 카운트다운 (Ctrl+C 기회).
+ *
+ * 왜 20건 기준:
+ *   - 10건 미만은 IVHA 샘플링 수준 (부담 적음)
+ *   - 20건부터는 3게시판 통합 스캔에 근접 → 실수 방지용 안전망
+ *   - 4초면 손이 느려도 Ctrl+C 가능
+ */
+async function countdown(seconds: number, totalPosts: number): Promise<void> {
+  console.log(
+    `⚠️  Phase 2b --execute: 총 ${totalPosts}건을 개발 DB에 upsert 합니다. ` +
+      `Ctrl+C로 중단 가능. ${seconds}초 후 시작…`,
+  );
+  for (let i = seconds; i > 0; i--) {
+    process.stdout.write(`\r   ${i}초…  `);
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  process.stdout.write("\r   시작!   \n\n");
+}
+
 async function main() {
   const targets = parseBoardArg();
   const limit = parseLimitArg();
   // --debug 플래그: fetcher에 전달하여 응답 HTML 덤프 + 진단 정보 출력 활성화.
   const debug = process.argv.includes("--debug");
-  // --with-body: Phase 2a 본문 fetch + 파싱 (DB 쓰기 0)
+  // --with-body: Phase 2a 본문 fetch + 파싱. --execute와 조합하면 Phase 2b DB 쓰기.
   const withBody = process.argv.includes("--with-body");
   const articleLimit = parseArticleLimitArg();
 
+  // Phase 2b — --execute 시에만 Prisma 생성 (dry-run은 DB 접근 0 유지)
+  // 동적 import: upsert.ts는 import만 해도 OK (가드는 upsertCafeSyncedGame 호출 시 검증)
+  // 하지만 prisma 인스턴스는 실제 연결을 시도하므로 --execute일 때만 생성한다.
+  const needPrisma = EXECUTE_MODE && withBody;
+  const { PrismaClient } = needPrisma ? await import("@prisma/client") : { PrismaClient: null };
+  const prisma = PrismaClient ? new PrismaClient() : null;
+
+  const modeLabel = EXECUTE_MODE ? "[EXECUTE]" : "[DRY RUN]";
+  const phaseLabel = withBody
+    ? EXECUTE_MODE
+      ? "다음카페 Phase 2b (목록+본문+DB 쓰기)"
+      : "다음카페 Phase 2a (목록+본문)"
+    : "다음카페 Phase 1 POC (목록)";
+
   console.log("========================================");
-  console.log(
-    withBody ? "[DRY RUN] 다음카페 Phase 2a (목록+본문)" : "[DRY RUN] 다음카페 Phase 1 POC (목록)",
-  );
+  console.log(`${modeLabel} ${phaseLabel}`);
   console.log("========================================");
   console.log(
     `대상 게시판: ${targets.map((b) => `${b.id}(${b.label})`).join(", ")} / limit=${limit}` +
       (withBody ? ` / with-body=ON / article-limit=${articleLimit}` : "") +
-      (debug ? " / debug=ON" : ""),
+      (debug ? " / debug=ON" : "") +
+      (EXECUTE_MODE ? " / execute=ON" : ""),
   );
   console.log("");
+
+  // 20건+ 경고 카운트다운 (--execute만)
+  if (EXECUTE_MODE && withBody) {
+    const estimatedTotal = targets.length * Math.min(articleLimit, limit);
+    if (estimatedTotal >= 20) {
+      await countdown(4, estimatedTotal);
+    }
+  }
 
   // 집계
   const perBoardCount: Record<string, number> = {};
@@ -220,6 +289,8 @@ async function main() {
   const articleResults: ArticleFetchResult[] = [];
   const articleHttpByStatus: Record<string, number> = {};
   const articleFailures: { boardId: string; dataid: string; error: string }[] = [];
+  // Phase 2b 집계 — upsert 처리 결과
+  const upsertResults: CafeSyncResult[] = [];
 
   // 9가드 8번 — 403/429 3회 연속 시 전체 중단
   let consecutiveFailures = 0;
@@ -263,6 +334,45 @@ async function main() {
         const key = String(r.httpStatus);
         articleHttpByStatus[key] = (articleHttpByStatus[key] ?? 0) + 1;
         printArticleResult(i + 1, r);
+
+        // ─── Phase 2b: upsert 미리보기 / 실행 ───
+        // 본문 추출 성공(content 있음)일 때만 upsert 의미가 있음. content 빈 경우 스킵.
+        if (withBody && r.content) {
+          const syncInput: CafeSyncInput = {
+            board,
+            dataid: r.dataid,
+            title: it.title, // 목록에서 가져온 제목
+            author: it.author,
+            content: r.content,
+            postedAt: r.postedAt,
+            crawledAt: new Date(),
+            parsed: r.parsed,
+          };
+
+          if (EXECUTE_MODE && prisma) {
+            // 실제 DB 쓰기
+            const res = await upsertCafeSyncedGame(prisma, syncInput);
+            upsertResults.push(res);
+            if (res.error) {
+              console.log(`      ❌ upsert 실패: ${res.error}`);
+            } else {
+              console.log(
+                `      ✅ upsert: cafe_post=${res.cafePost} (id=${res.cafePostId}), game=${res.game}` +
+                  (res.gameId ? ` (id=${res.gameId})` : ""),
+              );
+            }
+          } else {
+            // dry-run 미리보기 — DB 접근 0
+            const preview = previewUpsert(syncInput);
+            console.log(
+              `      🔍 upsert 예정: game_id=${preview.gameId} / ` +
+                `game_type=${preview.gameType} / ` +
+                `scheduled_at=${preview.scheduledAt} / ` +
+                `game insert=${preview.willInsertGame ? "YES" : "NO (parsed 없음)"}`,
+            );
+          }
+        }
+
         consecutiveFailures = 0;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -342,10 +452,50 @@ async function main() {
     }
   }
 
+  // ─────────────── Phase 2b upsert 집계 ───────────────
+  if (withBody && EXECUTE_MODE) {
+    const postCreated = upsertResults.filter((r) => r.cafePost === "created" && r.error === undefined).length;
+    const postFailed = upsertResults.filter((r) => r.cafePost === "failed").length;
+    const gameInserted = upsertResults.filter((r) => r.game === "inserted").length;
+    const gameSkippedDup = upsertResults.filter((r) => r.game === "skipped_duplicate").length;
+    const gameSkippedNoParse = upsertResults.filter((r) => r.game === "skipped_no_parse").length;
+    const gameFailed = upsertResults.filter((r) => r.game === "failed").length;
+
+    console.log("");
+    console.log("── Phase 2b upsert 집계 ──");
+    console.log(
+      `  cafe_posts: ${upsertResults.length}건 처리 / created(+updated)=${postCreated} / failed=${postFailed}`,
+    );
+    console.log(
+      `  games: inserted=${gameInserted} / skipped(dup)=${gameSkippedDup} / ` +
+        `skipped(no-parse)=${gameSkippedNoParse} / failed=${gameFailed}`,
+    );
+
+    const failedDetails = upsertResults.filter((r) => r.error);
+    if (failedDetails.length > 0) {
+      console.log("");
+      console.log("── upsert 실패 상세 ──");
+      failedDetails.forEach((r, i) => {
+        console.log(`  [${i + 1}] cafePostId=${r.cafePostId ?? "-"}, error=${r.error}`);
+      });
+    }
+  }
+
   console.log("");
-  console.log("💡 DB 쓰기 0 (Phase 2a는 dry-run 전용).");
-  if (withBody) {
-    console.log("   다음 단계 (Phase 2b): upsert + --execute 활성화 + 역방향 백필 (경고 프로토콜)");
+  if (withBody && EXECUTE_MODE) {
+    console.log("✅ Phase 2b 실행 완료. 운영 DB 가드 통과 + upsert 집계는 위 참조.");
+  } else {
+    console.log("💡 DB 쓰기 0 (--execute 미지정 → dry-run).");
+    if (withBody) {
+      console.log(
+        "   실제 DB 쓰기: `--execute` 추가 + `--env-file=.env.local`로 개발 DB 명시 (upsert.ts 가드 통과 필수).",
+      );
+    }
+  }
+
+  // Prisma 연결 해제 (생성했을 때만)
+  if (prisma) {
+    await prisma.$disconnect();
   }
 }
 
