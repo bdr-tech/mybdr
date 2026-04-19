@@ -2,7 +2,9 @@
 
 // 심판 전용 회원가입 페이지 (/referee/signup)
 // - OAuth 3버튼(카카오/구글/네이버 준비 중) + 이메일 가입 폼
-// - signupAction 은 기존 actions/auth.ts 그대로 재사용 → 가입 성공 시 /profile/complete 로 이동
+// - signupAction 은 기존 actions/auth.ts 그대로 재사용
+//   → M5 온보딩 압축 이후: 가입 성공 시 /verify?missing=phone 로 이동 (phone 인증 강제),
+//     verify 완료 후 /profile/complete (닉네임/포지션/지역 3필드 압축 폼)으로 이어짐
 // - OAuth 경로로 가입 시에만 redirect 쿠키로 /referee 복귀가 동작 (기존 구현 활용)
 
 import { useActionState, Suspense } from "react";

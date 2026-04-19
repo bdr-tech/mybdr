@@ -172,7 +172,13 @@ export async function signupAction(_prevState: { error: string } | null, formDat
     return { error: "회원가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요." };
   }
 
-  redirect("/profile/complete");
+  // M5 온보딩 압축 (옵션 B + A):
+  // 이메일 가입자는 phone 미인증 상태이므로 OAuth 흐름과 통일하기 위해
+  // verify 페이지로 보낸다. (SMS/픽업 핵심 기능 사일런트 실패 방지)
+  // verify/page.tsx L80~83에서 phone 인증 성공 시 /profile/complete 로 push,
+  // 거기서 닉네임/포지션/지역 3필드 압축 폼이 옵션 카드로 나오고
+  // "나중에" 1클릭으로 홈 도달 가능 (압축 정신 + 자연 진입 동시 보장).
+  redirect("/verify?missing=phone");
 }
 
 export async function devLoginAction(_prevState: { error: string } | null, _formData: FormData) {

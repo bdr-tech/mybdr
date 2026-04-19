@@ -76,7 +76,9 @@ export default function VerifyPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        router.push("/");
+        // M5 온보딩 압축: phone 인증 완료 → 미니멀 옵션 카드로 자연 진입
+        // ("지금 채우기"/"나중에" 1클릭으로 홈 도달 가능)
+        router.push("/profile/complete");
       } else {
         setError(data.error ?? "저장 실패");
       }
