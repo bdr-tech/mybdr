@@ -4,13 +4,8 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import { FloatingFilterPanel, type FilterConfig } from "@/components/shared/floating-filter-panel";
 
-// 경기 유형 옵션 (기존 로직 유지)
-const GAME_TYPES = [
-  { value: "all", label: "전체 유형" },
-  { value: "0",   label: "픽업" },
-  { value: "1",   label: "게스트" },
-  { value: "2",   label: "연습경기" },
-];
+// [2026-04-19 제거] GAME_TYPES 상수는 상단 GameTypeTabs 컴포넌트로 이관됨
+// (탭과 플로팅 패널에 같은 필터가 두 개 있으면 혼란 → 유형은 탭 전담)
 
 // 날짜 옵션 (기존 로직 유지)
 const DATE_OPTIONS = [
@@ -69,13 +64,14 @@ export function GamesFilter({ cities }: { cities: string[] }) {
   }, [router, pathname]);
 
   // 현재 필터 값 읽기 (URL params에서)
-  const currentType = params.get("type") ?? "all";
+  // [2026-04-19] type은 상단 탭 전담이므로 이 컴포넌트에서는 읽지 않음
   const currentDate = params.get("date") ?? "all";
   const currentCity = params.get("city") ?? "all";
   const currentSkill = params.get("skill") ?? "all";
 
   // 활성 필터 수 계산 (기본값 "all"이 아닌 것의 개수)
-  const activeCount = [currentType, currentDate, currentCity, currentSkill]
+  // type은 탭에서 시각적으로 이미 표시되므로 여기 카운트에 포함하지 않음
+  const activeCount = [currentDate, currentCity, currentSkill]
     .filter((v) => v !== "all")
     .length;
 
@@ -86,15 +82,8 @@ export function GamesFilter({ cities }: { cities: string[] }) {
   ];
 
   // FloatingFilterPanel에 전달할 필터 설정 배열
+  // [2026-04-19] type 필터 제거 — 상단 GameTypeTabs 전담 (중복 UI 방지)
   const filterConfigs: FilterConfig[] = [
-    {
-      key: "type",
-      label: "유형",
-      type: "select",
-      options: GAME_TYPES,
-      value: currentType,
-      onChange: (v) => update({ type: v }),
-    },
     {
       key: "date",
       label: "날짜",
