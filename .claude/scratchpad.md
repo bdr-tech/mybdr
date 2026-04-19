@@ -1,8 +1,8 @@
 # 작업 스크래치패드
 
 ## 현재 작업
-- **상태**: ✅ **오늘 세션 종료 (Phase 2a 완료)** — 내일 Phase 2b 이어서
-- **다음 세션**: 수빈이 "오늘 작업 시작하자" 하면 **Phase 2b 즉시 착수 준비 완료**
+- **상태**: ✅ **UX 세션 종료 (Dev/ 플래닝 커밋 + PR #45 MERGEABLE)** — W1 Quick Wins **12/12 완료 확인**, M1 Day 7 대기
+- **다음 작업**: 수빈 판단 — (a) M1 Day 7 `/profile` 허브 통합 대시보드 / (b) Phase 2b / (c) 오늘 종료
 - **현재 담당**: 대기 중
 
 ### 🚀 다음 세션 — "오늘 작업 시작하자" 하면 PM이 할 일
@@ -48,10 +48,10 @@
 ## 전체 프로젝트 현황
 | 항목 | 값 |
 |------|-----|
-| 현재 브랜치 | subin (origin/subin = 3cd61c4) |
+| 현재 브랜치 | subin (origin/subin = 610dcf2, dev merge-back 완료) |
 | dev 상태 | 75b653b (PR #39 머지됨, 04-19) |
 | 미푸시 커밋 | 0 |
-| 진행 중 PR | 없음 (다음 PR은 Phase 2b 완료 후) |
+| 진행 중 PR | **#45 OPEN — MERGEABLE ✅** (W1 12/12 + M1 1차 + Phase 1~2a + 플래닝 문서) |
 | `.auth/cafe-state.json` | 존재 (04-19 19:35 생성, gitignored) |
 
 ## 남은 과제
@@ -73,6 +73,7 @@
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-19 | pm | UX 세션: Dev/ 플래닝 3개 커밋 + Q12 조사(수정 불필요, W1 **12/12**) + dev merge-back 7충돌 해결 → PR #45 **MERGEABLE** | ✅ 610dcf2 push |
 | 04-19 | pm | 오늘 세션 시작: 환경 체크 + Phase 2a 재검증(IVHA 본문 200×2/2) + 로컬 변경 커밋·푸시 | ✅ 3cd61c4 push |
 | 04-19 | pm+developer | Phase 2a 완료: Playwright `cafe-login.ts` + storageState 쿠키 로드 → 본문 200 × 2/2 + parseCafeGame 2/2 + 마스킹 OK | ✅ 55d78c3 push |
 | 04-19 | developer | Phase 2a 코드: mask-personal-info + article-fetcher + sync-cafe --with-body (vitest 19/19, 쿠키 미수 403) | ✅ 2890224 push |
@@ -82,5 +83,3 @@
 | 04-19 | pm+developer | 다음카페 Phase 1 POC — 3게시판 30건 실제 수집 (articles.push 정규식) | ✅ |
 | 04-19 | pm | 크롤링 정책 리서치(9가드) + decisions.md 승격 | ✅ 조건부 진행 |
 | 04-19 | general-purpose | 다음카페 크롤링 법적/기술 리스크 리서치 | ✅ 낮음~중간 |
-| 04-18 | developer | MoreTabTooltip + NotificationBadge + 팀장 CTA + 대회 신청 배지 (Coworker, 커밋 수습) | ✅ |
-| 04-18 | developer | W1 Day 1 Q1 — 고아 라우트 4개 308 redirect (Coworker) | ✅ |
