@@ -3,9 +3,9 @@
 <!-- 이 프로젝트에서 반복되는 에러 패턴, 함정, 주의사항을 기록 -->
 
 ### [2026-04-17] API 미들웨어(apiSuccess의 convertKeysToSnakeCase) 놓치고 컴포넌트 인터페이스 거꾸로 변환
-- **분류**: error (**재발 5회**, 2026-04-19 M1 Day 7에서도 재발)
-- **발견자**: pm + 사용자 + tester
-- **증상**: `/games` 카드의 시각/장소/가격이 안 뜸. 진단 시 "API 응답이 camelCase인데 컴포넌트가 snake_case 기대"로 잘못 판단해 컴포넌트를 camelCase로 통일 → 모든 필드 undefined로 폴백. **2026-04-19 M1 Day 7**: `/profile`의 `followersCount/followingCount/nextGame` 3필드가 페이지에서 camelCase로 접근 → 팔로워/팔로잉 항상 0, 다음 경기 항상 "없음"으로 표시 (사일런트 버그)
+- **분류**: error (**재발 6회**, 2026-04-20 M6에서 layout.tsx + header.tsx + referee 3곳 동시 발견)
+- **발견자**: pm + 사용자 + tester + reviewer
+- **증상**: `/games` 카드의 시각/장소/가격이 안 뜸. 진단 시 "API 응답이 camelCase인데 컴포넌트가 snake_case 기대"로 잘못 판단해 컴포넌트를 camelCase로 통일 → 모든 필드 undefined로 폴백. **2026-04-19 M1 Day 7**: `/profile`의 `followersCount/followingCount/nextGame` 3필드가 페이지에서 camelCase로 접근 → 팔로워/팔로잉 항상 0, 다음 경기 항상 "없음"으로 표시 (사일런트 버그). **2026-04-20 M6**: ① `src/app/(web)/layout.tsx`에서 헤더 알림 뱃지가 `data.unreadCount`로 접근 → **헤더 뱃지 자체가 무용지물**(항상 0)이었음. M6 작업 중 발견·수정. ② `src/components/shared/header.tsx` L61/L72 동일 패턴 (dead code, 정리 권장). ③ `src/app/(referee)/referee/_components/notification-bell.tsx` L86 + `referee/notifications/page.tsx` L90 — `json?.data` 접근 (apiSuccess는 `{data:...}` 래핑 X) → referee 알림도 동작 안 할 가능성 (별도 추적 필요)
 - **원인**: `src/lib/api/response.ts:5` `apiSuccess(data) → NextResponse.json(convertKeysToSnakeCase(data))`. route.ts에서 camelCase로 직렬화하는 것처럼 보여도 미들웨어가 다시 snake_case로 변환. **route.ts 코드만 보고 응답 형태 추정 금지.**
 - **해결**:
   1. `curl` 또는 DevTools Network 탭으로 raw 응답 확인 → 컴포넌트 인터페이스를 응답 형태에 맞게 정합 (snake_case 유지)

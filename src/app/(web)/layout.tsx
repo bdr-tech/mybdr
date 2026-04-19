@@ -121,17 +121,18 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
         .then(async (r) => (r.ok ? r.json() : null))
         .catch(() => null),
       fetch("/api/web/notifications", { credentials: "include" })
-        .then(async (r) => (r.ok ? (r.json() as Promise<{ unreadCount: number }>) : null))
+        // ⚠️ apiSuccess snake_case 변환: unread_count 로 접근
+        .then(async (r) => (r.ok ? (r.json() as Promise<{ unread_count?: number }>) : null))
         .catch(() => null),
     ]).then(([userData, notifData]) => {
       setUser(userData);
       // DB의 맞춤 설정 여부를 preferFilter 기본값으로 전달
       setLoggedIn(!!userData, userData?.prefer_filter_enabled ?? false);
-      if (userData && notifData) setUnreadCount(notifData.unreadCount ?? 0);
+      if (userData && notifData) setUnreadCount(notifData.unread_count ?? 0);
     });
   }, [setLoggedIn]);
 
-  /* 알림 카운트 30초 간격 폴링 */
+  /* 알림 카운트 30초 간격 폴링 + read-all 즉시 갱신 이벤트 리스닝 */
   useEffect(() => {
     if (!user) return;
 
@@ -139,8 +140,9 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
       fetch("/api/web/notifications", { credentials: "include" })
         .then(async (r) => {
           if (r.ok) {
-            const data = (await r.json()) as { unreadCount: number };
-            setUnreadCount(data.unreadCount ?? 0);
+            // ⚠️ apiSuccess가 snake_case로 변환하므로 unread_count 로 접근 (camel 접근 시 항상 undefined)
+            const data = (await r.json()) as { unread_count?: number };
+            setUnreadCount(data.unread_count ?? 0);
           }
         })
         .catch(() => {});
@@ -148,7 +150,16 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
 
     pollNotifications();
     const intervalId = setInterval(pollNotifications, 30000);
-    return () => clearInterval(intervalId);
+
+    // M6: notifications 페이지의 "모두 읽음" 클릭 시 헤더 뱃지 즉시 0으로 (같은 탭 내)
+    // 다른 탭 동기화는 30초 polling이 처리
+    const handleReadAll = () => setUnreadCount(0);
+    window.addEventListener("notifications:read-all", handleReadAll);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener("notifications:read-all", handleReadAll);
+    };
   }, [user]);
 
   /* 현재 경로가 활성 메뉴인지 판별 */

@@ -1,5 +1,5 @@
 # 프로젝트 지식 목차
-> 최종 갱신: 2026-04-18 (운영 DB 직접 연결 확인 + 개발/운영 DB 미분리 발견)
+> 최종 갱신: 2026-04-20 (M6 알림 분류 + apiSuccess snake_case **6회 재발** 갱신)
 
 ## 파일별 요약
 | 파일 | 항목 수 | 최종 업데이트 | 설명 |
@@ -7,7 +7,7 @@
 | architecture.md | 29 | 2026-04-15 | 페이지 구조, 대회/대진표, 팀명 2필드, Referee 시스템, Flutter API 호환 |
 | conventions.md | 24 | 2026-04-17 | 디자인/색상/경기집계/sticky/프린트CSS/공식 기록 가드/**에이전트 호출 기준**/**스크립트 템플릿 재사용** |
 | decisions.md | 70 | 2026-04-19 | 기술 결정 (KBL 순위/대진표/userId 연결/Referee v2/헬스체크 cron/공식 기록 가드/카페 정규식 파서/운영 DB 직접 연결/카페 자동 동기화/**W1 Quick Wins 통합 PR 채택**) |
-| errors.md | 17 | 2026-04-17 | 에러 패턴 (sticky, @page Hancom PDF, th/td 정렬, DB 사고, add 누락, next/image 외부 호스트, **apiSuccess 미들웨어 놓침**) |
+| errors.md | 17 | 2026-04-20 | 에러 패턴 (sticky, @page Hancom PDF, th/td 정렬, DB 사고, add 누락, next/image 외부 호스트, **apiSuccess 미들웨어 6회 재발**) |
 | lessons.md | 18 | 2026-04-18 | 교훈 (프린트 API, 모바일 zoom, 브랜치 drift, Flutter 테스트 오염, 팀 병합 logo, 동명이인, HTTP 5xx, API 미들웨어 재발 4회, 다음카페 정규식 파서 95%, **개발 DB라 믿은 .env가 운영 DB**) |
 | toss-design-analysis.md | 10 | 2026-03-28 | 토스 디자인 시스템 심층 분석 |
 | ux-audit-report.md | 28 | 2026-03-28 | UI/UX 사용성 심층 조사 |
