@@ -60,9 +60,27 @@ export const USER_GAME_PROFILE_SELECT = {
 
 /**
  * 프로필 상세 조회 — 팀, 경기, 대회 이력 포함
+ *
+ * M1 Day 7 확장: 허브 대시보드에서 쓰이는 3개 필드 병렬 조회 추가
+ *  - followersCount: 나를 팔로우하는 사람 수
+ *  - followingCount: 내가 팔로우하는 사람 수
+ *  - nextGame:     내가 신청한 예정 경기 중 가장 빠른 1건 (미래만)
+ *
+ * 이유: 기존 4개 쿼리와 독립이라 Promise.all 한 배치에 넣어 latency 영향 0.
+ * 기존 필드는 절대 건드리지 않음 (backward compatible).
  */
 export async function getProfile(userId: bigint) {
-  const [user, teams, gameApplications, tournamentTeams] = await Promise.all([
+  const now = new Date();
+
+  const [
+    user,
+    teams,
+    gameApplications,
+    tournamentTeams,
+    followersCount,
+    followingCount,
+    nextGameApp,
+  ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: PROFILE_DETAIL_SELECT,
@@ -101,9 +119,44 @@ export async function getProfile(userId: bigint) {
       },
       take: 10,
     }),
+
+    // M1 Day 7: 팔로워/팔로잉 카운트 (실패해도 0으로 폴백 — 허브 렌더 안정성 우선)
+    prisma.follows.count({ where: { following_id: userId } }).catch(() => 0),
+    prisma.follows.count({ where: { follower_id: userId } }).catch(() => 0),
+
+    // M1 Day 7: 다음 경기 — scheduled_at이 now 이후인 신청 건 중 가장 빠른 1건
+    // 승인/대기 상관없이 "예정된 내 경기"로 간주. status=0(scheduled)이 대부분.
+    prisma.game_applications
+      .findFirst({
+        where: {
+          user_id: userId,
+          games: { scheduled_at: { gt: now } },
+        },
+        include: {
+          games: {
+            select: {
+              id: true,
+              uuid: true,
+              title: true,
+              scheduled_at: true,
+              venue_name: true,
+            },
+          },
+        },
+        orderBy: { games: { scheduled_at: "asc" } },
+      })
+      .catch(() => null),
   ]);
 
-  return { user, teams, gameApplications, tournamentTeams };
+  return {
+    user,
+    teams,
+    gameApplications,
+    tournamentTeams,
+    followersCount,
+    followingCount,
+    nextGameApp,
+  };
 }
 
 /**

@@ -514,8 +514,8 @@ export default function ProfileEditPage() {
         {saving ? "저장 중..." : "저장"}
       </button>
 
-      {/* 회원 탈퇴 영역 */}
-      <div className="mt-8 rounded-[20px] border p-5" style={{ borderColor: "var(--color-error, #EF4444)", backgroundColor: "rgba(239,68,68,0.05)" }}>
+      {/* 회원 탈퇴 영역 — DangerZoneCard의 #danger 앵커 스크롤 대상 */}
+      <div id="danger" className="mt-8 rounded-[20px] border p-5" style={{ borderColor: "var(--color-error, #EF4444)", backgroundColor: "rgba(239,68,68,0.05)" }}>
         <h2 className="mb-1 font-semibold text-[var(--color-error,#EF4444)]" style={{ fontFamily: "var(--font-heading)" }}>
           회원 탈퇴
         </h2>

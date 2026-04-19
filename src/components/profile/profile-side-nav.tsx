@@ -27,6 +27,10 @@ type NavItem = {
   href: string;
   icon: string; // Material Symbols Outlined 이름
   matchPaths: string[];
+  /* exactOnly: true 이면 matchPaths 는 정확 일치만 허용 (startsWith 하위 매칭 금지).
+   * 왜: "내 정보" 가 /profile 을 포함하면 /profile/basketball 같은 하위 경로도 startsWith 로 걸려
+   *    다른 네비 항목과 동시 활성되는 버그가 생긴다. /profile 처럼 루트 경로는 정확 일치만. */
+  exactOnly?: boolean;
 };
 
 /* 6개 서브페이지 매핑.
@@ -34,9 +38,13 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   {
     label: "내 정보",
-    href: "/profile/edit",
+    // Day 7: /profile 허브가 통합 대시보드("내 정보")로 재편됨에 따라 href를 /profile로 변경.
+    // /profile/edit 는 상세 편집 화면으로 남아있으므로 matchPaths에 함께 포함해 둘 다 "내 정보" 활성.
+    // exactOnly: true 가 필수 — 그렇지 않으면 /profile/basketball 등 하위 경로 전체가 startsWith("/profile/") 에 걸려 오작동.
+    href: "/profile",
     icon: "person",
-    matchPaths: ["/profile/edit"],
+    matchPaths: ["/profile", "/profile/edit"],
+    exactOnly: true,
   },
   {
     label: "내 농구",
@@ -78,11 +86,14 @@ export function ProfileSideNav() {
   /* 활성 판정 로직.
    * - 정확 일치 (pathname === p): /profile/edit
    * - 하위 경로 (pathname.startsWith(p + '/')): /profile/edit/avatar 같은 미래 확장 대비
+   * - exactOnly 플래그가 true 면 하위 경로 매칭 금지 (/profile 루트처럼 광범위한 경로 방어)
    * - matchPaths 중 하나라도 매칭되면 활성 */
-  const isActive = (matchPaths: string[]): boolean =>
-    matchPaths.some(
-      (p) => pathname === p || pathname.startsWith(p + "/")
-    );
+  const isActive = (matchPaths: string[], exactOnly?: boolean): boolean =>
+    matchPaths.some((p) => {
+      if (pathname === p) return true;
+      if (exactOnly) return false;
+      return pathname.startsWith(p + "/");
+    });
 
   return (
     <>
@@ -98,7 +109,7 @@ export function ProfileSideNav() {
       >
         <nav className="sticky top-20 space-y-1">
           {NAV_ITEMS.map((item) => {
-            const active = isActive(item.matchPaths);
+            const active = isActive(item.matchPaths, item.exactOnly);
             return (
               <Link
                 key={item.href}
@@ -145,7 +156,7 @@ export function ProfileSideNav() {
           aria-label="프로필 메뉴"
         >
           {NAV_ITEMS.map((item) => {
-            const active = isActive(item.matchPaths);
+            const active = isActive(item.matchPaths, item.exactOnly);
             return (
               <Link
                 key={item.href}
@@ -153,7 +164,8 @@ export function ProfileSideNav() {
                 prefetch={true}
                 className={`flex shrink-0 items-center gap-1.5 rounded px-3 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors ${
                   active
-                    ? "bg-[var(--color-primary)] text-white"
+                    // conventions.md: primary 배경 위 텍스트는 --color-on-primary 사용 (text-white 금지)
+                    ? "bg-[var(--color-primary)] text-[var(--color-on-primary)]"
                     : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-bright)] hover:text-[var(--color-text-primary)]"
                 }`}
               >
