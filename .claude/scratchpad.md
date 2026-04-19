@@ -1,5 +1,15 @@
 # 작업 스크래치패드
 
+## ⚠️ 세션 분리 원칙 (필수, 2026-04-20 합의)
+- **본 세션** = `(web)`/`(api/web)`/`(referee)` 등 일반 UX/기능 작업
+- **다른 세션 (병행)** = 다음카페 sync 작업 — 항상 별도 터미널에서 동시 진행
+- **본 세션 PM 금지 파일** (카페 sync, 절대 수정 X):
+  - `scripts/sync-cafe.ts`, `scripts/cafe-login.ts`, `scripts/_tmp-*`, `scripts/backfill-*cafe*.ts`
+  - `src/lib/cafe-sync/*` (article-fetcher, upsert, extract-fallbacks, mask-personal-info, board-map 등)
+  - `Dev/cafe-sync-plan-*.md` (카페 세션 전용 기획 문서)
+- **카페 commit이 origin/subin에 누적되어도 fast-forward로 자연 통합** (이번 PR #46에 카페 Phase 2b Step 4까지 자연 합쳐짐)
+- **푸시 전 `git fetch` 권장** (양 세션 push 충돌 방지)
+
 ## 현재 작업
 - **요청**: F→E→A 순 — F✅ PR#46 머지(2b3b5ea) / E 후속 정비 커밋 대기 / A 휴식
 - **상태**: 🧹 E1+E2 정비 완료, 커밋 대기
