@@ -197,6 +197,9 @@ function printArticleResult(idx: number, r: ArticleFetchResult): void {
     }
   }
   // 본문 앞 300자 — **마스킹 적용** (9가드 #5)
+  // 참고: upsert 경로(main) 에서는 syncInput.content 에 이미 마스킹된 값을 넣는다.
+  // 이 printArticleResult 는 article-fetcher 결과(r.content 원본)만 받는 시그니처라 여기서 1회 마스킹.
+  // 멱등이라 이중 호출돼도 결과 동일.
   if (r.content) {
     const masked = maskPersonalInfo(r.content).slice(0, 300).replace(/\n/g, " ⏎ ");
     console.log(`      본문(마스킹): ${masked}${r.content.length > 300 ? "..." : ""}`);
@@ -338,12 +341,19 @@ async function main() {
         // ─── Phase 2b: upsert 미리보기 / 실행 ───
         // 본문 추출 성공(content 있음)일 때만 upsert 의미가 있음. content 빈 경우 스킵.
         if (withBody && r.content) {
+          // ⚠️ 개인정보 마스킹 — 9가드 #5 핵심 포인트.
+          //   이전 버그: 로그용 변수(masked)만 마스킹하고 upsert 인자는 r.content 원본을 넘겨
+          //   DB 의 cafe_posts.content / games.description 에 평문 전화·계좌가 들어갔다.
+          //   수정: "변수 자체"를 한 번 마스킹하고 아래 console.log·upsert 에 동일 값 사용.
+          //   maskPersonalInfo 는 멱등(idempotent) 이므로 upsert.ts 의 2차 가드와 중복돼도 안전.
+          const maskedContent = maskPersonalInfo(r.content);
+
           const syncInput: CafeSyncInput = {
             board,
             dataid: r.dataid,
             title: it.title, // 목록에서 가져온 제목
             author: it.author,
-            content: r.content,
+            content: maskedContent, // ← 마스킹된 값으로 교체 (이전엔 r.content 원본 전달)
             postedAt: r.postedAt,
             crawledAt: new Date(),
             parsed: r.parsed,
@@ -378,7 +388,8 @@ async function main() {
                 `max=${preview.maxParticipants}명(${preview.maxParticipantsSource}) / ` +
                 `skill=${preview.skillLevel}(${preview.skillLevelSource}) / ` +
                 `city=${preview.city ?? "null"}(${preview.citySource}) / ` +
-                `district=${preview.district ?? "null"}(${preview.districtSource})`,
+                `district=${preview.district ?? "null"}(${preview.districtSource}) / ` +
+                `venue=${preview.venueName ?? "null"}(${preview.venueNameSource})`,
             );
           }
         }

@@ -98,6 +98,52 @@ export function maskAccountNumbers(text: string): string {
 }
 
 /**
+ * 라벨 기반 전화/계좌 강제 마스킹 (이중 방어, Phase 2b 재수정).
+ *
+ * 왜 필요한가:
+ *   기존 PHONE_REGEX / ACCOUNT_REGEX 는 `\b` 단어 경계에 의존한다.
+ *   그런데 실측 본문에는 "연락처:01092383782" 처럼
+ *   **콜론 바로 뒤에 숫자가 붙어 있고**, 라벨 다음 공백이 없는 케이스가 있다.
+ *   이 때 한글↔숫자 경계가 `\b`로 잡히긴 하지만, 포맷 변형(‣ /－ 등 비표준 구분자)에
+ *   대응하려면 **라벨만 있으면 숫자 덩어리는 무조건 전화로 간주**하는 규칙이 안전하다.
+ *
+ * 매칭 전략:
+ *   `(연락처|전화|휴대폰|폰|HP|Tel)` 라벨 뒤 콜론/공백 후 **7~11자리 숫자 덩어리**(하이픈 허용).
+ *   하이픈 제거 후 길이로 7~11 검증해서 일반번호(7자리)/휴대폰(11자리) 모두 커버.
+ *
+ * 계좌도 동일 전략 — `(계좌|입금|송금|농협|국민|우리|신한|카카오뱅크)` 뒤 숫자 덩어리.
+ *   이 라벨은 뒤에 은행명이 올 수도 있어 (`계좌: 농협은행 3021602140681 XUCHUNYAN`)
+ *   공백 사이사이의 숫자 그룹을 찾아 10~14 자리만 마스킹.
+ *
+ * 멱등:
+ *   라벨 뒤에 이미 `****` 가 있으면 `\d` 매칭 실패로 원본 유지 → 이중 호출 안전.
+ */
+const PHONE_LABEL_REGEX =
+  /((?:연락처|전화|휴대폰|휴대전화|폰|HP|Hp|hp|Tel|TEL|tel)\s*[:：]?\s*)([\d][\d\-\s.]{5,14}\d)/g;
+
+const ACCOUNT_LABEL_REGEX =
+  /((?:계좌(?:번호)?|입금|송금|농협|국민|우리|신한|카카오뱅크|IBK|기업은행|하나|기업)\s*(?:은행)?[^\d\n]{0,20})(\d[\d\-\s]{8,20}\d)/g;
+
+function maskByPhoneLabel(text: string): string {
+  return text.replace(PHONE_LABEL_REGEX, (_full, label: string, num: string) => {
+    const digits = num.replace(/[^\d]/g, "");
+    // 7~11 자리만 전화로 간주 (그 외 길이는 계좌/대회 ID 등으로 볼 수 있어 라벨 매칭이어도 보수적으로 스킵)
+    if (digits.length < 7 || digits.length > 11) return `${label}${num}`;
+    // 휴대폰 prefix(010 등) 보존 — 기존 규칙과 시각적 일관성
+    const prefix = digits.slice(0, 3);
+    return `${label}${prefix}-****-****`;
+  });
+}
+
+function maskByAccountLabel(text: string): string {
+  return text.replace(ACCOUNT_LABEL_REGEX, (_full, label: string, num: string) => {
+    const digits = num.replace(/[^\d]/g, "");
+    if (digits.length < 10 || digits.length > 14) return `${label}${num}`;
+    return `${label}${digits.slice(0, 3)}-****-****`;
+  });
+}
+
+/**
  * 전화 + 계좌 둘 다 마스킹 (통합 API).
  *
  * 왜 **phone 먼저**:
@@ -105,8 +151,18 @@ export function maskAccountNumbers(text: string): string {
  *   이중 치환되거나 "101-****-****"처럼 잘못 잘릴 수 있다.
  *   phone을 먼저 `010-****-****`로 바꾸면 이후 계좌 정규식에
  *   **이미 문자(`*`)가 섞여 있어** 매칭되지 않는다.
+ *
+ * 호출 순서 (Phase 2b 재수정):
+ *   1) 라벨 기반 phone 강제 마스킹 — 라벨이 있으면 숫자 덩어리를 무조건 전화로 간주
+ *   2) 라벨 기반 account 강제 마스킹 — 은행명/계좌 라벨 뒤 숫자 덩어리
+ *   3) 기존 regex phone — 라벨 없이 본문 중간에 섞인 전화번호
+ *   4) 기존 regex account — 라벨 없이 본문 중간에 섞인 계좌번호
+ *
+ *   왜 라벨 먼저: 라벨 뒤 숫자는 format 변형 저항(비표준 구분자)이 필요한데,
+ *   기존 regex 가 먼저 돌면 일부만 잡고 나머지는 놓친다. 라벨 기반으로 먼저 휩쓸어
+ *   `****` 를 찍어두면 이후 regex 는 해당 위치를 건드리지 않는다(멱등).
  */
 export function maskPersonalInfo(text: string): string {
   if (!text) return text;
-  return maskAccountNumbers(maskPhoneNumbers(text));
+  return maskAccountNumbers(maskPhoneNumbers(maskByAccountLabel(maskByPhoneLabel(text))));
 }

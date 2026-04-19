@@ -172,15 +172,29 @@ function decodeHtmlEntities(s: string): string {
  * HTML 태그 제거 + 연속 공백/개행 정리.
  * cheerio .text()는 개행을 모두 지워버려 parseCafeGame의 "1. HOME 팀명\n2. 일시" 라인 구분이
  * 망가진다. 그래서 <br>, <p>, <div> 종료 태그를 개행으로 바꾼 뒤 나머지 태그를 제거한다.
+ *
+ * Phase 2b 품질 보강: script/style/noscript 태그는 **내용까지 통째로** 제거.
+ * 왜 최우선: 다음카페 본문에 Tistory ImageGrid 같은 IIFE(`(function () { ... })()`)가
+ * 남아 있으면 그 내용이 텍스트로 본문에 섞여 들어와 UI/description 에 자바스크립트
+ * 코드가 그대로 노출됨 (id=397 스킬존3관 실측).
  */
 function stripHtmlPreservingLines(html: string): string {
   return (
     html
+      // ⚠️ 순서 중요: 태그 제거 전에 script/style/noscript 블록을 내용째로 먼저 삭제.
+      //   그렇지 않으면 .replace(/<[^>]+>/g, "") 가 태그만 벗겨 내용이 텍스트로 남음.
+      .replace(/<script\b[\s\S]*?<\/script\s*>/gi, "")
+      .replace(/<style\b[\s\S]*?<\/style\s*>/gi, "")
+      .replace(/<noscript\b[\s\S]*?<\/noscript\s*>/gi, "")
       // 블록 경계를 개행으로 보존
       .replace(/<br\s*\/?>/gi, "\n")
       .replace(/<\/(p|div|li|tr|h[1-6])>/gi, "\n")
       // 나머지 태그 제거
       .replace(/<[^>]+>/g, "")
+      // 태그 제거 후 남을 수 있는 IIFE 잔재 (`(function () { ... })();` 또는 `})();`)
+      // Tistory ImageGrid 스크립트가 HTML 엔티티 인코딩된 상태로 JS 변수 안에 들어 있는 경우
+      // 태그 없이 코드 문자열로만 존재 → 위 script 태그 제거가 못 잡으므로 추가 방어.
+      .replace(/\(function\s*\([^)]*\)\s*\{[\s\S]*?\}\s*\)\s*\([^)]*\)\s*;?/g, "")
       // 엔티티 디코드
       .replace(/&nbsp;/g, " ")
       .replace(/&amp;/g, "&")

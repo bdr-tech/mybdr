@@ -33,6 +33,10 @@ import type { ParsedCafeGame } from "@/lib/parsers/cafe-game-parser";
 // Phase 2b Step 4 — parseCafeGame 실패 필드를 관대한 정규식으로 보완하는 2단계 fallback.
 // parser 는 공식 포맷만 신뢰하므로, 라벨 없는 "4월19일 저녁10시" 같은 본문을 위해 별도 모듈로 분리.
 import { extractFallbacks } from "./extract-fallbacks";
+// Phase 2b 재수정 — DB 저장 직전 2차 방어 마스킹용.
+// 왜: 호출자(sync-cafe.ts)에서 마스킹을 누락해도 평문이 DB 에 절대 들어가지 않게 보장.
+// maskPersonalInfo 는 멱등이므로 호출자가 이미 마스킹했어도 결과 동일.
+import { maskPersonalInfo } from "@/lib/security/mask-personal-info";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 운영 DB 가드 (1차)
@@ -294,6 +298,9 @@ async function insertGameFromCafe(
   const skillLevel = extracted.skillLevel ?? "all";
   const city = parsed.city ?? extracted.city ?? null;
   const district = parsed.district ?? extracted.district ?? null;
+  // Phase 2b 품질 보강: venue 도 fallback 체인 적용 (parsed → extracted → null).
+  //   id=397 실측: parser 가 "장소 :" 라벨 변형 못 잡아 null, extracted 가 구제.
+  const venueName = parsed.venueName ?? extracted.venueName ?? null;
 
   // metadata 7키 — D1-B 스펙
   const metadata = {
@@ -314,7 +321,7 @@ async function insertGameFromCafe(
       organizer_id: organizerId,
       city,
       district,
-      venue_name: parsed.venueName ?? null,
+      venue_name: venueName,
       scheduled_at: scheduledAt,
       max_participants: maxParticipants,
       fee_per_person: feePerPerson,
@@ -359,13 +366,22 @@ export async function upsertCafeSyncedGame(
   // 1차 가드 — throw 허용 (전체 중단 의도)
   assertDevDatabase();
 
+  // ⚠️ 2차 방어 마스킹 (9가드 #5) — 호출자 실수 대비 마지막 안전망.
+  //   왜 input 을 복제: 호출자가 원본 content 를 다른 곳(로그 등)에 재사용할 수 있어
+  //   spread 로 새 객체를 만들고 content 만 교체. 원본 객체는 건드리지 않는다.
+  //   maskPersonalInfo 는 멱등 — 이미 마스킹된 값이라도 동일 결과(`*`는 더 이상 매칭 안 됨).
+  const safeInput: CafeSyncInput = {
+    ...input,
+    content: maskPersonalInfo(input.content),
+  };
+
   try {
     return await prisma.$transaction(async (tx) => {
       // (a) cafe_posts upsert
-      const cafePostId = await upsertCafePost(tx, input);
+      const cafePostId = await upsertCafePost(tx, safeInput);
 
-      // parsed 없으면 game은 스킵
-      if (!input.parsed) {
+      // parsed 없으면 game은 스킵 (parsed 참조는 content 와 무관하므로 원본 input OK)
+      if (!safeInput.parsed) {
         return {
           cafePost: "created" as const, // upsert는 created/updated 구분 어려움. 다음 줄에서 추후 보정.
           game: "skipped_no_parse" as const,
@@ -374,8 +390,8 @@ export async function upsertCafeSyncedGame(
         };
       }
 
-      // (b) 기존 game 존재 체크
-      const existingId = await findExistingGameByCafeMetadata(tx, input.board.id, input.dataid);
+      // (b) 기존 game 존재 체크 (board.id + dataid 만 사용 — content 무관)
+      const existingId = await findExistingGameByCafeMetadata(tx, safeInput.board.id, safeInput.dataid);
       if (existingId !== null) {
         return {
           cafePost: "created" as const,
@@ -385,8 +401,8 @@ export async function upsertCafeSyncedGame(
         };
       }
 
-      // (c) games insert
-      const gameId = await insertGameFromCafe(tx, input);
+      // (c) games insert — ⚠️ safeInput 전달 필수. games.description 에 마스킹된 content 저장.
+      const gameId = await insertGameFromCafe(tx, safeInput);
       return {
         cafePost: "created" as const,
         game: "inserted" as const,
@@ -431,6 +447,8 @@ export function previewUpsert(input: CafeSyncInput): {
   citySource: "parsed" | "extracted" | "fallback";
   district: string | null;
   districtSource: "parsed" | "extracted" | "fallback";
+  venueName: string | null;
+  venueNameSource: "parsed" | "extracted" | "fallback";
   willInsertGame: boolean;
   metadata: Record<string, unknown>;
 } {
@@ -509,6 +527,20 @@ export function previewUpsert(input: CafeSyncInput): {
     districtSource = "fallback";
   }
 
+  // Phase 2b 품질 보강: venue 도 source 추적
+  let venueName: string | null;
+  let venueNameSource: "parsed" | "extracted" | "fallback";
+  if (parsed?.venueName) {
+    venueName = parsed.venueName;
+    venueNameSource = "parsed";
+  } else if (extracted.venueName) {
+    venueName = extracted.venueName;
+    venueNameSource = "extracted";
+  } else {
+    venueName = null;
+    venueNameSource = "fallback";
+  }
+
   return {
     gameId: buildGameId(input.board, input.dataid),
     gameType,
@@ -524,6 +556,8 @@ export function previewUpsert(input: CafeSyncInput): {
     citySource,
     district,
     districtSource,
+    venueName,
+    venueNameSource,
     willInsertGame: parsed !== null,
     metadata: {
       cafe_dataid: input.dataid,

@@ -60,6 +60,11 @@ export interface ExtractedFallbacks {
   city: string | null;
   /** 본문에서 발견된 시/구(시흥시/강남구...). 없으면 null */
   district: string | null;
+  /**
+   * "장소 : 상암스킬존 3관" 같은 본문에서 추출한 체육관/경기장 이름.
+   * parseCafeGame 이 못 뽑은 경우(비표준 라벨) fallback 용. 없으면 null.
+   */
+  venueName: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -120,6 +125,7 @@ export function extractFallbacks(content: string | null, baseDate: Date): Extrac
       skillLevel: null,
       city: null,
       district: null,
+      venueName: null,
     };
   }
 
@@ -130,6 +136,7 @@ export function extractFallbacks(content: string | null, baseDate: Date): Extrac
     skillLevel: extractSkillLevel(content),
     city: extractCity(content),
     district: extractDistrict(content),
+    venueName: extractVenueName(content),
   };
 }
 
@@ -151,27 +158,70 @@ export function extractFallbacks(content: string | null, baseDate: Date): Extrac
  *   글로벌 flag 안 붙이고 `.exec` 한 번으로 충분.
  */
 function extractScheduledAt(content: string, baseDate: Date): Date | null {
-  // 두 가지 시각 포맷을 모두 지원한다:
-  //   (A) "저녁10시15분"  — `{시각}시{분}분` (한글 단위)
-  //   (B) "저녁 9 : 00"   — `{시각} : {분}` (콜론·공백 섞인 디지털 표기, 실측 3925번 글)
-  // 공통: (\d{1,2})월 (\d{1,2})일 + 선택적 요일/공백/시간대 키워드 + 시각.
-  //
-  // 왜 두 개를 또 한 번에: 첫 매치가 시작 시각이므로 (A) OR (B) 를 | 로 묶어 한 번의 exec.
-  const pattern =
-    /(\d{1,2})\s*월\s*(\d{1,2})\s*일[^\d]{0,20}?(저녁|오후|오전|밤|낮)?\s*(\d{1,2})\s*(?::\s*(\d{1,2})|시(?:\s*(\d{1,2})\s*분)?)/;
-  const m = pattern.exec(content);
-  if (!m) return null;
+  // Phase 2b 품질 보강: 월·일 은 "첫 매치", 시각 은 "별도 스캔" 으로 분리.
+  //   실측 id=397: "1부) 오후 5 : 00 ~ 7 : 00 / 2부) 저녁 10 : 00" 처럼
+  //   월·일 매치 위치와 시각 매치 위치가 멀리 떨어져 있어 단일 regex 로는 실패.
+  //   → 1단계 월·일 추출 → 2단계 시각 여러 패턴 순차 매칭.
 
-  const month = Number(m[1]);
-  const day = Number(m[2]);
-  const period = m[3] ?? ""; // "저녁"|"오후"|"밤"|"오전"|"낮"|""
-  let hour = Number(m[4]);
-  // 분: (B) 콜론 포맷은 m[5], (A) "시N분" 포맷은 m[6]. 둘 다 없으면 0.
-  const minute = m[5] ? Number(m[5]) : m[6] ? Number(m[6]) : 0;
+  // 1단계: 월·일 추출
+  const dateMatch = /(\d{1,2})\s*월\s*(\d{1,2})\s*일/.exec(content);
+  if (!dateMatch) return null;
 
-  // 유효성 — 월/일/시 가 상식 범위인지
+  const month = Number(dateMatch[1]);
+  const day = Number(dateMatch[2]);
   if (month < 1 || month > 12) return null;
   if (day < 1 || day > 31) return null;
+
+  // 2단계: 시각 추출 — 여러 패턴 순차 시도 (첫 매치 채택)
+  // 우선순위:
+  //   (A) 한글 단위 "저녁10시15분" / "오후 5시" — 명확한 시간대 키워드
+  //   (B) 한글+콜론 "오후 5 : 00" / "저녁 10 : 00" — 실측 3925/397
+  //   (C) 순수 콜론 "20:45~22:15" — 24h 형식, 접두사 없음
+  //
+  // 각 패턴은 본문 전체에서 매칭 (월·일 근처 제약 X) — 시각 덩어리가 멀리 있어도 잡음.
+  type TimeResult = { hour: number; minute: number; period: string };
+
+  const tryPatterns: Array<() => TimeResult | null> = [
+    // (A) "(저녁|오후|오전|밤|낮)? 12시 30분" — 분은 optional
+    () => {
+      const p = /(저녁|오후|오전|밤|낮)?\s*(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분)?/;
+      const m = p.exec(content);
+      if (!m) return null;
+      return {
+        period: m[1] ?? "",
+        hour: Number(m[2]),
+        minute: m[3] ? Number(m[3]) : 0,
+      };
+    },
+    // (B) "(저녁|오후|오전|밤|낮) 5 : 00" — 접두사 + 콜론 포맷
+    () => {
+      const p = /(저녁|오후|오전|밤|낮)\s*(\d{1,2})\s*:\s*(\d{1,2})/;
+      const m = p.exec(content);
+      if (!m) return null;
+      return { period: m[1], hour: Number(m[2]), minute: Number(m[3]) };
+    },
+    // (C) 순수 "20:45" 콜론 포맷 — 접두사 없음, 24h 형식.
+    //     "13:00" 이상이면 자동으로 오후. "08:00" 같은 오전은 그대로 사용.
+    //     단, 앞뒤로 숫자가 붙으면 시각이 아닌 숫자 나열 (예: "1,234:56")이므로 단어 경계 체크.
+    () => {
+      const p = /(?:^|[^\d])(\d{1,2})\s*:\s*(\d{2})(?!\d)/;
+      const m = p.exec(content);
+      if (!m) return null;
+      return { period: "", hour: Number(m[1]), minute: Number(m[2]) };
+    },
+  ];
+
+  let timeResult: TimeResult | null = null;
+  for (const tryPattern of tryPatterns) {
+    timeResult = tryPattern();
+    if (timeResult) break;
+  }
+  if (!timeResult) return null;
+
+  const period = timeResult.period; // "저녁"|"오후"|"밤"|"오전"|"낮"|""
+  let hour = timeResult.hour;
+  const minute = timeResult.minute;
+
   if (hour < 0 || hour > 23) return null;
   if (minute < 0 || minute > 59) return null;
 
@@ -321,6 +371,78 @@ function extractDistrict(content: string): string | null {
     }
     // "N시" 처럼 숫자+시 (예: "10시") 는 시간 — 위 [가-힣] 제한으로 이미 배제됨.
     return cand;
+  }
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// venueName 추출 (Phase 2b 품질 보강)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * "장소 : 상암스킬존 3관" 같은 본문에서 체육관/경기장 이름을 뽑는다.
+ *
+ * 우선순위:
+ *   1) "장소 :" 뒤 첫 줄 — 가장 명확한 라벨
+ *   2) "위치 :" 뒤 첫 줄 — "장소" 대신 "위치" 쓰는 카페가 있음
+ *   3) "티맵 검색 :" 뒤 — 지도 앱 검색용 정식 명칭 (종종 장소 라벨 누락해도 있음)
+ *   4) "HOME 팀명" / "팀명" 라벨 — 최후 수단. 경기장 이름을 팀명으로 쓰는 관례 존재
+ *
+ * 후처리:
+ *   - 앞뒤 공백 제거
+ *   - "1.", "3." 같은 숫자 접두사 제거 (정규식이 이미 처리했지만 이중 방어)
+ *   - 길이 1~50자만 허용 (너무 짧거나 긴 문자열은 주소 전체/노이즈 가능성)
+ *   - "/" 앞까지만 — "상암스킬존 3관 / 서울 마포구" 같은 연결 표기 대응
+ *
+ * 왜 첫 줄까지만 캡처하나:
+ *   "장소 : 상암스킬존 3관\n주소: ..." 처럼 라벨 다음 줄에 다른 정보가 이어지는 경우가 많음.
+ *   줄 경계 넘지 않도록 [^\n/] 로 제한해 안전하게 첫 값만 추출.
+ */
+function extractVenueName(content: string): string | null {
+  // 패턴 시도 순서 — 위에서 성공하면 즉시 반환
+  const patterns: RegExp[] = [
+    // (1) "장소 :" — 가장 흔한 라벨. 앞 숫자 접두사("1.", "3.") 허용.
+    /(?:^|\n)\s*\d?\.?\s*장소\s*[:：]\s*([^\n/]+?)(?:\n|$|\/)/,
+    // (2) "위치 :" — 대체 라벨
+    /(?:^|\n)\s*\d?\.?\s*위치\s*[:：]\s*([^\n/]+?)(?:\n|$|\/)/,
+    // (3) "티맵 검색 :" — 지도앱 검색명
+    /티맵\s*검색\s*[:：]\s*([^\n]+)/,
+    // (4) "HOME 팀명" 또는 "팀명" — 최후 수단
+    /(?:^|\n)\s*\d?\.?\s*(?:HOME\s*)?팀명\s*[:：]\s*([^\n]+)/,
+  ];
+
+  for (const p of patterns) {
+    const m = p.exec(content);
+    if (!m) continue;
+
+    // 후처리 (Phase 2b 재수정 — venue 품질 가드 강화)
+    let cand = m[1].trim();
+    // (1) 혹시 남아 있을 숫자 접두사 제거 ("1. ", "3." 등)
+    cand = cand.replace(/^\d+\.\s*/, "").trim();
+
+    // (2) 괄호 블록 제거 — "상암체육관 (수색교3분거리)" → "상암체육관"
+    //     왜: 괄호 안은 부가설명(경로/주의사항)이라 venue 이름으로 부적합.
+    cand = cand.replace(/\([^)]*\)/g, "").replace(/\（[^）]*\）/g, "").trim();
+
+    // (3) 연속 공백 → 단일 공백
+    cand = cand.replace(/\s+/g, " ").trim();
+
+    // (4) "/" 나 "|" 가 있으면 앞부분만 (연결 표기 대응)
+    const cut = cand.split(/[/|]/)[0].trim();
+    if (cut.length < 1) continue;
+
+    // (5) 주소 패턴 거부 — "경기도 구리시 토평동 28-2" 같은 번지수 포함 문자열은 venue 아님.
+    //     왜: 카페 글에서 "장소 :" 뒤에 주소 전체를 쓰는 케이스가 있어 venue 에 주소가 들어감.
+    //     "162-4", "28-2" 같이 1~5자리 숫자 - 1자리+ 숫자 = 전형적인 번지/도로명 구조.
+    if (/\d{1,5}-\d+/.test(cut)) continue;
+
+    // (6) 길이 가드 — 20 자 초과 시 null (주소/설명문 가능성 높음).
+    //     왜 20: 실측 체육관명은 대부분 10~15자 ("상암체육관", "삼성썬더스 스포츠팰리스", "스킬존 3관").
+    //     매직 넘버지만 본 서비스 수집 도메인에서 경험적으로 충분. 초과분은 자르지 말고 버림(null).
+    //     slice 하면 잘린 문자열이 DB 에 들어가 "경기도 구리시 토평동 28" 같은 반쪽 주소가 남는다.
+    if (cut.length > 20) continue;
+
+    return cut;
   }
   return null;
 }
