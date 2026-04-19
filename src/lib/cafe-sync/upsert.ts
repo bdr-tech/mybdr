@@ -118,13 +118,23 @@ export interface CafeSyncResult {
 /**
  * board → game_type 숫자 매핑.
  * parsed.gameType이 있으면 그걸 우선 사용, null이면 board 기반 fallback.
+ *
+ * [2026-04-20] PRACTICE 게시판은 board 강제 적용:
+ *   MptT(연습경기) 글에 "게스트 모집" 키워드가 섞이면 parseCafeGame이
+ *   GUEST(1)로 오분류하는 문제(실측 4/5). 운영자가 MptT 게시판을 택했다는 건
+ *   팀-팀 매칭 의도이므로 board를 절대 기준으로 삼는다.
+ *   PICKUP/GUEST 게시판은 혼재 글(픽업 게스트 구함 등)이 실제로 많으므로
+ *   parser 재분류 결과를 유지 (설계대로).
  */
 function resolveGameType(parsed: ParsedCafeGame | null, board: CafeBoard): number {
+  // MptT(PRACTICE) 강제 규칙
+  if (board.gameType === "PRACTICE") return 2;
+
   // parsed.gameType: 0 | 1 | 2 | null | undefined
   if (parsed && typeof parsed.gameType === "number") {
     return parsed.gameType;
   }
-  // board fallback: IVHA=0 / Dilr=1 / MptT=2
+  // board fallback: IVHA=0 / Dilr=1 / MptT=2(이미 위에서 처리)
   if (board.gameType === "PICKUP") return 0;
   if (board.gameType === "GUEST") return 1;
   return 2; // PRACTICE
@@ -330,7 +340,12 @@ async function insertGameFromCafe(
       description: input.content.slice(0, 2000), // 너무 긴 본문 차단 (게시판 평균 300자 수준)
       author_nickname: input.author || null,
       metadata: metadata as unknown as Prisma.InputJsonValue,
-      created_at: now,
+      // [2026-04-20] games.created_at = 카페 원본 게시 시각(input.postedAt) 우선 저장.
+      //   왜: /games 목록이 `orderBy: created_at desc` 로 정렬되는데, 기본 now 를 넣으면
+      //   "우리 DB INSERT 순서"가 기준이 되어 카페 게시 시간과 어긋남 (사용자 지적).
+      //   postedAt 을 created_at 로 저장하면 정렬이 자연히 "카페 최신 → 과거" 가 된다.
+      //   postedAt 이 null 이면 now 로 fallback (일반 게임은 이 코드 경로를 타지 않음).
+      created_at: input.postedAt ?? now,
       updated_at: now,
     },
   });
