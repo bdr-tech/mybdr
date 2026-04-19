@@ -69,9 +69,18 @@ interface GameFromApi {
   author_nickname: string | null;
 }
 
+// [2026-04-19 추가] 유형별 건수 — apiSuccess 가 camelCase(typeCounts) → snake_case(type_counts)로 변환
+interface TypeCounts {
+  "0": number; // PICKUP
+  "1": number; // GUEST
+  "2": number; // PRACTICE
+  all: number;
+}
+
 interface GamesApiResponse {
   games: GameFromApi[];
   cities: string[];
+  type_counts?: TypeCounts;
 }
 
 /* 상태 배지 계산 (기존과 동일) */
@@ -230,6 +239,8 @@ export function GamesContent({
   const searchParams = useSearchParams();
   const [games, setGames] = useState<GameFromApi[]>([]);
   const [cities, setCities] = useState<string[]>([]);
+  // [2026-04-19 추가] 유형별 건수 — 로딩 중에는 undefined 로 내려 탭 숫자 숨김
+  const [typeCounts, setTypeCounts] = useState<TypeCounts | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const { preferFilter } = usePreferFilter();
 
@@ -255,12 +266,15 @@ export function GamesContent({
         if (data) {
           setGames(data.games ?? []);
           setCities(data.cities ?? []);
+          // type_counts 가 API 응답에 포함되어 있을 때만 덮어쓰기 (없으면 탭은 숫자 숨김)
+          setTypeCounts(data.type_counts);
         }
       })
       .catch((error) => {
         if (error instanceof Error && error.name === 'AbortError') return;
         setGames([]);
         setCities([]);
+        setTypeCounts(undefined);
       })
       .finally(() => setLoading(false));
 
@@ -321,8 +335,9 @@ export function GamesContent({
 
       {/* 경기 유형 탭 — 로딩 중에도 노출되어야 사용자가 즉시 전환 가능하므로
           loading 분기 바깥에 배치. ?type URL 쿼리만 조작 → API 재호출은 searchParams
-          변경 감지하는 기존 useEffect가 자동 처리. */}
-      <GameTypeTabs />
+          변경 감지하는 기존 useEffect가 자동 처리.
+          loading 중엔 counts=undefined 로 내려 숫자만 숨기고 탭은 노출 유지. */}
+      <GameTypeTabs counts={loading ? undefined : typeCounts} />
 
       {/* 로딩 중이면 스켈레톤 */}
       {loading ? (

@@ -12,6 +12,13 @@
  *   - 활성 탭 배경: TYPE_BADGE[X].bg (GameCard 좌상단 뱃지와 동일 시각 언어)
  *   - "전체" 탭: ?type 파라미터 삭제
  *   - q/date/city/skill 등 다른 필터는 그대로 보존
+ *
+ * [2026-04-19 추가] 건수 뱃지
+ *   - props.counts 로 { "0": N, "1": M, "2": K, all: X } 수신
+ *   - 활성 탭: 글자색과 같은 색 + opacity-80
+ *   - 비활성 탭: --color-text-muted
+ *   - counts 가 undefined 면 숫자 숨김(로딩 중이거나 API 응답 누락 대비)
+ *   - 0도 표시(0건임을 사용자가 알 수 있어야 함)
  * ============================================================ */
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -35,7 +42,15 @@ const TABS: Array<{
   { value: "2",   label: "연습경기",   icon: "fitness_center" },
 ];
 
-export function GameTypeTabs() {
+// [2026-04-19 추가] 건수 뱃지 타입 — games-content.tsx 의 TypeCounts 와 동일 형태
+export interface GameTypeTabsCounts {
+  "0": number;
+  "1": number;
+  "2": number;
+  all: number;
+}
+
+export function GameTypeTabs({ counts }: { counts?: GameTypeTabsCounts }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -98,6 +113,24 @@ export function GameTypeTabs() {
               {tab.icon}
             </span>
             {tab.label}
+            {/* 건수 뱃지: counts 가 있을 때만 표시. 0도 표시해서 사용자가 해당 탭이
+                비어 있음을 즉시 인지 가능하게 한다. 레이아웃 흔들림 방지를 위해
+                숫자는 같은 span 에 margin-left 로 붙인다. */}
+            {counts && (
+              <span
+                className="tabular-nums text-xs font-bold"
+                style={{
+                  // 활성: 글자색 상속 + opacity로 톤 다운 → 라벨보다 덜 강조
+                  // 비활성: muted 톤 고정 → 라벨과 시각 계층 분리
+                  color: isActive ? "inherit" : "var(--color-text-muted)",
+                  opacity: isActive ? 0.8 : 1,
+                }}
+              >
+                {tab.value === "all"
+                  ? counts.all
+                  : counts[tab.value as "0" | "1" | "2"]}
+              </span>
+            )}
           </button>
         );
       })}
