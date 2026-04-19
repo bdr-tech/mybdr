@@ -60,17 +60,29 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     label: "설정",
-    href: "/profile/preferences",
+    // Day 8: 맞춤 설정 + 알림 설정을 /profile/settings 허브 (탭 2개)로 통합. href 는 허브 루트.
+    href: "/profile/settings",
     icon: "settings",
-    // 알림 설정도 "설정" 카테고리로 묶어 활성 표시
-    matchPaths: ["/profile/preferences", "/profile/notification-settings"],
+    // matchPaths: 신 경로(/profile/settings) + 구 경로(/profile/preferences, /profile/notification-settings).
+    // 왜 구 경로까지 포함? redirect() 가 즉시 실행되더라도 네비게이션 중간 상태에서 활성 표시가 끊기지 않도록,
+    // 그리고 외부 링크로 구 경로 진입 시에도 메뉴 활성 유지.
+    matchPaths: [
+      "/profile/settings",
+      "/profile/preferences",
+      "/profile/notification-settings",
+    ],
   },
   {
     label: "결제",
-    href: "/profile/subscription",
+    // Day 8: 구독 + 결제 내역을 /profile/billing 허브 (탭 2개)로 통합.
+    href: "/profile/billing",
     icon: "payments",
-    // 구독과 결제 내역을 하나의 "결제" 카테고리로 묶음
-    matchPaths: ["/profile/subscription", "/profile/payments"],
+    // 신 경로 + 구 경로 양쪽 매칭 (redirect 구간에도 활성 유지)
+    matchPaths: [
+      "/profile/billing",
+      "/profile/subscription",
+      "/profile/payments",
+    ],
   },
   {
     label: "주간 리포트",

@@ -27,8 +27,10 @@ const categories: Category[] = [
   { id: "basketball", label: "내 농구", icon: "sports_basketball", href: "/profile/basketball" },
   { id: "growth",     label: "내 성장", icon: "trending_up",       href: "/profile/growth" },
   { id: "info",       label: "내 정보", icon: "person",            href: "/profile/edit" },
-  { id: "preferences",label: "맞춤 설정", icon: "tune",            href: "/profile/preferences" },
-  { id: "account",    label: "계정",    icon: "settings",          href: "/profile/subscription" },
+  // Day 8: /profile/preferences → /profile/settings (맞춤 설정 + 알림 통합 허브) 로 이동
+  { id: "preferences",label: "맞춤 설정", icon: "tune",            href: "/profile/settings" },
+  // Day 8: /profile/subscription → /profile/billing (구독 + 결제 내역 통합 허브) 로 이동
+  { id: "account",    label: "계정",    icon: "settings",          href: "/profile/billing" },
 ];
 
 interface ProfileAccordionProps {

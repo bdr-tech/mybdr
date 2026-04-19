@@ -12,6 +12,54 @@
 
 ## 구현 기록 (developer)
 
+### B2 — 유형 탭 건수 뱃지 (2026-04-19)
+
+📝 구현: `/games` 상단 유형 탭에 `type 제외 현재 필터 상태` 기준 유형별 건수 뱃지 표시 (예: `게스트 42`)
+
+| 파일 | 변경 내용 | 신규/수정 |
+|------|----------|----------|
+| `src/app/api/web/games/route.ts` | `Prisma` 타입 import + `countWhere` 인라인 구성(type 제외 / q/city/prefer지역/skill/scheduledAt 반영) + `prisma.games.groupBy` 1회 추가 호출 + `typeCounts: { "0", "1", "2", all }` 응답 포함 (기존 games/cities 필드 불변) | 수정 |
+| `src/app/(web)/games/_components/games-content.tsx` | `TypeCounts` 인터페이스 + `GamesApiResponse.type_counts` 옵셔널 필드 + `typeCounts` 상태 + `setTypeCounts(data.type_counts)` + `<GameTypeTabs counts={loading ? undefined : typeCounts} />` | 수정 |
+| `src/app/(web)/games/_components/game-type-tabs.tsx` | `GameTypeTabsCounts` 인터페이스 export + `{ counts }` props + 탭 라벨 오른쪽에 숫자 span 렌더(활성: inherit+opacity-80 / 비활성: `var(--color-text-muted)`) + `tabular-nums` | 수정 |
+
+🔧 tsc: **PASS (exit 0, 에러 0)**
+🔧 curl 스모크: 서버 미기동 (승인대로 tsc 만 필수)
+
+💡 **설계 선택**: `prisma.games.groupBy({ by: ["game_type"], _count: { _all: true } })` **1회** 채택
+- **이유**: count 3번(0/1/2 각각)이면 DB 왕복 3회 + WHERE 복제 3회. groupBy 1회가 왕복/플래너 비용 모두 절감. 또한 향후 유형 확장(예: 3=TEAM_BATTLE) 시 자동 집계되는 확장성.
+- **비교 대안**: `listGames` 에 `excludeTypeForCount: true` 플래그 추가해 서비스 레이어에서 통합 — "관련 없는 refactor 금지" 규칙에 따라 기각. route.ts 안에서만 처리.
+
+💡 **typeCounts 동작**:
+- `type_counts.all = 0 + 1 + 2 합산` (PM 스펙)
+- 응답 키: 서버에서 `typeCounts` camelCase 반환 → `apiSuccess` 가 snake_case 변환 → 프론트 `data.type_counts` 로 수신 (conventions.md "apiSuccess snake_case 변환" 규칙 일관)
+- 로딩 중엔 `counts={undefined}` → 탭은 계속 노출, 숫자만 숨김 (레이아웃 흔들림 방지)
+- 건수 0도 표시 → 사용자가 "이 탭은 비어 있음" 즉시 인지
+
+💡 tester 참고:
+- **테스트 방법**: `/games` 접속 → 상단 4개 탭 라벨 오른쪽에 숫자 노출 확인
+  - "전체 N" (N = 픽업+게스트+연습경기 합)
+  - "픽업게임 N"
+  - "게스트 N"
+  - "연습경기 N"
+- **정상 동작**:
+  - 검색/도시/날짜/실력 필터를 걸어도 탭 뱃지 숫자가 "해당 조건 + 각 유형" 건수로 **실시간 갱신**
+  - 예: `?q=농구 + city=서울` → 탭 "픽업게임 3 / 게스트 12 / 연습경기 1 / 전체 16" 같은 형태
+  - "게스트" 탭 클릭 시 목록이 12건(±요일·시간대 후처리) 수준
+  - 로딩 중(~1초)엔 탭만 보이고 숫자 없음
+  - API 응답에 `type_counts` 없으면 숫자 숨김 (에러 회복 시에도 레이아웃 유지)
+- **주의할 입력**:
+  - `?type=1` 포함한 상태에서도 탭 숫자는 `type 제외` 기준(다른 유형 건수도 표시)으로 나오는지
+  - `prefer=true` 상태에서 맞춤 지역/실력/유형이 적용된 건수인지
+  - 요일/시간대 후처리 필터가 걸린 경우, 탭 숫자가 목록 건수보다 **살짝 많을 수 있음** (Prisma에서 DOW/HOUR 추출 불가 — 서버 WHERE 기준 count라 후처리 이전 집계). 방향성은 유지되므로 UX 영향 작음. 주석에 명시.
+
+⚠️ reviewer 참고:
+- **WHERE 중복 구성**: `listGames` 내부와 `route.ts` 의 `countWhere` 가 거의 동일 로직. 의도적으로 중복 허용(스펙 "3파일만 건드리기"). 향후 `buildGamesWhere(filters, { includeType: boolean })` 같은 추출 리팩토링 권장.
+- **요일/시간대 후처리와 count 비일치**: 주석 57~59 라인에 명시. 정확도 필요 시 groupBy → 전체 row 조회 + JS 집계로 전환 가능하지만 현재 60건 상한 + 카드 UI 고려 시 허용 범위.
+- **apiSuccess 변환 의존**: 서버 camelCase(typeCounts) → 프론트 snake_case(type_counts) 는 2026-04-17 errors.md "snake_case 5회차 재발" 교훈 반영. 프론트 접근자 `data.type_counts` 로 직통.
+- **tabular-nums**: 숫자가 바뀔 때 탭 폭이 들쭉날쭉하지 않게 고정폭 숫자 적용 (한 자리 ↔ 두 자리 전환 시 시각적 안정).
+
+#### 이전 구현 (유형 탭 최초 도입 — 2026-04-19 B1)
+
 📝 구현: `/games` 페이지 상단 경기 유형 탭 (전체/픽업게임/게스트/연습경기)
 
 | 파일 | 변경 내용 | 신규/수정 |
@@ -108,6 +156,7 @@
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-19 | developer | B2 — `/games` 유형 탭 건수 뱃지 (route.ts groupBy 1회 + games-content typeCounts 상태 + game-type-tabs counts props) | ✅ tsc PASS, 미커밋 |
 | 04-19 | pm+developer | `/games` 경기 유형 탭 추가 (전체/픽업/게스트/연습경기, URL `?type` 기반, TYPE_BADGE 재사용) + 플로팅 패널 type 필터 제거 | ✅ 2fc8369 push, PR #45 포함 |
 | 04-19 | pm | UX 세션: Dev/ 플래닝 3개 커밋 + Q12 조사(수정 불필요, W1 **12/12**) + dev merge-back 7충돌 해결 → PR #45 **MERGEABLE** | ✅ 610dcf2 push |
 | 04-19 | pm | 오늘 세션 시작: 환경 체크 + Phase 2a 재검증(IVHA 본문 200×2/2) + 로컬 변경 커밋·푸시 | ✅ 3cd61c4 push |
@@ -118,7 +167,6 @@
 | 04-19 | tester | MoreTabTooltip Playwright E2E 6/6 PASS | ✅ |
 | 04-19 | pm+developer | 다음카페 Phase 1 POC — 3게시판 30건 실제 수집 (articles.push 정규식) | ✅ |
 | 04-19 | pm | 크롤링 정책 리서치(9가드) + decisions.md 승격 | ✅ 조건부 진행 |
-| 04-19 | general-purpose | 다음카페 크롤링 법적/기술 리스크 리서치 | ✅ 낮음~중간 |
 
 ## 구현 기록 — M1 Day 7 (developer)
 
@@ -356,3 +404,249 @@
   2. `src/app/(web)/profile/edit/page.tsx` — 탈퇴 div에 `id="danger"` 추가
   3. `src/app/(web)/profile/_components/profile-hero.tsx` — rgba → color-mix
   4. `src/components/profile/profile-side-nav.tsx` — 모바일 chip `text-[var(--color-on-primary)]`
+
+## 구현 기록 — M1 Day 8 (developer)
+
+📝 구현: 설정·결제 페이지 통합 — `/profile/preferences` + `/profile/notification-settings` → `/profile/settings` (탭 2) / `/profile/subscription` + `/profile/payments` → `/profile/billing` (탭 2) + 구 경로 4개 redirect + 링크 교체 5곳
+
+### 설계 결정 (PM 6개 전부 승인)
+| # | 결정 | 적용 |
+|---|------|------|
+| 1 | 탭 컴포넌트 inline (후속 공용화) | `TabButton` 함수가 settings/billing 각 파일 내부 |
+| 2 | 탭 전환 `router.replace + { scroll: false }` | 히스토리 누적·스크롤 점프 방지 |
+| 3 | 비활성 탭 조건부 렌더 | `{activeTab === 'X' && <Section />}` → API 호출 절약 |
+| 4 | 기존 4 페이지 파일 존치 | redirect-only로 rewrite (서버 컴포넌트 `redirect()`) |
+| 5 | 탭 스타일 `border-b-2` 절제형 | 활성=primary border + text, 비활성=transparent + muted |
+| 6 | 개별 헤더 제거 + 허브 단일 헤더 | "설정"/"결제" h1 허브 한 곳만 |
+
+### 파일 변경 (11개: 신규 2 + 수정 9)
+| 파일 | 변경 내용 | 신규/수정 |
+|------|----------|----------|
+| `src/app/(web)/profile/settings/page.tsx` | 설정 허브. PreferenceForm import + NotificationsSection 내부 서브 컴포넌트. URL `?tab=preferences\|notifications` 관리, `router.replace({scroll:false})`, 비활성 탭 조건부 렌더 | 신규 |
+| `src/app/(web)/profile/billing/page.tsx` | 결제 허브. SubscriptionSection / PaymentsSection 각 useSWR로 조건부 렌더 → 비활성 탭 API 호출 안 됨. 해지/환불 모달 이식 | 신규 |
+| `src/app/(web)/profile/preferences/page.tsx` | 전체 rewrite → `redirect("/profile/settings?tab=preferences")` | 수정 |
+| `src/app/(web)/profile/notification-settings/page.tsx` | 전체 rewrite → `redirect("/profile/settings?tab=notifications")` | 수정 |
+| `src/app/(web)/profile/subscription/page.tsx` | 전체 rewrite → `redirect("/profile/billing?tab=subscription")` | 수정 |
+| `src/app/(web)/profile/payments/page.tsx` | 전체 rewrite → `redirect("/profile/billing?tab=payments")` | 수정 |
+| `src/components/profile/profile-side-nav.tsx` | "설정" href `/profile/preferences → /profile/settings` + matchPaths 신/구 3경로. "결제" href `/profile/subscription → /profile/billing` + matchPaths 신/구 3경로 | 수정 |
+| `src/components/shared/profile-accordion.tsx` | "맞춤 설정" → `/profile/settings`, "계정" → `/profile/billing` | 수정 |
+| `src/components/shared/profile-dropdown.tsx` | "맞춤 설정" → `/profile/settings`, "계정" → `/profile/billing` | 수정 |
+| `src/app/(web)/pricing/success/page.tsx` | "결제 내역" `/profile/payments → /profile/billing?tab=payments` | 수정 |
+| `src/app/(web)/profile/edit/page.tsx` | "맞춤 설정 관리" `/profile/preferences → /profile/settings?tab=preferences` | 수정 |
+
+### redirect 매핑 (외부 링크/북마크 호환)
+| 구 경로 | 신 경로 |
+|---------|---------|
+| `/profile/preferences` | `/profile/settings?tab=preferences` |
+| `/profile/notification-settings` | `/profile/settings?tab=notifications` |
+| `/profile/subscription` | `/profile/billing?tab=subscription` |
+| `/profile/payments` | `/profile/billing?tab=payments` |
+
+### profile-side-nav matchPaths (구+신 양쪽 — PM 재확인 포인트 반영)
+- **설정**: `/profile/settings` + `/profile/preferences` + `/profile/notification-settings` (redirect 찰나에도 활성 유지)
+- **결제**: `/profile/billing` + `/profile/subscription` + `/profile/payments` (동일 이유)
+
+### tsc 결과
+- Day 8 스코프 (11개 파일) 에러 **0건** ✅ (grep 필터 검증)
+- 전체 프로젝트 에러 1건 — `src/app/(web)/games/_components/games-content.tsx:340` (`counts` prop) → **Day 8 스코프 밖**, 이전 세션의 미완료 변경 (GameTypeTabs counts prop 미정의). 이번 커밋에 **편승 금지**, 별도 이슈
+
+### 링크 교체 재검증 (grep)
+- `src/` 전체에서 `href=["']/profile/(preferences|notification-settings|subscription|payments)["']` 매치 **0건** ✅
+- 5곳 누락 없이 모두 교체됨
+
+💡 tester 참고:
+- **핵심 3가지 테스트**
+  1. `/profile/settings` → 탭 2개 토글 시 URL `?tab=preferences` ↔ `?tab=notifications` **replace** (히스토리 누적 X, 뒤로가기가 이전 탭 아닌 이전 페이지로)
+  2. `/profile/billing` → 탭 2개 동일 패턴. DevTools Network에서 **활성 탭 API만** 호출 (비활성 탭은 호출 안됨)
+  3. 구 경로 4개 즉시 redirect: 주소창이 신 경로로 갱신되는지
+- **네비 활성 상태**
+  - 신 경로 → 좌측 네비 "설정" / "결제" 활성
+  - 구 경로 진입 찰나 → matchPaths에 구 경로 포함이라 활성 유지
+  - 쿼리 변경 시 활성 탭 스타일(border-b-2 primary) 따라가는지
+- **링크 교체 5곳**
+  - 헤더 프로필 드롭다운 "맞춤 설정" → `/profile/settings`, "계정" → `/profile/billing`
+  - 슬라이드 메뉴 ProfileAccordion 동일
+  - `/profile/edit` 하단 "맞춤 설정 관리" → `/profile/settings?tab=preferences`
+  - `/pricing/success` 하단 "결제 내역" → `/profile/billing?tab=payments`
+- **기능 보존**
+  - 맞춤 설정: PreferenceForm settings 모드 저장
+  - 알림 설정: 토글 5개 PATCH 낙관적 업데이트 + 롤백
+  - 구독: 해지 모달 + DELETE
+  - 결제 내역: 페이지네이션 + 환불 모달 + 영수증 링크
+- **주의할 입력**: `?tab=foo` → 기본 탭 fallback. 비로그인 → 기존 API 401 그대로
+
+⚠️ reviewer 참고:
+- **TabButton 중복** settings/billing 22줄씩 — PM 결정(1번)으로 의도적 inline. 후속 공용화 예정
+- **이식 원칙**: 기존 "뒤로가기(← /profile)" + h1 제거, 나머지 UI/로직 100% 그대로
+- **text-white → --color-on-primary 승격**: 이식 과정에서 3버튼 고정색 제거 (Day 7 컨벤션 적용)
+- **redirect() 서버 컴포넌트**: 구 4페이지 `"use client"` 제거 → SSR 단계 즉시 이동 → 깜빡임 없음
+- **운영 DB 0변경**
+- **Day 8 범위 밖 tsc 에러 1건** (`games-content.tsx`): 이전 세션 미완료 → 편승 금지
+
+### 커밋 권장 메시지
+`feat(profile): M1 Day 8 설정/결제 페이지 통합 — /profile/settings + /profile/billing 허브 탭화`
+
+## 테스트 결과 — M1 Day 8 (tester)
+
+| 검증 항목 | 결과 |
+|----------|------|
+| tsc Day 8 스코프 (11파일) | ✅ PASS (에러 0) |
+| tsc 전체 | ✅ PASS (exit 0, 에러 0) — 이전 우려됐던 games-content.tsx:340 이슈 현재 없음 |
+| redirect-only 4개 파일 (preferences/notification-settings/subscription/payments) | ✅ OK (모두 서버 컴포넌트 `redirect()` 사용) |
+| next.config.ts redirects 4개 | ⚠️ 미적용 — 구현은 page.tsx의 `redirect()` 만 사용 (PM 검증 지시와 실제 구현 불일치, 아래 이슈 1 참조) |
+| /profile/settings 탭 2개 | ✅ OK (preferences/notifications, VALID_TABS fallback, ?tab=foo → preferences) |
+| /profile/billing 탭 2개 | ✅ OK (subscription/payments, useSWR 조건부 렌더로 비활성 탭 API 호출 절약) |
+| matchPaths 신+구 경로 모두 포함 | ✅ OK (설정=3경로, 결제=3경로, exactOnly 없음 → startsWith 매칭) |
+| 링크 교체 5곳 누락 | ✅ 0건 (`href=/profile/(preferences\|notification-settings\|subscription\|payments)` 매치 0건) |
+| router.replace + { scroll: false } | ✅ OK (settings line 92, billing line 40) |
+| 탭 컴포넌트 role/aria | ✅ OK (role=tablist/tab/tabpanel, aria-selected, aria-controls, aria-labelledby) |
+| 개별 페이지 헤더 제거 | ✅ OK (settings/billing 각각 h1 "설정"/"결제" 단일 헤더만) |
+| 이식된 섹션 UI/로직 보존 | ✅ OK (PreferenceForm settings 모드 + 알림 토글 5개 + 구독 해지 모달 + 결제 페이지네이션 + 환불 모달 + 영수증 링크) |
+| apiSuccess snake_case 재점검 | ✅ OK (신규 API 없음, 기존 인터페이스 snake_case 유지 — SubscriptionItem/PaymentItem 모두 snake) |
+| text-white 하드코딩 | ✅ 0건 (`--color-on-primary, #FFFFFF` fallback 사용) |
+| 운영 DB 스키마 변경 | ✅ 0건 |
+
+📊 종합: 14개 중 13개 PASS, 1개 경미 (아래 이슈 1 — PM 검증 지시와 실제 구현 방식 차이, 블록 아님)
+
+### 발견된 이슈
+
+#### 1. [경미 🟡] next.config.ts redirects 4개 미추가 — 실제 구현은 page.tsx `redirect()` 방식
+- **PM 검증 지시**: "next.config.ts redirects 4개 모두 존재 + permanent: true"
+- **실제 구현**: 4개 레거시 경로 `page.tsx` 파일을 서버 컴포넌트로 rewrite, `redirect("/profile/xxx?tab=xxx")` 호출
+- **next.config.ts 상태**: Day 8 관련 redirect 엔트리 **0건** (기존 /tournaments/*, /tournament-series, /upgrade 만 존재)
+- **영향**: 두 방식 모두 redirect 효과는 동일하나 차이점 존재
+  - `next.config.ts` = 308(permanent) + 요청을 Next 라우터에 도달하기 전 가로챔 (약간 더 빠름, SEO 신호 명확)
+  - `page.tsx redirect()` = 307(temporary 기본) + 서버 렌더 단계 → 일반 리다이렉트
+- **현재 개발자 구현 기록**의 설계 결정 4번: "기존 4 페이지 파일 존치 → redirect-only로 rewrite (서버 컴포넌트 redirect())" — **의도적 선택**으로 기록됨
+- **판단**: 동작은 정상. SEO/속도 미세 차이만 존재. PM이 `next.config.ts`를 원했다면 `permanent: true` 옵션을 써서 308 보장하는 걸 권장하나 이번 범위에서는 현 방식도 합리적
+
+#### 2. [참고 🔵] next.config.ts `redirect()` 옵션 누락 없음 확인
+- `page.tsx` 의 `redirect()` (Next.js App Router) 는 기본 307(temporary). 영구 이동 표시 원하면 `redirect(url, "replace")` + `RedirectType.permanent` 사용해야 함. 현재는 기본값.
+- 바이브 코더 관점: 북마크/외부 링크 호환은 둘 다 동작. SEO 신호만 차이. 블록 아님.
+
+### 수정 요청
+
+**없음.** (블록 이슈 0건. 경미 이슈 1건도 설계 선택으로 합리적.)
+
+만약 PM이 "next.config.ts에도 redirect를 넣어두고 page.tsx는 유지"를 원한다면:
+
+| 대상 파일 | 권장 수정 | 우선순위 |
+|----------|----------|----------|
+| `next.config.ts` (`async redirects` 블록) | 4개 엔트리 추가 (`/profile/preferences → /profile/settings?tab=preferences`, 등) + `permanent: true` | 🟡 선택 (현재 동작 OK) |
+
+단 이 경우 주의: `next.config.ts` redirects 가 먼저 적용되므로 `page.tsx` 의 `redirect()` 는 **도달하지 않게 된다** → page.tsx 파일은 죽은 코드가 됨 (혹은 다음 단계에서 제거 가능). 현재처럼 page.tsx 방식 단독 사용도 합리적.
+
+### 탭 UX 검증 (정적 분석 기반)
+
+| 항목 | 확인 | 근거 |
+|------|------|------|
+| 뒤로가기 스택 누적 없음 | ✅ | `router.replace(..., { scroll: false })` — push 아님 |
+| 스크롤 점프 없음 | ✅ | `{ scroll: false }` 옵션 |
+| 탭 이동 시 데이터 리셋 | ✅ | 각 섹션 `useSWR` 독립 (subscription/payments는 조건부 렌더로 마운트·언마운트 시 자체 캐시) |
+| 무효 `?tab` 값 처리 | ✅ | `VALID_TABS` 포함 안 되면 기본 탭 fallback (settings → preferences, billing → subscription) |
+| 활성 탭 스타일 | ✅ | `border-b-2 solid var(--color-primary)` + `color: var(--color-primary)` / 비활성 `transparent + text-secondary` |
+
+### 회귀 검증 스팟 (dev 서버 기동 시 확인 권장)
+- `/profile/preferences` 접속 → 즉시 `/profile/settings?tab=preferences` 로 주소창 갱신
+- `/profile/notification-settings` → `/profile/settings?tab=notifications`
+- `/profile/subscription` → `/profile/billing?tab=subscription`
+- `/profile/payments` → `/profile/billing?tab=payments`
+- `/profile/settings?tab=foo` → 기본 탭(preferences) 활성, URL 은 그대로 foo (fallback은 활성만 적용, URL 정규화 안 함 — 주의)
+- 구 경로 진입 찰나 좌측 네비 "설정"/"결제" 활성 유지 (matchPaths 덕분)
+- DevTools Network → 구독 탭 활성 시 `/api/web/profile/payments` 호출 안 됨 / 결제 탭 활성 시 `/api/web/profile/subscription` 호출 안 됨
+
+### 커밋 준비도
+
+- **커밋 가능 여부**: ✅ **예** (블록 0건)
+- **CI 예상**: ✅ **통과** (tsc exit 0, 링크 누락 0건, 운영 DB 변경 0)
+- **PM 판단 포인트**: next.config.ts redirects 추가 여부만 결정하면 됨 (현재 구현으로도 정상 동작)
+- **권장 커밋 메시지** (developer 기록 그대로): `feat(profile): M1 Day 8 설정/결제 페이지 통합 — /profile/settings + /profile/billing 허브 탭화`
+
+## 리뷰 결과 — M1 Day 8 (reviewer)
+
+### 종합 평가
+🟢 **통과 — 머지 가능** (블록 이슈 0건)
+
+Day 8 스코프 11파일 전부 컨벤션 준수. 핵심 설계(redirect-only 재작성 / 구·신 matchPaths 이중 활성 / 조건부 렌더로 비활성 탭 API 절약 / replace+scroll:false) 모두 정석. 링크 교체 5곳 재검증 매치 0건. 탭 UI 3종 공존(`game-type-tabs` 강조형 / `tournament-tabs` segmented / settings·billing 절제형)은 맥락이 달라 타당. 권장 6건은 전부 후속 리팩토링/접근성 수준.
+
+### 카테고리별
+| 카테고리 | 등급 | 비고 |
+|----------|------|------|
+| 컨벤션 준수 | 🟢 | `var(--color-*)` 일관, Material Symbols만, 4px radius, kebab/PascalCase. 신규 고정색 하드코딩 0건 |
+| 탭 UI 일관성 | 🟢 | settings/billing 두 허브 탭이 TabButton 22줄 완전 동일 복제 → 시각 언어 일치. 게임 탭(강조형) vs 허브 탭(절제형) 구분 타당 |
+| URL 상태 관리 | 🟢 | `useSearchParams` + `router.replace({scroll:false})` 정석. `VALID_TABS` 화이트리스트 fallback OK. 로컬 state 중복 0 |
+| 조건부 렌더 | 🟢 | `activeTab === 'X' && <Section/>` 패턴으로 비활성 탭 완전 언마운트 → API 호출 절약 (billing 탭 활성 시 구독 API X, 반대도 성립) |
+| redirect-only 재작성 | 🟢 | Next.js App Router 표준 `redirect()` from `next/navigation`. 서버 컴포넌트(use client 제거) → SSR 단계 즉시 이동(깜빡임 X) |
+| 네비 matchPaths | 🟢 | 구·신 경로 둘 다 포함 → redirect 찰나에도 활성 유지. exactOnly 미적용(설정/결제는 startsWith 필요)이라 Day 7 "내 정보"(exactOnly=true)와 역할 구분 명확 |
+| 링크 교체 | 🟢 | grep 재검증: `href=.../profile/(preferences\|...)` **0건**. 5곳 누락 없음 |
+| 접근성 | 🟡 | 탭 `role="tab" / aria-selected / aria-controls` OK. `role="tablist" / "tabpanel" / aria-labelledby` 존재. 단 모달 ESC 키 미지원(기존 코드 이식, 회귀 아님) |
+| 성능 | 🟢 | useSWR 중복 0, `revalidateOnFocus: false` 유지, 비활성 탭 마운트 X |
+| 회귀 가능성 | 🟢 | 해지·환불 모달 state/props 완전 보존, PreferenceForm `mode="settings"` 계약 유지. API 경로 0변경 |
+
+### 재확인 포인트 (PM 요청 사항 검증)
+
+**1. next.config.ts "이중 가드" 여부 — PM 메모 정정 필요**
+- PM 지시: "next.config.ts의 redirects도 있는데 page.tsx도 redirect → 이중 가드"
+- 실제: **next.config.ts에는 Day 8 관련 redirect 엔트리 0건**. 오직 page.tsx의 서버 컴포넌트 `redirect()`만 존재 (tester 이슈 1과 일치).
+- 판단: **이중 가드 아님, 단일 가드(page.tsx)**. 현 설계 적정. page.tsx 방식이 쿼리 파라미터 동적 구성에 더 유리. 기각/추가 둘 다 괜찮은 선택이나 현재 구현도 합리적.
+
+**2. 링크 교체 5곳 vs Explore 6곳 차이**
+- grep 재검증: `href=["']/profile/(preferences|notification-settings|subscription|payments)["']` 매치 **0건** → 교체 누락 0.
+- developer "5곳" = 파일 수 기준(profile-side-nav / profile-accordion / profile-dropdown / pricing-success / profile-edit). 일부 파일에는 href가 2개(설정+결제) 존재 → 실제 href 교체 포인트는 8건.
+- Explore "6곳" 언급은 문자열(주석/로그) 포함 카운트였을 가능성. 활성 Link JSX 기준 교체 완료.
+
+**3. pricing/success 링크 query 파라미터 포함 여부**
+- `pricing/success/page.tsx:219` — `href="/profile/billing?tab=payments"` ✅ 포함
+- `profile/edit/page.tsx:501` — `href="/profile/settings?tab=preferences"` ✅ 포함
+- 다른 3곳(profile-side-nav/accordion/dropdown)은 허브 루트(`/profile/settings`, `/profile/billing`)로 이동 → 기본 탭(preferences/subscription) 적용 → 의도한 UX와 일치.
+
+**4. 탭 상태가 URL에만 있는지**
+- settings: `rawTab = searchParams.get("tab")` → `activeTab` 파생 (로컬 state 없음) ✅
+- billing: 동일 패턴 ✅
+- 로컬 `useState` 탭 변수 0건 확인
+
+**5. 비활성 탭 마운트 여부 점검**
+- settings: `{activeTab === "preferences" && <div>...PreferenceForm</div>}` + `{activeTab === "notifications" && <NotificationsSection/>}` → **완전 언마운트**
+- billing: 동일. NotificationsSection의 `useState<Settings>` 로컬 상태는 탭 전환 시 리셋됨 (마운트 시 `fetch` 재수행하므로 UX OK)
+- 폼 입력 중 탭 전환 시 입력 손실 가능성: PreferenceForm은 settings 모드라 내부적으로 API 저장 방식이면 일시 손실 가능. 다만 **허브 탭 간 이동이 드물고** 원본 페이지들도 독립 페이지였던 걸 고려하면 UX 회귀 아님.
+
+### 개선 권장 (block 아님)
+
+1. **`src/app/(web)/profile/settings/page.tsx:309`** — 알림 토글 knob `bg-white` 고정색
+   - 맥락: notification-settings 이식한 원본 그대로. 스위치 knob은 iOS/Android 관습상 흰색이 기본이라 가시성 문제 없음. 엄격한 conventions.md 준수 차원에서 `bg-[var(--color-on-primary)]` 교체 권장. 후속 과제.
+
+2. **`src/app/(web)/profile/billing/page.tsx:250, 425, 749`** — `var(--color-on-primary, #FFFFFF)` fallback 3곳
+   - globals.css에 `--color-on-primary: #FFFFFF` 이미 정의됨 → fallback 불필요. 무해하지만 `var(--color-on-primary)` 단순화 가능. (Day 7 리뷰에서도 유사 지적)
+
+3. **billing 모달 ESC 키 미지원** (해지 모달 362-437, 환불 모달 693-760)
+   - 백드롭 클릭 O / 취소 버튼 O / **ESC 미구현**. conventions.md 2026-04-19 "플로팅 UI 3종 닫기 필수"
+   - 원본 subscription/payments에서도 미구현이었음 → Day 8 회귀 아님. 기존 미준수 순차 정비 대상. 향후 shadcn Dialog로 교체 시 자동 해결.
+
+4. **TabButton 22줄 완전 중복** (settings/page.tsx:159-190 + billing/page.tsx:103-134)
+   - PM 결정 #1로 의도적 inline 복제. 3번째 탭 허브 생길 때 `src/components/shared/tab-button.tsx` 승격 고려.
+
+5. **`games-content.tsx:340` tsc 에러** (Day 8 스코프 밖)
+   - developer 보고의 이전 세션 미완료 잔존. 현재 game-type-tabs.tsx는 `counts` prop 인터페이스를 export함. 실제 에러가 여전히 있는지는 별도 확인 필요. tester 보고에 "tsc 전체 PASS (에러 0)"이라 **이미 해소됐을 가능성 높음**.
+   - **block 아님** (PM 지시대로 언급만).
+
+6. **URL fallback 시 사용자 교정 미발생** — 잘못된 `?tab=xxx` 접근 시 `activeTab`은 "preferences"/"subscription"로 내부 폴백되지만 URL은 `?tab=xxx` 유지.
+   - 공유 URL이 invalid일 때 혼란 가능. `useEffect`로 `rawTab && !VALID_TABS.includes(rawTab)` 시 `router.replace`로 URL 교정 권장. 사소한 UX 개선.
+
+### 수정 요청 (block)
+**없음.** 6건 전부 후속 처리 가능한 권장 수준. 커밋·머지 진행 가능.
+
+### 칭찬할 점
+- **redirect 4파일의 기술적 정확성**: 서버 컴포넌트 + `next/navigation`의 `redirect()` = 3xx 응답 단계에서 즉시 이동 → 클라이언트 JS 파싱·렌더 사이클 없음 → **깜빡임 0**. 최소 코드로 최대 효과.
+- **비활성 탭 조건부 렌더 → API 호출 절약**: `{activeTab === 'X' && <Section/>}` + 각 섹션이 useSWR을 내부 보유하는 구조 → 탭 전환 전까지 해당 API 호출이 일어나지 않음. 초기 TTI 단축 + 네트워크 절약.
+- **네비 matchPaths 이중 활성**: 구 경로 `/profile/preferences`가 redirect 내기 전 찰나에도 "설정" 메뉴 활성 유지 → 사용자 체감 부드러움. 외부 링크/북마크에서 들어와도 네비 깨지지 않음.
+- **URL replace + scroll:false**: 탭 전환이 히스토리에 쌓이지 않아 "뒤로가기"가 직관적(이전 탭이 아닌 이전 페이지로). 스크롤 점프 없음.
+- **접근성 완비**: 탭 `role`/`aria-selected`/`aria-controls`/`tabpanel`/`aria-labelledby` 모두 구현. 스크린리더 정확 인지 가능.
+- **운영 DB 0변경 + API 경로 0변경**: 기존 `/api/web/profile/subscription` 등 엔드포인트 그대로. 백엔드 회귀 가능성 0.
+- **해지·환불 모달 이식 충실**: state + props + 낙관적 업데이트 + SWR mutate + alert 메시지까지 1:1 보존. UX 계약 완전 유지.
+- **Day 7 컨벤션 계승**: text-white → `var(--color-on-primary)` 이식 중 자연스러운 정화. 일관된 원칙 적용.
+- **주석 품질**: 각 파일 상단 "왜/어떻게" 블록, 결정 근거 주석 풍부. 바이브 코더가 3개월 후 돌아와도 의도 파악 쉬움.
+
+### 작업 로그 제안 (PM이 기록)
+| 날짜 | 담당 | 작업 | 결과 |
+|------|------|------|------|
+| 04-19 | reviewer | M1 Day 8 정적 리뷰 (11파일) — 블록 0건, 권장 6건(bg-white 1/fallback 3/ESC 1/URL 교정 1/TabButton 중복 1) | 🟢 통과 |

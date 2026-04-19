@@ -496,8 +496,9 @@ export default function ProfileEditPage() {
         <p className="mb-4 text-xs text-[var(--color-text-secondary)]">
           관심 종별, 경기 유형, 게시판을 설정하면 맞춤 콘텐츠를 받아볼 수 있습니다
         </p>
+        {/* Day 8: /profile/preferences → /profile/settings?tab=preferences (설정 허브 통합) */}
         <Link
-          href="/profile/preferences"
+          href="/profile/settings?tab=preferences"
           className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text-on-primary)] border-2 border-[var(--color-primary)] hover:opacity-90"
         >
           <span className="material-symbols-outlined text-base">auto_awesome</span>

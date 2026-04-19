@@ -214,8 +214,9 @@ function ReceiptContent() {
         >
           요금제 보기
         </Link>
+        {/* Day 8: /profile/payments → /profile/billing?tab=payments (결제 허브 통합) */}
         <Link
-          href="/profile/payments"
+          href="/profile/billing?tab=payments"
           className="text-xs transition-colors hover:underline"
           style={{ color: "var(--color-text-muted)" }}
         >

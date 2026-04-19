@@ -1,27 +1,17 @@
-"use client";
-
-import { PreferenceForm } from "@/components/shared/preference-form";
-
-/**
- * 프로필 맞춤 설정 페이지 (설정 메뉴에서 접근)
+/* ============================================================
+ * /profile/preferences — M1 Day 8 이후 레거시 경로.
  *
- * 온보딩 이후에도 언제든 맞춤 설정을 변경할 수 있는 페이지.
- * 공통 PreferenceForm 컴포넌트를 "settings" 모드로 사용한다.
- * (settings 모드에서는 스킵 버튼이 표시되지 않음)
- */
-export default function PreferencesPage() {
-  return (
-    <div className="min-h-screen bg-[var(--color-background)] text-[var(--color-text-primary)]">
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        {/* 페이지 헤더 */}
-        <h1 className="text-2xl font-bold mb-2">맞춤 설정</h1>
-        <p className="text-[var(--color-text-secondary)] mb-8">
-          관심 종별, 경기 유형, 게시판을 설정하면 맞춤 콘텐츠를 받아볼 수 있습니다
-        </p>
+ * 왜:
+ *  - 좌측 네비의 "설정" 항목은 이제 /profile/settings 허브 (맞춤 설정 + 알림 2탭)로 통합됨.
+ *  - 외부 링크/북마크/과거 이메일 링크 호환을 위해 페이지 파일 자체는 존치하되 redirect만 수행.
+ *
+ * 어떻게:
+ *  - Next.js App Router의 서버 컴포넌트 redirect()로 즉시 이동.
+ *  - 이 탭은 preferences 탭이 활성화된 상태로 landing.
+ * ============================================================ */
 
-        {/* 공통 폼 컴포넌트 - settings 모드 (스킵 버튼 없음) */}
-        <PreferenceForm mode="settings" />
-      </div>
-    </div>
-  );
+import { redirect } from "next/navigation";
+
+export default function PreferencesLegacyRedirect() {
+  redirect("/profile/settings?tab=preferences");
 }
