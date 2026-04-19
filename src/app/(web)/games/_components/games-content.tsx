@@ -22,6 +22,8 @@ import { formatRelativeDateTime } from "@/lib/utils/format-date";
 // 렌더링 시점에만 디코드. DB 원본은 그대로 유지.
 import { decodeHtmlEntities } from "@/lib/utils/decode-html";
 import { TYPE_BADGE, SKILL_BADGE } from "../_constants/game-badges";
+// [2026-04-19 추가] 상단 경기 유형 탭 — ?type URL 쿼리 기반, loading 분기 밖에 배치
+import { GameTypeTabs } from "./game-type-tabs";
 
 // batch API fetcher
 // [2026-04-17 변경] 5초 타임아웃 추가 — Google Places Photo API가 늦거나 실패해도
@@ -316,6 +318,11 @@ export function GamesContent({
           </div>
         </div>
       </div>
+
+      {/* 경기 유형 탭 — 로딩 중에도 노출되어야 사용자가 즉시 전환 가능하므로
+          loading 분기 바깥에 배치. ?type URL 쿼리만 조작 → API 재호출은 searchParams
+          변경 감지하는 기존 useEffect가 자동 처리. */}
+      <GameTypeTabs />
 
       {/* 로딩 중이면 스켈레톤 */}
       {loading ? (

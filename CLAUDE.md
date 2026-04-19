@@ -76,7 +76,7 @@ scripts/_templates/  재사용 가능한 일회성 스크립트 템플릿
 ## 보안
 - 시크릿 `NEXT_PUBLIC_` 금지
 - 비공개 API에 `withAuth` + `withValidation` 필수
-- 응답은 `apiSuccess()` / `apiError()` (snake_case 변환)
+- 응답은 `apiSuccess()` / `apiError()` — **응답 키 자동 snake_case 변환**. 프론트 접근자도 snake_case로. route.ts 코드(camelCase)만 보고 프론트 인터페이스 짜면 사일런트 undefined 버그. **재발 5회**. 신규 필드 추가 전 curl 1회로 raw 응답 확인 필수 (errors.md 2026-04-17)
 - IDOR: 리소스 접근 시 소유자/권한 검증
 - 멀티테넌트: 서브도메인 쿼리에 tournamentId 필수
 

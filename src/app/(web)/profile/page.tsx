@@ -1,226 +1,215 @@
 "use client";
 
 /**
- * 프로필 허브 페이지 (/profile)
+ * 프로필 허브 페이지 (/profile) — M1 Day 7 통합 대시보드
  *
- * 기존의 긴 프로필 페이지를 4개 카테고리 카드로 간소화.
- * 각 카드 클릭 시 하위 페이지로 이동.
- * - 내 농구 → /profile/basketball
- * - 내 성장 → /profile/growth
- * - 내 정보 → /profile/edit
- * - 계정 → /profile/subscription
+ * 왜:
+ *  - Day 6까지는 4개 카테고리 카드만 있는 얕은 허브였으나,
+ *    사용자가 자주 확인하는 "내 정보" 가 한 번 더 클릭해야 보이는 구조였다.
+ *  - Day 7 부터는 /profile === "내 정보 통합 대시보드" 로 통일.
+ *    좌측 네비의 "내 정보"와 동일한 화면.
  *
- * API: 프로필 기본 정보 + 게이미피케이션 레벨만 가져옴
+ * 어떻게:
+ *  - 기존 useSWR 데이터 패칭 로직은 보존 (/api/web/profile + /api/web/profile/gamification + /api/web/profile/stats).
+ *  - 응답에 Day 7 API 확장으로 추가된 followers_count/following_count/next_game 필드를 활용
+ *    (apiSuccess 미들웨어가 자동 snake_case 변환하므로 프론트도 snake_case 접근).
+ *  - 구성: ProfileHero (1) + 2x2 카드 그리드 (기본정보/팀·대회/환불계좌/위험영역) + 로그아웃.
+ *
+ * 리디자인 원칙 (CLAUDE.md): API/데이터 패칭 유지, UI 렌더링만 교체.
  */
 
 import useSWR from "swr";
 import Link from "next/link";
-import Image from "next/image";
-import { TossCard } from "@/components/toss/toss-card";
 
-// 프로필 기본 정보만 필요
+import { ProfileHero } from "./_components/profile-hero";
+import { BasicInfoCard } from "./_components/basic-info-card";
+import {
+  TeamsTournamentsCard,
+  type NextGameSummary,
+} from "./_components/teams-tournaments-card";
+import { RefundAccountCard } from "./_components/refund-account-card";
+import { DangerZoneCard } from "./_components/danger-zone-card";
+
+// /api/web/profile 응답 타입 — 기존 필드 + Day 7 신규 3개
 interface ProfileData {
   user: {
     nickname: string | null;
+    name: string | null;
     email: string;
+    phone: string | null;
+    birth_date: string | null; // "YYYY-MM-DD"
     position: string | null;
+    height: number | null;
+    weight: number | null;
     city: string | null;
+    district: string | null;
+    bio: string | null;
     profile_image_url: string | null;
     total_games_participated: number | null;
     created_at: string | null;
+    // 계좌 필드
+    has_account: boolean;
+    bank_name: string | null;
+    bank_code: string | null;
+    account_number_masked: string | null;
+    account_holder: string | null;
   };
   teams?: { id: string; name: string; role: string }[];
+  tournaments?: { id: string; name: string; status: string | null }[];
+  // M1 Day 7 신규 — apiSuccess()가 응답을 자동으로 snake_case 변환하므로 (src/lib/api/response.ts:5)
+  // 프론트도 snake_case로 접근해야 한다. 기존 user.birth_date/has_account 패턴과 통일.
+  // (재발 5회차 방지: errors.md "apiSuccess 미들웨어 놓치고 컴포넌트 인터페이스 거꾸로 변환")
+  followers_count?: number;
+  following_count?: number;
+  next_game?: NextGameSummary | null;
 }
 
-// 게이미피케이션: 레벨/칭호만 사용
+// /api/web/profile/gamification 응답
 interface GamificationData {
   level: number;
   title: string;
   emoji: string;
 }
 
-// 포지션 한글 매핑
-const POSITION_LABEL: Record<string, string> = {
-  PG: "포인트가드",
-  SG: "슈팅가드",
-  SF: "스몰포워드",
-  PF: "파워포워드",
-  C: "센터",
-};
-
-// 4개 카테고리 카드 정의
-const categoryCards = [
-  {
-    id: "basketball",
-    label: "내 농구",
-    description: "소속 팀, 경기, 대회, 커리어 통계",
-    icon: "sports_basketball",
-    href: "/profile/basketball",
-    color: "var(--color-primary)",
-  },
-  {
-    id: "growth",
-    label: "내 성장",
-    description: "XP/레벨, 뱃지, 연속 출석, 도장깨기",
-    icon: "trending_up",
-    href: "/profile/growth",
-    color: "var(--color-accent)",
-  },
-  {
-    id: "info",
-    label: "내 정보",
-    description: "프로필 편집, 소셜 계정",
-    icon: "person",
-    href: "/profile/edit",
-    color: "var(--color-info)",
-  },
-  {
-    id: "account",
-    label: "계정",
-    description: "구독 관리, 결제 내역, 알림 설정",
-    icon: "settings",
-    href: "/profile/subscription",
-    color: "var(--color-navy, #1B3C87)",
-  },
-];
+// /api/web/profile/stats 응답 — 승률(winRate) 만 히어로에서 사용
+interface StatsData {
+  winRate: number | null;
+}
 
 export default function ProfilePage() {
-  // 프로필 기본 정보만 호출
-  const { data: profile, isLoading } = useSWR<ProfileData>("/api/web/profile", {
-    revalidateOnFocus: false,
-    dedupingInterval: 60000,
-  });
-  // 게이미피케이션: 레벨/칭호 표시용
-  const { data: gamification } = useSWR<GamificationData>("/api/web/profile/gamification", {
+  // 기존 페치 로직 유지 — 재사용 간격 60초 (여러 화면이 동시에 부르면 1회만)
+  const { data: profile, isLoading } = useSWR<ProfileData>(
+    "/api/web/profile",
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000,
+    }
+  );
+  const { data: gamification } = useSWR<GamificationData>(
+    "/api/web/profile/gamification",
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000,
+    }
+  );
+  // 승률 표시용. 없어도 히어로에서 "-%"로 fallback 처리됨.
+  const { data: stats } = useSWR<StatsData>("/api/web/profile/stats", {
     revalidateOnFocus: false,
     dedupingInterval: 60000,
   });
 
-  // 로딩 상태
+  // 로딩 상태 — 기존 허브와 동일 톤
   if (isLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
           <div className="mb-3">
-            <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-8 w-8 animate-spin" style={{ color: "var(--color-primary)" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="mx-auto h-8 w-8 animate-spin"
+              style={{ color: "var(--color-primary)" }}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
           </div>
-          <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>불러오는 중...</p>
+          <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
+            불러오는 중...
+          </p>
         </div>
       </div>
     );
   }
 
-  // 비로그인 or 에러
-  if (!profile || "error" in profile) {
+  // 비로그인 or 에러 — 기존 허브와 동일 톤
+  if (!profile || "error" in profile || !profile.user) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
-          <span className="material-symbols-outlined text-5xl mb-4 block" style={{ color: "var(--color-text-disabled)" }}>person_off</span>
-          <p className="mb-4 text-sm" style={{ color: "var(--color-text-secondary)" }}>로그인이 필요합니다</p>
-          <Link href="/login" className="inline-block rounded-md px-8 py-3 text-sm font-bold text-white" style={{ backgroundColor: "var(--color-primary)" }}>로그인</Link>
+          <span
+            className="material-symbols-outlined text-5xl mb-4 block"
+            style={{ color: "var(--color-text-disabled)" }}
+          >
+            person_off
+          </span>
+          <p
+            className="mb-4 text-sm"
+            style={{ color: "var(--color-text-secondary)" }}
+          >
+            로그인이 필요합니다
+          </p>
+          <Link
+            href="/login"
+            // conventions.md: primary 배경 위 텍스트는 --color-on-primary 사용 (text-white 금지)
+            className="inline-block rounded-md px-8 py-3 text-sm font-bold text-[var(--color-on-primary)]"
+            style={{ backgroundColor: "var(--color-primary)" }}
+          >
+            로그인
+          </Link>
         </div>
       </div>
     );
   }
 
   const { user } = profile;
-  const displayName = user.nickname ?? "사용자";
-  const initial = displayName.trim()[0]?.toUpperCase() || "U";
-  const gLevel = gamification?.level ?? 1;
-  const gTitle = gamification?.title ?? "루키";
-  const gEmoji = gamification?.emoji ?? "";
 
   return (
-    <div className="max-w-[640px] mx-auto space-y-8">
+    <div className="max-w-5xl space-y-6">
+      {/* ===== 1) 히어로 ===== */}
+      <ProfileHero
+        user={{
+          nickname: user.nickname,
+          name: user.name,
+          position: user.position,
+          height: user.height,
+          city: user.city,
+          district: user.district,
+          bio: user.bio,
+          profile_image_url: user.profile_image_url,
+          total_games_participated: user.total_games_participated,
+        }}
+        stats={stats ? { winRate: stats.winRate } : null}
+        gamification={gamification ?? null}
+        followersCount={profile.followers_count ?? 0}
+        followingCount={profile.following_count ?? 0}
+      />
 
-      {/* ==== 프로필 헤더: 아바타(좌) + 정보(우) 가로 배치 ==== */}
-      <div className="flex items-center gap-4 pt-4">
-        {/* 아바타 (80px) — 좌측 고정 */}
-        <div
-          className="w-20 h-20 shrink-0 rounded-full overflow-hidden"
-          style={{ backgroundColor: "var(--color-surface)" }}
-        >
-          {user.profile_image_url ? (
-            <Image
-              src={user.profile_image_url}
-              alt={displayName}
-              width={80}
-              height={80}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div
-              className="w-full h-full flex items-center justify-center text-2xl font-bold"
-              style={{ color: "var(--color-primary)", backgroundColor: "var(--color-surface)" }}
-            >
-              {initial}
-            </div>
-          )}
-        </div>
-
-        {/* 이름 + 레벨 + 부가정보 — 우측 세로 나열 */}
-        <div className="flex flex-col gap-1">
-          {/* 이름 */}
-          <h1 className="text-xl font-bold" style={{ color: "var(--color-text-primary)" }}>
-            {displayName}
-          </h1>
-
-          {/* 레벨 배지 + 포지션 */}
-          <div className="flex items-center gap-2">
-            <span
-              className="flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: "var(--color-primary)", color: "#FFFFFF" }}
-            >
-              {gEmoji && <span style={{ fontSize: "12px" }}>{gEmoji}</span>}
-              Lv.{gLevel} {gTitle}
-            </span>
-            {user.position && (
-              <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-                {POSITION_LABEL[user.position] ?? user.position}
-              </span>
-            )}
-          </div>
-
-          {/* 부가 정보 */}
-          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-            {[
-              user.city,
-              user.created_at ? `${new Date(user.created_at).getFullYear()}년 가입` : null,
-            ].filter(Boolean).join(" · ")}
-          </p>
-        </div>
+      {/* ===== 2) 4개 그룹 카드 (모바일 1열, lg 2열) ===== */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <BasicInfoCard
+          nickname={user.nickname}
+          email={user.email}
+          phone={user.phone}
+          birthDate={user.birth_date}
+        />
+        <TeamsTournamentsCard
+          teamsCount={profile.teams?.length ?? 0}
+          tournamentsCount={profile.tournaments?.length ?? 0}
+          nextGame={profile.next_game ?? null}
+        />
+        <RefundAccountCard
+          hasAccount={user.has_account}
+          bankName={user.bank_name}
+          accountNumberMasked={user.account_number_masked}
+          accountHolder={user.account_holder}
+        />
+        <DangerZoneCard />
       </div>
 
-      {/* ==== 4개 카테고리 카드 그리드 ==== */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-3">
-        {categoryCards.map((card) => (
-          <Link key={card.id} href={card.href}>
-            <TossCard className="h-full transition-colors hover:bg-[var(--color-surface)]">
-              {/* 아이콘 원형 - 모바일에서 약간 축소 */}
-              <div
-                className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full mb-3"
-                style={{ backgroundColor: card.color }}
-              >
-                <span className="material-symbols-outlined text-lg sm:text-xl text-white">{card.icon}</span>
-              </div>
-              {/* 카테고리명 */}
-              <p className="text-sm font-bold mb-1" style={{ color: "var(--color-text-primary)" }}>
-                {card.label}
-              </p>
-              {/* 설명 */}
-              <p className="text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
-                {card.description}
-              </p>
-            </TossCard>
-          </Link>
-        ))}
-      </div>
-
-      {/* ==== 로그아웃 버튼 ==== */}
-      <div className="pb-4">
+      {/* ===== 3) 로그아웃 버튼 — 기존 위치 유지 ===== */}
+      <div className="pb-4 pt-2">
         <button
           onClick={async () => {
-            await fetch("/api/web/logout", { method: "POST", credentials: "include" });
+            // 로그아웃: 서버에서 세션 제거 후 로그인 페이지로 이동
+            await fetch("/api/web/logout", {
+              method: "POST",
+              credentials: "include",
+            });
             window.location.href = "/login";
           }}
           className="flex w-full items-center justify-center gap-2 rounded-md py-3 text-sm font-medium transition-colors hover:bg-[var(--color-surface)]"

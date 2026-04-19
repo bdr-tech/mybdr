@@ -5,7 +5,16 @@ import { getProfile, updateProfile } from "@/lib/services/user";
 
 export const GET = withWebAuth(async (ctx: WebAuthContext) => {
   try {
-    const { user, teams, gameApplications, tournamentTeams } = await getProfile(ctx.userId);
+    // M1 Day 7: followersCount/followingCount/nextGameApp 병렬 추가 (service 레벨)
+    const {
+      user,
+      teams,
+      gameApplications,
+      tournamentTeams,
+      followersCount,
+      followingCount,
+      nextGameApp,
+    } = await getProfile(ctx.userId);
 
     if (!user) return apiError("User not found", 404);
 
@@ -13,6 +22,18 @@ export const GET = withWebAuth(async (ctx: WebAuthContext) => {
     const { account_number, createdAt, ...userRest } = user;
     const account_number_masked = account_number
       ? maskAccount(account_number.startsWith("enc:") ? account_number : account_number)
+      : null;
+
+    // M1 Day 7: 다음 경기 요약 — 프론트에서 D-N 계산 용이하도록 ISO 문자열로 전달
+    // nextGameApp이 없으면 null (허브 카드에서 "예정된 경기 없음" 표시)
+    const nextGame = nextGameApp?.games
+      ? {
+          // 목록/상세 링크는 uuid 우선 (기존 recentGames와 동일 규칙)
+          id: nextGameApp.games.uuid ?? nextGameApp.game_id.toString(),
+          title: nextGameApp.games.title ?? null,
+          scheduled_at: nextGameApp.games.scheduled_at?.toISOString() ?? null,
+          venue_name: nextGameApp.games.venue_name ?? null,
+        }
       : null;
 
     return apiSuccess({
@@ -40,6 +61,10 @@ export const GET = withWebAuth(async (ctx: WebAuthContext) => {
         name: tp.tournamentTeam.tournament.name,
         status: tp.tournamentTeam.tournament.status ?? null,
       })),
+      // M1 Day 7: 허브 대시보드 전용 신규 필드 3종 (기존 필드 불변)
+      followersCount,
+      followingCount,
+      nextGame,
     });
   } catch {
     return apiError("Internal error", 500);
