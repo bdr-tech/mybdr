@@ -1,0 +1,176 @@
+"use client";
+
+/* ============================================================
+ * ProfileSideNav — 프로필 서브페이지 네비게이션
+ *
+ * 왜:
+ *  - /profile 하위 6개 서브페이지(edit/basketball/growth/preferences/subscription/weekly-report)를
+ *    하나의 반응형 컴포넌트로 통합해, 어디서든 동일한 자리에서 좌측(데스크탑) 또는 상단(모바일)
+ *    네비게이션이 보이게 한다.
+ *  - 기존 (web)/layout.tsx의 sideNavItems 패턴(border-l-4 + bg-surface)을 그대로 따라
+ *    BDR 전체 디자인 일관성 유지.
+ *
+ * 어떻게:
+ *  - lg(1024px) 이상: 좌측 고정폭 aside, border-l-4 활성 표시.
+ *  - lg 미만: sticky top-14(헤더 56px 바로 아래) 가로 스크롤 chip.
+ *  - 활성 판정은 matchPaths 배열을 받아 다중 경로 매칭 (예: 설정 = preferences + notification-settings).
+ * ============================================================ */
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+/* 네비게이션 항목 타입 정의
+ * - matchPaths를 배열로 받는 이유: 한 메뉴가 여러 실제 경로를 포함할 수 있다
+ *   (예: "설정" = /profile/preferences 와 /profile/notification-settings 둘 다 활성). */
+type NavItem = {
+  label: string;
+  href: string;
+  icon: string; // Material Symbols Outlined 이름
+  matchPaths: string[];
+};
+
+/* 6개 서브페이지 매핑.
+ * PM 지정 매핑을 그대로 따른다. 순서 = 사용 빈도 + 사용자 멘탈 모델 우선. */
+const NAV_ITEMS: NavItem[] = [
+  {
+    label: "내 정보",
+    href: "/profile/edit",
+    icon: "person",
+    matchPaths: ["/profile/edit"],
+  },
+  {
+    label: "내 농구",
+    href: "/profile/basketball",
+    icon: "sports_basketball",
+    matchPaths: ["/profile/basketball"],
+  },
+  {
+    label: "내 성장",
+    href: "/profile/growth",
+    icon: "trending_up",
+    matchPaths: ["/profile/growth"],
+  },
+  {
+    label: "설정",
+    href: "/profile/preferences",
+    icon: "settings",
+    // 알림 설정도 "설정" 카테고리로 묶어 활성 표시
+    matchPaths: ["/profile/preferences", "/profile/notification-settings"],
+  },
+  {
+    label: "결제",
+    href: "/profile/subscription",
+    icon: "payments",
+    // 구독과 결제 내역을 하나의 "결제" 카테고리로 묶음
+    matchPaths: ["/profile/subscription", "/profile/payments"],
+  },
+  {
+    label: "주간 리포트",
+    href: "/profile/weekly-report",
+    icon: "summarize",
+    matchPaths: ["/profile/weekly-report"],
+  },
+];
+
+export function ProfileSideNav() {
+  const pathname = usePathname();
+
+  /* 활성 판정 로직.
+   * - 정확 일치 (pathname === p): /profile/edit
+   * - 하위 경로 (pathname.startsWith(p + '/')): /profile/edit/avatar 같은 미래 확장 대비
+   * - matchPaths 중 하나라도 매칭되면 활성 */
+  const isActive = (matchPaths: string[]): boolean =>
+    matchPaths.some(
+      (p) => pathname === p || pathname.startsWith(p + "/")
+    );
+
+  return (
+    <>
+      {/* ============================================================
+       * PC 좌측 사이드 네비 (lg 이상)
+       * - 너비 220px, sticky로 스크롤 시 헤더 아래 고정
+       * - (web)/layout.tsx의 sideNavItems 디자인을 그대로 따름
+       *   (font-black uppercase tracking-wide + border-l-4 활성 표시)
+       * ============================================================ */}
+      <aside
+        className="hidden shrink-0 lg:block lg:w-[220px]"
+        aria-label="프로필 메뉴"
+      >
+        <nav className="sticky top-20 space-y-1">
+          {NAV_ITEMS.map((item) => {
+            const active = isActive(item.matchPaths);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                prefetch={true}
+                className={`flex items-center gap-3 px-4 py-3 text-sm font-black uppercase tracking-wide transition-all rounded-none ${
+                  active
+                    ? "bg-[var(--color-surface)] text-[var(--color-primary)] border-l-4 border-[var(--color-primary)]"
+                    : "text-[var(--color-text-secondary)] border-l-4 border-transparent hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]"
+                }`}
+              >
+                {/* 활성 시 아이콘 FILL 1 (글로벌 layout 패턴과 동일) */}
+                <span
+                  className="material-symbols-outlined text-xl"
+                  style={
+                    active ? { fontVariationSettings: "'FILL' 1" } : undefined
+                  }
+                >
+                  {item.icon}
+                </span>
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+
+      {/* ============================================================
+       * 모바일 상단 chip 네비 (lg 미만)
+       * - sticky top-14: (web) 헤더 높이(h-14 = 56px) 바로 아래에 붙음
+       * - 가로 스크롤로 6개 항목 모두 접근 가능
+       * - chip 디자인: rounded 4px (BDR 컨벤션) + 활성 시 primary 배경
+       * ============================================================ */}
+      <div
+        className="sticky top-14 z-30 -mx-5 mb-4 border-b border-[var(--color-border)] bg-[var(--color-background)] lg:hidden"
+        style={{
+          // 헤더와 동일한 backdrop-blur 톤으로 자연스러운 연결
+          backgroundColor:
+            "color-mix(in srgb, var(--color-background) 90%, transparent)",
+        }}
+      >
+        <nav
+          className="flex gap-2 overflow-x-auto px-5 py-3 scrollbar-none"
+          aria-label="프로필 메뉴"
+        >
+          {NAV_ITEMS.map((item) => {
+            const active = isActive(item.matchPaths);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                prefetch={true}
+                className={`flex shrink-0 items-center gap-1.5 rounded px-3 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors ${
+                  active
+                    ? "bg-[var(--color-primary)] text-white"
+                    : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-bright)] hover:text-[var(--color-text-primary)]"
+                }`}
+              >
+                <span
+                  className="material-symbols-outlined text-base"
+                  style={
+                    active ? { fontVariationSettings: "'FILL' 1" } : undefined
+                  }
+                >
+                  {item.icon}
+                </span>
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+    </>
+  );
+}
