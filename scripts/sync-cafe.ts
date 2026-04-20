@@ -32,7 +32,7 @@
  */
 
 import { CAFE_BOARDS, CafeBoard, getBoardById } from "../src/lib/cafe-sync/board-map";
-import { fetchBoardList, fetchBoardListApi, BoardItem, sleep } from "../src/lib/cafe-sync/fetcher";
+import { fetchBoardList, BoardItem } from "../src/lib/cafe-sync/fetcher";
 import { fetchArticle, ArticleFetchResult } from "../src/lib/cafe-sync/article-fetcher";
 import { maskPersonalInfo } from "../src/lib/security/mask-personal-info";
 import {
@@ -88,41 +88,13 @@ function parseBoardArg(): CafeBoard[] {
   return [b];
 }
 
-/**
- * --limit=N (기본 10).
- *
- * [2026-04-20 Phase 3 #6] 의미는 **페이지당 건수**(API pageSize 와 동일) 로 유지.
- *   - 기존 호환성: `--limit=5` 는 여전히 1페이지 5건 의미.
- *   - API pageSize 실측 상한 50 이므로 최대 50 유지 (101~ 은 서버 500).
- *   - 실제 수집 합계 = limit × max-pages.
- */
+/** --limit=N (기본 10) */
 function parseLimitArg(): number {
   const arg = process.argv.find((a) => a.startsWith("--limit="));
   if (!arg) return 10;
   const n = Number(arg.split("=")[1]);
   if (!Number.isFinite(n) || n < 1 || n > 50) {
     console.error(`⚠️ --limit 값이 유효하지 않음 (1~50): "${arg}"`);
-    process.exit(1);
-  }
-  return Math.floor(n);
-}
-
-/**
- * --max-pages=N (기본 1).
- *
- * 왜 신규:
- *   - Phase 3 #6 Pagination — 2페이지 이후 `/api/v1/common-articles` API 로 커서 순회.
- *   - **기본 1** 로 기존 호환성 100% 유지 (지정 안 하면 1페이지만 수집).
- *   - 상한 20 — 페이지당 최대 50건 × 20페이지 = 1000건 (한 게시판 전체 커버 충분, R1 과다 요청 방어).
- *
- * 참조: scratchpad-cafe-sync.md "옵션 스펙 변경" 표
- */
-function parseMaxPagesArg(): number {
-  const arg = process.argv.find((a) => a.startsWith("--max-pages="));
-  if (!arg) return 1;
-  const n = Number(arg.split("=")[1]);
-  if (!Number.isFinite(n) || n < 1 || n > 20) {
-    console.error(`⚠️ --max-pages 값이 유효하지 않음 (1~20): "${arg}"`);
     process.exit(1);
   }
   return Math.floor(n);
@@ -273,8 +245,6 @@ async function countdown(seconds: number, totalPosts: number): Promise<void> {
 async function main() {
   const targets = parseBoardArg();
   const limit = parseLimitArg();
-  // [2026-04-20 Phase 3 #6] --max-pages=N (기본 1 — 호환). 2페이지 이후는 API cursor 순회.
-  const maxPages = parseMaxPagesArg();
   // --debug 플래그: fetcher에 전달하여 응답 HTML 덤프 + 진단 정보 출력 활성화.
   const debug = process.argv.includes("--debug");
   // --with-body: Phase 2a 본문 fetch + 파싱. --execute와 조합하면 Phase 2b DB 쓰기.
@@ -300,7 +270,6 @@ async function main() {
   console.log("========================================");
   console.log(
     `대상 게시판: ${targets.map((b) => `${b.id}(${b.label})`).join(", ")} / limit=${limit}` +
-      ` / max-pages=${maxPages}` +
       (withBody ? ` / with-body=ON / article-limit=${articleLimit}` : "") +
       (debug ? " / debug=ON" : "") +
       (EXECUTE_MODE ? " / execute=ON" : ""),
@@ -331,10 +300,12 @@ async function main() {
   const MAX_CONSECUTIVE_FAILURES = 3;
 
   for (const board of targets) {
-    // ─── 목록 fetch (1페이지 — HTML SSR 경로 유지, 이중 안전망 R3) ───
+    // ─── 목록 fetch ───
     let items: BoardItem[] = [];
     try {
       items = await fetchBoardList(board, limit, { debug });
+      printBoardResult(board, items);
+      console.log(""); // 게시판 간 구분 빈 줄
       perBoardCount[board.id] = items.length;
       consecutiveFailures = 0;
     } catch (err) {
@@ -349,87 +320,6 @@ async function main() {
       }
       continue; // 목록 실패한 게시판은 본문 fetch 스킵
     }
-
-    // ─── Phase 3 #6: 2페이지 이후 API cursor 순회 ───
-    // 종료 조건 4종:
-    //   (1) maxPages 도달
-    //   (2) 커서(bbsDepth) 없음 — 1P 마지막 글에 bbsDepth 파싱 실패 시 자동 중단
-    //   (3) articles=[] 반환 (게시판 끝)
-    //   (4) 이전 페이지 dataid 와 중복 (방어적 — API 이상 응답 대비)
-    //   + consecutiveFailures 3회 (9가드 #8, 기존 카운터 재사용)
-    if (maxPages > 1 && items.length > 0) {
-      // 커서: 1P 마지막 글의 bbsDepth. 없으면 루프 진입 자체 포기.
-      let cursor: string | undefined = items[items.length - 1]?.bbsDepth;
-      // 본 게시판 내 페이지 실패 카운터 (게시판 간에는 초기화)
-      let boardFailures = 0;
-      // dataid 중복 감지 (조건 4)
-      const seenDataids = new Set<string>(items.map((it) => it.dataid));
-
-      for (let pageNo = 2; pageNo <= maxPages; pageNo++) {
-        if (!cursor) {
-          console.log(`  [${board.id}] page=${pageNo} 커서 없음 — pagination 종료`);
-          break;
-        }
-
-        // 페이지 간 sleep **3초** — 9가드 #1.
-        //   fetchBoardListApi 내부에는 sleep 없음(중복 방지). 여기서만 대기.
-        await sleep(3000);
-
-        let pageItems: BoardItem[] = [];
-        try {
-          pageItems = await fetchBoardListApi(board, cursor, pageNo, limit, { debug });
-          boardFailures = 0; // 성공 → 실패 카운터 리셋 (본 게시판 기준)
-          consecutiveFailures = 0; // 전체 카운터도 리셋
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          console.error(`  [${board.id}] page=${pageNo} API 실패: ${msg}`);
-          boardFailures++;
-          consecutiveFailures++;
-          if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-            console.error("🛑 API 연속 실패 3회 감지 — 전체 중단");
-            break;
-          }
-          // 본 게시판 3회 연속 실패면 이 게시판만 종료하고 다음 게시판으로
-          if (boardFailures >= 3) {
-            console.error(`  [${board.id}] API 연속 3회 실패 — 이 게시판 pagination 종료`);
-            break;
-          }
-          continue; // 다음 페이지 시도
-        }
-
-        // 종료 조건 3: 빈 배열 = 게시판 끝
-        if (pageItems.length === 0) {
-          console.log(`  [${board.id}] page=${pageNo} articles=[] — 게시판 끝`);
-          break;
-        }
-
-        // 종료 조건 4: 첫 dataid 가 이미 누적된 세트에 있음 = API 이상 응답(방어)
-        if (seenDataids.has(pageItems[0].dataid)) {
-          console.warn(
-            `  [${board.id}] page=${pageNo} 첫 dataid=${pageItems[0].dataid} 중복 감지 — pagination 종료`,
-          );
-          break;
-        }
-
-        // 정상 누적
-        for (const it of pageItems) seenDataids.add(it.dataid);
-        items.push(...pageItems);
-        // 다음 페이지 커서 업데이트 (이번 페이지 마지막 글)
-        cursor = pageItems[pageItems.length - 1]?.bbsDepth;
-
-        console.log(
-          `  [${board.id}] page=${pageNo}: +${pageItems.length}건 (누적 ${items.length}건, ` +
-            `첫 dataid=${pageItems[0].dataid}, 마지막 dataid=${pageItems[pageItems.length - 1].dataid})`,
-        );
-      }
-
-      if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) break;
-      perBoardCount[board.id] = items.length; // 누적 반영
-    }
-
-    // pagination 완료 후 한 번에 출력
-    printBoardResult(board, items);
-    console.log(""); // 게시판 간 구분 빈 줄
 
     // ─── Phase 2a: 본문 fetch ───
     if (!withBody || items.length === 0) continue;

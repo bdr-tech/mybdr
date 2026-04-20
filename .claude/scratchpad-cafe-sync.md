@@ -61,23 +61,25 @@
 ## 🟡 현재 작업 (2026-04-20)
 
 ### 요청
-**Phase 3 #6 — Pagination (20건 상한 극복) 설계**
-- 목표: 한 게시판당 1페이지(20건) 한도를 극복해 과거 글까지 누적 수집
-- 현재: 3게시판 × 20건 = 최대 60건만 접근 → 전체 수집으로 확장
-- 담당 분리: planner-architect 설계 → developer 구현
+**"다음카페 게시 순서와 완전 일치하는 정렬 확보"**
+- 목표: games.created_at desc 정렬 시 다음카페에 표시되는 순서와 동일
+- 실측 결과(tmp/cafe-debug-*.html 3개 분석):
+  - 분 단위(당일): 이미 OK (articleElapsedTime HH:MM)
+  - 분 단위(과거): ⚠️ 목록은 날짜만, 상세 `.num_subject`에 HH:MM 존재 가능성 — 샘플 부족
+  - 초 단위: ❌ 카페 미제공
+  - **dataid 단조 증가 확정** (3926~3896 역순)
+  - 공지글은 `noticeContainer` 별도 구간 → 분리 가능
 
-### Phase 2 완료 상태 (누적)
-| 단계 | 작업 | 상태 |
-|------|------|------|
-| A | dataid tie-break (metadata.cafe_article_id Int) | ✅ `4bc41bf` |
-| E | 공지글 방어 가드 (noticeContainer) | ✅ `4bc41bf` |
-| 백필 | 기존 15건 cafe_article_id 채움 | ✅ 15/15 |
-| D | `.num_subject` postedAt 폴백 | ✅ `c84aba0` |
-| Phase 2b 지속동기화 | postedAt fallback / MptT 강제 / 역매핑 | ✅ `4826018` |
-
-### Phase 3 진입 (이번 세션)
-- **#6 Pagination** — 설계 ← 이 문서
-- #1 GH Actions cron, #2 Secrets, #3 쿠키 갱신, #4 알림, #5 admin UI, #7 시분정확도, #8 city 추출률
+### 진행 순서 (사용자 승인됨)
+| 단계 | 작업 | 쿠키 필요 | 상태 |
+|------|------|----------|------|
+| A | dataid tie-break (metadata 저장 + 정렬 2차키) | N | ✅ 완료 (`4bc41bf`) |
+| E | 공지글 필터 (noticeContainer 스킵) | N | ✅ 완료 (`4bc41bf`) |
+| 백필 | 기존 15건 `cafe_article_id` 채움 | N | ✅ execute 완료 (15/15) |
+| 커밋 1 | A+E + 백필 스크립트 묶음 | N | ✅ `4bc41bf` (미푸시) |
+| B | 쿠키 재발급 (사용자 수작업) | 재발급 | ✅ 완료 (04-20 12:38) |
+| C | 과거 글 상세 샘플 수집 + HTML 분석 | Y | ✅ 완료 — **과거 글 시분은 카페 원천 미제공** 확정 |
+| D | `.num_subject` → postedAt 폴백 (D 미니) | Y | ✅ 완료 (`c84aba0`) — postedAt null 5/5 → 0/5 |
 
 ---
 
@@ -528,371 +530,6 @@ ORDER BY created_at DESC;
 #### 커밋 가능 여부
 - ✅ **커밋 가능** (블록커 0, tsc 통과, tester 6개 테스트 통과, 권장 개선은 전부 후속 처리 가능)
 
-### 📋 Phase 3 #6 Pagination 설계안 (2026-04-20, planner-architect)
-
-#### 핵심 결정 요약 (3줄)
-1. **cursor-based API 채택**: `GET /api/v1/common-articles?grpid=&fldid=&targetPage=&afterBbsDepth=&pageSize=` — 실측으로 확정. `?page=N` 같은 단순 쿼리는 **전부 무효**(모바일 SSR이 무시 → P0과 동일 응답).
-2. **페이지 순회**: maxPages 상한(기본 1, 호환) + until-dataid 조기 종료(이미 DB에 있는 dataid 만나면 중단) **이중 안전망**. 페이지 간 sleep **3초 유지**(9가드 #1).
-3. **--limit 의미 유지(페이지당 건수)**: 기존 호환 깨지 않고 **`--max-pages=N` 신규 옵션**으로 pagination 제어. 실제 수집 합계 = limit × max-pages.
-
----
-
-#### 실측 결과 — Daum 카페 pagination URL (2026-04-20)
-
-모바일 HTML SSR은 1페이지만 담아 내려주고, 후속 페이지는 Vue 컴포넌트(`general_articles-5f488a9d60.min.js`)가 XHR로 가져온다. 번들 역공학에서 엔드포인트 발견 후 실측.
-
-| # | 패턴 | status | bytes | articles | first dataid | 1P 다름? |
-|---|------|--------|-------|----------|-------------|---------|
-| 1 | `m.cafe.../IVHA` (baseline) | 200 | 30,808 | 20 | 3925 | — |
-| 2 | `?page=2` | 200 | 30,815 | 20 | **3925** | ❌ 무시됨 |
-| 3 | `?p=2` / `?curpage=2` / `?pageNo=2` / `?listNum=2` / `?offset=20` | 200 | ~30,8k | 20 | **3925** | ❌ 전부 무시됨 |
-| 4 | path `/IVHA/2` | 403 | 14,984 | 0 | — | 차단 |
-| 5 | PC `cafe.daum.net/dongarry/_c21_/bbs_list?grpid&fldid&page=N` | 404 | 146 | 0 | — | 죽은 URL |
-| 6 | `m.cafe.../_c21_/article_list_json?...` | 403 | 10,406 | 0 | — | 차단 |
-| 7 | `/api/v1/common-articles?grpid&fldid&targetPage=2&afterBbsDepth=0&pageSize=20` | 200 | **28** | **0** | — | `{"articles":[],"nextPage":3}` — 커서 0 = 빈 배열 |
-| **8** | **`/api/v1/common-articles?grpid&fldid&targetPage=2&afterBbsDepth=<1P last bbsDepth>&pageSize=20`** | **200** | **9,575** | **20** | **3888** | **✅ 연속 페이지** |
-| 9 | 위 size=50 | 200 | 23,879 | **50** | 3888 | ✅ (한 번에 50건) |
-| 10 | 위 size=100 | 500 | 40 | 0 | — | `{"code":0,"description":"서버 에러"}` — **상한 초과** |
-| 11 | `afterBbsDepth=<가짜 커서>` + targetPage=99 | 200 | 30 | 0 | — | `{"articles":[],"nextPage":100}` — **끝 감지** |
-
-선택 URL 패턴: **`GET https://m.cafe.daum.net/api/v1/common-articles?grpid={grpid}&fldid={fldid}&targetPage={N}&afterBbsDepth={cursor}&pageSize={20~50}`**
-
-필수 헤더 (XHR 검증 통과):
-```
-User-Agent: <모바일 Safari>
-Cookie: <storageState 전체>
-Accept: application/json, text/plain, */*
-Referer: https://m.cafe.daum.net/dongarry/{fldid}
-X-Requested-With: XMLHttpRequest
-```
-
-근거:
-- 번들 `general_articles.min.js` Vue 컴포넌트에서 `Ns.get("/api/v1/common-articles", { params: {grpid, fldid, targetPage, afterBbsDepth, pageSize} })` 직접 확인
-- 초기 상태 `targetPage: 2, hasMore: true, afterBbsDepth: 0` (첫 글일 때만 0)
-- `afterBbsDepth`는 **단순 페이지번호가 아니라 커서** (1페이지 마지막 글의 bbsDepth 문자열)
-- IVHA 1페이지 마지막 bbsDepth = `"0010kzzzzzzzzzzzzzzzzzzzzzzzzz"` (HTML `<script>articles.push` 블록 내 노출)
-- pageSize 상한 실측: **50 OK, 100은 서버 에러 500** → 코드 상한 50 강제
-- 종료 조건: `articles: []`가 오면 끝. (null 안 옴. nextPage는 계속 증가하지만 무시해도 됨)
-
-IVHA 2페이지 결과 예시:
-- 1P dataid: 3925 → 3890 (범위 35)
-- 2P dataid: 3888 → 3853 (연속! 2 간격으로 자연 진행)
-- **dataid 역순 단조성 유지 확인** (A작업 tie-break 정렬 여전히 유효)
-
----
-
-#### 영향 파일
-
-| # | 파일 | 변경 요지 | 라인 힌트 | 신규/수정 |
-|---|------|----------|----------|----------|
-| 1 | `src/lib/cafe-sync/board-map.ts` | `CAFE_GRP_CODE="IGaj"` 상수 추가 + `listApiUrl(board, cursor, page, size)` 헬퍼 신규 export | L14~L18 상수 / 말미 헬퍼 추가 | 수정 |
-| 2 | `src/lib/cafe-sync/fetcher.ts` | (1) HTML 파싱 루프에서 `bbsDepth` 추출해 `BoardItem.bbsDepth` 필드 추가 (2) 신규 `fetchBoardListApi(board, cursor, pageSize)` 함수: common-articles API 호출 → JSON 파싱 → BoardItem[] 변환 (3) `fetchBoardList` 시그니처 확장(옵션 추가), **기본 동작은 현행 유지** | BoardItem +1필드 / API 파서 ~80줄 추가 / 루프 extractField 1줄 추가 | 수정 |
-| 3 | `scripts/sync-cafe.ts` | (1) `--max-pages=N` 인자 파싱 (기본 1) (2) board 루프 안에 pagination 루프 추가: 1P는 SSR(fetchBoardList), 2P~는 API(fetchBoardListApi). 이전 페이지 last `bbsDepth`를 다음 페이지 커서로 전달 (3) 종료 조건 4가지(maxPages 도달 / articles=[] / 이미 DB에 있는 dataid 만남 / 연속 실패 3회) (4) 페이지 간 sleep 3초(9가드 #1) (5) --article-limit 와 pagination 조합 설명 주석 | L77~L119 인자 파싱 / L302~L420 메인 루프 확장 | 수정 |
-| 4 | `.claude/knowledge/decisions.md` | 새 항목 "카페 sync pagination — common-articles API + cursor" | 상단 추가 | 수정 |
-
-**수정 안 함**:
-- `src/lib/cafe-sync/upsert.ts` — 중복 방지 이미 `cafe_source_id` unique 로 동작 (upsert.ts L40~L65 cafe_posts @@unique). dataid 중복 시 자연 skip.
-- `src/lib/cafe-sync/article-fetcher.ts` — 본문은 dataid 단위라 pagination 무관.
-- parser/masking — 변경 없음.
-
----
-
-#### 옵션 스펙 변경
-
-| 옵션 | 현재 | 변경 후 |
-|------|------|--------|
-| `--board` | IVHA\|Dilr\|MptT\|all | **변경 없음** |
-| `--limit=N` | 1~50, 기본 10 (페이지당 건수) | **변경 없음** (의미 유지 — 호환성) |
-| `--max-pages=N` | 없음 | **신규**, 1~20, 기본 **1** (호환 모드 — 기존처럼 1페이지만) |
-| `--article-limit=N` | 1~10, 기본 3 (본문 fetch 개수) | **변경 없음** (max-pages × limit 보다 커야 의미, 초과 시 자연 cap) |
-| `--with-body` / `--execute` / `--debug` | — | **변경 없음** |
-
-실제 수집 예시:
-```
-# 기존 호환 (1페이지 20건)
---board=IVHA --limit=20
-  → 20건 (기존과 동일)
-
-# 신규: 3페이지까지 20건씩
---board=IVHA --limit=20 --max-pages=3
-  → 20 × 3 = 최대 60건 (1P HTML + 2P/3P API)
-
-# 전체 수집 가까이 (10페이지 × 50건)
---board=IVHA --limit=50 --max-pages=10
-  → 최대 500건. pageSize=50 API 호환 확인됨
-```
-
----
-
-#### 페이지 순회 로직 (developer 참조 의사코드)
-
-```
-for board of targets:
-  // 1페이지 — 기존 HTML SSR 경로 유지 (공지 가드 + articles.push 정규식)
-  items_page1 = fetchBoardList(board, limit)
-  accumulated = [...items_page1]
-  cursor = items_page1.at(-1)?.bbsDepth   // 마지막 글의 bbsDepth (없으면 중단)
-  seen_dataids = new Set(items_page1.map(it => it.dataid))
-
-  for pageNo of 2..maxPages:
-    if !cursor: break  // bbsDepth 없으면 종료
-    await sleep(3000)  // 9가드 #1
-    try:
-      page = await fetchBoardListApi(board, { cursor, targetPage: pageNo, pageSize: limit })
-    catch (403/429/500):
-      consecutiveFailures++
-      if >= 3: break
-      continue
-
-    if page.length === 0: break   // 종료 조건 #1 (articles=[])
-    // 종료 조건 #2 — 이미 DB에 있는 dataid 만나면 그 시점부터 중단 (증분 수집용, Phase 3+ 구현 보류)
-    //   현재: 전 페이지 dataid 와 겹치면 중단 (방어적 종료)
-    if page[0].dataid in seen_dataids: break
-    accumulated.push(...page)
-    page.forEach(it => seen_dataids.add(it.dataid))
-    cursor = page.at(-1)?.bbsDepth
-  
-  printBoardResult(board, accumulated)
-  // 이후 --with-body 경로는 accumulated 전체(또는 article-limit) 를 대상으로 기존 그대로
-```
-
-**종료 조건 정리**:
-1. `articles: []` 반환 (게시판 끝)
-2. 이전 페이지의 마지막 dataid와 현재 첫 dataid 중복 (방어적 — API 버그 대비)
-3. `maxPages` 도달
-4. 연속 실패(403/429/500) 3회 — 9가드 #8 기존 로직 재사용
-
-**페이지 간 sleep**: **3초 고정** (9가드 #1 — 기존 목록/본문 간 sleep 과 동일). 페이지 순회라서 5초로 늘릴 필요는 없음(한 게시판 내부 호출 수 10회 이하).
-
-**에러 복구**: API 500(pageSize=100 때처럼) → 해당 페이지 skip + 로그. 403 연속 → 전체 중단 (9가드 #8).
-
-**증분 수집 전략 (설계만, 이번엔 미구현)**:
-- DB `cafe_posts.dataid`로 이미 수집된 최대 dataid 조회 → 그 이하 dataid 만나면 중단
-- 향후 GH Actions 30분 cron 돌 때 매회 1페이지 수집(기본값) → 새 글만 upsert (현재 idempotent upsert 로 이미 동작, 추가 구현 불필요)
-- 초기 backfill 때만 `--max-pages=10` 같은 큰 값으로 1회 전체 수집
-
----
-
-#### 리스크 & 완화
-
-| # | 리스크 | 영향 | 완화 |
-|---|-------|------|------|
-| R1 | 연쇄 페이지 요청 → 403/429 차단 확률 ↑ | 전체 수집 실패 | 3초 sleep 유지 + 페이지당 pageSize는 기본 **20 유지**(공격적 50은 옵트인). 9가드 #8 연속 3회 중단 기존 로직 재사용 |
-| R2 | pageSize=100 → 500 에러 | 위 실측 확인 | fetchBoardListApi 인자에 `if (size > 50) throw` 가드. CLI `--limit` 도 max 50 clamp (기존 max 50 이미 있음) |
-| R3 | common-articles API 스펙 변경 → 무고지 고장 | 모든 페이지 수집 실패 | HTML 기반 1페이지 경로는 **그대로 유지**(이중 안전망). API 실패 시 1페이지 20건은 여전히 수집 가능. 알림(Phase 3 #4)이 "2P 이후 0건" 감지 |
-| R4 | bbsDepth 파싱 실패 → 커서 끊김 | 2P 이후 진입 자체 불가 | fetchBoardList 에서 bbsDepth 추출 실패 시 `null` 유지 → 커서 루프 자동 중단. 에러 아님(기존 1P 동작 유지) |
-| R5 | MptT PRACTICE 강제 로직과 충돌 | 게시판 유형 오분류 | 기존 upsert.ts board.gameType 강제 로직 유지. API에서 반환되는 article 도 동일 fldid 이라 board 매핑 동일 |
-| R6 | 운영 DB 영향 | — | 본 변경은 코드 경로만 수정, 스키마 0. `cafe_posts.cafe_source_id` unique 로 중복 upsert 자연 skip |
-| R7 | `--article-limit` 가 accumulated 전체보다 작을 때 본문 fetch 정책 | 과거 글 본문 누락 | 기존 `targetItems = items.slice(0, articleLimit)` 그대로 유지 — 최신순 앞쪽만 본문. 필요 시 `--article-limit=50` 처럼 늘려서 대응 |
-| R8 | 쿠키 만료로 API 401/403 | 전체 실패 | 기존 로직과 동일 — article-fetcher 의 storageState 체크가 이미 경고 출력. API 경로도 같은 cookie 사용 |
-| R9 | Referer/X-Requested-With 없으면 403 가능성 | API 차단 | **실측 이미 헤더 포함해서 200 확인**. fetcher.ts 에 하드코딩 필수 |
-
----
-
-#### developer 주의사항
-
-1. **URL 상수 분리 필수**: `CAFE_GRP_CODE="IGaj"`를 board-map.ts 상수로. 하드코딩 방지 (MptT/Dilr도 동일 grpid).
-2. **헤더 XHR 3종 필수**: `Accept: application/json, text/plain, */*` + `Referer: https://m.cafe.daum.net/dongarry/{fldid}` + `X-Requested-With: XMLHttpRequest`. 빠지면 403 가능.
-3. **afterBbsDepth=0 금지**: 커서 0 넘기면 빈 배열 반환. null 체크 후 루프 중단할 것.
-4. **BoardItem 확장 최소화**: `bbsDepth?: string`(옵션)만 추가. A작업 dataidNum 과 동일 패턴(신규 optional). upsert.ts 수정 **불필요** (bbsDepth는 정렬/저장 대상 아님, 런타임 커서 전달용만).
-5. **HTML articles.push 루프에서 bbsDepth 추출**: extractField(block, "bbsDepth") 1줄 추가. JSON API 응답도 동일 필드명.
-6. **JSON 응답 형식**: `{"articles":[{dataid, title, writerNickname, articleElapsedTime, bbsDepth, fldid, ...}, ...], "nextPage": N}`. **기존 articles.push 블록과 필드명 동일** → parser 재사용 가능, 변환 얇게.
-7. **9가드 #1 sleep 위치**: 페이지 간 sleep은 `fetchBoardListApi` 내부 진입부 **또는** sync-cafe.ts 루프 안 중 **한 곳**에만 둔다 (중복 6초 방지). 기존 fetchBoardList도 진입부에 sleep 있으므로 **sync-cafe.ts 페이지 루프에서 sleep 담당** 권장.
-8. **tester 검증 포인트**:
-   - `--board=IVHA --limit=10 --max-pages=3` → 30건 수집 (dataid 3925 → ~3860 연속 단조 감소 확인)
-   - `--board=MptT --limit=20 --max-pages=2` → 40건 수집 (PRACTICE 강제 유지 확인)
-   - `--max-pages=99` 같이 큰 값 → 어느 시점에 `articles=[]`로 자연 종료
-   - 403 mock 불가 → 쿠키 제거한 환경에서 1P는 HTML SSR로 그대로 받되 2P API만 빈 응답 처리 확인
-9. **tsc 체크 필수**: BoardItem optional 필드 추가 + 기존 호출처(1곳만) 영향 없음 확인. A작업의 dataidNum 과 동일 방식.
-
----
-
-#### 예상 작업 시간
-
-| 작업 | 시간 |
-|------|------|
-| board-map.ts GRP_CODE + listApiUrl 헬퍼 | 5분 |
-| fetcher.ts bbsDepth 추출 + fetchBoardListApi 신규 | 20분 |
-| sync-cafe.ts --max-pages 파싱 + 페이지 루프 | 20분 |
-| decisions.md 새 항목 | 5분 |
-| tsc + smoke (`--limit=5 --max-pages=2`) | 10분 |
-| tester 검증 (3게시판 각 2P) | 15분 |
-| **합계** | **~75분 (약 1시간 15분)** |
-
----
-
-#### developer 착수 가능 여부
-
-**Y (Yes, 즉시 착수 가능)**
-
-**차단 요소 없음**:
-- 실측으로 API/헤더/파라미터/상한 전부 확정
-- 번들 역공학으로 엔드포인트 신뢰도 확보 (`general_articles.min.js` Vue 컴포넌트 직접 확인)
-- 운영 DB 영향 0 (코드 경로만 변경, 스키마 0)
-- 쿠키 방식 동일 (storageState 재활용)
-
-**PM 확인 포인트 (1건)**:
-- `--max-pages` **기본값을 1로 유지할지**(현 설계, 호환 100%) vs **2~3 으로 올릴지**(한 번 실행으로 더 많이 수집). 설계는 호환 우선 **1** 권장. 사용자/PM이 공격적이면 기본 2로 변경 가능 (변경 3문자).
-
----
-
-### 🔧 Phase 3 #6 구현 기록 (developer, 2026-04-20)
-
-📝 **구현한 기능**: `/api/v1/common-articles` cursor-based pagination 지원 (2페이지 이후 수집).
-
-#### 변경 파일
-
-| 파일 | 라인수 | 변경 내용 | 신규/수정 |
-|------|--------|----------|----------|
-| `src/lib/cafe-sync/board-map.ts` | 109 | `CAFE_GRP_CODE="IGaj"` 상수 + `listApiUrl(board, cursor, page, size)` 헬퍼 신규 (URLSearchParams 인코딩) | 수정 (+42줄) |
-| `src/lib/cafe-sync/fetcher.ts` | 639 | (1) `BoardItem.bbsDepth?: string` 추가 (2) HTML 파서에 `extractField(block, "bbsDepth")` 1줄 추가 (3) `fetchBoardListApi(board, cursor, page, size, options)` 신규 — XHR 헤더 3종(Accept/Referer/X-Requested-With) 필수, pageSize>50 하드 throw, sleep 없음(중복 방지), JSON 파싱 + BoardItem[] 변환 | 수정 (+175줄) |
-| `scripts/sync-cafe.ts` | 644 | (1) `--max-pages=N` 파서 신규 (1~20, 기본 1) (2) 보드 루프 내 2P~ pagination 루프 추가 — 1P 마지막 `bbsDepth` 를 커서로 전달, 페이지 간 3초 sleep(9가드 #1), 4종 종료조건(maxPages/커서없음/articles=[]/dataid중복) + 연속실패 3회 중단 (3) 헤더 로그에 `max-pages` 표기 | 수정 (+109줄) |
-
-#### tsc 결과
-
-**통과** (0 error). 첫 시도에서 `if (!dataid || !title) continue;` 라인 누락으로 type narrowing 실패 2건 발생 → 라인 복원 후 재검사 클린.
-
-#### 스모크 2케이스 결과 (DB 쓰기 없음, `--execute` 생략)
-
-| # | 명령 | 수집 건수 | 1P 마지막 dataid | 2P 첫 dataid | 2P 마지막 dataid | dataid 연속성 | 중복 |
-|---|------|----------|------------------|--------------|------------------|--------------|------|
-| 1 | `--board=IVHA --limit=5 --max-pages=2` | **10건** (5+5) | 3923 | **3920** | 3915 | 단조 감소 유지 (사이 3922/3921 은 공지 혹은 다른 fldid 스킵, 간격 정상) | **0건** |
-| 2 | `--board=MptT --limit=5 --max-pages=2` | **10건** (5+5) | 352484 | **352483** | 352479 | 완벽 연속 (1 간격) | **0건** |
-
-- 1P→2P 전환 로그 정상: `[IVHA] page=2: +5건 (누적 10건, 첫 dataid=3920, 마지막 dataid=3915)`
-- 2P API 호출 성공 (HTTP 200, XHR 헤더 통과)
-- 페이지 간 sleep 3초 실측(스모크 1: 1P 5초+2P 3초+2P XHR ≈ 6~7초 소요)
-- pageSize>50 가드 미검증(스모크는 5만 사용) — 설계상 `fetchBoardListApi` 진입부에서 `throw` 가 작동 (단위 검증 수준 코드)
-
-#### 설계 대비 준수 사항
-
-| 항목 | 준수 |
-|------|------|
-| `--max-pages` 기본 1 (호환) | ✅ |
-| pageSize 50 상한 강제 | ✅ (API_PAGE_SIZE_MAX 상수) |
-| 페이지 간 sleep 은 `sync-cafe.ts` 루프에서만 (fetchBoardListApi 내부 없음) | ✅ |
-| XHR 헤더 3종 (Accept/Referer/X-Requested-With) | ✅ |
-| 4종 종료 조건 (maxPages / 커서없음 / articles=[] / dataid중복) | ✅ |
-| `afterBbsDepth=0` 금지 — 커서 없으면 루프 진입 안 함 | ✅ |
-| 1P HTML SSR 경로 유지 (R3 이중 안전망) | ✅ (fetchBoardList 시그니처 변경 0, API 실패해도 1P 20건은 여전히 수집) |
-| 쿠키 값 로그 출력 금지 (길이만) | ✅ |
-| DB 쓰기 금지 (`--execute` 사용 안 함) | ✅ |
-
-#### tester 참고
-
-- **추천 검증 시나리오**:
-  1. `--board=IVHA --limit=10 --max-pages=3` → 30건 수집 (dataid 단조 감소 검증)
-  2. `--board=MptT --limit=20 --max-pages=2` → 40건 수집 (PRACTICE 강제 유지 여부)
-  3. `--board=Dilr --limit=5 --max-pages=5` → 약 25건 or 빈 응답 시 조기 종료 로그 확인
-  4. `--max-pages=99` 등 과도 값 → 허용값(1~20) 초과 → exit 1 정상 동작
-  5. `--limit=51` → exit 1 (기존 가드 유지)
-- **정상 동작**: 각 페이지 전환마다 "`[BOARD] page=N: +M건 (누적 ...건, 첫 dataid=..., 마지막 dataid=...)`" 로그 출력.
-- **주의할 입력**:
-  - 게시판 총 글 수가 `limit × max-pages` 보다 적으면 `articles=[]` 반환 → "게시판 끝" 로그 + 조기 종료. 에러 아님.
-  - 1P 마지막 글의 `bbsDepth` 파싱 실패 시 2P 진입 자체 포기 ("커서 없음 — pagination 종료"). 에러 아님.
-
-#### reviewer 참고
-
-- **봐줬으면 하는 부분**:
-  1. `fetchBoardListApi` 의 XHR 헤더 하드코딩 (Accept/Referer/X-Requested-With) — 기존 `fetchBoardList` 헤더와 분리. 혹시 나중에 공통화 할지.
-  2. `seenDataids` 중복 감지는 `pageItems[0].dataid` 만 체크 — 중간 중복은 누적. API 이상 응답 드문 케이스에서만 의미, 현 설계 우선.
-  3. `consecutiveFailures` 를 전체 카운터 + `boardFailures` 를 게시판 카운터 로 이중화. 게시판 3연속 실패면 해당 게시판만 종료, 전체 3연속 실패면 전체 종료.
-  4. `bbsDepth` 는 BoardItem optional 이라 upsert.ts/parser 수정 0건 (설계 준수).
-
-#### 작업 시간 실측
-
-| 단계 | 예상 | 실제 |
-|------|------|------|
-| board-map.ts | 5분 | 5분 |
-| fetcher.ts | 20분 | 15분 |
-| sync-cafe.ts | 20분 | 15분 |
-| tsc + 스모크 2건 | 10분 | 10분 (tsc 1회 에러 복구 포함) |
-| scratchpad 기록 | — | 5분 |
-| **합계** | **~55분** | **~50분** |
-
-> `decisions.md` 갱신 및 Phase 진행 상황 표 업데이트는 PM 절차로 이관 (developer 기록 범위 밖).
-
----
-
-### 🔎 Phase 3 #6 리뷰 결과 (reviewer, 2026-04-20)
-
-📊 **종합 판정**: **통과** (블록커 0건, 커밋 가능). 9가드/설계안 전 항목 충실히 구현. 권장 개선 4건은 모두 후속 처리 가능 수준.
-
-| # | 영역 | 판정 | 상세 |
-|---|------|------|------|
-| R1 | 9가드 준수 | ✅ 통과 | 페이지 간 sleep 3초(sync-cafe.ts L376 단일 위치) / UA+Cookie+AbortController(10s) 3종 / 연속 실패 3회 중단(전역 `consecutiveFailures` + 게시판별 `boardFailures` 이중화) / pageSize 50 상한 하드 throw(fetcher.ts L544) / `articles=[]` 종료 처리(L401) |
-| R2 | 이중 안전망 | ✅ 통과 | `fetchBoardList` 시그니처 0 변경(`limit`, `options` 기존 그대로) / 2P+만 `fetchBoardListApi` 호출 / API 실패해도 1P HTML SSR은 이미 수집 완료(누적 보존 후 break) → R3 리스크 완화 달성 |
-| R3 | 에러 분류 | ✅ 통과 | `!res.ok` 통합 throw(403/404/429/5xx 전부 포함, article-fetcher와 일관) / JSON 파싱 실패 별도 throw(L598) / 서버 에러 응답 `{code:0, description}` 별도 감지(L602) / 빈 응답 = 정상 종료 |
-| R4 | 타입 안전성 | 🟡 권장 | `BoardItem.bbsDepth` optional 결정 적절(1P 파싱 실패 시 undefined → 루프 자동 중단) / `CommonArticlesResponse` 인터페이스 정의(any 없음) / `CAFE_GRP_CODE` 리터럴 상수(string 타입 추론) — **개선 여지**: `GRP_CODE`를 `as const`로 좁혀 미래 확장 시 유니온 힌트 제공 가능하나 현 1개 값이라 불필요 |
-| R5 | 헤더 구성 | ✅ 통과 | Referer = `listUrl(board)` (실측 Vue 컴포넌트 동일) / X-Requested-With: XMLHttpRequest / Accept: `application/json, text/plain, */*` / User-Agent 기존 `USER_AGENT` 상수 재사용(DRY) / Cookie 조건부 추가 + 값 미로그 |
-| R6 | 중단 조건 4종 품질 | ✅ 통과 | (1) `articles=[]` 명시 체크(L401) (2) `seenDataids` Set 기반 중복 감지 — 현 구현은 `pageItems[0].dataid` 만 검사(방어용, 설계안 준수) (3) maxPages off-by-one 없음(`for pageNo = 2; pageNo <= maxPages`) (4) `boardFailures`/`consecutiveFailures` 리셋 타이밍 적절(성공 시 둘 다 0) |
-| R7 | 로그 품질 | ✅ 통과 | 페이지별 요약 로그(page=N, +건수, 누적, 첫/마지막 dataid — L420~L423) / 쿠키 값 미노출(길이만) / `--debug` JSON 로그 형식(articles count, nextPage, bytes) — **미비점**: debug 모드여도 API 응답 JSON이 파일로 저장되지 않음 (HTML 덤프는 저장됨). R9 지적 참조 |
-| R8 | 컨벤션 준수 | ✅ 통과 | 운영 DB 가드 무관(코드 경로만 변경, 스키마 0) / snake_case API 응답(`writerNickname`/`articleElapsedTime`/`bbsDepth`) → TS camelCase 매핑 얇게 / import 순서 정상(상대 경로 유지) / 주석 "왜+근거+실측 참조" 3점 세트 일관 |
-| R9 | 실증적 검증 가능성 | 🟡 권장 | HTML 덤프(`tmp/cafe-debug-{board}.html`)는 저장되나 **API JSON 응답은 파일 덤프 안 됨**(콘솔 한 줄만). 향후 common-articles 스펙 변경 시 역공학 재수행이 불편 → 개선 시 `tmp/cafe-debug-api-{board}-p{N}.json` 저장 권장 |
-| R10 | 하위 호환성 | ✅ 통과 | `--max-pages` 생략 시 `parseMaxPagesArg` → 1 → 루프 진입 조건 `maxPages > 1` 거짓 → 2P API 호출 0, **완전 기존 동작 유지** / `BoardItem.bbsDepth` optional → 기존 consumer(upsert/article-fetcher) 수정 0건 실측 / `fetchBoardList` 시그니처 변경 0 (호출처 grep: sync-cafe.ts 1곳만, 정상) |
-
-#### 블록커
-- **없음**. tsc 통과, 스모크 2케이스 통과, 설계안 9가드 전 항목 준수.
-
-#### 권장 개선 (nice-to-have, 후속 세션 가능)
-1. **R7/R9 — API JSON debug 덤프**: `--debug` 시 `fetchBoardListApi` 응답 raw를 `tmp/cafe-debug-api-{board}-p{N}.json`으로 저장. 향후 다음카페 API 스펙 변경 감지/역공학 재수행 시 바로 비교 가능. 라인 3~5 추가 수준 (`writeFileSync(json, raw)`).
-2. **R4 — `GRP_CODE` 리터럴 강화**: 현재 `export const CAFE_GRP_CODE = "IGaj"` (string) → `as const` 추가하면 다음카페가 카페별 다른 grpid 요구 시 유니온 리터럴 확장 포인트가 명확. 현 1개 값이라 당장 이익 작음.
-3. **R7 — 헤더 공통화 검토**: `fetchBoardList`(HTML)와 `fetchBoardListApi`(JSON)에 `User-Agent`/`Cookie`/`Accept-Language` 3줄 중복. `buildHeaders(board, mode: "html" | "json")` 헬퍼로 추출하면 향후 쿠키 갱신·UA 변경 시 1곳 수정. 단 현 수준 중복은 가독성 비용 낮음 → 급하지 않음.
-4. **R6 — 중간 dataid 중복 감지 확장**: 현재 `seenDataids.has(pageItems[0].dataid)` 첫 글만 검사. API가 중간에 중복 섞는 드문 케이스 방어 원하면 `pageItems.some(it => seenDataids.has(it.dataid))` 로 확장. developer 노트 #2에서 이미 의식 중 — 현 구현은 99% 케이스 커버.
-
-#### 칭찬 포인트
-1. **설계안 100% 준수**: 9가드 sleep 위치(sync-cafe.ts 단일), XHR 헤더 3종, pageSize 50 하드 가드, afterBbsDepth=0 회피(`if (!cursor) break`), 1P HTML SSR 경로 유지(R3 이중 안전망) — planner 설계 리스크 매트릭스 R1~R9 전부 구현 반영.
-2. **주석 품질**: fetcher.ts L487~L534 `fetchBoardListApi` JSDoc에 "왜 별도 경로 / 동작 5단계 / 종료 신호 / 참조"가 세트로 들어가 있어 향후 세션 복귀 시 컨텍스트 복원 매우 쉬움.
-3. **실패 카운터 이중화**: 전역 `consecutiveFailures` + 게시판별 `boardFailures`로 "한 게시판만 실패해도 다음 게시판은 시도"하는 세밀한 복구 설계. 설계안에도 명시 없던 reviewer 참고 3번 항목이 실제 구현에 반영됨.
-4. **하위 호환 확인 경로**: tsc 통과 + 호출처 grep 1곳(sync-cafe.ts)으로 `BoardItem.bbsDepth` 옵션 필드 확장 안전성 확보 (A작업 `dataidNum` 패턴 복제).
-
-#### 커밋 가능 여부
-- ✅ **커밋 가능** (블록커 0, tsc 클린, 스모크 2케이스 검증 완료, 9가드 전 항목 준수, 하위 호환 100%)
-
----
-
-### 🧪 Phase 3 #6 테스트 결과 (tester, 2026-04-20)
-
-📊 **종합 판정**: **8개 중 8개 통과 / 0개 실패** (블록커 0건, 커밋 가능). 실측 8패턴 중 T6/T7 코드 검증 2건, T1 정적, T2~T5/T8 실행 5건.
-
-| # | 시나리오 | 결과 | 상세 |
-|---|---------|------|------|
-| T1 | `tsc --noEmit` | ✅ 통과 | exit 0, 무출력 (BoardItem.bbsDepth 옵션 필드, CommonArticlesResponse 인터페이스 타입 안전) |
-| T2 | 호환 (`--board=IVHA --limit=5` = `--max-pages` 생략) | ✅ 통과 | 헤더 로그 `max-pages=1` 표기, 5건 수집(dataid 3928~3923), API 호출 0, HTML SSR만 사용 |
-| T3 | `--max-pages=2 IVHA --limit=20 --debug` | ✅ 통과 | 1P HTML 20건 + 2P API 20건 = **40건**, 1P 마지막 dataid=**3896**, 2P 첫 dataid=**3894** (연속 단조 감소), 중복 **0건**, API 응답 `articles=20 nextPage=3 bytes=8593` / **주의(경미)**: debug 모드에서 HTML 덤프(`tmp/cafe-debug-IVHA.html`)는 저장되나 API JSON 덤프(`tmp/cafe-debug-api-IVHA-p2.json`)는 생성 안 됨 — 콘솔 1줄만 출력. reviewer R9 지적과 일치, 블록커 아님 |
-| T4 | `--max-pages=3 IVHA --limit=10` | ✅ 통과 | 10+10+10 = **30건** 수집, 1P→2P: 3915→3914 (연속), 2P→3P: 3896→3894 (연속), dataid 단조 3928→3875, 중복 0건 |
-| T5 | `MptT --limit=10 --max-pages=2` | ✅ 통과 | 20건 수집, 1P 마지막 dataid=**352481**, 2P 첫 dataid=**352480** (완벽 1간격 연속), 게시판 라벨 "연습 경기" 정상, grpid(IGaj) 재사용 확인 |
-| T6 | pageSize 상한 클램프 | ✅ 통과 | (a) `scripts/sync-cafe.ts` L103 `--limit` 가드 1~50 clamp (exit 1) (b) `src/lib/cafe-sync/fetcher.ts` L544~L549 `fetchBoardListApi` pageSize>50 하드 throw (`API_PAGE_SIZE_MAX=50` 상수) — 이중 방어 |
-| T7 | 중단 조건 4종 | ✅ 통과 | `scripts/sync-cafe.ts` L368 for-loop = maxPages 도달 / L369~L371 커서 없음 종료 / L401~L404 articles=[] 종료 / L407~L412 중복 dataid 종료 / L388~L396 전역+게시판별 연속실패 3회 중단 (2중 카운터) |
-| T8 | `--with-body --article-limit=3` 조합 | ✅ 통과 | 목록 20건(2P 합산) + 본문 3건(article-limit 기준) 수집, 본문 파싱 3/3 성공, 전화번호 마스킹 정상(`010-****-****`), upsert 예정 미리보기(PU-CAFE-3928 등) 정상 |
-
-#### 실측 데이터 연속성 확인
-
-| 테스트 | 1P last → 2P first | 2P last → 3P first | 간격 정상 |
-|--------|--------------------|--------------------|----------|
-| T3 IVHA p2 | 3896 → 3894 | — | ✅ |
-| T4 IVHA p3 | 3915 → 3914 | 3896 → 3894 | ✅ |
-| T5 MptT p2 | 352481 → 352480 | — | ✅ (1간격) |
-
-→ **모든 페이지 전환에서 dataid 역순 단조 감소 유지**. A작업 tie-break 정렬 호환성 여전히 보장.
-
-#### 블록커
-- **없음**. 8/8 통과. 커밋 가능.
-
-#### 권장 개선 (nice-to-have, reviewer R9 중복 항목)
-1. **API JSON debug 덤프 미비** (T3에서 관찰) — `fetchBoardListApi`의 `options.debug` 분기가 콘솔 한 줄만 출력하고 raw JSON을 파일로 저장하지 않음. 향후 카페 API 스펙 변경 시 역공학 재수행이 불편. `tmp/cafe-debug-api-{board}-p{N}.json` 저장 추가 권장 (라인 3~5, `writeFileSync(path, raw)` 1줄). **reviewer R7/R9와 중복** — 후속 세션 대상.
-
-#### 운영 주의사항 (tester 관찰)
-- 페이지 간 sleep 3초 정상 실측 (T3: 1P fetch 대기 3초 + 2P API 대기 3초 ≈ 총 6~7초 소요 / T4: 3페이지 = ~10초). 9가드 #1 준수.
-- 본 테스트 세션에서 총 API 호출 약 10회(T2~T5,T8), **403/429 없음**. 3초 간격 + 10초 내외 총 시간 = 차단 없는 안전 구간.
-- 쿠키 값 콘솔 미노출 확인 (길이 1397자만 표시).
-- **DB 쓰기 0** (`--execute` 생략, 모든 테스트 dry-run).
-
-#### 커밋 가능 여부
-- ✅ **커밋 가능** (tester 관점: 8/8 통과, 블록커 0, 정상/예외 경로 전부 동작, reviewer 판정과 일치)
-
----
-
 ## 🏁 Phase 진행 상황
 
 | Phase | 단계 | 상태 | 핵심 커밋 |
@@ -903,10 +540,7 @@ for board of targets:
 | 2b Step 4 | extract-fallbacks (6필드 재추출) | ✅ 완료 | `6d2dac5` |
 | 2b 품질 보강 | 마스킹 3중 + script 제거 + venue/시간 | ✅ 완료 | `2af6719` |
 | 2b 지속동기화 기반 | postedAt fallback + created_at 덮어쓰기 + MptT 강제 + DISTRICT_TO_CITY | ✅ 완료 | `4826018` |
-| A+E (카페 순서 tie-break) | dataid + noticeContainer 가드 + 백필 | ✅ 완료 (2026-04-20) | `4bc41bf` |
-| D 미니 (.num_subject fallback) | extractPostedAt 상세 HTML 폴백 복구 | ✅ 완료 (2026-04-20) | `c84aba0` |
-| 3 #6 | Pagination — common-articles cursor API | ✅ 완료 (2026-04-20) | 커밋 대기 |
-| 3 #1~#5, #8 | GH Actions 자동화 + pagination 외 | ⏳ **대기** | — |
+| 3 | GH Actions 자동화 | ⏳ **대기** | — |
 
 ---
 
@@ -919,7 +553,7 @@ for board of targets:
 | 3 | 쿠키 자동 갱신 스크립트 (`scripts/refresh-cookie.ts`) | 30분 | 로컬 재로그인 → base64 encode → `gh secret set` |
 | 4 | Slack/Discord 실패 알림 | 15분 | `if: failure()` + webhook |
 | 5 | `/admin/cafe-sync` 페이지 | 90분 | 수동 트리거(gh api) + 수집 통계 + 쿠키 만료 경고 |
-| 6 | **Pagination** (20건 상한 극복) | 75분 | ✅ **설계 완료** (2026-04-20, planner) — cursor-based `/api/v1/common-articles` 확정. developer 착수 대기 |
+| 6 | **Pagination** (20건 상한 극복) | 45분 | Daum 카페 모바일 목록 URL 분석 + `?page=N` 또는 커서 |
 | 7 | **시분 정확도** (목록+상세 결합) | 45분 | BoardItem.postedAt 날짜 + `.num_subject` 시분 결합 |
 | 8 | **city 추출률** 개선 | 30분 | DISTRICT_TO_CITY 확장 + 광역 표기 변형 |
 | 9 | 전체 수집 테스트 | 실행 시간만 | 각 게시판 100건+ |
@@ -1003,7 +637,6 @@ IVHA/Dilr는 혼재 글 많으므로 parser 재분류 유지.
 
 | 날짜 | 작업 | 커밋 |
 |------|------|------|
-| 04-20 | **Phase 3 #6 Pagination 설계 완료 (planner)** — `/api/v1/common-articles` cursor-based 확정 (번들 역공학 + 실측 8패턴). `afterBbsDepth`=1P last bbsDepth 필수, pageSize 상한 50, XHR 헤더 3종 필수. 영향 파일 3개(board-map/fetcher/sync-cafe) + decisions 기록. 예상 75분. developer 착수 가능 | — |
 | 04-20 | **D 미니 (extractPostedAt .num_subject 폴백)** — 상세 HTML 유일 시간 소스(.num_subject)를 4번째 fallback으로 추가. 과거 글 시분은 카페 원천 미제공 실측 확정(5/5 YY.MM.DD). postedAt null 5/5 → 0/5. tsc OK, 스모크 5/5 200 | `c84aba0` |
 | 04-20 | **A+E 완료 (카페 게시 순서 tie-break)** — metadata.cafe_article_id(Int) 저장 + listGames 메모리 정렬(created_at desc → cafe_article_id desc null last) + noticeContainer 방어 가드 + 기존 15건 백필 execute 완료. tester T1~T6 / reviewer R1~R6 전부 통과, 블록커 0 | `4bc41bf` |
 | 04-20 | **Phase 2b 지속동기화 기반** — postedAt fallback / created_at=카페게시순 / MptT PRACTICE 강제 / DISTRICT_TO_CITY 역매핑. 카페 출처 118건 초기화 + 3게시판 각 5건 재수집 | `4826018` |

@@ -16,17 +16,6 @@
 /** 다음카페 URL 경로의 카페 코드 (https://m.cafe.daum.net/{CAFE_CODE}/...) */
 export const CAFE_CODE = "dongarry";
 
-/**
- * 다음카페 내부 API(`/api/v1/common-articles`)가 요구하는 카페 그룹 코드(grpid).
- *
- * 왜 별도 상수:
- *   - URL 경로의 CAFE_CODE("dongarry")와 완전히 다른 값 (내부 식별자).
- *   - Phase 3 #6 Pagination 에서 신규 도입 — 번들 역공학으로 확정 (`IGaj`).
- *   - IVHA/Dilr/MptT 3게시판 모두 동일 grpid 사용 (실측).
- *   - 하드코딩 방지 — listApiUrl 헬퍼에서만 참조.
- */
-export const CAFE_GRP_CODE = "IGaj";
-
 // ─────────────────────────────────────────────────────────────────────────────
 // 게시판 정의
 // ─────────────────────────────────────────────────────────────────────────────
@@ -73,37 +62,4 @@ export function articleUrl(board: CafeBoard, dataid: string): string {
 /** id 문자열로 CAFE_BOARDS에서 찾아서 반환. 못 찾으면 null */
 export function getBoardById(id: string): CafeBoard | null {
   return CAFE_BOARDS.find((b) => b.id === id) ?? null;
-}
-
-/**
- * 게시판 목록 API URL (2페이지 이후 cursor-based pagination 용).
- *
- * 왜 필요한가:
- *   - 모바일 HTML SSR은 1페이지 20건만 내려주고, 후속 페이지는 Vue 컴포넌트가 XHR로 호출.
- *   - 실측 엔드포인트: `GET /api/v1/common-articles?grpid=&fldid=&targetPage=N&afterBbsDepth=<cursor>&pageSize=20`
- *   - `afterBbsDepth` 는 단순 페이지번호가 아니라 **직전 페이지 마지막 글의 bbsDepth 문자열**(커서).
- *   - pageSize 실측 상한 50 (100은 HTTP 500 반환).
- *
- * 참조: scratchpad-cafe-sync.md "📋 Phase 3 #6 Pagination 설계안" (실측 8패턴)
- *
- * @param board 대상 게시판
- * @param cursor 직전 페이지 마지막 글의 bbsDepth (1페이지 호출 금지 — afterBbsDepth=0 은 빈 배열 반환)
- * @param targetPage 요청 페이지 번호 (2부터)
- * @param pageSize 페이지당 건수 (1~50, 상한 강제는 fetcher 쪽)
- */
-export function listApiUrl(
-  board: CafeBoard,
-  cursor: string,
-  targetPage: number,
-  pageSize: number,
-): string {
-  // URLSearchParams 로 안전 인코딩 (bbsDepth 문자열에 특수문자 잠재 대비)
-  const params = new URLSearchParams({
-    grpid: CAFE_GRP_CODE,
-    fldid: board.id,
-    targetPage: String(targetPage),
-    afterBbsDepth: cursor,
-    pageSize: String(pageSize),
-  });
-  return `https://m.cafe.daum.net/api/v1/common-articles?${params.toString()}`;
 }
