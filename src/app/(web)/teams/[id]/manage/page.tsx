@@ -402,7 +402,16 @@ export default function TeamManagePage({ params }: { params: Promise<{ id: strin
           )}
 
           {!loading && error && (
-            <div className="rounded-lg bg-red-50 dark:bg-red-900/20 px-5 py-4 text-sm text-red-600 dark:text-red-400">{error}</div>
+            <div
+              className="rounded-lg px-5 py-4 text-sm"
+              style={{
+                // CSS 변수 기반 — 다크/라이트 자동 대응 (하드코딩 red-50/900 제거)
+                backgroundColor: "color-mix(in srgb, var(--color-error) 12%, transparent)",
+                color: "var(--color-error)",
+              }}
+            >
+              {error}
+            </div>
           )}
 
           {!loading && !error && requests.length === 0 && (
@@ -539,7 +548,9 @@ export default function TeamManagePage({ params }: { params: Promise<{ id: strin
                       }}
                     />
                     {nameEnError ? (
-                      <p className="mt-1 text-xs text-red-500">{nameEnError}</p>
+                      <p className="mt-1 text-xs" style={{ color: "var(--color-error)" }}>
+                        {nameEnError}
+                      </p>
                     ) : (
                       <p className="mt-1 text-xs" style={{ color: "var(--color-text-muted)" }}>
                         대한민국농구협회 등록 영문명. 영문/숫자/공백/하이픈만 허용.
@@ -756,9 +767,18 @@ export default function TeamManagePage({ params }: { params: Promise<{ id: strin
                 {saving ? "저장 중..." : "설정 저장"}
               </Button>
 
-              {/* ─── 위험 영역: 팀 해산 ─── */}
-              <div className="mt-8 rounded-lg border border-red-500/30 bg-red-500/5 p-5">
-                <h3 className="mb-2 flex items-center gap-1.5 text-base font-semibold text-red-500">
+              {/* ─── 위험 영역: 팀 해산 ─── (CSS 변수 기반 error 색상) */}
+              <div
+                className="mt-8 rounded-lg border p-5"
+                style={{
+                  borderColor: "color-mix(in srgb, var(--color-error) 30%, transparent)",
+                  backgroundColor: "color-mix(in srgb, var(--color-error) 5%, transparent)",
+                }}
+              >
+                <h3
+                  className="mb-2 flex items-center gap-1.5 text-base font-semibold"
+                  style={{ color: "var(--color-error)" }}
+                >
                   <span className="material-symbols-outlined text-base">warning</span>
                   위험 영역
                 </h3>
@@ -768,7 +788,11 @@ export default function TeamManagePage({ params }: { params: Promise<{ id: strin
                 <button
                   type="button"
                   onClick={() => setShowDissolve(true)}
-                  className="rounded border border-red-500 px-4 py-2.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-500 hover:text-white"
+                  className="rounded border px-4 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--color-error)] hover:text-white"
+                  style={{
+                    borderColor: "var(--color-error)",
+                    color: "var(--color-error)",
+                  }}
                 >
                   팀 해산
                 </button>
@@ -789,7 +813,10 @@ export default function TeamManagePage({ params }: { params: Promise<{ id: strin
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex justify-center">
-              <span className="material-symbols-outlined text-4xl text-red-500">
+              <span
+                className="material-symbols-outlined text-4xl"
+                style={{ color: "var(--color-error)" }}
+              >
                 delete_forever
               </span>
             </div>

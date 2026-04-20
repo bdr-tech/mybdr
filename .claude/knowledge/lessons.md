@@ -2,6 +2,24 @@
 <!-- 담당: 전체 에이전트 | 최대 30항목 -->
 <!-- 삽질 경험, 다음에 피해야 할 것, 효과적이었던 접근법을 기록 -->
 
+### [2026-04-20] 하드코딩 색상 잔존 31 파일 / `any` 타입 9회 — 점진 정비 숙제
+- **분류**: lesson (기술 부채)
+- **발견자**: pm (W4 마감 후 audit)
+- **범위(색상)**: `text-(red|green|yellow|blue|orange|pink|purple)-(300~700)` Tailwind 하드코딩이 src/app 29 파일 + src/components 2 파일에 잔존. CLAUDE.md "하드코딩 색상 금지 — `var(--color-*)` 사용" 규칙 위반
+- **범위(any)**: `:any` / `as any` / `<any>` 9회 / 8 파일 (src/app 기준). 타입 안정성 약점
+- **영향**: 다크/라이트 테마 전환 시 하드코딩 색이 어색하게 튀어 UX 불일치
+- **치환 패턴**:
+  - error → `var(--color-error)` / 배경 `color-mix(in srgb, var(--color-error) 12%, transparent)`
+  - success → `var(--color-success)`
+  - `text-red-500` hover 조합 → `hover:bg-[var(--color-error)] hover:text-white`
+- **샘플 적용**: 2026-04-20 `src/app/(web)/teams/[id]/manage/page.tsx` 5곳 치환 완료 (에러 박스, 필드 에러, 위험 영역, 팀 해산 버튼·아이콘)
+- **나머지 30 파일 정비 전략**:
+  1. **보이스카우트 규칙** — 해당 파일 다른 작업으로 건드릴 때 함께 정비
+  2. 방문 빈도 높은 페이지 우선 (teams/[id]/, games/[id]/, tournaments/[id]/ 등)
+  3. 대규모 일괄 치환은 PR 검토 부담 커서 비추천
+- **any 정비 패턴**: `unknown` + type-narrowing, 또는 구체 interface 도입. API 응답이면 snake_case 맞춘 정확한 타입
+- **참조횟수**: 0
+
 ### [2026-04-18] "개발 DB"라고 믿은 `.env`가 사실 운영 DB였다 — API id 비교로 발견
 - **분류**: lesson
 - **발견자**: pm
