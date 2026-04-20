@@ -276,8 +276,8 @@ async function main() {
   );
   console.log("");
 
-  // 20건+ 경고 카운트다운 (--execute만). CI 환경에서는 사용자 확인 불가하므로 스킵.
-  if (EXECUTE_MODE && withBody && process.env.CI !== "true") {
+  // 20건+ 경고 카운트다운 (--execute만)
+  if (EXECUTE_MODE && withBody) {
     const estimatedTotal = targets.length * Math.min(articleLimit, limit);
     if (estimatedTotal >= 20) {
       await countdown(4, estimatedTotal);

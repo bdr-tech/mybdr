@@ -530,52 +530,6 @@ ORDER BY created_at DESC;
 #### 커밋 가능 여부
 - ✅ **커밋 가능** (블록커 0, tsc 통과, tester 6개 테스트 통과, 권장 개선은 전부 후속 처리 가능)
 
----
-
-### 📋 Phase 3 #1+#3+#4 자동화 설계안 (2026-04-20)
-
-> **커밋 대상**: `.github/workflows/cafe-sync.yml` (신규 202줄) + `scripts/refresh-cafe-cookie.ts` (신규 251줄). `scripts/sync-cafe.ts` 무수정.
-> (상세 planner/developer/reviewer 섹션은 세션 정리 과정에서 축약됨. 구현 내용은 실제 파일 참조.)
-
-#### 🧪 테스트 결과 (tester, 2026-04-20)
-
-| # | 시나리오 | 결과 | 상세 |
-|---|---------|------|------|
-| T1 | tsc --noEmit | ✅ | exit 0, 무출력. workflow/refresh 스크립트 타입 깨끗 |
-| T2 | YAML 문법 | ✅ | js-yaml 파싱 성공. name=cafe-sync, on=[schedule, workflow_dispatch], cron=`0 22,23,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 * * *` (KST 07~24 매시 18회/일), concurrency `{group:"cafe-sync", cancel-in-progress:false}`, jobs=[sync], steps=9개, timeout=15분. Actions 버전 `actions/checkout@v4` / `setup-node@v4` / `upload-artifact@v4` — 메이저 pin (GitHub 공식 마켓플레이스 관행 수준, SHA full pin 은 nice-to-have) |
-| T3 | step 순서 | ✅ | 1.Checkout → 2.Setup Node → 3.Install → **4.Validate DB (CI guard, grep bwoorsgoijvlgutkrcvs)** → 5.Restore storageState (base64 decode + 무결성 체크) → 6.Extract DAUM_CAFE_COOKIE (add-mask 전에 echo) → 7.Run sync-cafe (set -o pipefail + tee) → 8.Upload artifact `if: always()` → 9.Slack `if: failure()`. **DB 가드가 쿠키 복원 이전** 실행 — 운영 DB URL 실수 시 쿠키 디코드조차 안 함. artifact if: always() 첫 주 디버깅 안전망, Slack failure() only |
-| T4 | Secrets 3종 | ✅ | workflow 에서 사용: `secrets.DATABASE_URL_DEV` (L56) / `secrets.DAUM_CAFE_STORAGE_STATE_B64` (L96) / `secrets.SLACK_WEBHOOK_URL` (L165) — **설계안 3종과 정확히 일치**. 누락/추가 0. SLACK_WEBHOOK_URL 미설정 시 step 이 `exit 0` 로 알림 skip (L170~173) → Slack 미등록 상태에서도 CI 성공 판정 |
-| T5 | 쿠키 마스킹 순서 | ✅ | L127 `echo "::add-mask::$COOKIE"` 가 L129 `echo "DAUM_CAFE_COOKIE=$COOKIE" >> $GITHUB_ENV` **이전** 실행 — Actions 런너가 후속 로그에 쿠키 값 자동 `***` 치환. base64 decode (L103) 는 파이프 리다이렉트(`>`)로 파일 직접 쓰기 + `chmod 600` — 값 echo 없음. 추출된 쿠키 문자열도 add-mask 로 가림 |
-| T6 | 운영 DB 가드 3중 | ✅ | (1) **CI workflow** L82~89 `grep -q 'bwoorsgoijvlgutkrcvs'` 실패 시 `::error::` + exit 1 (쿠키 복원 이전 작동) (2) **sync-cafe.ts** L53+L59 `DEV_DB_IDENTIFIER` 상수 + `--execute` 모드에서 URL `.includes()` 검사 (3) **upsert.ts** L53+L63 `assertDevDatabase()` 매 upsert 시점 재검증. 3층 어느 한 층 우회해도 다음 층이 catch |
-| T7 | refresh --help | ⚠️ 부분 | `--help` 플래그는 **미구현**. 입력 시 정상 실행 플로우 진입(gh auth status → 쿠키 나이 출력 → cafe-login.ts 실행)하여 예상 외 동작. 기존 설계 3종(`--skip-login`/`--dry-run`/`--repo=`) 은 정상 인식 ✅. git remote 자동 추출 로직(`detectRepoFromGitRemote()`)도 `bdr-tech/mybdr` 정확히 반환 ✅. 블록커 아님(파일 L12~L18 JSDoc 에 usage 주석 존재) |
-| T8 | refresh dry-run 재실행 | ✅ | 출력: `대상 레포: bdr-tech/mybdr (git remote 자동)` / `dry-run: true / skip-login: true` / `gh CLI 로그인 상태 OK` / `기존 쿠키 나이: 0.1일 (만료 권장 기준 7일)` / `전체 쿠키 40개 / .daum.net 도메인 22개` / `base64 크기: 14.68 KB (상한 22.9%)` / `[dry-run] gh secret set 스킵` / exit 0. Secret / 쿠키 값 / DB URL 로그에 0 노출. `gh secret set` 실제 실행 0 |
-| T9 | refresh 에러 핸들링 | ✅ | 코드 읽기 검증: (a) gh 미로그인 L107~110 try/catch → exit 1 (b) 쿠키 파일 부재 + `--skip-login` L126~131 exit 1 + 안내 (c) JSON 파싱 실패 L163~168 exit 1 (d) 쿠키 <5개 L171~176 exit 1 (e) `.daum.net` 쿠키 0개 L184~187 exit 1 (f) base64 >57.6KB (90%) L201~205 `console.warn` 경고. `--repo` 형식 가드는 정규식 미매치 시 null → exit 1, 이후 gh CLI 로 잘못된 repo 위임 검증 |
-| T10 | Slack payload 안전성 | ✅ | workflow L169~202 코드 읽기: (a) payload 에 Secret 값 **0** 포함 — 오직 run URL + run ID + `grep '완료 (IVHA\|Dilr\|MptT)' tmp/cafe-sync.log` 결과 + `tail -n 50 \| head -c 2000`. DB URL / 쿠키 / webhook URL 전부 payload 밖 (b) `node JSON.stringify` 직렬화 — sed 이스케이프 취약점 회피 (c) BOARD_SUMMARY/TAIL 은 `export` 후 `process.env` 로 읽기 → shell 인젝션 방어 (d) SLACK_WEBHOOK_URL 은 curl URL 인자로만 사용 (--data 아님) → 로그 미노출 (e) curl 실패 시 `\|\| true` 로 step 은 계속 |
-| T11 | sync-cafe CI 가드 | ❌ **미구현** | `scripts/sync-cafe.ts` grep: `process.env.CI` 참조 **0건**. `countdown(4, totalPosts)` L261~L271 이 CI 에서도 4초 블로킹 실행. workflow env 에 `CI: "true"` 주입(L52)은 되어 있으나 스크립트가 감지 안 함. **영향도**: workflow timeout 15분 대비 4초 지연 미미 — 블록커 아님. 단 PM 스펙 "`process.env.CI === 'true'` 체크로 사용자 countdown 만 스킵" 과 **실제 코드 불일치** — 후속 3단어 추가 권장. 9가드 #1 페이지 간 `sleep(3000)` 은 fetcher/sync-cafe.ts 내부에 유지되어 CI 여부와 무관하게 동작 — 준수 |
-
-#### 블록커 (머지 차단 사유)
-- **없음**.
-
-#### 권장 개선 (nice-to-have, 커밋 후 보강 가능)
-1. **sync-cafe.ts CI countdown 스킵 (T11)** — L311 `if (EXECUTE_MODE && withBody)` 에 `&& process.env.CI !== "true"` 추가. 3단어 수정, CI 실행 시간 4초 단축 + 명세 일치.
-2. **refresh `--help` 플래그 (T7)** — 스크립트 L57 근처에 `if (argv.includes("--help")) { console.log(usage); process.exit(0); }` 10줄 추가. 기존 JSDoc L12~L18 그대로 출력.
-3. **Slack payload grep 패턴 재검토 (L175)** — `grep -E '완료 (IVHA\|Dilr\|MptT)'` 가 현재 sync-cafe 로그 출력 규약과 **불일치** 가능성(실제는 `[IVHA ...] N건 수집` 포맷). grep 미매치 시 `echo "(게시판 요약 없음)"` fallback 으로 Slack 알림은 정상 전송되지만 "게시판 요약" 섹션 빈다. 해법 A: sync-cafe 출력에 "완료 IVHA: ..." 라인 추가, 해법 B: grep 패턴을 `'\[(IVHA\|Dilr\|MptT)'` 로 교체.
-4. **Actions 버전 full SHA pin** — 공급망 보안 강화 원할 때. 현재 `@v4` 메이저 pin 은 GitHub official 마켓플레이스 관행 수준.
-5. **Artifact 경로 방어** — step 5 에서 `mkdir -p .auth tmp` 확보되지만 sync-cafe step 실패 시 `tmp/cafe-sync.log` 생성 실패 가능. `upload-artifact@v4` 는 경로 없으면 warning 후 skip → artifact 0건. 필요 시 step 5 에서 `touch tmp/cafe-sync.log` 선행 고려.
-
-#### 사용자 Secrets 등록 전 체크리스트
-1. `DATABASE_URL_DEV` — 개발 DB URL (`...bwoorsgoijvlgutkrcvs...` 포함 필수). 운영 DB URL 등록 시 CI step 4 에서 즉시 실패
-2. `DAUM_CAFE_STORAGE_STATE_B64` — `.auth/cafe-state.json` base64 (14.68KB) — `scripts/refresh-cafe-cookie.ts --skip-login` 로 자동 등록 권장 (dry-run 검증 완료)
-3. `SLACK_WEBHOOK_URL` — Slack Incoming Webhook URL — 미등록 시 알림만 skip (CI 성공 판정)
-4. 등록 후 검증: `gh secret list --repo bdr-tech/mybdr` → 3개 확인
-5. 수동 트리거 검증: `gh workflow run cafe-sync.yml --ref subin`
-6. 의도적 실패 시나리오: `DATABASE_URL_DEV` 에 가짜 URL → step "Validate DB" 실패 → Slack 알림 수신 확인
-
-#### 커밋 가능 여부
-- ✅ **커밋 가능** — 블록커 0, tsc 통과, YAML 파싱 통과, Secrets 3종 일치, 마스킹 순서 검증, DB 가드 3중 작동, Slack payload Secret 미노출, dry-run exit 0. T11 CI 가드 미구현은 nice-to-have 수준 (후속 3단어 커밋 권장).
-
----
-
 ## 🏁 Phase 진행 상황
 
 | Phase | 단계 | 상태 | 핵심 커밋 |
