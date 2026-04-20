@@ -2,6 +2,17 @@
 <!-- 담당: debugger, tester | 최대 30항목 -->
 <!-- 이 프로젝트에서 반복되는 에러 패턴, 함정, 주의사항을 기록 -->
 
+### [2026-04-20] 다음카페 상세 HTML에 시간 소스가 `.num_subject` 단 하나 (함정)
+- **분류**: error (외부 시스템 함정, 재발 위험: 파서 확장 시)
+- **발견자**: pm + Explore (실측 tmp/cafe-debug-article-IVHA-{3919,3920,3923,3924,3925}.html 5건)
+- **증상**: `extractPostedAt()`가 5/5 글 모두 `null` 반환. sync-cafe dry-run 출력에 `postedAt: null` 반복. `r.postedAt ?? it.postedAt` fallback으로 목록값이 덮어 실피해는 없으나 코드 위생 악화.
+- **원인**: 상세 페이지 HTML에 파서가 찾던 모든 소스(`articleElapsedTime` JS 변수, `regDttm`/`createdAt` JS 변수, `<script type="application/ld+json">` datePublished)가 **전부 존재하지 않음**. 유일한 시간 소스는 `<span class="num_subject">...</span>` DOM 요소.
+- **해결**: `extractPostedAt()` 4번째 fallback으로 `$("span.num_subject").first().text()` 추가. `parseCafeDate`가 이미 `"HH:MM"`/`"YY.MM.DD"` 두 형식 지원 (article-fetcher.ts `c84aba0`).
+- **예방**:
+  - 다음카페 상세 파서를 수정하거나 추가 필드(수정일/좋아요수/조회수 등)를 뽑을 때 **HTML 덤프 실측 필수** (`--debug` 플래그)
+  - `articleElapsedTime`/`regDttm`/`JSON-LD`는 **목록 페이지에만 존재**하고 상세에는 없음 (목록 ≠ 상세 구조)
+  - 당일 글 vs 과거 글 샘플 둘 다 수집해 비교
+
 ### [2026-04-17] API 미들웨어(apiSuccess의 convertKeysToSnakeCase) 놓치고 컴포넌트 인터페이스 거꾸로 변환
 - **분류**: error (**재발 6회**, 2026-04-20 M6에서 layout.tsx + header.tsx + referee 3곳 동시 발견 — **referee 2곳 2026-04-20 해소**)
 - **발견자**: pm + 사용자 + tester + reviewer

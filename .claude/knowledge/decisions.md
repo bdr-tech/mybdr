@@ -2,6 +2,19 @@
 <!-- 담당: planner-architect | 최대 30항목 -->
 <!-- "왜 A 대신 B를 선택했는지" 기술 결정의 배경과 이유를 기록 -->
 
+### [2026-04-20] 카페 sync 과거 글 시분 확보 불가 — 원천 미제공 (HTML 한계)
+- **분류**: decision (기술적 한계 확정)
+- **결정자**: pm + Explore 실측 분석
+- **결정**: 과거 글(당일 외) 시분(HH:MM) 추출을 **포기**. 분 단위 정렬 + `dataid` tie-break 조합으로 카페 표시 순서를 사실상 100% 복원.
+- **배경**: Phase 3 체크리스트 #7 "시분 정확도"를 원래 상세 페이지 파싱으로 해결하려 했으나, 실측(tmp/cafe-debug-article-IVHA-{3919,3920,3923,3924,3925}.html 5건) 결과 상세 HTML에서도 과거 글은 `YY.MM.DD`만 노출. 당일 글만 `HH:MM` 표시.
+- **실측 근거**:
+  - 상세 유일 시간 소스 `<span class="num_subject">`: 당일=`13:40` / 과거=`26.04.17`
+  - 기타 후보 전부 부재: `articleElapsedTime`, `regDttm`, `createdAt`, `JSON-LD datePublished`, `og:published_time`
+  - 5/5 과거 글이 모두 날짜 형식 (샘플 부족 아닌 패턴 확정)
+- **대체 전략**: `dataid` 단조 증가 특성(실측 3926→3896 역순) 활용 → `games.metadata.cafe_article_id` 2차 정렬키로 같은 날 여러 글의 순서를 완벽 복원.
+- **사용자 체감**: 과거 글은 날짜 단위 정렬 + 같은 날 내 dataid desc → 카페 표시 순서와 일치.
+- **미래 확장 가능성 (비추천)**: 모바일 API 직접 호출로 시분초 확보 가능성 있으나 비공개 API + 차단 위험 → 비용 대비 이득 낮음.
+
 ### [2026-04-20] 카페 sync dataid tie-break — metadata JSON 키 (cafe_article_id Int)
 - **분류**: decision
 - **결정자**: planner-architect + pm
