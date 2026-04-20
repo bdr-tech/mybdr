@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
+import { Breadcrumb, type BreadcrumbItem } from "@/components/shared/breadcrumb";
 
 export const revalidate = 30;
 
@@ -22,6 +23,8 @@ function getSeriesData(slug: string) {
       const series = await prisma.tournament_series.findUnique({
         where: { slug },
         include: {
+          // L3: 상위 단체 — 브레드크럼에 단체 링크 추가
+          organization: { select: { name: true, slug: true } },
           tournaments: {
             orderBy: { edition_number: "desc" },
             select: {
@@ -62,8 +65,26 @@ export default async function SeriesHubPage({
     (t) => t.status === "registration_open" || t.status === "ongoing"
   );
 
+  // L3 브레드크럼: 홈 / [단체명 /] {시리즈명}
+  const breadcrumbItems: BreadcrumbItem[] = [{ label: "홈", href: "/" }];
+  if (series.organization) {
+    breadcrumbItems.push({
+      label: series.organization.name,
+      href: `/organizations/${series.organization.slug}`,
+    });
+  } else {
+    // 단체 소속 없음: 시리즈 허브 목록으로 연결
+    breadcrumbItems.push({ label: "시리즈", href: "/series" });
+  }
+  breadcrumbItems.push({ label: series.name });
+
   return (
     <div className="mx-auto max-w-2xl pb-16">
+      {/* L3 브레드크럼 — PC에서만 표시 (breadcrumb.tsx 내부에서 hidden lg:block) */}
+      <div className="mb-4">
+        <Breadcrumb items={breadcrumbItems} />
+      </div>
+
       {/* 헤더 */}
       <div className="mb-6 text-center">
         <h1 className="text-3xl font-bold">{series.name}</h1>

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 // 디자인 시안 컴포넌트: 히어로(배너) + About(대회 소개) + 탭
 import { TournamentHero } from "./_components/tournament-hero";
 import { TournamentAbout } from "./_components/tournament-about";
-import { Breadcrumb } from "@/components/shared/breadcrumb";
+import { Breadcrumb, type BreadcrumbItem } from "@/components/shared/breadcrumb";
 
 // 탭 전환 컴포넌트 (클라이언트) — lazy loading 방식으로 변경
 import { TournamentTabs } from "./_components/tournament-tabs";
@@ -114,6 +114,8 @@ export default async function TournamentDetailPage({
       bank_account: true,
       bank_holder: true,
       maxTeams: true,
+      // L3: 소속 시리즈/단체 브레드크럼에 사용
+      series_id: true,
       // 비공개 대회 접근 가드에 사용
       is_public: true,
       // 디자인 템플릿 관련 필드
@@ -136,6 +138,24 @@ export default async function TournamentDetailPage({
     const userId = BigInt(session.sub);
     const insider = await isTournamentInsider(userId, id, session);
     if (!insider) return notFound();
+  }
+
+  // L3: 소속 시리즈/단체 메타 (브레드크럼 4단)
+  // Home / 단체 / 시리즈 / 대회명 체인. series_id/organization_id null이면 해당 단계 skip.
+  let series:
+    | { name: string; slug: string; organization: { name: string; slug: string } | null }
+    | null = null;
+  if (tournament.series_id) {
+    series = await prisma.tournament_series
+      .findUnique({
+        where: { id: tournament.series_id },
+        select: {
+          name: true,
+          slug: true,
+          organization: { select: { name: true, slug: true } },
+        },
+      })
+      .catch(() => null);
   }
 
   // ===== 내 신청 건수 조회 (배지 표시용) =====
@@ -329,11 +349,30 @@ export default async function TournamentDetailPage({
 
   return (
     <div>
-      {/* 브레드크럼: PC에서만 표시, 모바일은 뒤로가기 버튼이 대신 */}
-      <Breadcrumb items={[
-        { label: "대회", href: "/tournaments" },
-        { label: tournament.name },
-      ]} />
+      {/* 브레드크럼: PC에서만 표시, 모바일은 뒤로가기 버튼이 대신
+       * L3: 소속 시리즈/단체가 있으면 4단(홈 → 단체 → 시리즈 → 대회), 없으면 기존 2단(대회 → 대회명) */}
+      <Breadcrumb
+        items={(() => {
+          if (series) {
+            // trail 타입을 BreadcrumbItem[]로 명시해 href optional(마지막 항목) 허용
+            const trail: BreadcrumbItem[] = [{ label: "홈", href: "/" }];
+            if (series.organization) {
+              trail.push({
+                label: series.organization.name,
+                href: `/organizations/${series.organization.slug}`,
+              });
+            }
+            trail.push({ label: series.name, href: `/series/${series.slug}` });
+            trail.push({ label: tournament.name });
+            return trail;
+          }
+          // 시리즈 소속 없음: 기존 2단 유지
+          return [
+            { label: "대회", href: "/tournaments" },
+            { label: tournament.name },
+          ];
+        })()}
+      />
 
       {/* 히어로 배너: 사이드바 정보(참가비/참가신청)를 히어로에 통합 */}
       <TournamentHero
