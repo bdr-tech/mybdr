@@ -161,31 +161,69 @@ export default function ProfileActivityPage() {
   const tab: Tab =
     rawTab === "tournaments" ? "tournaments" : rawTab === "teams" ? "teams" : "games";
 
-  const [items, setItems] = useState<(TournamentItem | GameItem | TeamItem)[]>([]);
+  // 3 탭 데이터 병렬 캐시 — 탭 전환 시 재fetch 없이 배지·리스트 즉시 표시
+  // 캐시 목적: (1) 다른 탭에 몇 건 있는지 탭 바에 배지로 미리 보여주기
+  //          (2) 탭 전환 시 로딩 스피너 깜빡임 제거
+  const [cache, setCache] = useState<{
+    games: GameItem[];
+    tournaments: TournamentItem[];
+    teams: TeamItem[];
+  }>({ games: [], tournaments: [], teams: [] });
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async (type: Tab) => {
-    setLoading(true);
+  // 단일 탭 refetch — cancel/action 후 해당 탭만 갱신
+  const loadOne = useCallback(async (type: Tab) => {
     try {
       const res = await fetch(`/api/web/me/activity?type=${type}`, {
         credentials: "include",
       });
-      if (!res.ok) {
-        setItems([]);
-        return;
-      }
-      const json = (await res.json()) as { items?: (TournamentItem | GameItem | TeamItem)[] };
-      setItems(Array.isArray(json.items) ? json.items : []);
+      if (!res.ok) return;
+      const json = (await res.json()) as { items?: unknown };
+      const items = Array.isArray(json.items) ? json.items : [];
+      setCache((prev) => ({ ...prev, [type]: items as never }));
     } catch {
-      setItems([]);
-    } finally {
-      setLoading(false);
+      // 무시 — 기존 캐시 유지
     }
   }, []);
 
+  // 초기 1회: 3 탭 병렬 fetch
   useEffect(() => {
-    load(tab);
-  }, [tab, load]);
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const [g, t, te] = await Promise.all([
+          fetch("/api/web/me/activity?type=games", { credentials: "include" }).then((r) =>
+            r.ok ? (r.json() as Promise<{ items?: GameItem[] }>) : { items: [] },
+          ),
+          fetch("/api/web/me/activity?type=tournaments", { credentials: "include" }).then(
+            (r) => (r.ok ? (r.json() as Promise<{ items?: TournamentItem[] }>) : { items: [] }),
+          ),
+          fetch("/api/web/me/activity?type=teams", { credentials: "include" }).then((r) =>
+            r.ok ? (r.json() as Promise<{ items?: TeamItem[] }>) : { items: [] },
+          ),
+        ]);
+        if (cancelled) return;
+        setCache({
+          games: Array.isArray(g.items) ? g.items : [],
+          tournaments: Array.isArray(t.items) ? t.items : [],
+          teams: Array.isArray(te.items) ? te.items : [],
+        });
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const items = cache[tab];
+  const counts = {
+    games: cache.games.length,
+    tournaments: cache.tournaments.length,
+    teams: cache.teams.length,
+  };
 
   function changeTab(next: Tab) {
     if (next === tab) return;
@@ -205,7 +243,7 @@ export default function ProfileActivityPage() {
       const body = (await res.json()) as { message?: string; error?: string };
       if (res.ok) {
         showToast(body.message ?? "신청이 취소되었습니다.", "success");
-        await load("teams"); // 목록 갱신
+        await loadOne("teams"); // teams 탭만 refetch
       } else {
         showToast(body.error ?? "취소 중 오류가 발생했습니다.", "error");
       }
@@ -236,6 +274,7 @@ export default function ProfileActivityPage() {
       >
         {TABS.map((t) => {
           const active = tab === t.key;
+          const count = counts[t.key];
           return (
             <button
               key={t.key}
@@ -256,6 +295,24 @@ export default function ProfileActivityPage() {
                 {t.icon}
               </span>
               {t.label}
+              {/* 건수 배지 — 0건이거나 아직 로딩 중이면 숨김 */}
+              {count > 0 && (
+                <span
+                  className="inline-flex items-center justify-center px-1.5 text-[10px] font-black tabular-nums"
+                  style={{
+                    backgroundColor: active
+                      ? "var(--color-primary)"
+                      : "var(--color-surface-bright)",
+                    color: active ? "#fff" : "var(--color-text-muted)",
+                    borderRadius: 4,
+                    minWidth: "1.25rem",
+                    height: "1rem",
+                    lineHeight: 1,
+                  }}
+                >
+                  {count > 99 ? "99+" : count}
+                </span>
+              )}
             </button>
           );
         })}
