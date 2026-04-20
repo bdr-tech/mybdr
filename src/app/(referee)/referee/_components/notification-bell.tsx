@@ -82,18 +82,20 @@ export function NotificationBell() {
       });
       if (!res.ok) return;
       const json = await res.json();
-      // apiSuccess 포맷: { success, data: { items, unread_count, ... } }
-      const data = json?.data;
-      if (!data) return;
+      // ⚠️ apiSuccess는 `{ data: ... }` 래핑 없이 최상위에 직접 직렬화한다
+      //    (src/lib/api/response.ts — NextResponse.json(convertKeysToSnakeCase(data)))
+      //    => 응답 = { items, total, unread_count, category_counts, page, limit }
+      //    (errors.md 6회차 가드: `json?.data` 접근은 항상 undefined로 사일런트 실패)
+      if (!json) return;
       setItems(
-        Array.isArray(data.items)
-          ? data.items.map((i: Notification) => ({
+        Array.isArray(json.items)
+          ? json.items.map((i: Notification) => ({
               ...i,
               id: String(i.id), // bigint-safe string
             }))
           : []
       );
-      setUnreadCount(Number(data.unread_count ?? 0));
+      setUnreadCount(Number(json.unread_count ?? 0));
     } catch {
       // 네트워크 에러는 조용히 무시 — 다음 폴링에서 재시도
     } finally {

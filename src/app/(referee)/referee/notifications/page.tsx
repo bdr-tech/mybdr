@@ -87,14 +87,15 @@ export default function NotificationsPage() {
         credentials: "include",
       });
       const json = await res.json();
-      const d = json?.data;
-      if (d && Array.isArray(d.items)) {
+      // ⚠️ apiSuccess는 `{ data: ... }` 래핑 없이 최상위에 직접 직렬화한다
+      //    (errors.md 6회차 가드: `json?.data` 접근은 항상 undefined로 사일런트 실패)
+      if (json && Array.isArray(json.items)) {
         setData({
-          items: d.items.map((i: Notification) => ({ ...i, id: String(i.id) })),
-          total: Number(d.total ?? 0),
-          unread_count: Number(d.unread_count ?? 0),
-          page: Number(d.page ?? page),
-          limit: Number(d.limit ?? LIMIT),
+          items: json.items.map((i: Notification) => ({ ...i, id: String(i.id) })),
+          total: Number(json.total ?? 0),
+          unread_count: Number(json.unread_count ?? 0),
+          page: Number(json.page ?? page),
+          limit: Number(json.limit ?? LIMIT),
         });
       }
     } catch {
