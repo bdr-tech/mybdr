@@ -174,13 +174,33 @@ export default function TeamManagePage({ params }: { params: Promise<{ id: strin
   }, [tab, teamData, fetchTeamData]);
 
   // ─── 멤버 관리: 승인/거부 핸들러 ───
+  // reject 시 거부 사유 prompt — 빈값 허용 / cancel은 진행 중단
+  // (신청자의 `/profile/activity?tab=teams` 와 팀 상세 UI, 앱 알림 content에 노출)
   async function handleAction(requestId: string, action: "approve" | "reject") {
+    let rejectionReason: string | null = null;
+    if (action === "reject") {
+      const input = window.prompt(
+        "거부 사유를 입력하세요 (선택, 신청자에게 노출됩니다. 비워두면 사유 없이 거부):",
+        "",
+      );
+      // prompt null = cancel 클릭 → 거부 자체를 취소
+      if (input === null) return;
+      const trimmed = input.trim();
+      rejectionReason = trimmed ? trimmed.slice(0, 500) : null;
+    }
+
     setProcessing(requestId);
     try {
       const res = await fetch(`/api/web/teams/${id}/members`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId, action }),
+        body: JSON.stringify({
+          requestId,
+          action,
+          ...(action === "reject" && rejectionReason
+            ? { rejection_reason: rejectionReason }
+            : {}),
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

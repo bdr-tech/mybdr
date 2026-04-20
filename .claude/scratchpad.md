@@ -11,19 +11,19 @@
 - **푸시 전 `git fetch` 권장** (양 세션 push 충돌 방지)
 
 ## 현재 작업
-- **요청**: W4 완전 마감 — Day 20 회고 포함
-- **상태**: 🟢 D+C+B+A + M4 후속 + L2/L3 기획서 완료 (subin 5 커밋 미푸시)
-- **현재 담당**: pm (push 대기)
+- **요청**: 오후 push + 후속 정비 3종 (scratchpad / referee 알림 확인 / L3 Breadcrumb)
+- **상태**: 🟢 1·2·5 확인 완료 — 알림 이미 완비 / Breadcrumb 이미 존재. 실질 작업은 M7 거부 사유 저장으로 전환
+- **현재 담당**: pm (거부 사유 저장 작업 중)
 
 ## 진행 현황표
 | 영역 | 상태 |
 |------|------|
 | 브랜치 | subin |
-| 미푸시 커밋 | 0 |
-| main..dev | 0 ✅ (main이 dev 전체 포함) |
-| subin..dev | 1 (squash 차이, 내용 동일 — 관례) |
-| PR #47 (subin→dev) | 🟣 MERGED squash `ff02652` |
-| PR #48 (dev→main) | 🟣 MERGED merge `8475e10` |
+| 미푸시 커밋 | 0 (방금 push 직후) |
+| main..dev | 0 ✅ (운영 반영 완료) |
+| subin..dev | 1 (squash 차이, 관례) |
+| PR #47/#48 오전 | 🟣 MERGED (W1~W3 + 오전 push) |
+| PR #49/#50 오후 | 🟣 MERGED (W4 전체 + D + 카페 후속 + L2/L3 기획서) |
 | 작업 트리 (다른 터미널) | 본 세션에서 건드리지 않음 |
 
 ## W1~W4 완료 요약 (2026-04-19 ~ 04-20)
@@ -69,7 +69,9 @@ Day 20 남은 작업: 통합 스모크 테스트(수동, 수빈 직접) + L2/L3 
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
-| 04-20 | pm | **W4 마감 Day 20** — /games/my-games "참가 신청한 경기" 리스트 제거(M4 후속) + Dev/long-term-plan-L2.md(본인/타인 프로필 통합) + Dev/long-term-plan-L3.md(3계층 IA 명확화) + W1~W4 완료 요약 | ✅ 642a8be + 커밋 대기(docs) |
+| 04-20 | pm | **M7 후속 — 거부 사유 저장/노출** — members/route.ts PATCH에 rejection_reason body 수신·저장(500자 trim) + 알림 content에 사유 포함 + manage/page.tsx reject 시 prompt로 입력(빈값 허용, cancel시 중단) | ✅ 커밋 대기 |
+| 04-20 | pm | **오후 push — PR #49/#50 전부 MERGED** (subin→dev squash `70baa17` / dev→main merge `e6bbe4e`). 충돌 5개 --ours 해결 | ✅ main 반영 |
+| 04-20 | pm | **W4 마감 Day 20** — /games/my-games 중복 제거 + Dev/long-term-plan-L2/L3.md + W1~W4 완료 요약 | ✅ 642a8be + 1119991 |
 | 04-20 | pm | **W4 M4 내 활동 통합 뷰 + M7 4번** — /api/web/me/activity(3type 통합), /profile/activity 3탭 페이지, 좌측네비 "내 활동" 추가(7항목), /games/my-games 배너, 팀 탭 pending 취소 빠른액션 | ✅ de2c712 |
 | 04-20 | pm | **W4 M7 팀 가입 신청자 화면** (1~3번) — GET/DELETE my-application API, join-button.tsx 상태 분기 + 환영 토스트 + 취소/재신청 + 거부사유 + CSS 변수화 | ✅ c2b13c5 |
 | 04-20 | pm | **W4 L1 용어 통일 + /help/glossary 신설** — 용어 9종 페이지 + Footer 도움말 + 비로그인 히어로 용어 사전 링크 + PC 사이드네비 "경기" 부제 + conventions.md 단일 소스 | ✅ e5071f0 |
@@ -79,4 +81,3 @@ Day 20 남은 작업: 통합 스모크 테스트(수동, 수빈 직접) + L2/L3 
 | 04-20 | pm+team | **M5 온보딩 압축** — auth redirect→/verify, /profile/complete 7→3필드 옵션카드, 흐름 정렬 + 후속 정비(타입/색상변수) | ✅ 1e7ec68 + 17732ab |
 | 04-20 | pm+team | **M3 코트 지도 폴리시** — localStorage viewMode + 인포 ★평점/상세보기 + appkey env 외부화 | ✅ 86f1736 |
 | 04-20 | pm+team | **M6 알림 분류** 6카테고리 + 카테고리별 mark-all-read + 더 보기 + 헤더 뱃지 사일런트 버그 정정 | ✅ 5e56d0f |
-| 04-19 | dev+review | M2 데스크톱 sticky 신청 카드 도입 | ✅ 3405727 |

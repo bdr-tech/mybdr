@@ -81,7 +81,14 @@ export const PATCH = withWebAuth(async (req: Request, routeCtx: RouteCtx, ctx: W
     return apiError("FORBIDDEN", 403);
   }
 
-  let body: { requestId?: string; action?: string; memberId?: string; role?: string };
+  let body: {
+    requestId?: string;
+    action?: string;
+    memberId?: string;
+    role?: string;
+    // 거부 사유 (optional) — M7 UX에서 신청자에게 노출
+    rejection_reason?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -165,16 +172,33 @@ export const PATCH = withWebAuth(async (req: Request, routeCtx: RouteCtx, ctx: W
       actionUrl: `/teams/${teamId}`,
     }).catch(() => {});
   } else {
+    // 거부 사유 trim + 500자 상한 (DB는 text지만 알림/UI 가독성 위해 제한)
+    const rejectionReason =
+      typeof body.rejection_reason === "string" && body.rejection_reason.trim()
+        ? body.rejection_reason.trim().slice(0, 500)
+        : null;
+
     await prisma.team_join_requests.update({
       where: { id: BigInt(requestId) },
-      data: { status: "rejected", processed_by_id: ctx.userId, processed_at: new Date() },
+      data: {
+        status: "rejected",
+        processed_by_id: ctx.userId,
+        processed_at: new Date(),
+        // null이면 DB에 기존 값 유지되지 않고 null로 세팅 (재거부 시 덮어쓰기)
+        rejection_reason: rejectionReason,
+      },
     });
+
+    // 알림 content: 사유가 있으면 함께 전달 — 신청자가 앱 알림만 봐도 맥락 이해 가능
+    const content = rejectionReason
+      ? `"${team?.name}" 팀 가입 신청이 거부되었습니다. 사유: ${rejectionReason}`
+      : `"${team?.name}" 팀 가입 신청이 거부되었습니다.`;
 
     createNotification({
       userId: applicantId,
       notificationType: NOTIFICATION_TYPES.TEAM_JOIN_REQUEST_REJECTED,
       title: "팀 가입 거부",
-      content: `"${team?.name}" 팀 가입 신청이 거부되었습니다.`,
+      content,
       actionUrl: `/teams/${teamId}`,
     }).catch(() => {});
   }
