@@ -81,6 +81,14 @@ export interface CafeSyncInput {
   board: CafeBoard;
   /** 카페 게시글 고유 id */
   dataid: string;
+  /**
+   * dataid 를 정수로 변환한 값 (선택).
+   *
+   * [2026-04-20] 정렬 tie-break 2차키용. `metadata.cafe_article_id` (Int) 에 저장된다.
+   * 왜 optional: 과거 스크립트/테스트가 dataid 만 넘길 수 있어 하위 호환 유지.
+   *              없으면 metadata.cafe_article_id 는 기록되지 않고 정렬 시 "후순위"로 밀린다.
+   */
+  dataidNum?: number;
   /** 게시글 제목 */
   title: string;
   /** 작성자 닉네임 (없으면 빈 문자열) */
@@ -312,9 +320,17 @@ async function insertGameFromCafe(
   //   id=397 실측: parser 가 "장소 :" 라벨 변형 못 잡아 null, extracted 가 구제.
   const venueName = parsed.venueName ?? extracted.venueName ?? null;
 
-  // metadata 7키 — D1-B 스펙
+  // metadata 8키 — D1-B 스펙 + [2026-04-20] cafe_article_id 추가
+  //
+  // 왜 cafe_article_id (Int) 를 별도 저장:
+  //   - listGames 정렬에서 `created_at desc` 동률일 때 2차 tie-break 키로 사용.
+  //   - cafe_dataid 는 string 이라 수치 비교가 안 되고, 저장 시점의 타입 일관성을 위해
+  //     JSON 안에 Int 로 직렬화된 복제본을 둔다.
+  //   - dataidNum 이 optional 이라 누락 시 undefined → JSON 키 자체 생략(JSON.stringify 규칙).
+  //     이 경우 정렬에서 null 로 취급되어 같은 분 안에서 뒤로 밀릴 뿐, 기능 이상 없음.
   const metadata = {
     cafe_dataid: input.dataid,
+    cafe_article_id: input.dataidNum, // ← 8번째 키 (정렬 tie-break 용, Int)
     cafe_board: input.board.id,
     source_url: articleUrl(input.board, input.dataid),
     cafe_author: input.author || null,
@@ -574,8 +590,10 @@ export function previewUpsert(input: CafeSyncInput): {
     venueName,
     venueNameSource,
     willInsertGame: parsed !== null,
+    // 실제 insert 경로(insertGameFromCafe)와 동일한 8키 구성 — 미리보기 정확성 유지.
     metadata: {
       cafe_dataid: input.dataid,
+      cafe_article_id: input.dataidNum, // ← 8번째 키 (Int, tie-break 2차키)
       cafe_board: input.board.id,
       source_url: articleUrl(input.board, input.dataid),
       cafe_author: input.author || null,

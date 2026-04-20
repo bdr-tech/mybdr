@@ -1,5 +1,5 @@
 # 프로젝트 지식 목차
-> 최종 갱신: 2026-04-20 (M6 알림 분류 + apiSuccess snake_case **6회 재발** 갱신)
+> 최종 갱신: 2026-04-20 (카페 sync A+E 설계 — dataid tie-break metadata JSON + noticeContainer 방어 가드)
 
 ## 파일별 요약
 | 파일 | 항목 수 | 최종 업데이트 | 설명 |
@@ -14,6 +14,8 @@
 | project-structure-audit.md | 10 | 2026-03-28 | 전체 구조 분석 |
 
 ## 최근 추가된 지식 (최근 10건)
+- [04-20] decisions: **카페 sync dataid tie-break — metadata JSON 키 (cafe_article_id Int)** — Prisma 마이그레이션 없이 JSON path 2차 정렬. listGames에서 메모리 tie-break(take=60 기준)
+- [04-20] decisions: **카페 공지 필터 noticeContainer 방어 가드** — 실측 공지 수집 0건 확인, 미래 레이아웃 변경 대비 lookahead 정규식으로 구간 드랍
 - [04-18] lessons: **"개발 DB"라고 믿은 .env가 사실 운영 DB** — API id 비교(운영 vs 로컬)로 발견. 스크립트 가드의 DEV_DB_HOST ref가 운영 ref였음. 비파괴 스크립트라 사고는 아님
 - [04-18] decisions: **운영 DB 직접 연결 유지 결정** — 개발/운영 DB 분리는 유보. prisma 스키마 변경/DELETE/파괴적 UPDATE 엄격 금지
 - [04-17] decisions: **다음카페 본문 정규식 파서 도입** — LLM 대신 정규식 (95%+ 정확도, 무료). 257건 중 147건 백필 + game_type 66건 재분류. 운영 DB 차단 가드 + 덮어쓰기 금지

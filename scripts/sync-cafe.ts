@@ -351,6 +351,11 @@ async function main() {
           const syncInput: CafeSyncInput = {
             board,
             dataid: r.dataid,
+            // [2026-04-20] 정렬 tie-break 용 Int 복제본.
+            //   BoardItem.dataidNum 은 fetcher 에서 이미 NaN 가드 통과 → 유한 정수 보장.
+            //   article-fetcher 의 r.dataid(string) 은 BoardItem.dataid 와 동일 값이라
+            //   it.dataidNum 을 그대로 신뢰한다.
+            dataidNum: it.dataidNum,
             title: it.title, // 목록에서 가져온 제목
             author: it.author,
             content: maskedContent, // ← 마스킹된 값으로 교체 (이전엔 r.content 원본 전달)

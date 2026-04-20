@@ -73,6 +73,10 @@ export async function listGames(filters: GameListFilters = {}) {
   if (scheduledAt) where.scheduled_at = scheduledAt;
 
   // 카드 표시에 필요한 컬럼만 select (description, notes 등 불필요한 긴 텍스트 제외)
+  // [2026-04-20] 다음카페 게시 순서 tie-break 를 위해 `metadata` 도 select 에 추가.
+  //   - Prisma 6.x 는 JSON path 정렬을 지원하지 않으므로 DB orderBy 는 created_at 만 유지하고
+  //     메모리에서 `metadata.cafe_article_id` (Int) 로 2차 정렬한다.
+  //   - take=60 기준 성능 차 무의미 (정렬 복잡도 O(n log n) × n=60).
   const games = await prisma.games.findMany({
     where,
     orderBy: { created_at: "desc" },
@@ -93,12 +97,43 @@ export async function listGames(filters: GameListFilters = {}) {
       skill_level: true,
       author_nickname: true,
       created_at: true,
+      metadata: true, // [2026-04-20] tie-break 키(cafe_article_id) 접근용
     },
+  });
+
+  // [2026-04-20] 다음카페 게시 순서 tie-break (메모리 정렬).
+  //
+  // 왜:
+  //   - 같은 분(minute)에 올라온 카페 글은 `created_at` 이 동률이 되어 DB 정렬만으론
+  //     카페 원본 게시 순서를 보장하지 못함 (실측 확인).
+  //   - dataid 가 단조 증가(숫자 ↑ = 더 나중 게시)이므로 desc 로 정렬하면 카페 순서와 일치.
+  //   - `metadata.cafe_article_id` 가 null 인 글(기존 15건 백필 전 or 일반 게임)은 맨 뒤로 밀린다
+  //     (null last 동작 — -Infinity 로 대체해서 bId - aId desc 계산).
+  //
+  // 주의:
+  //   - 기존 반환 형식(status override 포함)은 그대로 유지.
+  //   - metadata 는 클라이언트 응답에서 게이트 없이 노출되므로 민감 키가 없는지 주기 점검 필요
+  //     (현재는 cafe_* 메타만 저장 → 공개 노출 OK).
+  const sorted = [...games].sort((a, b) => {
+    // 1차: created_at desc
+    const tA = a.created_at?.getTime() ?? 0;
+    const tB = b.created_at?.getTime() ?? 0;
+    if (tB !== tA) return tB - tA;
+    // 2차: metadata.cafe_article_id desc (null last)
+    const aId =
+      typeof (a.metadata as { cafe_article_id?: number } | null)?.cafe_article_id === "number"
+        ? (a.metadata as { cafe_article_id: number }).cafe_article_id
+        : -Infinity;
+    const bId =
+      typeof (b.metadata as { cafe_article_id?: number } | null)?.cafe_article_id === "number"
+        ? (b.metadata as { cafe_article_id: number }).cafe_article_id
+        : -Infinity;
+    return bId - aId;
   });
 
   // 날짜 지난 모집중(1)/확정(2) 경기 → 종료(3)로 표시
   const now = new Date();
-  return games.map((g) => {
+  return sorted.map((g) => {
     if ((g.status === 1 || g.status === 2) && g.scheduled_at && g.scheduled_at < now) {
       return { ...g, status: 3 };
     }
