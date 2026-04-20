@@ -54,3 +54,13 @@ local_dump.sql
 
 # Playwright MCP (도구 산출물)
 .playwright-mcp/
+
+# 디자인 원본 (.ai 등 — 로컬 보관, git 추적 제외)
+/참가팀_로고모음/
+tmp/
+!tmp/.gitkeep
+
+# Playwright storageState (세션 쿠키, 민감) — .gitkeep은 유지
+.auth/*.json
+!.auth/.gitkeep
+test-results/

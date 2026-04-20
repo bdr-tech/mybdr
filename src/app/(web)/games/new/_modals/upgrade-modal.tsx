@@ -64,7 +64,7 @@ export function UpgradeModal({ reason, onClose }: UpgradeModalProps) {
             닫기
           </button>
           <Link
-            href="/upgrade"
+            href="/pricing"
             className="flex-1 rounded-[12px] bg-[var(--color-accent)] py-2.5 text-center text-sm font-semibold text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]"
           >
             플랜 알아보기

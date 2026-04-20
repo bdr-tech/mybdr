@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -11,6 +11,11 @@ import { PreferFilterProvider, usePreferFilter } from "@/contexts/prefer-filter-
 import { ToastProvider } from "@/contexts/toast-context";
 import { ProfileCompletionBanner } from "@/components/shared/profile-completion-banner";
 import { PwaInstallBanner } from "@/components/shared/pwa-install-banner";
+import { MoreTabTooltip } from "@/components/shared/more-tab-tooltip";
+// 알림 아이콘 우상단 수치 배지 (0건 숨김 / 99+ 축약)
+import { NotificationBadge } from "@/components/shared/notification-badge";
+// PC 사이드네비 검색창 — 0건 처리 폴백 UI 포함 (Q10)
+import { SearchAutocomplete } from "@/components/shared/search-autocomplete";
 
 /* ============================================================
  * dynamic import: 초기 번들 크기를 줄이기 위해
@@ -96,254 +101,6 @@ function PreferFilterToggleButton() {
 }
 
 /* ============================================================
- * SearchAutocomplete — PC 검색바 + 실시간 자동완성 드롭다운
- * 타이핑 시 디바운스 300ms 후 /api/web/search?q= 호출
- * 결과를 카테고리(경기/대회/팀/커뮤니티)별 최대 3건씩 드롭다운 표시
- * ESC 또는 외부 클릭으로 닫기
- * ============================================================ */
-interface SearchResult {
-  games: { id: string; title: string; venue_name?: string }[];
-  tournaments: { id: string; name: string; city?: string }[];
-  teams: { id: string; name: string; city?: string }[];
-  posts: { id: string; title: string; category?: string }[];
-  courts: { id: string; name: string; city?: string; district?: string }[];
-  users: { id: string; nickname?: string; name?: string; position?: string; city?: string }[];
-}
-
-// localStorage에 최근 검색어를 저장/조회하는 키와 최대 개수
-const RECENT_SEARCH_KEY = "bdr_recent_searches";
-const RECENT_SEARCH_MAX = 5;
-
-// 최근 검색어 읽기
-function getRecentSearches(): string[] {
-  try {
-    const raw = localStorage.getItem(RECENT_SEARCH_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-// 최근 검색어 저장 (중복 제거, 최대 5개)
-function saveRecentSearch(query: string) {
-  try {
-    const list = getRecentSearches().filter((s) => s !== query);
-    list.unshift(query);
-    localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(list.slice(0, RECENT_SEARCH_MAX)));
-  } catch {
-    /* localStorage 사용 불가 시 무시 */
-  }
-}
-
-function SearchAutocomplete() {
-  const router = useRouter();
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  // 최근 검색어 상태 (포커스 시 로드)
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [showRecent, setShowRecent] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  /* 디바운스 300ms 후 검색 API 호출 */
-  const debouncedSearch = useCallback((q: string) => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (!q || q.length < 1) {
-      setResults(null);
-      setIsOpen(false);
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    timerRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/web/search?q=${encodeURIComponent(q)}`);
-        if (res.ok) {
-          const data = await res.json();
-          setResults(data);
-          setIsOpen(true);
-        }
-      } catch {
-        /* 네트워크 에러 무시 */
-      } finally {
-        setIsLoading(false);
-      }
-    }, 300);
-  }, []);
-
-  /* 외부 클릭 시 드롭다운 닫기 */
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-        setShowRecent(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  /* 검색 결과 항목 클릭 시 이동 후 드롭다운 닫기 */
-  const navigate = (href: string) => {
-    setIsOpen(false);
-    setShowRecent(false);
-    setQuery("");
-    router.push(href);
-  };
-
-  /* 최근 검색어 클릭 시: 해당 검색어로 바로 이동 */
-  const handleRecentClick = (term: string) => {
-    setQuery(term);
-    setShowRecent(false);
-    saveRecentSearch(term);
-    router.push(`/search?q=${encodeURIComponent(term)}`);
-  };
-
-  /* 드롭다운에 표시할 카테고리별 항목 (최대 3건씩) */
-  const categories = results ? [
-    { label: "경기", icon: "sports_basketball", items: results.games.slice(0, 3).map(g => ({ id: g.id, title: g.title, sub: g.venue_name, href: `/games/${g.id}` })) },
-    { label: "대회", icon: "emoji_events", items: results.tournaments.slice(0, 3).map(t => ({ id: t.id, title: t.name, sub: t.city, href: `/tournaments/${t.id}` })) },
-    { label: "팀", icon: "groups", items: results.teams.slice(0, 3).map(t => ({ id: t.id, title: t.name, sub: t.city, href: `/teams/${t.id}` })) },
-    { label: "코트", icon: "location_on", items: results.courts.slice(0, 3).map(c => ({ id: c.id, title: c.name, sub: c.district || c.city, href: `/courts/${c.id}` })) },
-    { label: "유저", icon: "person", items: (results.users || []).slice(0, 3).map(u => ({ id: u.id, title: u.nickname || u.name || "알 수 없음", sub: u.city || u.position, href: `/profile/${u.id}` })) },
-    { label: "커뮤니티", icon: "forum", items: results.posts.slice(0, 3).map(p => ({ id: p.id, title: p.title, sub: p.category, href: `/community/${p.id}` })) },
-  ].filter(cat => cat.items.length > 0) : [];
-
-  const totalResults = categories.reduce((sum, cat) => sum + cat.items.length, 0);
-
-  return (
-    <div ref={containerRef} className="relative">
-      <form
-        className="relative w-full"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const q = query.trim();
-          if (q) {
-            setIsOpen(false);
-            setShowRecent(false);
-            saveRecentSearch(q);
-            router.push(`/search?q=${encodeURIComponent(q)}`);
-          }
-        }}
-      >
-        {/* 검색 아이콘 */}
-        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg" style={{ color: "var(--color-text-muted)" }}>search</span>
-
-        {/* 로딩 스피너: 검색 중일 때 우측에 표시 */}
-        {isLoading && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-text-muted)] border-t-transparent" />
-        )}
-
-        <input
-          name="q"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            debouncedSearch(e.target.value.trim());
-          }}
-          onFocus={() => {
-            if (results && totalResults > 0) { setIsOpen(true); }
-            else if (!query.trim()) {
-              // 입력이 비었을 때 최근 검색어 표시
-              const recent = getRecentSearches();
-              setRecentSearches(recent);
-              if (recent.length > 0) setShowRecent(true);
-            }
-          }}
-          onKeyDown={(e) => { if (e.key === "Escape") setIsOpen(false); }}
-          placeholder="경기, 대회, 팀 검색..."
-          autoComplete="off"
-          className="w-full rounded-md py-2.5 pl-10 pr-4 text-sm outline-none"
-          style={{ backgroundColor: "var(--color-surface)", color: "var(--color-text-primary)" }}
-        />
-
-        {/* 최근 검색어 드롭다운: 입력이 비어있고 검색 결과가 없을 때만 표시 */}
-        {showRecent && !isOpen && recentSearches.length > 0 && (
-          <div
-            className="absolute left-0 top-full mt-2 w-full overflow-hidden rounded-md border shadow-xl"
-            style={{ backgroundColor: "var(--color-card)", borderColor: "var(--color-border)", zIndex: 100 }}
-          >
-            <div className="flex items-center justify-between px-4 py-2" style={{ backgroundColor: "var(--color-surface)" }}>
-              <span className="text-xs font-semibold" style={{ color: "var(--color-text-tertiary)" }}>최근 검색어</span>
-              <button
-                type="button"
-                onClick={() => {
-                  try { localStorage.removeItem(RECENT_SEARCH_KEY); } catch { /* 무시 */ }
-                  setRecentSearches([]);
-                  setShowRecent(false);
-                }}
-                className="text-xs transition-colors hover:opacity-70"
-                style={{ color: "var(--color-text-muted)" }}
-              >
-                전체 삭제
-              </button>
-            </div>
-            {recentSearches.map((term) => (
-              <button
-                key={term}
-                type="button"
-                onClick={() => handleRecentClick(term)}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[var(--color-surface)]"
-              >
-                <span className="material-symbols-outlined text-base" style={{ color: "var(--color-text-muted)" }}>history</span>
-                <span className="truncate text-sm" style={{ color: "var(--color-text-primary)" }}>{term}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* 자동완성 드롭다운 */}
-        {isOpen && categories.length > 0 && (
-          <div
-            className="absolute left-0 top-full mt-2 w-full overflow-hidden rounded-md border shadow-xl"
-            style={{ backgroundColor: "var(--color-card)", borderColor: "var(--color-border)", zIndex: 100 }}
-          >
-            {categories.map((cat) => (
-              <div key={cat.label}>
-                {/* 카테고리 헤더 */}
-                <div className="flex items-center gap-2 px-4 py-2" style={{ backgroundColor: "var(--color-surface)" }}>
-                  <span className="material-symbols-outlined text-base" style={{ color: "var(--color-text-muted)" }}>{cat.icon}</span>
-                  <span className="text-xs font-semibold" style={{ color: "var(--color-text-tertiary)" }}>{cat.label}</span>
-                </div>
-                {/* 카테고리 항목 */}
-                {cat.items.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => navigate(item.href)}
-                    className="flex w-full items-center justify-between px-4 py-2.5 text-left transition-colors hover:bg-[var(--color-surface)]"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>{item.title}</p>
-                      {item.sub && (
-                        <p className="truncate text-xs" style={{ color: "var(--color-text-muted)" }}>{item.sub}</p>
-                      )}
-                    </div>
-                    <span className="material-symbols-outlined ml-2 text-base flex-shrink-0" style={{ color: "var(--color-text-muted)" }}>arrow_forward</span>
-                  </button>
-                ))}
-              </div>
-            ))}
-            {/* 전체 검색 결과 보기 링크 */}
-            <button
-              type="button"
-              onClick={() => { setIsOpen(false); saveRecentSearch(query.trim()); router.push(`/search?q=${encodeURIComponent(query.trim())}`); }}
-              className="flex w-full items-center justify-center gap-1 border-t px-4 py-3 text-sm font-medium transition-colors hover:bg-[var(--color-surface)]"
-              style={{ borderColor: "var(--color-border)", color: "var(--color-primary)" }}
-            >
-              &quot;{query.trim()}&quot; 전체 검색 결과 보기
-              <span className="material-symbols-outlined text-base">arrow_forward</span>
-            </button>
-          </div>
-        )}
-      </form>
-    </div>
-  );
-}
-
-/* ============================================================
  * WebLayoutInner — 토스 스타일 레이아웃
  * 구조: 상단 미니멀 헤더(56px) + 메인 콘텐츠(중앙 정렬) + 하단 탭 네비(56px)
  * 사이드바 완전 제거, 모바일/데스크탑 동일 구조
@@ -364,17 +121,18 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
         .then(async (r) => (r.ok ? r.json() : null))
         .catch(() => null),
       fetch("/api/web/notifications", { credentials: "include" })
-        .then(async (r) => (r.ok ? (r.json() as Promise<{ unreadCount: number }>) : null))
+        // ⚠️ apiSuccess snake_case 변환: unread_count 로 접근
+        .then(async (r) => (r.ok ? (r.json() as Promise<{ unread_count?: number }>) : null))
         .catch(() => null),
     ]).then(([userData, notifData]) => {
       setUser(userData);
       // DB의 맞춤 설정 여부를 preferFilter 기본값으로 전달
       setLoggedIn(!!userData, userData?.prefer_filter_enabled ?? false);
-      if (userData && notifData) setUnreadCount(notifData.unreadCount ?? 0);
+      if (userData && notifData) setUnreadCount(notifData.unread_count ?? 0);
     });
   }, [setLoggedIn]);
 
-  /* 알림 카운트 30초 간격 폴링 */
+  /* 알림 카운트 30초 간격 폴링 + read-all 즉시 갱신 이벤트 리스닝 */
   useEffect(() => {
     if (!user) return;
 
@@ -382,8 +140,9 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
       fetch("/api/web/notifications", { credentials: "include" })
         .then(async (r) => {
           if (r.ok) {
-            const data = (await r.json()) as { unreadCount: number };
-            setUnreadCount(data.unreadCount ?? 0);
+            // ⚠️ apiSuccess가 snake_case로 변환하므로 unread_count 로 접근 (camel 접근 시 항상 undefined)
+            const data = (await r.json()) as { unread_count?: number };
+            setUnreadCount(data.unread_count ?? 0);
           }
         })
         .catch(() => {});
@@ -391,7 +150,16 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
 
     pollNotifications();
     const intervalId = setInterval(pollNotifications, 30000);
-    return () => clearInterval(intervalId);
+
+    // M6: notifications 페이지의 "모두 읽음" 클릭 시 헤더 뱃지 즉시 0으로 (같은 탭 내)
+    // 다른 탭 동기화는 30초 polling이 처리
+    const handleReadAll = () => setUnreadCount(0);
+    window.addEventListener("notifications:read-all", handleReadAll);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener("notifications:read-all", handleReadAll);
+    };
   }, [user]);
 
   /* 현재 경로가 활성 메뉴인지 판별 */
@@ -507,9 +275,8 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
               className="relative flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-bright)]"
             >
               <span className="material-symbols-outlined text-xl">notifications</span>
-              {unreadCount > 0 && (
-                <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[var(--color-primary)]" />
-              )}
+              {/* 숫자 배지: count<=0이면 내부에서 null 반환하여 조건부 처리 불필요 */}
+              <NotificationBadge count={unreadCount} />
             </Link>
           )}
           {/* 프로필: 로그인 시 드롭다운 메뉴, 비로그인 시 로그인 버튼 */}
@@ -574,17 +341,22 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
           const isMoreTab = item.icon === "menu";
 
           if (isMoreTab) {
+            // relative 컨테이너로 감싸 MoreTabTooltip(absolute bottom-full)의
+            // positioning 기준점 역할을 하게 한다.
             return (
-              <button
-                key="more-tab"
-                onClick={() => setSlideMenuOpen(true)}
-                className="flex flex-col items-center justify-center gap-0 text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-secondary)]"
-              >
-                {/* 아이콘: 20px로 축소 (토스/카카오 스타일) */}
-                <span className="material-symbols-outlined text-xl">menu</span>
-                {/* 텍스트: 10px + semibold로 가독성 향상, 한글이라 uppercase 제거 */}
-                <span className="text-[10px] font-semibold tracking-wide">{item.label}</span>
-              </button>
+              <div key="more-tab" className="relative flex items-center justify-center">
+                {/* 최초 방문 안내 툴팁 — 내부적으로 localStorage 확인 + lg:hidden 처리 */}
+                <MoreTabTooltip />
+                <button
+                  onClick={() => setSlideMenuOpen(true)}
+                  className="flex flex-col items-center justify-center gap-0 text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-secondary)]"
+                >
+                  {/* 아이콘: 20px로 축소 (토스/카카오 스타일) */}
+                  <span className="material-symbols-outlined text-xl">menu</span>
+                  {/* 텍스트: 10px + semibold로 가독성 향상, 한글이라 uppercase 제거 */}
+                  <span className="text-[10px] font-semibold tracking-wide">{item.label}</span>
+                </button>
+              </div>
             );
           }
 

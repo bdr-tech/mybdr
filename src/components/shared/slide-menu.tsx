@@ -10,7 +10,7 @@ import { ProfileAccordion } from "@/components/shared/profile-accordion";
  * ============================================================ */
 const menuItems = [
   { href: "/", label: "홈", icon: "home" },
-  { href: "/games", label: "경기찾기", icon: "sports_basketball" },
+  { href: "/games", label: "경기", icon: "sports_basketball" },
   { href: "/tournaments", label: "대회", icon: "emoji_events" },
   { href: "/organizations", label: "단체", icon: "corporate_fare" },
   { href: "/teams", label: "팀", icon: "groups" },

@@ -20,6 +20,9 @@ import { getMissingFields } from "@/lib/profile/completion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/shared/breadcrumb";
+// [2026-04-18 추가] 카페 크롤링 텍스트의 HTML 엔티티를 렌더링 시점에만 디코드.
+// SEO 메타데이터(title/description)와 본문 표시에 공통 적용.
+import { decodeHtmlEntities } from "@/lib/utils/decode-html";
 
 export const revalidate = 30;
 
@@ -29,24 +32,29 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const game = await getGame(id);
   if (!game) return { title: "경기 상세 | MyBDR" };
 
-  const title = `${game.title || "경기 상세"} | MyBDR`;
-  const description = game.description?.slice(0, 100) || "경기 상세 정보를 확인하고 참가 신청하세요.";
+  // [2026-04-18] SEO 메타 디코드 — SNS/검색엔진에 노출되는 title/description에서
+  // &amp; 등이 보이지 않도록. 본문과 동일한 기준으로 변환.
+  const decodedTitle = decodeHtmlEntities(game.title) || "경기 상세";
+  const decodedDesc = decodeHtmlEntities(game.description)?.slice(0, 100)
+    || "경기 상세 정보를 확인하고 참가 신청하세요.";
+
+  const title = `${decodedTitle} | MyBDR`;
 
   return {
     title,
-    description,
+    description: decodedDesc,
     /* Open Graph: 카카오톡/페이스북 등 SNS 공유 시 미리보기 카드 */
     openGraph: {
-      title: game.title || "경기 상세",
-      description,
+      title: decodedTitle,
+      description: decodedDesc,
       type: "website",
       url: `https://mybdr.kr/games/${id}`,
     },
     /* Twitter Card: 트위터/X 공유 시 카드 */
     twitter: {
       card: "summary",
-      title: game.title || "경기 상세",
-      description,
+      title: decodedTitle,
+      description: decodedDesc,
     },
   };
 }
@@ -139,9 +147,10 @@ export default async function GameDetailPage({
   return (
     <div className="space-y-6">
       {/* 브레드크럼: PC에서만 표시, 모바일은 뒤로가기 버튼이 대신 */}
+      {/* [2026-04-18] 제목 디코드 — 카페 엔티티 표시 방지 */}
       <Breadcrumb items={[
         { label: "경기", href: "/games" },
-        { label: game.title || "경기 상세" },
+        { label: decodeHtmlEntities(game.title) || "경기 상세" },
       ]} />
 
       {/* 프로필 미완성 안내 배너 (1일 1회) */}
@@ -174,30 +183,36 @@ export default async function GameDetailPage({
         className="text-2xl font-extrabold uppercase tracking-wide sm:text-3xl text-[var(--color-text-primary)]"
         style={{ fontFamily: "var(--font-heading)" }}
       >
-        {game.title}
+        {/* [2026-04-18] 제목 디코드 — "팀&amp;스포츠" 같은 표시 방지 */}
+        {decodeHtmlEntities(game.title)}
       </h1>
 
       {/* 호스트 전용: 수정/취소 버튼 */}
       {isHost && <HostActions gameId={id} />}
 
       {/* 작성자 (카페 크롤링) */}
-      {game.author_nickname && (
-        <div className="flex items-center gap-2">
-          <div
-            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
-            style={{ backgroundColor: "var(--color-navy, #1B3C87)" }}
-          >
-            {game.author_nickname.charAt(0)}
+      {/* [2026-04-18] 닉네임 디코드 — 아바타 이니셜까지 디코드 결과 기준으로 */}
+      {game.author_nickname && (() => {
+        const decodedNick = decodeHtmlEntities(game.author_nickname) ?? "";
+        return (
+          <div className="flex items-center gap-2">
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
+              style={{ backgroundColor: "var(--color-navy, #1B3C87)" }}
+            >
+              {decodedNick.charAt(0)}
+            </div>
+            <span className="text-sm font-medium text-[var(--color-text-secondary)]">
+              {decodedNick}
+            </span>
           </div>
-          <span className="text-sm font-medium text-[var(--color-text-secondary)]">
-            {game.author_nickname}
-          </span>
-        </div>
-      )}
+        );
+      })()}
 
       {/* 설명 */}
+      {/* [2026-04-18] 본문 설명 디코드 — 카페 원문의 엔티티 치환 */}
       {game.description && (
-        <p className="text-sm text-[var(--color-text-muted)]">{game.description}</p>
+        <p className="text-sm text-[var(--color-text-muted)]">{decodeHtmlEntities(game.description)}</p>
       )}
 
       {/* 2열 레이아웃: 메인 콘텐츠 + 우측 가격 카드 */}

@@ -64,6 +64,9 @@ interface TournamentTabsProps {
   tournamentId: string;
   // 개요 탭만 서버에서 렌더링하여 전달
   overviewContent: ReactNode;
+  // URL의 ?tab= 쿼리로 받은 초기 탭 (redirect된 /bracket, /schedule 등에서 유입 시 사용)
+  // 상위 서버 컴포넌트가 searchParams로 파싱해서 넘김 → 잘못된 값은 "overview"로 이미 폴백됨
+  initialTab?: TabKey;
 }
 
 // -- 공통 에러 상태 --
@@ -345,8 +348,10 @@ function TeamsTabContent({ tournamentId }: { tournamentId: string }) {
 export function TournamentTabs({
   tournamentId,
   overviewContent,
+  initialTab = "overview",
 }: TournamentTabsProps) {
-  const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  // 초기 탭: 서버에서 searchParams로 파싱한 값. 유효하지 않으면 overview로 폴백됨(상위에서 이미 검증)
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
 
   return (
     <div>

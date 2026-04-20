@@ -29,29 +29,36 @@ export function PriceCard({ game, children }: PriceCardProps) {
   // 원 단위 표시 여부 (숫자 금액일 때만 원/game 표시)
   const isNumericFee = !game.entry_fee_note && game.fee_per_person && Number(game.fee_per_person) > 0;
 
-  // 날짜+시간 KST (yyyy-mm-dd hh시 mi분 ~ hh시 mi분)
+  // 날짜와 시간을 분리해서 DATE/TIME 카드에 각각 표시
+  // 왜: 이전에는 DATE에 "yyyy-mm-dd hh시 mi분 ~ hh시 mi분" 전부 합치고 TIME은 빈 문자열이어서
+  //     TIME 카드가 항상 비어 있었음 (구조 낭비 + DATE 시각적 혼잡).
+  // 변경: DATE="yyyy-mm-dd (요일)" / TIME="hh:mm ~ hh:mm (N시간)" 구분
+  // KST 기준(+9h)은 유지.
   let dateStr = "-";
+  let timeStr = "";
+  let durationStr = "";
   if (game.scheduled_at) {
     const raw = typeof game.scheduled_at === "string" ? new Date(game.scheduled_at) : game.scheduled_at;
     const start = new Date(raw.getTime() + 9 * 60 * 60 * 1000); // KST
     const y = start.getUTCFullYear();
     const mo = String(start.getUTCMonth() + 1).padStart(2, "0");
     const d = String(start.getUTCDate()).padStart(2, "0");
+    const dow = ["일", "월", "화", "수", "목", "금", "토"][start.getUTCDay()];
     const sh = String(start.getUTCHours()).padStart(2, "0");
     const sm = String(start.getUTCMinutes()).padStart(2, "0");
+
+    dateStr = `${y}-${mo}-${d} (${dow})`;
 
     if (game.duration_hours) {
       const end = new Date(start.getTime() + game.duration_hours * 60 * 60 * 1000);
       const eh = String(end.getUTCHours()).padStart(2, "0");
       const em = String(end.getUTCMinutes()).padStart(2, "0");
-      dateStr = `${y}-${mo}-${d} ${sh}시 ${sm}분 ~ ${eh}시 ${em}분`;
+      timeStr = `${sh}:${sm} ~ ${eh}:${em}`;
+      durationStr = `(${game.duration_hours}시간)`;
     } else {
-      dateStr = `${y}-${mo}-${d} ${sh}시 ${sm}분`;
+      timeStr = `${sh}:${sm}`;
     }
   }
-
-  const timeStr = "";
-  const durationStr = "";
 
   // 잔여석 계산
   const cur = game.current_participants ?? 0;

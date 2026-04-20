@@ -21,8 +21,10 @@ const menuItems = [
   { href: "/profile/basketball", label: "내 농구", icon: "sports_basketball", subtitle: "팀 · 경기 · 대회 · 주간 리포트" },
   { href: "/profile/growth", label: "내 성장", icon: "trending_up", subtitle: "XP · 레벨 · 뱃지 · 도장깨기" },
   { href: "/profile/edit", label: "내 정보", icon: "person", subtitle: "프로필 편집 · 소셜 계정" },
-  { href: "/profile/preferences", label: "맞춤 설정", icon: "tune", subtitle: "종별 · 경기유형 · 지역 · 실력" },
-  { href: "/profile/subscription", label: "계정", icon: "settings", subtitle: "구독 · 결제 · 알림 설정" },
+  // Day 8: /profile/preferences → /profile/settings (맞춤 설정 + 알림 통합 허브)
+  { href: "/profile/settings", label: "맞춤 설정", icon: "tune", subtitle: "종별 · 경기유형 · 지역 · 실력" },
+  // Day 8: /profile/subscription → /profile/billing (구독 + 결제 내역 통합 허브)
+  { href: "/profile/billing", label: "계정", icon: "settings", subtitle: "구독 · 결제 · 알림 설정" },
 ];
 
 interface ProfileDropdownProps {

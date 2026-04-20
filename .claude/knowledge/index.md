@@ -1,20 +1,26 @@
 # 프로젝트 지식 목차
-> 최종 갱신: 2026-04-17 (Phase 3 공식 기록 가드 + 열혈SEASON2 일회성 정리)
+> 최종 갱신: 2026-04-20 (M6 알림 분류 + apiSuccess snake_case **6회 재발** 갱신)
 
 ## 파일별 요약
 | 파일 | 항목 수 | 최종 업데이트 | 설명 |
 |------|--------|------------|------|
 | architecture.md | 29 | 2026-04-15 | 페이지 구조, 대회/대진표, 팀명 2필드, Referee 시스템, Flutter API 호환 |
-| conventions.md | 24 | 2026-04-17 | 디자인/색상/경기집계/sticky/프린트CSS/공식 기록 가드/**에이전트 호출 기준**/**스크립트 템플릿 재사용** |
-| decisions.md | 66 | 2026-04-17 | 기술 결정 (KBL 순위/대진표/userId 연결/Referee v2/헬스체크 cron/열혈SEASON2 정리/**공식 기록 가드 전역 적용**) |
-| errors.md | 16 | 2026-04-17 | 에러 패턴 (sticky, @page Hancom PDF, th/td 정렬, DB 사고, add 누락, next/image 외부 호스트) |
-| lessons.md | 15 | 2026-04-17 | 교훈 (프린트 API, 모바일 zoom, 브랜치 drift, Flutter 테스트 오염, 팀 병합 logo 이관, 동명이인 닉네임 힌트, **HTTP 5xx + git 실상 확인**) |
+| conventions.md | 25 | 2026-04-20 | 디자인/색상/경기집계/sticky/프린트CSS/공식 기록 가드/에이전트 호출 기준/스크립트 템플릿 재사용/**세션 분리 원칙(본 vs 카페)** |
+| decisions.md | 70 | 2026-04-19 | 기술 결정 (KBL 순위/대진표/userId 연결/Referee v2/헬스체크 cron/공식 기록 가드/카페 정규식 파서/운영 DB 직접 연결/카페 자동 동기화/**W1 Quick Wins 통합 PR 채택**) |
+| errors.md | 17 | 2026-04-20 | 에러 패턴 (sticky, @page Hancom PDF, th/td 정렬, DB 사고, add 누락, next/image 외부 호스트, **apiSuccess 미들웨어 6회 재발**) |
+| lessons.md | 18 | 2026-04-18 | 교훈 (프린트 API, 모바일 zoom, 브랜치 drift, Flutter 테스트 오염, 팀 병합 logo, 동명이인, HTTP 5xx, API 미들웨어 재발 4회, 다음카페 정규식 파서 95%, **개발 DB라 믿은 .env가 운영 DB**) |
 | toss-design-analysis.md | 10 | 2026-03-28 | 토스 디자인 시스템 심층 분석 |
 | ux-audit-report.md | 28 | 2026-03-28 | UI/UX 사용성 심층 조사 |
 | project-structure-audit.md | 10 | 2026-03-28 | 전체 구조 분석 |
 
 ## 최근 추가된 지식 (최근 10건)
-- [04-17] lessons: **HTTP 5xx 에러 시 "실패" 단정 금지** — nginx 502는 "응답만 실패, 처리는 완료"일 수 있음. git log/DB로 실상 확인 후 판단. 멱등 작업은 재시도 안전
+- [04-18] lessons: **"개발 DB"라고 믿은 .env가 사실 운영 DB** — API id 비교(운영 vs 로컬)로 발견. 스크립트 가드의 DEV_DB_HOST ref가 운영 ref였음. 비파괴 스크립트라 사고는 아님
+- [04-18] decisions: **운영 DB 직접 연결 유지 결정** — 개발/운영 DB 분리는 유보. prisma 스키마 변경/DELETE/파괴적 UPDATE 엄격 금지
+- [04-17] decisions: **다음카페 본문 정규식 파서 도입** — LLM 대신 정규식 (95%+ 정확도, 무료). 257건 중 147건 백필 + game_type 66건 재분류. 운영 DB 차단 가드 + 덮어쓰기 금지
+- [04-17] errors: **apiSuccess 미들웨어 놓치고 컴포넌트 인터페이스 거꾸로 변환** — route.ts 코드만 보고 응답 형태 추정 금지. curl 1회 필수
+- [04-17] lessons: **API 미들웨어 변환 재발 4회** — apiSuccess→convertKeysToSnakeCase 잊고 컴포넌트 측 잘못 수정. fetcher 래퍼 미적용 영역 우선 점검 권장
+- [04-17] lessons: **다음카페 본문 양식이 매우 일관적** — "N. 라벨 : 값" 9항목 양식, 정규식 95%+ 추출. cafe-game-parser.ts 재사용 가능
+- [04-17] lessons: HTTP 5xx 에러 시 "실패" 단정 금지 — nginx 502는 "응답만 실패, 처리는 완료"일 수 있음. git log/DB로 실상 확인 후 판단. 멱등 작업은 재시도 안전
 - [04-17] conventions: **에이전트 호출 최소화 기준** — PM 직접/Explore/planner/developer/debugger 담당 범위 표. 토큰 절약 + 불필요 호출 방지
 - [04-17] conventions: **일회성 DB 스크립트 템플릿 재사용** — `scripts/_templates/`에 verify/backfill/merge 3종 (UPDATE only, DELETE 금지)
 - [04-17] decisions: **공식 기록 가드 전역 적용** — `officialMatchWhere` 공통 유틸 3함수+SQL상수로 9개 지점(순위/선수기록/팀승패/라이브) 일관 적용. Flutter 테스트 데이터(미래 live) 오염 방어

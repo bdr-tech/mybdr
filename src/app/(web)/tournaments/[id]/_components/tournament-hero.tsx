@@ -39,6 +39,9 @@ interface TournamentHeroProps {
   tournamentId?: string;
   // 문의 연락처 — DB settings.contact_phone에서 전달
   contactPhone?: string | null;
+  // 현재 로그인 유저가 이 대회에 등록한 활성 신청 건수 (pending/approved/waiting)
+  // 0 또는 undefined면 배지 비노출. 비로그인 시에도 0 전달.
+  myApplicationsCount?: number;
 }
 
 export function TournamentHero({
@@ -60,6 +63,7 @@ export function TournamentHero({
   isRegistrationOpen,
   tournamentId,
   contactPhone,
+  myApplicationsCount = 0,
 }: TournamentHeroProps) {
   // 공통 상수에서 상태 라벨과 뱃지 variant를 가져옴
   const statusLabel = TOURNAMENT_STATUS_LABEL[status ?? "draft"] ?? (status ?? "draft");
@@ -159,6 +163,40 @@ export function TournamentHero({
     </a>
   ) : null;
 
+  // --- 신청 완료 배지 ---
+  // 이유: 로그인 유저가 이미 신청한 대회임을 즉시 인지시키고, 내 신청 내역으로 이동 동선 제공.
+  // 표시 조건: 활성 신청(pending/approved/waiting) 1건 이상. 0이면 렌더 안 함.
+  // 클릭 시 /profile/basketball#my-tournaments 앵커로 이동 (해당 섹션으로 스크롤).
+  // border-radius: rounded(4px) — CLAUDE.md 버튼 컨벤션.
+  const appliedBadgeText =
+    myApplicationsCount > 1
+      ? `${myApplicationsCount}건 신청 완료 — 내 신청 보기`
+      : "신청 완료 — 내 신청 보기";
+
+  // poster/logo/photo 템플릿용 (어두운 배경 → success 계열 + 흰 텍스트)
+  const appliedBadge = myApplicationsCount > 0 ? (
+    <Link
+      href="/profile/basketball#my-tournaments"
+      className="mt-3 inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-bold text-white transition-all hover:opacity-90"
+      style={{ backgroundColor: "var(--color-success)" }}
+    >
+      <span className="material-symbols-outlined text-sm">check_circle</span>
+      {appliedBadgeText}
+    </Link>
+  ) : null;
+
+  // basic 템플릿용 (밝은/테마 배경 → success 계열 동일 스타일 사용)
+  const appliedBadgeBasic = myApplicationsCount > 0 ? (
+    <Link
+      href="/profile/basketball#my-tournaments"
+      className="mt-3 inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-bold text-white transition-all hover:opacity-90"
+      style={{ backgroundColor: "var(--color-success)" }}
+    >
+      <span className="material-symbols-outlined text-sm">check_circle</span>
+      {appliedBadgeText}
+    </Link>
+  ) : null;
+
   // --- 액션 바: 참가 신청만 (poster/logo/photo 템플릿용) ---
   const actionBar = (
     <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -235,6 +273,7 @@ export function TournamentHero({
             {badges}
             {title}
             {metaInfo}
+            {appliedBadge}
             {actionBar}
           </div>
           {contactIcon}
@@ -273,6 +312,7 @@ export function TournamentHero({
             {badges}
             {title}
             {metaInfo}
+            {appliedBadge}
             {actionBar}
           </div>
           {contactIcon}
@@ -300,6 +340,7 @@ export function TournamentHero({
             {badges}
             {title}
             {metaInfo}
+            {appliedBadge}
             {actionBar}
           </div>
           {contactIcon}
@@ -394,6 +435,9 @@ export function TournamentHero({
               </div>
             )}
           </div>
+
+          {/* 신청 완료 배지 (basic용) — 로그인 유저 활성 신청 1건 이상일 때 */}
+          {appliedBadgeBasic}
 
           {/* 액션 바: 참가 신청만 (basic용) */}
           {actionBarBasic}

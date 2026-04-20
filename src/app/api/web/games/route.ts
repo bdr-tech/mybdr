@@ -5,6 +5,7 @@ import { getWebSession } from "@/lib/auth/web-session";
 import { prisma } from "@/lib/db/prisma";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { getClientIp } from "@/lib/security/get-client-ip";
+import type { Prisma } from "@prisma/client";
 
 /**
  * GET /api/web/games
@@ -124,9 +125,42 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // ── 유형별 건수 집계용 WHERE (type 제외) ──────────────────────
+    // 왜: 상단 유형 탭(전체/픽업/게스트/연습경기) 오른쪽에 건수 뱃지를 표시.
+    //     "type 제외 나머지 필터(q/city/date/skill/prefer)"가 반영된 상태에서
+    //     game_type 별 count 를 내야 탭을 눌렀을 때 나올 실제 목록 건수와 일치한다.
+    //     (listGames 는 type 을 내부에서 AND 로 엮어서 count 재사용 불가 → 인라인 재구성)
+    const countWhere: Prisma.gamesWhereInput = {
+      status: { not: 4 }, // 취소 제외 — listGames 와 동일 규칙
+    };
+    if (q) countWhere.title = { contains: q, mode: "insensitive" };
+    // 맞춤 경기 유형은 prefer 전용이며 "type 제외" 의미에서도 유형 자체를 축소하는 필터는
+    // 적용한다 (맞춤 유형만 다루는 사용자라면 그 범위 내 건수를 봐야 하므로).
+    if (preferredGameTypes && preferredGameTypes.length > 0) {
+      countWhere.game_type = { in: preferredGameTypes };
+    }
+    // 지역 필터 — listGames 와 동일 분기 규칙
+    if (preferredCities && preferredCities.length > 0) {
+      countWhere.AND = [
+        ...(Array.isArray(countWhere.AND) ? (countWhere.AND as Prisma.gamesWhereInput[]) : []),
+        {
+          OR: [
+            ...preferredCities.map((c) => ({ city: { contains: c, mode: "insensitive" as const } })),
+            { city: null },
+          ],
+        },
+      ];
+    } else if (city && city !== "all") {
+      countWhere.city = { contains: city, mode: "insensitive" };
+    }
+    if (preferredSkillLevels && preferredSkillLevels.length > 0) {
+      countWhere.skill_level = { in: preferredSkillLevels };
+    }
+    if (scheduledAt) countWhere.scheduled_at = scheduledAt;
+
     // 서비스 함수로 DB 조회 (병렬 실행으로 성능 최적화)
     // prefer=true이고 맞춤 설정이 있으면 해당 필터 파라미터로 전달
-    const [games, cities] = await Promise.all([
+    const [games, cities, typeCountRows] = await Promise.all([
       listGames({
         q, type, city,
         cities: preferredCities,
@@ -136,6 +170,14 @@ export async function GET(request: NextRequest) {
         take: 60,
       }).catch(() => []),
       listGameCities(30).catch(() => []),
+      // groupBy 1회로 3개 유형(0/1/2) 동시 집계 — count 3번보다 왕복/쿼리 비용 절감
+      prisma.games
+        .groupBy({
+          by: ["game_type"],
+          where: countWhere,
+          _count: { _all: true },
+        })
+        .catch(() => [] as Array<{ game_type: number; _count: { _all: number } }>),
     ]);
 
     // ── 맞춤 요일/시간대 후처리 필터 ──────────────────────────────
@@ -200,8 +242,30 @@ export async function GET(request: NextRequest) {
       authorNickname: g.author_nickname ?? null,
     }));
 
+    // ── 유형별 건수 dictionary 변환 ──────────────────────────────
+    // groupBy 결과 [{ game_type: 0, _count: { _all: 12 } }, ...] →
+    // { "0": 12, "1": 34, "2": 5, all: 51 } 형태로 변환해 프론트 탭 뱃지에서 바로 사용.
+    // 요일/시간대 후처리 필터(preferredDays/preferredTimeSlots)는 Prisma 레벨 집계에 반영되지
+    // 않으므로(DOW/HOUR 추출 불가) 이 경우 count 는 후처리 전 DB 기준이라 목록보다 살짝 많을
+    // 수 있다. 탭 전환 직관성에는 영향 없으며, 정확도가 더 필요해지면 전체 row 조회 후 JS 집계로 전환.
+    const typeCounts: { "0": number; "1": number; "2": number; all: number } = {
+      "0": 0,
+      "1": 0,
+      "2": 0,
+      all: 0,
+    };
+    for (const row of typeCountRows) {
+      const key = String(row.game_type) as "0" | "1" | "2";
+      if (key === "0" || key === "1" || key === "2") {
+        typeCounts[key] = row._count._all;
+      }
+    }
+    typeCounts.all = typeCounts["0"] + typeCounts["1"] + typeCounts["2"];
+
     // 30초 캐시: 경기 목록은 자주 변경되므로 짧은 캐시 적용
-    const response = apiSuccess({ games: serializedGames, cities });
+    // typeCounts 는 camelCase 로 반환 → apiSuccess 의 convertKeysToSnakeCase 가 응답 키를
+    // type_counts 로 변환. 프론트는 data.type_counts 로 접근.
+    const response = apiSuccess({ games: serializedGames, cities, typeCounts });
     response.headers.set("Cache-Control", "public, s-maxage=30, max-age=30");
     return response;
   } catch (error) {

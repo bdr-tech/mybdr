@@ -50,6 +50,9 @@ function formatDistance(km: number): string {
 // 근접 감지 슬라이드업을 30분간 숨기기 위한 키
 const PROXIMITY_DISMISS_KEY = "bdr_proximity_dismissed";
 
+// 모바일 뷰 모드(map/list) 영속화 키 — 브라우저 재방문 시 마지막 선택 유지
+const VIEW_MODE_KEY = "courts_view_mode";
+
 // API에서 직렬화된 코트 데이터 타입 (기존과 동일)
 interface CourtItem {
   id: string;
@@ -139,8 +142,36 @@ export function CourtsContent({ courts, cities }: CourtsContentProps) {
   const [activePills, setActivePills] = useState<Set<string>>(new Set());
 
   // 지도/목록 관련 상태
-  const [viewMode, setViewMode] = useState<ViewMode>("map"); // 모바일 뷰 모드
+  // 기본값 "map" 유지 (PM 결정: 모바일 핵심 가치는 지도)
+  // SSR/Hydration 일치를 위해 초깃값은 고정. localStorage는 mount 후 useEffect로 read.
+  const [viewMode, setViewModeState] = useState<ViewMode>("map");
   const [selectedCourtId, setSelectedCourtId] = useState<string | null>(null);
+
+  // mount 후 localStorage에서 마지막 viewMode 복원 (more-tab-tooltip 패턴 동일)
+  // 왜? 초기 렌더는 서버/클라 모두 "map"으로 일치 → hydration mismatch 회피
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = localStorage.getItem(VIEW_MODE_KEY);
+      if (saved === "map" || saved === "list") {
+        setViewModeState(saved);
+      }
+    } catch {
+      // localStorage 비활성 환경(Safari private 등) — 기본값 유지
+    }
+  }, []);
+
+  // setViewMode 래퍼: 상태 갱신 + localStorage 동기화
+  // 왜 wrap? 컴포넌트 내 호출부 2곳(지도/목록 토글 버튼)에서 동일하게 영속화 보장
+  const setViewMode = useCallback((next: ViewMode) => {
+    setViewModeState(next);
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(VIEW_MODE_KEY, next);
+    } catch {
+      // 저장 실패는 무시 (UI 동작에는 영향 없음)
+    }
+  }, []);
 
   // ─── 히트맵 상태 ───
   const [heatmapOn, setHeatmapOn] = useState(false); // 히트맵 ON/OFF 토글
@@ -361,6 +392,7 @@ export function CourtsContent({ courts, cities }: CourtsContentProps) {
   }, []);
 
   // 지도 마커 데이터 변환 (위경도 유효한 것만)
+  // rating: court.average_rating(null 가능)을 undefined로 평탄화 → 인포 윈도우에서 라인 생략 분기
   const mapMarkers: MapMarker[] = useMemo(
     () =>
       filtered
@@ -372,6 +404,7 @@ export function CourtsContent({ courts, cities }: CourtsContentProps) {
           name: c.name,
           type: c.court_type === "indoor" ? "indoor" : "outdoor",
           activeCount: c.activeCount,
+          rating: c.average_rating ?? undefined,
         })),
     [filtered]
   );
@@ -684,7 +717,8 @@ export function CourtsContent({ courts, cities }: CourtsContentProps) {
               ))}
             </div>
           ) : (
-            /* 빈 상태 */
+            /* 빈 상태 — 안내 문구 + "필터 초기화" 버튼
+               왜? planner-architect 옵션 A 채택 (지역 드롭다운 복제 대신 단일 버튼이 DRY) */
             <div
               className="rounded-md p-10 text-center"
               style={{
@@ -705,11 +739,35 @@ export function CourtsContent({ courts, cities }: CourtsContentProps) {
                 조건에 맞는 농구장이 없습니다
               </p>
               <p
-                className="text-xs mt-1"
+                className="text-xs mt-1 mb-4"
                 style={{ color: "var(--color-text-disabled)" }}
               >
-                다른 필터를 선택해보세요
+                다른 필터를 선택하거나 초기화해보세요
               </p>
+              {/* 필터 3종(typeFilter / cityFilter / activePills)을 한 번에 리셋
+                  selectedCourtId도 함께 비워 마커 하이라이트 잔상 제거 */}
+              <button
+                type="button"
+                onClick={() => {
+                  setTypeFilter("all");
+                  setCityFilter("all");
+                  setActivePills(new Set());
+                  setSelectedCourtId(null);
+                }}
+                className="inline-flex items-center gap-1 rounded-[4px] px-4 py-2 text-xs font-semibold transition-opacity active:opacity-80"
+                style={{
+                  backgroundColor: "var(--color-primary)",
+                  color: "var(--color-on-primary)",
+                }}
+              >
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: "14px" }}
+                >
+                  refresh
+                </span>
+                필터 초기화
+              </button>
             </div>
           )}
         </div>

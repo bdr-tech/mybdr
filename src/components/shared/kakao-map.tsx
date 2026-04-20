@@ -31,6 +31,7 @@ export interface MapMarker {
   name: string;
   type?: "outdoor" | "indoor" | "unknown";
   activeCount?: number; // 현재 체크인 수 (혼잡도)
+  rating?: number;      // 평점 (0~5). 인포 윈도우 ★ 라인용. 없으면 라인 생략
 }
 
 interface KakaoMapProps {
@@ -207,6 +208,26 @@ export function KakaoMap({
         if (activeCount >= 5) crowdText = `<span style="color:#22C55E">활발 ${activeCount}명</span>`;
         else if (activeCount >= 1) crowdText = `<span style="color:#F59E0B">적당 ${activeCount}명</span>`;
 
+        // 평점 라인 — 평점 없으면 라인 자체 생략 (planner-architect 명세 "평점 없으면 라인 생략")
+        // 왜? 평점 0건/null인 코트는 ★ 0.0 표시하면 되려 신뢰도 떨어뜨림
+        const ratingLine =
+          typeof marker.rating === "number" && marker.rating > 0
+            ? `<div style="font-size:11px;color:var(--color-primary,#E31B23);font-weight:700;margin-top:2px;display:flex;align-items:center;gap:2px;">
+                 <span>★</span>
+                 <span>${marker.rating.toFixed(1)}</span>
+               </div>`
+            : "";
+
+        // 상세 보기 링크 — innerHTML 한계로 Next.js Link 사용 불가 → <a href> 예외 허용 (conventions.md)
+        // 클릭 시 카카오맵 인포 윈도우는 그대로 라우팅 발생 (target=_self 기본)
+        const detailLink = `
+          <a href="/courts/${marker.id}"
+             style="display:inline-flex;align-items:center;gap:2px;margin-top:6px;font-size:11px;font-weight:600;color:var(--color-primary,#E31B23);text-decoration:none;border:1px solid var(--color-primary,#E31B23);border-radius:4px;padding:3px 8px;">
+            상세 보기
+            <span style="font-size:13px;">›</span>
+          </a>
+        `;
+
         const infoContent = `
           <div style="
             padding:10px 14px;
@@ -223,6 +244,8 @@ export function KakaoMap({
               <span>${marker.type === "indoor" ? "실내" : "야외"}</span>
               ${crowdText ? `<span style="margin-left:4px">${crowdText}</span>` : ""}
             </div>
+            ${ratingLine}
+            ${detailLink}
           </div>
         `;
 

@@ -496,8 +496,9 @@ export default function ProfileEditPage() {
         <p className="mb-4 text-xs text-[var(--color-text-secondary)]">
           관심 종별, 경기 유형, 게시판을 설정하면 맞춤 콘텐츠를 받아볼 수 있습니다
         </p>
+        {/* Day 8: /profile/preferences → /profile/settings?tab=preferences (설정 허브 통합) */}
         <Link
-          href="/profile/preferences"
+          href="/profile/settings?tab=preferences"
           className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text-on-primary)] border-2 border-[var(--color-primary)] hover:opacity-90"
         >
           <span className="material-symbols-outlined text-base">auto_awesome</span>
@@ -514,8 +515,8 @@ export default function ProfileEditPage() {
         {saving ? "저장 중..." : "저장"}
       </button>
 
-      {/* 회원 탈퇴 영역 */}
-      <div className="mt-8 rounded-[20px] border p-5" style={{ borderColor: "var(--color-error, #EF4444)", backgroundColor: "rgba(239,68,68,0.05)" }}>
+      {/* 회원 탈퇴 영역 — DangerZoneCard의 #danger 앵커 스크롤 대상 */}
+      <div id="danger" className="mt-8 rounded-[20px] border p-5" style={{ borderColor: "var(--color-error, #EF4444)", backgroundColor: "rgba(239,68,68,0.05)" }}>
         <h2 className="mb-1 font-semibold text-[var(--color-error,#EF4444)]" style={{ fontFamily: "var(--font-heading)" }}>
           회원 탈퇴
         </h2>

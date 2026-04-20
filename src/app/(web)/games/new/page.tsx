@@ -13,7 +13,9 @@ export const metadata: Metadata = {
 
 export default async function NewGamePage() {
   const session = await getWebSession();
-  if (!session) redirect("/login");
+  // 비로그인 시 로그인 페이지로 이동하되 복귀 경로를 쿼리로 전달
+  // → login 페이지에서 매핑된 안내 배너 + 로그인 후 /games/new로 자동 복귀
+  if (!session) redirect("/login?redirect=/games/new");
 
   const user = await prisma.user.findUnique({
     where: { id: BigInt(session.sub) },

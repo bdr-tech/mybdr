@@ -198,8 +198,8 @@ export default function BasketballPage() {
         </TossCard>
       </div>
 
-      {/* 참가 대회 */}
-      <div>
+      {/* 참가 대회 — 대회 상세의 "신청 완료" 배지 앵커 대상 (#my-tournaments) */}
+      <div id="my-tournaments">
         <TossSectionHeader title="참가 대회" actionLabel="전체보기" actionHref="/tournaments" />
         <TossCard className="p-0">
           {tournaments.length > 0 ? (

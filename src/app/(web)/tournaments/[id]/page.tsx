@@ -12,6 +12,9 @@ import { Breadcrumb } from "@/components/shared/breadcrumb";
 // 탭 전환 컴포넌트 (클라이언트) — lazy loading 방식으로 변경
 import { TournamentTabs } from "./_components/tournament-tabs";
 
+// 데스크톱(lg+) 우측 sticky 신청 카드 — M2
+import { RegistrationStickyCard } from "@/components/tournaments/registration-sticky-card";
+
 // 비공개 대회 가드 — 관계자(organizer/admin member/super_admin)만 접근
 import { getWebSession } from "@/lib/auth/web-session";
 import { isTournamentInsider } from "@/lib/auth/tournament-auth";
@@ -57,13 +60,33 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 }
 
 // -- 메인 페이지 --
-export default async function TournamentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+// searchParams: ?tab=bracket|schedule|teams|overview 지원 (고아 라우트 /bracket 등에서 redirect 유입)
+export default async function TournamentDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const { id } = await params;
+  const { tab } = await searchParams;
 
   // UUID 형식 검증
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
     return notFound();
   }
+
+  // 세션 1회 로드 — 비공개 가드와 "내 신청 건수" 배지에 공통 사용 (중복 호출 방지)
+  // 비로그인이면 session=null. 비공개 가드는 아래 L127~에서 session 재사용
+  const session = await getWebSession();
+
+  // ?tab= 쿼리 검증: 허용된 탭 키만 통과, 그 외(없음/오타/임의값)는 overview로 폴백
+  // 이렇게 서버에서 화이트리스트로 거르면 TournamentTabs가 안전하게 initialTab 사용 가능
+  const ALLOWED_TABS = ["overview", "bracket", "schedule", "teams"] as const;
+  type AllowedTab = (typeof ALLOWED_TABS)[number];
+  const initialTab: AllowedTab = (ALLOWED_TABS as readonly string[]).includes(tab ?? "")
+    ? (tab as AllowedTab)
+    : "overview";
 
   // ========================================
   // 1) 대회 기본 정보 조회 (is_public 포함 — 비공개 가드용)
@@ -107,12 +130,26 @@ export default async function TournamentDetailPage({ params }: { params: Promise
   if (!tournament) return notFound();
 
   // 비공개 대회: 관계자(organizer/admin member/super_admin)만 접근, 아니면 존재 숨김(404)
+  // session은 상단에서 1회 로드한 값을 재사용 — 기존 가드 동작 동일 (비로그인/비관계자 → 404)
   if (tournament.is_public === false) {
-    const session = await getWebSession();
     if (!session) return notFound();
     const userId = BigInt(session.sub);
     const insider = await isTournamentInsider(userId, id, session);
     if (!insider) return notFound();
+  }
+
+  // ===== 내 신청 건수 조회 (배지 표시용) =====
+  // 이 유저가 이 대회에 등록한 팀 중 활성 상태(pending/approved/waiting)만 카운트.
+  // rejected/cancelled 등은 "신청 완료"로 보지 않음. 비로그인은 0 (쿼리 스킵).
+  let myApplicationsCount = 0;
+  if (session) {
+    myApplicationsCount = await prisma.tournamentTeam.count({
+      where: {
+        tournamentId: id,
+        registered_by_id: BigInt(session.sub),
+        status: { in: ["pending", "approved", "waiting"] },
+      },
+    });
   }
 
   // ========================================
@@ -318,28 +355,57 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         isRegistrationOpen={isRegistrationOpen}
         tournamentId={id}
         contactPhone={(tournament.settings as Record<string, unknown>)?.contact_phone as string ?? null}
+        myApplicationsCount={myApplicationsCount}
       />
 
-      {/* 1열 레이아웃: 탭 콘텐츠 전체 너비 (사이드바 제거됨) */}
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div>
+      {/*
+        데스크톱(lg+) 2열 레이아웃:
+          - 좌: 탭 콘텐츠(기존 그대로)
+          - 우: sticky 신청 카드(320px 고정)
+        모바일(< lg)은 grid가 풀려 단일 칼럼이 되고, <aside>는 hidden으로 숨어
+        하단 플로팅 CTA(L387~)만 노출된다. 기존 단일 칼럼 레이아웃은 100% 유지.
+      */}
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
+        {/* min-w-0: grid 자식이 내부 콘텐츠(예: 스크롤 테이블)로 인해
+            최소폭이 튕기며 우측 aside를 밀어내지 않도록 축소 허용. 필수. */}
+        <main className="min-w-0">
           {/* 탭: 개요는 서버 렌더링, 나머지는 클라이언트 lazy loading */}
           <TournamentTabs
             tournamentId={id}
             overviewContent={overviewContent}
+            initialTab={initialTab}
           />
-        </div>
 
-        {/* 다음 액션 유도: 다른 대회 탐색 */}
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link
-            href="/tournaments"
-            className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-elevated)]"
-          >
-            <span className="material-symbols-outlined text-base">emoji_events</span>
-            다른 대회 보기
-          </Link>
-        </div>
+          {/* 다음 액션 유도: 다른 대회 탐색 */}
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              href="/tournaments"
+              className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-elevated)]"
+            >
+              <span className="material-symbols-outlined text-base">emoji_events</span>
+              다른 대회 보기
+            </Link>
+          </div>
+        </main>
+
+        {/* 데스크톱(lg+) 전용 우측 영역: sticky 신청 카드.
+            top-20 = 상단 네비 높이(h-16) + 약간의 숨통. 탭 전환 시 리마운트 없음. */}
+        <aside className="hidden lg:block">
+          <div className="sticky top-20">
+            <RegistrationStickyCard
+              tournamentId={tournament.id}
+              registrationEndAt={tournament.registration_end_at}
+              status={tournament.status ?? ""}
+              entryFee={tournament.entry_fee ? Number(tournament.entry_fee) : null}
+              divFees={tournament.div_fees as Record<string, number> | null}
+              divCaps={tournament.div_caps as Record<string, number> | null}
+              divisionCounts={divisionCounts}
+              isRegistrationOpen={isRegistrationOpen}
+              myApplicationsCount={myApplicationsCount}
+              isLoggedIn={!!session}
+            />
+          </div>
+        </aside>
       </div>
 
       {/* ========================================

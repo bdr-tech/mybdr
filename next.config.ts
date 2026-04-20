@@ -85,6 +85,51 @@ const nextConfig: NextConfig = {
       static: 300,  // 정적 페이지 5분 캐시 (기본 180)
     },
   },
+  // 대회 상세 고아 라우트 → 메인 탭 경로로 영구 리다이렉트 (308)
+  // 왜 308인가: GET 메서드를 그대로 유지하는 영구 리다이렉트. 301과 달리 메서드 변환 없음.
+  // 탭 통합 매핑:
+  //   - standings → bracket (순위표 LeagueStandings/GroupStandings가 bracket 탭 안에서 렌더링됨)
+  //   - teams → teams (참가팀 탭 독립)
+  async redirects() {
+    return [
+      // 시리즈 URL 통합: 구 /tournament-series → /series (308, 영구)
+      // 왜 308: GET 메서드 유지, SEO 신호 이전. slug 기반 허브(/series/[slug])와 일관
+      // 왜 목록만 리다이렉트: 구 페이지는 /tournament-series/${id}(숫자) 링크였고
+      //   신규 허브는 /series/[slug](문자) 구조라 자동 매핑 불가 → 목록으로만 통합
+      {
+        source: "/tournament-series",
+        destination: "/series",
+        permanent: true,
+      },
+      {
+        source: "/tournaments/:id/bracket",
+        destination: "/tournaments/:id?tab=bracket",
+        permanent: true, // 308
+      },
+      {
+        source: "/tournaments/:id/schedule",
+        destination: "/tournaments/:id?tab=schedule",
+        permanent: true,
+      },
+      {
+        source: "/tournaments/:id/standings",
+        destination: "/tournaments/:id?tab=bracket",
+        permanent: true,
+      },
+      {
+        source: "/tournaments/:id/teams",
+        destination: "/tournaments/:id?tab=teams",
+        permanent: true,
+      },
+      // 업그레이드 안내 페이지 통합: 구 /upgrade → /pricing (308, 영구)
+      // 왜 308: GET 유지. /pricing이 결제 플로우 포함 최신 페이지이므로 /upgrade는 제거하고 일원화
+      {
+        source: "/upgrade",
+        destination: "/pricing",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

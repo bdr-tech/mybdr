@@ -3,8 +3,9 @@
 import { useState, useActionState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { loginAction, devLoginAction } from "@/app/actions/auth";
+import { InfoDialog } from "@/components/ui/info-dialog";
 
 const OAUTH_ERRORS: Record<string, string> = {
   kakao_token: "카카오 로그인에 실패했습니다.",
@@ -16,16 +17,44 @@ const OAUTH_ERRORS: Record<string, string> = {
   no_permission: "해당 페이지에 접근할 권한이 없습니다.",
 };
 
+// 로그인 후 이동할 경로별 안내 배너 매핑
+// 등록된 경로만 배너 표시 (화이트리스트 방식 — 임의 경로 메시지 주입 차단)
+const REDIRECT_BANNERS: Record<string, { title: string; desc: string }> = {
+  "/games/new": {
+    title: "경기 만들기는 로그인이 필요해요",
+    desc: "로그인 후 바로 경기 생성 화면으로 이동합니다.",
+  },
+};
+
+// open redirect 방어: 내부 경로만 허용 (외부 URL, 프로토콜 상대 URL 차단)
+// 참고: src/app/api/auth/login/route.ts의 isValidRedirect와 동일 로직
+function isValidRedirect(path: string): boolean {
+  return path.startsWith("/") && !path.startsWith("//");
+}
+
 export default function LoginPage() {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginState, loginFormAction, loginPending] = useActionState(loginAction, null);
   const [devState, devFormAction, devPending] = useActionState(devLoginAction, null);
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const oauthError = searchParams.get("error");
+  // OAuth 에러를 InfoDialog(모달)로 노출: URL 쿼리가 있으면 열림, 확인 시 쿼리에서 제거하여 재열림 방지
+  // 로컬 state를 두는 이유: 사용자가 확인을 눌러도 URL에는 error가 남아있는 타이밍에 모달이 재열리는 걸 막음
+  const [showOauthErrorDialog, setShowOauthErrorDialog] = useState<boolean>(
+    !!(oauthError && OAUTH_ERRORS[oauthError]),
+  );
   // 로그인 후 돌아갈 경로 (예: /referee → layout에서 redirect=/referee로 보냄)
-  const redirectTo = searchParams.get("redirect");
+  // open redirect 방어를 통과한 값만 실제 redirect 값으로 사용
+  const rawRedirect = searchParams.get("redirect");
+  const redirectTo = rawRedirect && isValidRedirect(rawRedirect) ? rawRedirect : null;
+  // 등록된 경로에 한해 안내 플로팅 다이얼로그 노출 (매핑에 없으면 생략)
+  // 전역 컨벤션: "모든 플로팅 UI는 확인 버튼 / backdrop / ESC로 닫힘" 적용
+  const redirectBanner = redirectTo ? REDIRECT_BANNERS[redirectTo] : null;
+  const [showRedirectDialog, setShowRedirectDialog] = useState<boolean>(!!redirectBanner);
 
   // 모달 열릴 때 body 스크롤 방지
   useEffect(() => {
@@ -52,12 +81,9 @@ export default function LoginPage() {
       </div>
 
       <div className="w-full max-w-sm space-y-4">
-        {/* OAuth 에러 */}
-        {oauthError && OAUTH_ERRORS[oauthError] && (
-          <div className="rounded-[12px] px-4 py-3 text-sm" style={{ backgroundColor: 'var(--color-error)', color: 'white', opacity: 0.9 }}>
-            {OAUTH_ERRORS[oauthError]}
-          </div>
-        )}
+        {/* 로그인 필요 안내는 InfoDialog(플로팅)로 노출 — 인라인 배너 제거
+            전역 컨벤션: 확인 버튼/backdrop/ESC 3방식 닫힘 (conventions.md 2026-04-19) */}
+        {/* OAuth 에러도 InfoDialog(플로팅)로 노출 — 인라인 배너 제거 */}
 
         {/* 간편 로그인 카드: CSS 변수 */}
         <div className="rounded-[20px] border p-5" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)', boxShadow: 'var(--shadow-card)' }}>
@@ -206,6 +232,39 @@ export default function LoginPage() {
           </div>
         </div>
       )}
+
+      {/* 로그인 필요 안내 다이얼로그: 매핑된 redirect 경로에 한해 자동 오픈
+          전역 컨벤션 준수 — 확인 버튼/backdrop/ESC 3방식 닫힘 (conventions.md 2026-04-19)
+          redirect 쿼리는 유지하여 로그인 성공 후 복귀 경로를 보존 */}
+      {redirectBanner && (
+        <InfoDialog
+          open={showRedirectDialog}
+          onClose={() => setShowRedirectDialog(false)}
+          title={redirectBanner.title}
+          description={redirectBanner.desc}
+        />
+      )}
+
+      {/* OAuth 에러 알림 다이얼로그: ESC/backdrop/확인 3가지 방법으로 닫힘 */}
+      <InfoDialog
+        open={showOauthErrorDialog}
+        onClose={() => {
+          // 1) 모달 닫기
+          setShowOauthErrorDialog(false);
+          // 2) URL에서 error 쿼리 제거 — 새로고침 시 재노출 방지
+          //    redirect 등 다른 쿼리는 유지
+          const params = new URLSearchParams(searchParams.toString());
+          params.delete("error");
+          const nextQuery = params.toString();
+          router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname);
+        }}
+        title="로그인 오류"
+        description={
+          oauthError && OAUTH_ERRORS[oauthError]
+            ? OAUTH_ERRORS[oauthError]
+            : "로그인 중 오류가 발생했습니다."
+        }
+      />
 
       {/* 모달 애니메이션 스타일 */}
       <style jsx global>{`
