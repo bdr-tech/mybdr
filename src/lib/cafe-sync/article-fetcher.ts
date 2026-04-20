@@ -357,6 +357,17 @@ function extractPostedAt(html: string, $: cheerio.CheerioAPI, now: Date): Date |
       // ignore
     }
   }
+  // 4) [2026-04-20 추가] DOM: <span class="num_subject"> (다음카페 상세의 유일한 시간 소스)
+  //    실측(tmp/cafe-debug-article-IVHA-{3919,3920,3923,3924,3925}.html) 결과:
+  //      - 당일 글: "HH:MM" (예: "13:40")
+  //      - 과거 글: "YY.MM.DD" (예: "26.04.17")
+  //    1~3번 소스(articleElapsedTime/regDttm/JSON-LD)는 상세 HTML에 존재하지 않음 →
+  //    이 4번 fallback이 실질적 유일 소스. parseCafeDate가 두 형식 모두 지원.
+  const numSubjectText = $("span.num_subject").first().text().trim();
+  if (numSubjectText) {
+    const dt = parseCafeDate(numSubjectText, now);
+    if (dt) return dt;
+  }
   return null;
 }
 
