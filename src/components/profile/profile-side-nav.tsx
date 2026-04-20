@@ -47,6 +47,13 @@ const NAV_ITEMS: NavItem[] = [
     exactOnly: true,
   },
   {
+    // W4 M4 "내 활동 통합 뷰" — 내 정보 바로 다음에 배치해 "최근 신청 현황 확인" 멘탈 모델을 빠르게 연결
+    label: "내 활동",
+    href: "/profile/activity",
+    icon: "history",
+    matchPaths: ["/profile/activity"],
+  },
+  {
     label: "내 농구",
     href: "/profile/basketball",
     icon: "sports_basketball",

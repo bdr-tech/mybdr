@@ -16,6 +16,10 @@ export function Footer() {
             <Link href="/pricing" className="transition-colors hover:underline" style={{ color: 'inherit' }}>
               요금제
             </Link>
+            {/* 도움말(용어 사전) — W4 L1 도메인 용어 통일 */}
+            <Link href="/help/glossary" className="transition-colors hover:underline" style={{ color: 'inherit' }}>
+              도움말
+            </Link>
             <Link href="/terms" className="transition-colors hover:underline" style={{ color: 'inherit' }}>
               이용약관
             </Link>

@@ -126,6 +126,19 @@ export function HomeHero() {
           >
             PLAY NOW
           </Link>
+          {/* 처음 방문자 도움말 링크 — W4 L1 도메인 용어 안내 */}
+          {/* "대회/경기/픽업/게스트/디비전/시드/토너먼트/풀리그" 구분을 한 곳에서 제공 */}
+          <div className="mt-3">
+            <Link
+              href="/help/glossary"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-white/80 underline-offset-2 hover:text-white hover:underline"
+            >
+              처음이세요? 용어 사전 보기
+              <span className="material-symbols-outlined text-sm" aria-hidden>
+                arrow_forward
+              </span>
+            </Link>
+          </div>
         </div>
       </div>
 

@@ -54,9 +54,12 @@ const RightSidebar = dynamic(
  * PC 좌측 사이드 네비 항목 (lg 이상에서만 표시)
  * 모바일 하단 탭에는 없는 랭킹/커뮤니티/알림도 포함
  * ============================================================ */
-const sideNavItems = [
+// sideNavItems: subLabel은 PC 사이드 네비에서만 노출되는 보조 설명.
+// "경기"가 픽업·게스트·연습경기를 포함한다는 점을 첫 방문자에게 환기하기 위한
+// W4 L1(용어 통일) 보조 장치. 모바일 하단탭(bottomNavItems)에는 공간이 없어 미적용.
+const sideNavItems: { href: string; label: string; icon: string; subLabel?: string }[] = [
   { href: "/", label: "홈", icon: "home" },
-  { href: "/games", label: "경기", icon: "sports_basketball" },
+  { href: "/games", label: "경기", icon: "sports_basketball", subLabel: "픽업·게스트 모집" },
   { href: "/tournaments", label: "대회", icon: "emoji_events" },
   { href: "/organizations", label: "단체", icon: "corporate_fare" },
   { href: "/teams", label: "팀", icon: "groups" },
@@ -203,7 +206,17 @@ function WebLayoutInner({ children }: { children: React.ReactNode }) {
                 <span className="material-symbols-outlined text-xl"
                   style={active ? { fontVariationSettings: "'FILL' 1" } : undefined}
                 >{item.icon}</span>
-                {item.label}
+                {/* subLabel이 있으면 2줄 구조로 렌더링 — 라벨(기존 폰트) + 부제(작게, 회색) */}
+                {item.subLabel ? (
+                  <span className="flex flex-col leading-tight">
+                    <span>{item.label}</span>
+                    <span className="text-[10px] font-medium normal-case tracking-normal text-[var(--color-text-muted)]">
+                      {item.subLabel}
+                    </span>
+                  </span>
+                ) : (
+                  item.label
+                )}
               </Link>
             );
           })}

@@ -79,6 +79,18 @@ const ARTICLES_PUSH_RE = /articles\.push\(\{([\s\S]*?)\}\);/g;
 export interface BoardItem {
   /** 카페 글 고유 id (URL path 마지막 숫자) */
   dataid: string;
+  /**
+   * dataid 를 정수로 변환한 값.
+   *
+   * 왜 별도 필드:
+   *   - 2026-04-20 정렬 tie-break 용도로 도입. `games.metadata.cafe_article_id`(Int) 에 저장해서
+   *     같은 분(minute) 에 올라온 글을 카페 게시 순서대로 배열하기 위함.
+   *   - dataid 는 단조 증가(실측 3926 ~ 3896 역순)이므로 숫자로 다루면 tie-break 키로 완벽.
+   *   - string 원본도 유지하는 이유: URL/cafe_dataid 메타 등에서 문자열 형태로 재사용.
+   *
+   * 비숫자 dataid 는 fetcher 단계에서 스킵하므로 이 필드는 반드시 유한 정수를 담는다.
+   */
+  dataidNum: number;
   /** 글 제목 */
   title: string;
   /** 작성자 닉네임 */
@@ -320,13 +332,32 @@ export async function fetchBoardList(
   }
 
   // ────────────────────────────────────────────────────────────────────────
+  // [2026-04-20] 공지 혼입 방어 가드 (실측 현재 수집 0건이지만 미래 레이아웃 변경 대비)
+  //
+  // 왜:
+  //   - 실측(tmp/cafe-debug-IVHA.html)에서 공지는 `<div id="noticeContainer">`에만 존재하고
+  //     articles.push 블록에는 일반글만 들어간다 → 현재 0건 혼입.
+  //   - 다음카페 측이 HTML 레이아웃을 변경해 공지를 articles.push 에 섞는 경우를 대비해
+  //     파싱 전에 noticeContainer 구간을 통째로 드롭한다.
+  //   - lookahead `(?=<script[^>]*>\s*var\s+articles)` 로 articles 선언 직전까지만 삭제 →
+  //     일반글 블록 오삭제 방지 (articles 선언이 항상 존재하므로 non-greedy 매칭 안전).
+  //   - i 플래그: noticeContainer 대소문자 표기 변형 대비.
+  //
+  // 참조: scratchpad-cafe-sync.md "E-1. 공지글 수집 현황 (실측)" / "E-2. 필터 구현 방식"
+  // ────────────────────────────────────────────────────────────────────────
+  const cleanedHtml = html.replace(
+    /<div\s+id=["']noticeContainer["'][\s\S]*?(?=<script[^>]*>\s*var\s+articles)/i,
+    "",
+  );
+
+  // ────────────────────────────────────────────────────────────────────────
   // 핵심: articles.push({...}) 블록 모두 수집
   // ────────────────────────────────────────────────────────────────────────
   const blocks: string[] = [];
   // exec + while 루프로 global regex 모든 매칭 순회 (matchAll도 가능하나 타입 호환상 exec 사용)
   ARTICLES_PUSH_RE.lastIndex = 0; // 모듈 최상단 상수라 재사용 시 lastIndex 리셋 필수
   let m: RegExpExecArray | null;
-  while ((m = ARTICLES_PUSH_RE.exec(html)) !== null) {
+  while ((m = ARTICLES_PUSH_RE.exec(cleanedHtml)) !== null) {
     blocks.push(m[1]);
   }
 
@@ -409,8 +440,18 @@ export async function fetchBoardList(
     // 필수 필드 없으면 스킵
     if (!dataid || !title) continue;
 
+    // [2026-04-20] dataidNum NaN 가드 — 비숫자 dataid 는 아예 진입 차단.
+    // 왜: dataid 는 실측 항상 숫자지만, 방어적으로 변환 실패 시 cafe_article_id 에 NaN 이
+    //     들어가지 않도록 여기서 미리 걸러낸다. (tie-break 정렬 대상이므로 무효값은 배제)
+    const dataidNum = Number(dataid);
+    if (!Number.isFinite(dataidNum)) {
+      console.warn(`[${board.id}] ⚠️ 비숫자 dataid 스킵 (dataid="${dataid}")`);
+      continue;
+    }
+
     items.push({
       dataid,
+      dataidNum,
       title,
       author: author ?? "",
       postedAt: parseCafeDate(elapsed ?? "", now),

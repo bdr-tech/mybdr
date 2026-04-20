@@ -2,6 +2,45 @@
 <!-- 담당: planner-architect | 최대 30항목 -->
 <!-- "왜 A 대신 B를 선택했는지" 기술 결정의 배경과 이유를 기록 -->
 
+### [2026-04-20] 카페 sync 과거 글 시분 확보 불가 — 원천 미제공 (HTML 한계)
+- **분류**: decision (기술적 한계 확정)
+- **결정자**: pm + Explore 실측 분석
+- **결정**: 과거 글(당일 외) 시분(HH:MM) 추출을 **포기**. 분 단위 정렬 + `dataid` tie-break 조합으로 카페 표시 순서를 사실상 100% 복원.
+- **배경**: Phase 3 체크리스트 #7 "시분 정확도"를 원래 상세 페이지 파싱으로 해결하려 했으나, 실측(tmp/cafe-debug-article-IVHA-{3919,3920,3923,3924,3925}.html 5건) 결과 상세 HTML에서도 과거 글은 `YY.MM.DD`만 노출. 당일 글만 `HH:MM` 표시.
+- **실측 근거**:
+  - 상세 유일 시간 소스 `<span class="num_subject">`: 당일=`13:40` / 과거=`26.04.17`
+  - 기타 후보 전부 부재: `articleElapsedTime`, `regDttm`, `createdAt`, `JSON-LD datePublished`, `og:published_time`
+  - 5/5 과거 글이 모두 날짜 형식 (샘플 부족 아닌 패턴 확정)
+- **대체 전략**: `dataid` 단조 증가 특성(실측 3926→3896 역순) 활용 → `games.metadata.cafe_article_id` 2차 정렬키로 같은 날 여러 글의 순서를 완벽 복원.
+- **사용자 체감**: 과거 글은 날짜 단위 정렬 + 같은 날 내 dataid desc → 카페 표시 순서와 일치.
+- **미래 확장 가능성 (비추천)**: 모바일 API 직접 호출로 시분초 확보 가능성 있으나 비공개 API + 차단 위험 → 비용 대비 이득 낮음.
+
+### [2026-04-20] 카페 sync dataid tie-break — metadata JSON 키 (cafe_article_id Int)
+- **분류**: decision
+- **결정자**: planner-architect + pm
+- **결정**: dataid를 `games.metadata.cafe_article_id` (Int, JSON 내부 키)로 저장하여 정렬 2차키로 사용
+- **배경**: 같은 분(HH:MM)에 카페 글 여러 건 업로드 시 `created_at DESC` 단일 정렬로는 순서 보장 불가. dataid는 카페 게시 순서대로 단조 증가(실측 3926→3896).
+- **선택지**:
+  - A. `games.metadata.cafe_article_id` (Int JSON 키) ✅
+  - B. `games.cafe_article_id` 컬럼 신규 — **❌ Prisma 마이그레이션 필요** (CLAUDE.md 금지)
+  - C. `cafe_posts.cafe_article_id` 컬럼 — games 정렬에 조인 필요로 쿼리 복잡
+- **선택 이유**:
+  - 운영 DB 스키마 drift 방지 (JSON 키 추가는 스키마 변경 아님)
+  - 기존 metadata 7키 구조와 동질적 (cafe_dataid/cafe_board/source_url/... + cafe_article_id)
+  - 데이터 규모(최대 수천 건)에서 JSON path 정렬 성능 충분
+- **트레이드오프**: Prisma orderBy가 JSON path 미지원 → `listGames()`에서 메모리 정렬(대안 1)로 tie-break 구현 (take=60 기준 성능 차 무시)
+
+### [2026-04-20] 카페 공지 필터 — noticeContainer 구간 방어적 드랍
+- **분류**: decision
+- **결정자**: planner-architect
+- **결정**: fetcher 정규식 매칭 전 `<div id="noticeContainer">...` 구간을 HTML에서 제거
+- **배경**: 실측(tmp/cafe-debug-IVHA.html) 결과 공지는 `<div id="noticeContainer">` DOM에만 있고 `<script>articles.push` 블록에는 일반글만 존재 → 현재도 공지 수집 0건. 다만 카페 측 레이아웃 변경에 대비한 방어적 가드 필요.
+- **선택지**:
+  - A. noticeContainer 구간 HTML 통째 드랍 (lookahead로 articles 선언 직전까지) ✅
+  - B. articles.push 블록별 공지 플래그 검사 — 현재 articles.push에 공지 안 들어옴 → 불필요
+  - C. 무수정 — 미래 레이아웃 변경 시 공지 혼입 위험
+- **선택 이유**: 5줄 추가로 방어력 확보, 오삭제 위험 0 (lookahead로 articles 블록 안전)
+
 ### [2026-04-19] W1 Quick Wins 12종 묶음 처리 결정 — 단일 통합 PR 채택
 - **분류**: decision
 - **결정자**: 수빈 + pm
