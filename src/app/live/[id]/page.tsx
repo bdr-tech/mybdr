@@ -424,6 +424,8 @@ export default function LiveBoxScorePage() {
   // 이제 data-printing="true" 속성 기반 CSS가 @media 의존 없이 가시성 전환을 담당.
   const [isPrinting, setIsPrinting] = useState(false);
 
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const fetchMatch = useCallback(async () => {
     try {
       const res = await fetch(`/api/live/${id}`, { cache: "no-store" });
@@ -451,6 +453,14 @@ export default function LiveBoxScorePage() {
       setLastUpdated(new Date());
       setIsLive(m.status === "live" || m.status === "in_progress");
       setError(null);
+
+      // 경기 종료 시 폴링 중단 — 깜빡임 방지
+      if (m.status === "completed" || m.status === "finished") {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+      }
     } catch {
       setError("데이터를 불러오는 중 오류가 발생했습니다");
     }
@@ -458,8 +468,10 @@ export default function LiveBoxScorePage() {
 
   useEffect(() => {
     fetchMatch();
-    const timer = setInterval(fetchMatch, POLL_INTERVAL);
-    return () => clearInterval(timer);
+    timerRef.current = setInterval(fetchMatch, POLL_INTERVAL);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, [fetchMatch]);
 
   // 2026-04-16: 프린트 옵션 확정 → 다음 틱에 실제 프린트 실행
