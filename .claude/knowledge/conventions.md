@@ -1,6 +1,24 @@
 # 코딩 규칙 및 스타일
 <!-- 담당: developer, reviewer | 최대 30항목 -->
 
+### [2026-04-20] 세션 분리 원칙 — 다음카페 sync는 항상 별도 세션 (운영 규칙)
+- **분류**: convention (운영)
+- **발견자**: pm + 사용자 (2026-04-20 합의)
+- **규칙**: 본 프로젝트는 **2개 세션 동시 진행 패턴**으로 운영한다.
+  - **본 세션** = `(web)`/`(api/web)`/`(referee)` 등 일반 UX/기능 작업 (M1~M7, Q1~Q12, L1~L3 등)
+  - **카페 세션** = 다음카페 sync 작업 (Phase 1~3) — **항상 별도 터미널에서 동시 진행**
+- **본 세션 PM 절대 금지 파일** (카페 세션 작업 손상 방지):
+  - `scripts/sync-cafe.ts`, `scripts/cafe-login.ts`, `scripts/_tmp-*`, `scripts/backfill-*cafe*.ts`
+  - `src/lib/cafe-sync/*` (article-fetcher, upsert, extract-fallbacks, mask-personal-info, board-map 등)
+  - `Dev/cafe-sync-plan-*.md` (카페 세션 전용 기획 문서)
+- **충돌 방지 패턴**:
+  - 카페 세션의 commit이 origin/subin에 누적되어도 본 세션은 fast-forward로 자연 통합 (PR #46에 카페 Phase 2b Step 4까지 자연 합쳐짐)
+  - **푸시 전 `git fetch` 권장** (양 세션 push 충돌 사전 감지)
+  - 본 세션이 `git status`에서 카페 sync 파일이 modified로 보여도 절대 `git add` 금지 (다른 터미널 작업 중)
+- **에이전트 위임 시**: developer/tester/reviewer 모두 핸드오프 프롬프트에 "카페 sync 파일 절대 수정 금지" 명시
+- **참조횟수**: 0
+- **승격 후보**: 프로젝트 CLAUDE.md (양 세션 모두 적용되는 핵심 원칙)
+
 ### [2026-04-19] 플로팅/다이얼로그 닫기 규칙 (전역 UX 컨벤션)
 - **분류**: convention
 - **발견자**: 수빈 (사용자 결정)

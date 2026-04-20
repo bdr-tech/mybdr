@@ -278,7 +278,14 @@
       "Bash(awk 'NR==1 || /^\\\\| 04-1[789] \\\\|/' .claude/scratchpad.md)",
       "Bash(git pull *)",
       "Bash(cp .claude/scratchpad.md .claude/backup-2026-04-14/scratchpad-pre-cleanup-921lines.md)",
-      "Bash(mkdir -p .claude/backup-2026-04-14)"
+      "Bash(mkdir -p .claude/backup-2026-04-14)",
+      "Bash(git -C \"C:/0. Programing/mybdr\" diff --stat HEAD -- scripts/sync-cafe.ts src/lib/cafe-sync/)",
+      "Bash(git -C \"C:/0. Programing/mybdr\" log --oneline -5 -- src/lib/cafe-sync/ scripts/sync-cafe.ts)",
+      "Bash(git -C \"C:/0. Programing/mybdr\" diff HEAD -- src/components/shared/kakao-map.tsx)",
+      "Bash(echo \"---EXIT CODE: $?---\")",
+      "Bash(git -C \"C:/0. Programing/mybdr\" status -s)",
+      "Bash(git -C \"C:/0. Programing/mybdr\" diff HEAD -- \"src/app/\\(web\\)/courts/_components/courts-content.tsx\")",
+      "Bash(git -C \"C:/0. Programing/mybdr\" blame -L 481,512 \"src/app/\\(web\\)/courts/_components/courts-content.tsx\")"
     ]
   }
 }

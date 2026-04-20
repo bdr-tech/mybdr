@@ -129,15 +129,73 @@ export function extractFallbacks(content: string | null, baseDate: Date): Extrac
     };
   }
 
+  // [2026-04-20] city 실패 시 district→city 역매핑 fallback.
+  // 예: 본문이 "고양시 현천동" 처럼 광역 생략된 경우 extractCity는 null이지만
+  //     district("고양시")는 잡힌다. 이때 DISTRICT_TO_CITY 테이블로 "경기" 추론.
+  const district = extractDistrict(content);
+  const city = extractCity(content) ?? resolveCityFromDistrict(district);
+
   return {
     scheduledAt: extractScheduledAt(content, baseDate),
     fee: extractFee(content),
     guestCount: extractGuestCount(content),
     skillLevel: extractSkillLevel(content),
-    city: extractCity(content),
-    district: extractDistrict(content),
+    city,
+    district,
     venueName: extractVenueName(content),
   };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// district → city 역매핑 테이블
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// 왜 이 테이블이 필요한가:
+//   실측 본문에 "고양시 현천동" / "송파구 잠실" / "부평구 ..." 처럼 광역 키워드가
+//   생략된 경우가 많다. extractCity는 광역 키워드 매칭이라 null이 되지만
+//   district는 잡힌다. 이때 district가 유일 광역 식별 가능하면 city를 역추론.
+//
+// 중복 우려 있는 district(중구/동구/남구/북구/서구 등 — 여러 광역시에 존재)는
+// 의도적으로 제외. 매핑 테이블 잘못이면 city를 틀리게 채우는 쪽이 더 나쁨.
+//
+// 대한민국 생활농구 생태계 기준 핵심 지역 위주(서울/경기/인천/부산 주요).
+const DISTRICT_TO_CITY: Readonly<Record<string, string>> = {
+  // 서울 25구 중 이름 중복 없는 것 (중구 제외 — 다른 광역에도 있음)
+  강남구: "서울", 강동구: "서울", 강북구: "서울", 강서구: "서울",
+  관악구: "서울", 광진구: "서울", 구로구: "서울", 금천구: "서울",
+  노원구: "서울", 도봉구: "서울", 동대문구: "서울", 동작구: "서울",
+  마포구: "서울", 서대문구: "서울", 서초구: "서울", 성동구: "서울",
+  성북구: "서울", 송파구: "서울", 양천구: "서울", 영등포구: "서울",
+  용산구: "서울", 은평구: "서울", 종로구: "서울", 중랑구: "서울",
+
+  // 경기도 주요 시 (이름 유일)
+  수원시: "경기", 고양시: "경기", 성남시: "경기", 용인시: "경기",
+  안양시: "경기", 안산시: "경기", 부천시: "경기", 평택시: "경기",
+  화성시: "경기", 남양주시: "경기", 파주시: "경기", 김포시: "경기",
+  광명시: "경기", 의정부시: "경기", 하남시: "경기", 오산시: "경기",
+  구리시: "경기", 이천시: "경기", 양주시: "경기", 안성시: "경기",
+  시흥시: "경기", 군포시: "경기", 의왕시: "경기", 과천시: "경기",
+  포천시: "경기", 여주시: "경기", 동두천시: "경기",
+  // 주의: "광주시"는 경기 광주시지만 "광주"(광역)와 혼동 가능 → 제외
+
+  // 인천 (중구/동구/남구/서구 제외)
+  계양구: "인천", 미추홀구: "인천", 부평구: "인천", 연수구: "인천",
+  // 남동구는 이름 중복 없어 OK
+  남동구: "인천",
+
+  // 부산 주요 (중구/동구/남구/북구/서구 제외)
+  해운대구: "부산", 사상구: "부산", 사하구: "부산", 부산진구: "부산",
+  금정구: "부산", 동래구: "부산", 수영구: "부산", 연제구: "부산",
+  기장군: "부산",
+};
+
+/**
+ * district로부터 city를 역추론. 테이블에 없으면 null.
+ * extractCity가 먼저 실패했을 때만 호출.
+ */
+function resolveCityFromDistrict(district: string | null): string | null {
+  if (!district) return null;
+  return DISTRICT_TO_CITY[district] ?? null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

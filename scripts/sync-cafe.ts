@@ -354,7 +354,10 @@ async function main() {
             title: it.title, // 목록에서 가져온 제목
             author: it.author,
             content: maskedContent, // ← 마스킹된 값으로 교체 (이전엔 r.content 원본 전달)
-            postedAt: r.postedAt,
+            // [2026-04-20] 상세 페이지 HTML에는 시분만 있어 extractPostedAt이 null 반환 가능.
+            // BoardItem.postedAt(목록 articleElapsedTime 파싱, 날짜만 정확, 시분 00:00) fallback.
+            // 시분까지 정확히 얻는 로직은 다음 세션(middle 단계)에서 보강.
+            postedAt: r.postedAt ?? it.postedAt,
             crawledAt: new Date(),
             parsed: r.parsed,
           };

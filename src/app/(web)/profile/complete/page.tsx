@@ -14,6 +14,17 @@ import { RegionPicker, type Region } from "@/components/shared/region-picker";
 // 농구 5포지션 — 복수 선택 가능
 const POSITIONS = ["PG", "SG", "SF", "PF", "C"] as const;
 
+// GET /api/web/profile 응답 minimal 형태 (prefill 한정)
+// apiSuccess가 자동 snake_case 변환하므로 키는 모두 snake_case (errors.md 6회 재발 가드)
+interface ProfilePrefillResponse {
+  user?: {
+    nickname?: string | null;
+    position?: string | null;
+    city?: string | null;
+    district?: string | null;
+  };
+}
+
 export default function ProfileCompletePage() {
   const router = useRouter();
 
@@ -37,7 +48,7 @@ export default function ProfileCompletePage() {
       try {
         const res = await fetch("/api/web/profile");
         if (!res.ok) return;
-        const data = await res.json();
+        const data: ProfilePrefillResponse = await res.json();
         // apiSuccess 응답은 snake_case로 직렬화됨 (raw fetch이므로 변환 없음)
         const u = data?.user;
         if (cancelled || !u) return;
@@ -134,7 +145,10 @@ export default function ProfileCompletePage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-[4px] bg-red-500/10 px-4 py-3 text-sm text-red-500">
+        <div
+          className="mb-4 rounded-[4px] px-4 py-3 text-sm text-[var(--color-error)]"
+          style={{ backgroundColor: "color-mix(in srgb, var(--color-error) 10%, transparent)" }}
+        >
           {error}
         </div>
       )}

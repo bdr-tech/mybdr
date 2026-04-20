@@ -101,7 +101,12 @@ export default function VerifyPage() {
 
         <div className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.07)]">
           {error && (
-            <div className="mb-4 rounded-[10px] bg-red-500/10 px-3 py-2 text-sm text-red-500">{error}</div>
+            <div
+              className="mb-4 rounded-[10px] px-3 py-2 text-sm text-[var(--color-error)]"
+              style={{ backgroundColor: "color-mix(in srgb, var(--color-error) 10%, transparent)" }}
+            >
+              {error}
+            </div>
           )}
 
           {/* 전화번호 인증 */}
