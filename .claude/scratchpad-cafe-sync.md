@@ -1298,7 +1298,564 @@ steps: 7개 전부 정상 인식
 
 ---
 
+### 📋 7게시판 확장 + 전체 이전 설계안 (2026-04-21, planner-architect)
 
+> **목표**: 기존 3 경기 게시판(IVHA/Dilr/MptT → `games`) 에 **신규 4 일반 게시판**(N54V 자유 / IVd2 익명 / E7hL BDR칼럼 / bWL 구인구팀) → `community_posts` 파이프라인을 추가한다. 우선 이전 대상은 **E7hL + bWL**. 자유/익명은 규모 검증 후 후속.
+>
+> **세션 범위 재확인**: `src/lib/cafe-sync/*`, `scripts/sync-cafe.ts`, 신규 `scripts/backfill-cafe-community.ts`, 기존 `.github/workflows/cafe-sync*.yml`. UX 파일(`src/app/(web)/*`, `src/components/*`) 건드리지 않음. `cafe-game-parser.ts` 무수정.
+
+---
+
+#### 핵심 결정 요약 (7줄)
+
+1. **게시판 분기 = `target` 필드**: `CafeBoard.target: "games" | "community_posts"` 추가. sync-cafe.ts 가 board 순회마다 target 기준 분기. games 경로는 완전 무변경.
+2. **grpid 실측 ✅**: 4 신규 게시판(E7hL/bWL/N54V/IVd2) 모두 `grpid=IGaj` 동일 확인(curl HEAD + HTML grep) → Phase 3 #6 `fetchBoardListApi()` 도 같은 GRP_CODE 재사용 가능. SSR 구조(`articles.push({dataid,fldid,title,writerNickname,articleElapsedTime,bbsDepth})`)도 완전 동일 → **fetcher.ts 파싱 로직 100% 재사용**.
+3. **카페 봇 유저 = seed 1회 + 시작 시 캐시**: `scripts/seed-cafe-bot-user.ts` 신규(멱등 upsert). sync-cafe/backfill 시작 시 `findUnique(email="cafe-bot@mybdr.local")` 1회 조회 후 `BigInt` 캐시. 없으면 즉시 abort(가드).
+4. **중복 방지 = `images.cafe_source_id` GIN-like 검색**: Prisma 스키마 변경 0. `images->>'cafe_source_id' = 'PU-CAFE-E7hL-2881'` 패턴 `$queryRaw` 로 `findExistingCommunityPostByCafeSourceId()` 조회. cafe_source_id 에 **board id 포함**(게시판 간 dataid 중복 방지).
+5. **익명게시판 = `author_nickname = "익명"` 고정**: `board.anonymousAuthor: true` 플래그로 강제. `images.cafe_author` 에도 원본 저장 **안 함**(PM Q3 "의도 존중"). 단 `images.cafe_dataid`/`source_url` 은 관리 목적으로 저장.
+6. **1차 이전 = E7hL + bWL만**: `scripts/backfill-cafe-community.ts --board=E7hL|bWL|both --max-pages=N --list-only|--with-body --execute` CLI. `fetchBoardListApi` 재사용 → 페이지별 목록 수집 후 `article-fetcher.ts` 로 본문 가져와 `upsertCommunityPost()` 호출. 로컬 수동 실행(GH Actions 15분 타임아웃 위험).
+7. **cron = cafe-sync.yml `--board=all` 의미 재정의**: 기존 3게시판 → 7게시판으로 확장. 단 `--board=games`(경기 3) / `--board=community`(일반 4) / `--board=all`(7게) 분기 CLI 추가(관측성). 별도 workflow 분리 불필요.
+
+---
+
+#### 실측 검증 (사전 조사, 2026-04-21)
+
+| 조사 항목 | 결과 | 근거 | 결론 |
+|---|---|---|---|
+| 4 신규 게시판 HTTP 접근성 | ✅ 전부 200 | `curl -I m.cafe.daum.net/dongarry/{E7hL,bWL,N54V,IVd2}` → 200 / 27~32KB | 로그인 쿠키 없이도 목록 접근 (3게시판과 동일) |
+| 각 게시판 grpid | **전부 `IGaj`** | HTML L245~L271 `...bbs_list?grpid=IGaj&fldid=<X>` | `fetchBoardListApi()` GRP_CODE 상수 재사용 |
+| articles.push 블록 구조 | 3게시판과 동일 | E7hL/IVd2 샘플 각각 확인. dataid/fldid/title/writerNickname/articleElapsedTime/bbsDepth/thumbnailImageUrl 필드 전부 존재 | `fetcher.ts` 파싱 로직 무수정 |
+| IVd2(익명) 작성자 필드 | **`writerNickname: ""`** (빈 문자열) | 실측 L446 `writerNickname: ""` | PM Q3 "익명 고정"과 일치 — fetcher 에서 빈값 통과 + upsert 에서 board.anonymousAuthor 로 `"익명"` 강제 |
+| E7hL(BDR칼럼) 작성자 필드 | **실제 닉네임** ("운영진" 등) | L468 `writerNickname: "운영진"` | 원본 닉네임 저장(author_nickname 에) |
+| 게시글 건수(1페이지) | E7hL 13건 / bWL 13건 / N54V 13건 / IVd2 13건 | articles.push 매칭 수 | 3게시판(보통 20건)보다 적음 — community_posts 이전 규모 E7hL 2881번글이 최신이라 적어도 수백~수천건 누적 가능성 |
+| community_posts 스키마 | 확인 완료 | schema.prisma L794~L828 | `user_id(BigInt, NOT NULL FK→User)` / `title(VARCHAR)` / `content(Text nullable)` / `category(default "general")` / `author_nickname(VARCHAR 255)` / `images(Json)` 모두 존재. 신규 컬럼 불필요 |
+| User 모델 필수 필드 | `email`+`passwordDigest` | schema.prisma L13~L14 모두 NOT NULL | 카페 봇 생성 시 dummy password hash 필요(bcrypt 랜덤) |
+| `preferred_board_categories` | Json 배열, default `[]` | schema.prisma L58 | 신규 category `anonymous` 추가 시 기존 유저 영향 0 (빈 배열) |
+| `categoryLabelMap` 사용처 | 3곳 (community-sidebar, post-detail-sidebar, community/[id]/page.tsx) | grep 결과 | UX 세션이 3곳 전부 `anonymous: "익명게시판"` 키 추가 필요. 본 세션 건드리지 않음 |
+
+**⚠️ 미실측 중요 항목 (developer 1차 실행 때 확정 필요)**:
+- E7hL/bWL 전체 글 수 (dataid 최대값 대비) — backfill 규모 결정
+- common-articles API 가 4 신규 게시판에서도 `nextPage`/`articles` 응답 동일한지 — **단, Phase 3 #6 `fetchBoardListApi()` 자체가 아직 미구현**(scripts/sync-cafe.ts 에 `--max-pages` 파싱 로직 없음, workflow 에서 넘겨도 무시됨). → **사전 의존성**: Phase 3 #6 구현이 backfill 보다 선행 필요할 수 있음. 다만 1차 이전만이라면 `fetchBoardList` 20건 상한 × 여러 회 반복으로 대체 가능(임시).
+
+---
+
+#### 영향 파일
+
+| # | 파일 | 변경 요지 | 라인 힌트 | 신규/수정 |
+|---|---|---|---|---|
+| 1 | `src/lib/cafe-sync/board-map.ts` | `CafeBoard` 인터페이스 확장(`target`/`category`/`anonymousAuthor`) + 7게시판 배열 + GRP_CODE 상수 | L31~L65 전반 | 수정 |
+| 2 | `src/lib/cafe-sync/upsert.ts` | `upsertCommunityPost()` + `findExistingCommunityPostByCafeSourceId()` + `resolveCafeBotUserId()` + `previewCommunityUpsert()` 신규. 기존 `upsertCafeSyncedGame()` 무변경 | 파일 끝에 ~280줄 추가 | 수정 |
+| 3 | `src/lib/cafe-sync/fetcher.ts` | **무수정** (파싱 로직 재사용, 4게시판 같은 SSR 구조 실측 확인) | — | — |
+| 4 | `src/lib/cafe-sync/article-fetcher.ts` | **무수정** — 단 `parseCafeGame()` 호출은 games 경로만. community 경로는 `content` + `postedAt` 만 뽑아 반환하는 경량 경로 필요 → 플래그 `parseGame: boolean` 추가 or 신규 얇은 래퍼 `fetchArticleContent()` 분리 | L413~L593 부분 or 신규 export | 수정 (최소 20줄) |
+| 5 | `scripts/sync-cafe.ts` | board.target 분기 로직 + community 경로 본문 fetch/upsert 호출 + CLI `--board=games\|community\|all` 분기 (기존 `--board=all` 의미 7게시판으로 확장) + dry-run 미리보기 확장 | L302~L423 메인 루프 + parseBoardArg L78 | 수정 |
+| 6 | `scripts/seed-cafe-bot-user.ts` | 카페 봇 유저 멱등 upsert (email="cafe-bot@mybdr.local", passwordDigest=bcrypt(랜덤), status="active", isAdmin=false). dry-run 기본 + `--execute` | 신규 ~90줄 | **신규** |
+| 7 | `scripts/backfill-cafe-community.ts` | 1차 이전 스크립트. `--board=E7hL\|bWL\|both` / `--max-pages=N` / `--list-only\|--with-body` / `--execute` / `--limit-per-page=50` | 신규 ~250줄 | **신규** |
+| 8 | `.github/workflows/cafe-sync.yml` | CLI `--board=all` 유지 (7게시판 자동 포함) + `article-limit` 기본값 조정 여부 선택 | L143 인자 불변 | (선택) 수정 |
+| 9 | `prisma/schema.prisma` | **무수정** (스키마 변경 0) | — | — |
+
+**합계**: 신규 2 + 수정 3~4 + 무수정 2. **Prisma 마이그레이션 0. 운영 DB 영향 0**.
+
+---
+
+#### Q1~Q4 PM 결정 반영 상태
+
+| # | PM 결정 | 본 설계 반영 지점 |
+|---|---|---|
+| Q1 시스템 유저 | "카페 봇" 신규 1명 생성 (모든 카페 글 user_id 고정) | `scripts/seed-cafe-bot-user.ts` + `resolveCafeBotUserId()` 런타임 캐시 |
+| Q2 대회후기 → BDR칼럼 | category key `review` 유지, 라벨은 UX 세션 | `board.category = "review"` (E7hL). 본 세션은 DB 키만. UX 라벨 매핑은 건드리지 않음 |
+| Q3 익명 닉네임 | `author_nickname = "익명"` 고정, 원본 저장 X | `board.anonymousAuthor = true` (IVd2) → upsert 에서 `"익명"` 강제, `images.cafe_author` 키 **저장 생략** |
+| Q4 이전 우선순위 | 1차 E7hL+bWL, 2차 N54V+IVd2 | backfill 스크립트 `--board=E7hL\|bWL\|both` (기본 `both`). N54V/IVd2 는 cron 에서 신규 글만 포착 → 2차에서 별도 backfill |
+
+---
+
+#### 🅰️ board-map.ts 확장 스펙
+
+```ts
+// ─── 상수 추가 ─────────────────────────────────────────────────────────────
+/** grpid (4 신규 게시판 실측 결과 전부 IGaj 동일) */
+export const GRP_CODE = "IGaj";
+
+// ─── 인터페이스 확장 ────────────────────────────────────────────────────
+export interface CafeBoard {
+  id: "IVHA" | "Dilr" | "MptT" | "N54V" | "IVd2" | "E7hL" | "bWL";
+  /** 저장 대상 테이블 */
+  target: "games" | "community_posts";
+  /** 표시용 한글 라벨 */
+  label: string;
+  /** 게시판 식별 접두사 (cafe_source_id 생성 시) */
+  prefix: string;
+
+  // ─── games 경로 전용 ─────────────────────────────────
+  /** games.game_type (target="games" 일 때만) */
+  gameType?: "PICKUP" | "GUEST" | "PRACTICE";
+
+  // ─── community_posts 경로 전용 ───────────────────────
+  /** community_posts.category (target="community_posts" 일 때만) */
+  category?: "general" | "anonymous" | "review" | "recruit";
+  /** true 이면 author_nickname 에 "익명" 강제, images.cafe_author 생략 */
+  anonymousAuthor?: boolean;
+}
+
+// ─── 7게시판 배열 ───────────────────────────────────────
+export const CAFE_BOARDS: CafeBoard[] = [
+  // 기존 3 경기 (games) — 순서 유지
+  { id: "IVHA", target: "games", gameType: "PICKUP",   prefix: "PU", label: "픽업게임" },
+  { id: "Dilr", target: "games", gameType: "GUEST",    prefix: "GU", label: "게스트 모집" },
+  { id: "MptT", target: "games", gameType: "PRACTICE", prefix: "PR", label: "연습 경기" },
+  // 신규 4 일반 (community_posts)
+  { id: "E7hL", target: "community_posts", category: "review",    prefix: "BC", label: "BDR칼럼" },       // BDR Column
+  { id: "bWL",  target: "community_posts", category: "recruit",   prefix: "RC", label: "구인구팀" },     // Recruit
+  { id: "N54V", target: "community_posts", category: "general",   prefix: "GN", label: "자유게시판" },   // General
+  { id: "IVd2", target: "community_posts", category: "anonymous", prefix: "AN", label: "익명게시판",     // Anonymous
+    anonymousAuthor: true },
+];
+```
+
+**⚠️ developer 주의**:
+- 신규 category key `"anonymous"` 는 DB 에 존재하지 않는 값. community_posts.category 는 VarChar 라 제약 없어 자유롭게 INSERT 가능. 다만 UX 세션이 `categoryLabelMap` 에 추가 안 하면 "기타"로 표시됨(현행 방어 로직).
+- `prefix` 는 cafe_source_id 재조립에 쓰임(`${prefix}-CAFE-${board}-${dataid}`). 신규 4개는 접두사 중복 없게 BC/RC/GN/AN 선택.
+- 기존 `getBoardById()` 는 7개 모두 대응하도록 자동 동작.
+
+---
+
+#### 🅱️ 카페 봇 유저 생성 방법 확정
+
+**결정**: **A안 (seed 스크립트 1회 실행) + 런타임 캐시**.
+
+| 방법 | 장점 | 단점 | 채택 |
+|---|---|---|---|
+| A. `scripts/seed-cafe-bot-user.ts` 1회 실행 | 관찰 가능, 실수 방지, 재실행 멱등 | 사용자 명시 실행 필요 | ✅ |
+| B. 수동 SQL INSERT | 빠름 | 재현 어려움, 가드 없음 | ❌ |
+| C. sync/backfill 최초 실행 시 자동 upsert | 설치 간편 | 운영 DB 실수 실행 시 봇 유저가 운영 DB 에도 생김, 추적 어려움 | ❌ |
+
+**User 필드 맵**(schema 확인 완료):
+
+| 필드 | 값 | 이유 |
+|---|---|---|
+| `email` | `"cafe-bot@mybdr.local"` | `.local` TLD → 실제 수신 불가 (스팸/복구 오동작 방지). unique 제약 통과 |
+| `passwordDigest` | `bcrypt.hash(randomUUID(), 10)` | NOT NULL 제약. 값은 영원히 쓰이지 않음 (로그인 차단) |
+| `name` | `"카페 봇"` | 관리자 UI 표시용 |
+| `nickname` | `"카페 봇"` | 공개 표시용 |
+| `status` | `"active"` | 글 작성 가능 상태 유지(community_posts FK 사용). **비활성화 시 FK 조회 실패 risk 없음 — status 는 select 제약이라기보다 UI 플래그** |
+| `isAdmin` | `false` | 관리자 권한 금지 |
+| `bio` | `"다음카페(BDR 동아리)에서 자동 동기화된 게시글의 게시자 계정입니다."` | 사용자가 프로필 진입 시 목적 설명 |
+| `profile_image_url` | `null` | 초기 null, 추후 UX 세션이 카페 로고 세팅 가능 |
+| `membershipType` | `0` | 무료 기본 |
+| 기타 nullable 필드 | 전부 생략(null/default) | 최소 풋프린트 |
+
+**가드 설계 (abort 시나리오)**:
+
+1. `seed-cafe-bot-user.ts` 시작 시 `assertDevDatabase()` (기존 관습 재사용).
+2. `upsert({ where:{email}, update:{}, create:{...} })` — update 블록 비움(email 기반 재실행 시 no-op).
+3. sync-cafe/backfill 시작 시 `findUnique({ where: { email: "cafe-bot@mybdr.local" }, select: { id: true } })` → null 이면 **즉시 throw**: `"카페 봇 유저 미존재 — scripts/seed-cafe-bot-user.ts --execute 먼저 실행"`.
+4. 조회 결과 `id: BigInt` 를 **모듈 레벨 let 변수**에 캐시 (sync-cafe.ts 생존 기간 내 1회 조회로 충분).
+
+---
+
+#### 🅲 upsertCommunityPost 스펙
+
+**위치**: `src/lib/cafe-sync/upsert.ts` 끝에 추가. `upsertCafeSyncedGame()` 과 대칭적 구조.
+
+**입력 타입**:
+
+```ts
+export interface CafeCommunityInput {
+  /** CAFE_BOARDS 엘리먼트 (target="community_posts") */
+  board: CafeBoard;
+  /** 카페 글 dataid (string 원본) */
+  dataid: string;
+  /** dataid Int 변환본 — 정렬/디버깅 용 */
+  dataidNum: number;
+  /** 제목 (마스킹 전 원본. upsert 내부에서 maskPersonalInfo 적용) */
+  title: string;
+  /** 본문 (호출자가 마스킹했거나 원본. upsert 2차 방어 마스킹) */
+  content: string;
+  /** 카페 원본 닉네임. board.anonymousAuthor=true 면 무시되고 "익명" 사용 */
+  author: string;
+  /** 게시 시각. null 이면 crawledAt fallback */
+  postedAt: Date | null;
+  /** 크롤 시각 */
+  crawledAt: Date;
+  /** (선택) 목록 썸네일 URL. images 배열 첫 요소로 저장 가능 */
+  thumbnailUrl?: string | null;
+  /** (선택) 게시글 headCont(말머리) — 예: "이슈"/"공지". images 메타에만 저장, 필수 아님 */
+  headCont?: string | null;
+}
+```
+
+**중복 방지 쿼리**:
+
+```ts
+async function findExistingCommunityPostByCafeSourceId(
+  tx: Prisma.TransactionClient,
+  cafeSourceId: string,
+): Promise<bigint | null> {
+  // images 는 Json, top-level ->> 로 문자열 뽑음. cafe_source_id 는 board id 포함된 고유값.
+  const rows = await tx.$queryRaw<Array<{ id: bigint }>>`
+    SELECT id FROM community_posts
+    WHERE images->>'cafe_source_id' = ${cafeSourceId}
+    LIMIT 1
+  `;
+  return rows.length > 0 ? rows[0].id : null;
+}
+```
+
+- **성능**: community_posts 현재 규모 수백~수천 row. Full scan 허용 수준. **GIN index 선택 사항** (스키마 변경 = 운영 DB 영향, 현재 절대 금지 — 향후 N54V/IVd2 규모 시 재검토).
+- **대안 기각**: `cafe_source_id` 전용 컬럼 추가 → 운영 DB 마이그레이션 필요 → CLAUDE.md 금지 규칙 위반.
+
+**저장 매핑표**:
+
+| 필드 | 값 | 비고 |
+|---|---|---|
+| `user_id` | 카페 봇 user.id (캐시) | 가드로 존재 필수 |
+| `title` | `maskPersonalInfo(input.title)` | 제목에도 마스킹 1차 적용(제목에 전화 노출 경우 방어) |
+| `content` | `maskPersonalInfo(input.content).slice(0, 30000)` | text 컬럼이라 길이 제한 없지만 비정상 대용량 가드 |
+| `category` | `input.board.category` | "general"/"anonymous"/"review"/"recruit" |
+| `status` | `"published"` | schema default 준수 |
+| `author_nickname` | `board.anonymousAuthor ? "익명" : input.author \|\| "(닉네임 없음)"` | IVd2 는 원본 빈 문자열인데 "익명" 으로 치환 |
+| `images` (Json) | 아래 객체 | 이미지 배열이 아니라 **메타 객체** (기존 커뮤니티 글은 배열인 경우 있음 — 카페 글만 객체 혼재) |
+| `view_count` | `0` | 카페 조회수를 DB로 가져올 필요 낮음. viewCount 필드는 목록에 있으나 저장 생략 |
+| `comments_count` | `0` | 실 댓글 수집 별도 과제. 가짜 카운트는 혼란 |
+| `likes_count` | `0` | — |
+| `created_at` | `input.postedAt ?? input.crawledAt` | games 경로와 동일 정책 |
+| `updated_at` | `new Date()` | — |
+| `public_id` | 자동 생성(uuid default) | schema dbgenerated |
+
+**images 객체 스키마** (**배열이 아니라 객체** — 기존 커뮤니티 이미지 배열 구조와 다름, 타입 경계 명확):
+
+```ts
+const images = {
+  // 카페 출처 식별
+  cafe_source_id: `${board.prefix}-CAFE-${board.id}-${dataid}`,  // 예: "BC-CAFE-E7hL-2881"
+  cafe_board: board.id,                                            // "E7hL"
+  cafe_dataid: dataid,                                             // "2881"
+  cafe_article_id: dataidNum,                                      // 2881 (Int)
+  source_url: articleUrl(board, dataid),                           // https://m.cafe.daum.net/dongarry/E7hL/2881
+
+  // 선택 메타
+  cafe_head_cont: headCont || null,                                // "이슈" 등 말머리 (선택)
+  cafe_thumbnail: thumbnailUrl || null,                            // 목록 썸네일 (선택)
+
+  // 조건부 — 익명 아닌 경우만
+  ...(board.anonymousAuthor ? {} : { cafe_author: input.author || null }),
+
+  // cafe_created: postedAt ISO (games 경로와 동일)
+  cafe_created: input.postedAt ? input.postedAt.toISOString() : null,
+
+  // cafe_comments: Phase 2b 관습대로 빈 배열 (별도 수집 시 채움)
+  cafe_comments: [],
+} as const;
+```
+
+- **⚠️ 기존 커뮤니티 images 호환**: `community_posts.images` 는 현재 배열(`["url1","url2"]`) 또는 null 인 레코드만 존재. 우리 카페 출처는 **객체**로 저장 → 응답 직렬화 지점에서 `Array.isArray(images)` 분기 필요. 본 세션 범위 밖(UX 세션이 community API/렌더링에서 처리). **developer 는 이 분기 차이를 주석으로 명시**.
+- **대안 기각**: images 를 배열로 유지하고 `[{cafe_source_id:...}, ...urls]` 혼합 → 배열 첫 요소만 카페 메타로 쓰는 해킹 — 검색 쿼리(`images->>'cafe_source_id'`) 동작 불가.
+
+**메인 함수 시그니처**:
+
+```ts
+export async function upsertCommunityPostFromCafe(
+  prisma: PrismaClient,
+  cafeBotUserId: bigint,
+  input: CafeCommunityInput,
+): Promise<CafeCommunityResult> {
+  assertDevDatabase();
+
+  // 1차 방어 마스킹 (content + title 둘 다)
+  const safeContent = maskPersonalInfo(input.content);
+  const safeTitle = maskPersonalInfo(input.title);
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const cafeSourceId = `${input.board.prefix}-CAFE-${input.board.id}-${input.dataid}`;
+
+      // 중복 체크
+      const existingId = await findExistingCommunityPostByCafeSourceId(tx, cafeSourceId);
+      if (existingId !== null) {
+        return { communityPost: "skipped_duplicate", communityPostId: existingId };
+      }
+
+      // INSERT (images 객체는 Prisma.InputJsonValue 캐스트)
+      const row = await tx.community_posts.create({
+        data: {
+          user_id: cafeBotUserId,
+          title: safeTitle,
+          content: safeContent.slice(0, 30_000),
+          category: input.board.category!,
+          author_nickname: input.board.anonymousAuthor ? "익명" : (input.author || "(닉네임 없음)"),
+          status: "published",
+          images: buildCafeImagesMeta(input, cafeSourceId) as unknown as Prisma.InputJsonValue,
+          created_at: input.postedAt ?? input.crawledAt,
+          updated_at: new Date(),
+        },
+      });
+
+      return { communityPost: "inserted", communityPostId: row.id };
+    });
+  } catch (err) {
+    return { communityPost: "failed", communityPostId: null, error: String(err) };
+  }
+}
+
+export interface CafeCommunityResult {
+  communityPost: "inserted" | "skipped_duplicate" | "failed";
+  communityPostId: bigint | null;
+  error?: string;
+}
+```
+
+**previewCommunityUpsert(input)** 는 DB 접근 0 으로 `{ cafeSourceId, category, authorNickname, willInsert, images }` 반환. dry-run 로그용.
+
+---
+
+#### 🅳 sync-cafe.ts 분기 상세
+
+**CLI 옵션 확장**:
+
+```
+--board=<X>     : IVHA | Dilr | MptT | N54V | IVd2 | E7hL | bWL
+                  | games        (3 경기)
+                  | community    (4 일반)
+                  | all          (7 전부, 기본)
+```
+
+**메인 루프 변경** (기존 L302~L423):
+
+```ts
+// (a) 봇 유저 조회 (community 포함 시에만)
+let cafeBotUserId: bigint | null = null;
+const hasCommunityTarget = targets.some(b => b.target === "community_posts");
+if (EXECUTE_MODE && withBody && hasCommunityTarget && prisma) {
+  cafeBotUserId = await resolveCafeBotUserId(prisma);  // null 이면 throw
+}
+
+// (b) board 순회 — 기존과 동일 + 분기 추가
+for (const board of targets) {
+  // 목록 fetch 공통
+  const items = await fetchBoardList(board, limit, { debug });
+  printBoardResult(board, items);
+
+  if (!withBody || items.length === 0) continue;
+
+  const targetItems = items.slice(0, articleLimit);
+
+  for (let i = 0; i < targetItems.length; i++) {
+    const it = targetItems[i];
+    const r = await fetchArticle(board, it.dataid, { debug });
+
+    if (!r.content) continue;
+
+    const maskedContent = maskPersonalInfo(r.content);
+
+    // ─── 분기 ──────────────────────────────
+    if (board.target === "games") {
+      // 기존 로직 (무변경)
+      const syncInput: CafeSyncInput = { board, dataid: r.dataid, dataidNum: it.dataidNum, ... };
+      if (EXECUTE_MODE && prisma) await upsertCafeSyncedGame(prisma, syncInput);
+      else console.log(previewUpsert(syncInput));
+    } else {
+      // 신규 community 경로
+      const commInput: CafeCommunityInput = {
+        board,
+        dataid: r.dataid,
+        dataidNum: it.dataidNum,
+        title: it.title,
+        content: maskedContent,
+        author: it.author,
+        postedAt: r.postedAt ?? it.postedAt,
+        crawledAt: new Date(),
+        thumbnailUrl: it.thumbnailUrl ?? null,  // fetcher 가 이미 thumbnailImageUrl 추출하면
+        headCont: null,  // 선택
+      };
+      if (EXECUTE_MODE && prisma && cafeBotUserId) {
+        await upsertCommunityPostFromCafe(prisma, cafeBotUserId, commInput);
+      } else {
+        console.log(previewCommunityUpsert(commInput));
+      }
+    }
+  }
+}
+```
+
+**본문 파싱 차이**:
+- games 경로: `parseCafeGame(content, postedAt)` 호출 → `r.parsed` 생성 → upsert 가 venue/scheduled_at 등 뽑음
+- community 경로: **`parseCafeGame` 호출 스킵**. 본문 원본 + postedAt 만 필요. 현재 `fetchArticle()` 은 항상 parseCafeGame 호출하므로 작은 최적화: 플래그 `skipGameParse: boolean` 추가, community 보드에서 true 지정 → parseCafeGame 미호출 & 본문/postedAt 만 반환. **(선택 최적화, 없어도 기능 동작)**
+- **기각 대안**: parseCafeGame 결과를 무시 — 현재 방식. 파싱 비용은 regex 수십개 수준이라 무시 가능. 최적화 선택사항.
+
+---
+
+#### 🅴 backfill-cafe-community.ts 스펙
+
+**CLI**:
+
+```
+--board=E7hL | bWL | both           기본 both
+--max-pages=N                        1~20 (기본 3. 초기 안전)
+--limit-per-page=50                  20(HTML SSR) or 50(API)
+--list-only                          목록만 수집(본문 fetch 0, 중복 후보 출력)
+--with-body                          본문 fetch + upsert (기본 --list-only)
+--execute                            실제 DB 쓰기 (없으면 dry-run preview)
+--start-page=N                       중단 재개용 (기본 1)
+```
+
+**실행 플로우**:
+
+1. `assertDevDatabase()` + 카페 봇 유저 존재 가드 (community 쓰기 시)
+2. `--board=both` 면 E7hL → bWL 순차 (안전하게 1개씩)
+3. board별 페이지 루프:
+   - 페이지 1: `fetchBoardList(board, 20)` (기존 HTML SSR)
+   - 페이지 2+: `fetchBoardListApi(board, pageN, cursor)` (Phase 3 #6 필요 — **미구현 시 페이지 1만 수집 + 경고 출력**)
+   - 종료 조건: articles:[] / maxPages 도달 / dataid 중복(기존 수집본과 겹침) / 403·429 3연속
+4. 목록 합치기 → dataid desc 정렬(중복 제거)
+5. `--list-only` 면 dataid/title 테이블만 출력, 종료
+6. `--with-body` 면 각 dataid 순회:
+   - `fetchArticle(board, dataid, { skipGameParse: true })` → content + postedAt
+   - `upsertCommunityPostFromCafe()` 또는 preview
+   - 3초 sleep (9가드 #1, article-fetcher 내부가 이미 처리)
+7. 최종 집계: inserted / skipped_dup / failed / 페이지별 수집 수
+
+**예상 건수** (미실측, backfill 실행 시 확정):
+- E7hL 최대 dataid=2881 관측 → 누적 2881건 가능성
+- bWL 확인 필요
+
+**연속 실패 3회 시**: 중단 + `--start-page=N` 안내 로그 (사용자 재개 가능)
+
+**실행 권장**:
+- **로컬 수동** (GH Actions 15분 timeout 넘을 가능성). 수백 건이면 본문 fetch 만 1건 3초 × 500건 = 25분
+- 1차 시도 `--max-pages=3 --with-body --execute` 로 60건 미만 smoke → OK 시 `--max-pages=20` 확장
+
+---
+
+#### 🅵 자동화 (cron) 영향
+
+**선택**: **기존 cafe-sync.yml 수정 최소** (CLI 인자 그대로).
+
+- 현재 workflow: `--board=all --with-body --article-limit=5 --max-pages=2`
+- `--board=all` 확장 후 7게시판 전부 매시 순회 — 1게시판당 fetchBoardList(3초 sleep × limit 10회) + fetchArticle(3초 sleep × articleLimit 5회) = 약 45초/게시판 × 7 = **약 5분/실행**
+- 15분 timeout 여유 충분
+- **관측성 우려**: 로그 볼륨 2배+. artifact size 만 증가 — 허용 가능
+- **대안 검토 결과**: 별도 `cafe-sync-community.yml` 분리 → 관심사 분리 장점 있으나 봇 유저/DB 가드/Secret 중복. **1차 도입에선 통합 유지**. 일반 게시판 실패율이 높으면 3주차에 분리 고려.
+
+**필요 변경 (선택)**:
+- `--article-limit=5` 기본값 유지 (매시 게시판당 최근 5건만 갱신). 신규 글 커버 충분.
+- Slack 알림 grep 패턴 재검토 (기존 `[IVHA|Dilr|MptT]` → 7게시판 확장). nice-to-have.
+
+---
+
+#### 🅶 UX 세션 핸드오프 목록
+
+본 세션 이후 UX 세션(원영/별도 세션)이 처리할 작업:
+
+| # | 파일 | 변경 | 참조 |
+|---|---|---|---|
+| 1 | `src/app/(web)/community/_components/community-sidebar.tsx` | L21 `review: "대회후기"` → `"BDR칼럼"` + `anonymous: "익명게시판"` 키 추가 | PM Q2 |
+| 2 | `src/app/(web)/community/_components/community-content.tsx` | L36 `review: { label: "대회후기" ... }` → `"BDR칼럼"` + `anonymous` 엔트리 추가 | PM Q2 |
+| 3 | `src/app/(web)/community/[id]/page.tsx` | L55 `review: "대회후기"` → `"BDR칼럼"` + `anonymous` | — |
+| 4 | `src/app/(web)/community/[id]/_components/post-detail-sidebar.tsx` | L9 동일 | — |
+| 5 | 커뮤니티 탭 UI | "익명게시판" 탭 추가 (사이드바 네비) | PM Q3 |
+| 6 | 카페 출처 상세 UI | 원본 링크 표시 + 카페 봇 유저 프로필 처리 + `images` 객체형 렌더링 분기(배열 vs 객체) | 신규 |
+| 7 | 카페 봇 유저 프로필 페이지 | 카페 글 목록 탭 or 전용 페이지 | 선택 |
+| 8 | 글쓰기 폼 category 옵션 | `new/page.tsx` + `[id]/edit/page.tsx` 에 anonymous/review 라벨 반영 | 선택 |
+
+본 세션은 **DB 쪽 키만 세팅**. 라벨/UI는 전부 UX 세션. `categoryLabelMap` 3곳에 키 없으면 fallback 으로 "기타" 표시 (기존 코드 방어 로직).
+
+---
+
+#### 실행 로드맵 (3단계)
+
+| 단계 | 작업 | 예상 시간 | 실행 |
+|---|---|---|---|
+| **Stage A** (본 세션) | 파이프라인 구현 — board-map 확장 + seed-cafe-bot-user + upsertCommunityPost + sync-cafe 분기 + backfill 스크립트 골격 + tsc/smoke | **3~4h** | developer |
+| **Stage B** | 카페 봇 유저 seed 실행(1회) + E7hL `--max-pages=3 --with-body --execute` (smoke) + 관측 | **15~30분** | 사용자 수동 |
+| **Stage C** | E7hL + bWL `--max-pages=20 --with-body --execute` 본 이전 | **1~2h** (본문 fetch 500~1000건 × 3초) | 사용자 수동, 로컬 |
+| **Stage D** (후속) | N54V + IVd2 — 2주차 이후 PM 재결정 | 2차 backfill 또는 cron 자연 수집 | — |
+
+**Stage A 세부** (developer 작업 단위):
+
+| 순서 | 작업 | 담당 | 선행 |
+|---|---|---|---|
+| 1 | board-map.ts 인터페이스/상수/배열 확장 | developer | — |
+| 2 | scripts/seed-cafe-bot-user.ts 신규 | developer | 1 |
+| 3 | upsert.ts 에 upsertCommunityPostFromCafe + resolveCafeBotUserId + previewCommunityUpsert 추가 | developer | 1 |
+| 4 | article-fetcher.ts 에 skipGameParse 플래그(선택) | developer | — |
+| 5 | sync-cafe.ts 분기 로직 + CLI 확장 | developer | 3 |
+| 6 | scripts/backfill-cafe-community.ts 신규 | developer | 3,5 |
+| 7 | tester + reviewer 병렬 | tester+reviewer | 1~6 |
+
+최대 7단계. reviewer/tester 병렬 실행 가능.
+
+---
+
+#### 리스크 & 완화
+
+| # | 리스크 | 영향 | 완화 |
+|---|---|---|---|
+| R1 | Phase 3 #6 `fetchBoardListApi` 미구현 → backfill 시 1페이지 20건 상한 | E7hL 전체 글 수집 불가, 최근 20건만 | 1차 smoke 단계에서 1페이지 OK 확인 후 Phase 3 #6 구현과 연계. 또는 backfill 스크립트 내부에서 임시 구현(공통 함수 분리) |
+| R2 | community_posts.images 객체형 저장이 기존 응답 직렬화에서 배열 가정과 충돌 | 커뮤니티 목록/상세 UI 깨짐 | **본 세션은 INSERT 만 담당, UX 세션 렌더링 분기**. Stage B 이전 전에 UX 세션에서 방어 로직 먼저 배포 필요 (의존성 기록) |
+| R3 | 카페 봇 user_id FK 제약 실수 | INSERT 실패 | seed 실행 + 가드 2중 (런타임 findUnique null 시 abort) |
+| R4 | 익명게시판 원본 닉네임 `""` 빈 문자열 저장 실수 | 개인정보 침해 가능성 없음, 단 "익명" 고정 실패 | `board.anonymousAuthor` 플래그 단일 소스 — upsert + preview 둘 다 같은 플래그 읽음 |
+| R5 | cafe_source_id 중복 검사 full-table scan (수천~수만 row 미래) | 느림 | 1차에선 허용 (수천 scale). GIN index는 운영 DB 변경 금지로 보류. 필요 시 app-level cache(LRU) 도입 |
+| R6 | dataid 중복 (게시판 간 같은 dataid) | 같은 `BC-CAFE-E7hL-3` vs `RC-CAFE-bWL-3` 충돌? | **cafe_source_id 에 board 포함** → 안전 |
+| R7 | Slack 알림 grep 패턴 불일치 (IVHA/Dilr/MptT만 매칭) | 7게시판 알림 요약 누락 | cafe-sync.yml L175 grep 패턴 확장 (nice-to-have) |
+| R8 | backfill 로컬 수동 중단 시 재개 복잡 | 운영 귀찮음 | `--start-page=N` + dataid 중복 자동 스킵(upsert skipped_duplicate)으로 재실행 안전 |
+| R9 | `writerNickname: ""` 인 글이 IVd2 외에 있을 경우 author_nickname `"(닉네임 없음)"` 로 저장됨 | 실사용자 닉네임 누락 | board.anonymousAuthor=false 인 보드에서 빈 문자열 fetcher 에서 그대로 내려옴. IVd2 외에는 실측 공란 0건 확인 필요 |
+| R10 | `parseCafeGame` 을 community 본문에 호출해도 crash 는 안 나지만 metadata hint 가 이상해질 수 있음 | 현재 games 경로와 공유 안 함 — 영향 0 | community 는 parsed 필드 자체 저장 안 함. 부작용 없음 |
+
+---
+
+#### tester 검증 포인트 (Stage A 완료 시)
+
+1. tsc --noEmit 통과 (전체 프로젝트)
+2. `seed-cafe-bot-user.ts --dry-run` → 카페 봇 User 생성 예정 미리보기 1건
+3. `seed-cafe-bot-user.ts --execute` → 1건 INSERT (멱등 재실행 시 no-op)
+4. sync-cafe `--board=E7hL --limit=2 --with-body --execute` 로 2건 inserted 확인
+5. `/api/web/community?category=review` 응답에 카페 출처 글 포함 확인 (원영 UX 세션 배포 후 대등 검증)
+6. 중복 재수집 시 skipped_duplicate 정상 동작 (`--execute` 2회)
+7. IVd2 smoke — `--board=IVd2 --limit=1 --with-body --execute` 로 author_nickname = "익명" 저장 확인
+8. community_posts.images 객체 구조 JSON 검증 (`SELECT images FROM community_posts WHERE images->>'cafe_source_id' LIKE 'BC-CAFE-%' LIMIT 1`)
+
+---
+
+#### 예상 작업 시간
+
+| 단계 | 작업 | 시간 |
+|---|---|---|
+| A1 | board-map.ts 확장 | 15분 |
+| A2 | seed-cafe-bot-user.ts | 30분 |
+| A3 | upsert.ts 추가 (타입+함수+preview) | 60분 |
+| A4 | article-fetcher.ts skipGameParse (선택) | 15분 |
+| A5 | sync-cafe.ts 분기 + CLI 확장 | 45분 |
+| A6 | backfill-cafe-community.ts | 60분 |
+| A7 | tester+reviewer 병렬 검증 | 30분 |
+| **Stage A 합계** | | **약 4h** |
+| Stage B | E7hL smoke 실행 + 관측 | 30분 |
+| Stage C | E7hL + bWL 본 이전 | 1~2h |
+| **총계 (Stage A~C)** | | **약 6~7h** |
+
+---
+
+#### developer 착수 가능 여부
+
+**Y (즉시 착수 가능)** — 차단 요소 없음.
+
+**확인 완료**:
+- 4 신규 게시판 HTTP 200 + grpid=IGaj 동일 실측
+- articles.push SSR 구조 3게시판과 동일 실측 (fetcher.ts 무수정)
+- community_posts/User 스키마 재확인 (신규 컬럼 불필요)
+- Prisma 마이그레이션 0, 운영 DB 영향 0
+- UX 세션과 경계 명확 (DB 쓰기 vs 라벨/렌더링)
+
+**PM 판단 필요 (2건, nice-to-have)**:
+1. **images 객체 vs 배열 구조** — planner 권장: 객체. UX 세션이 배열/객체 분기 처리 전제. PM 이 "배열 혼합형" 원하면 설계 변경(권장X).
+2. **1차 Stage C 실행 시점** — Stage A 완료 즉시 실행 vs UX 세션 community API/렌더링 방어 배포 이후. planner 권장: **UX 세션 방어 배포 이후**. 그 전엔 dry-run + `--list-only` 로 수집 규모만 확인.
+
+**⚠️ developer 주의**:
+- `src/lib/parsers/cafe-game-parser.ts` 절대 수정 금지 (vitest 59/59 보호)
+- `scratchpad.md` (본 세션 아님) 건드리지 않음
+- UX 파일(`src/app/(web)/community/*`) 건드리지 않음
+- `prisma/schema.prisma` 건드리지 않음
+- 카페 봇 user_id 캐싱 실패 시 sync-cafe 즉시 abort (모호하게 0 이나 NaN 넣지 말 것)
+
+---
 
 | Phase | 단계 | 상태 | 핵심 커밋 |
 |-------|------|------|-----------|
@@ -1405,6 +1962,7 @@ IVHA/Dilr는 혼재 글 많으므로 parser 재분류 유지.
 
 | 날짜 | 작업 | 커밋 |
 |------|------|------|
+| 04-21 | **7게시판 확장 + 전체 이전 설계안 (planner-architect)** — 신규 4게시판 grpid=IGaj 실측 ✅ + articles.push 구조 동일 ✅ + IVd2 writerNickname="" 실측. 영향 파일 5 수정 + 2 신규 + Prisma 마이그레이션 0. 카페 봇 유저 seed + upsertCommunityPostFromCafe + images 객체형(cafe_source_id 에 board 포함) + sync-cafe board.target 분기 + backfill-cafe-community 스크립트 + Q1~Q4 PM 결정 전부 반영. Stage A 4h / B 30분 / C 1~2h. developer 착수 가능 | (설계만) |
 | 04-21 | **game_type 오분류 수정** — 3게시판 전면 board 강제 + `buildMetadataHints()` 헬퍼 export + mixed_type_hint/parser_game_type 키 기록 + IVHA 7건 백필 (1→0) + smoke 통과. 검증 쿼리 3게시판 × game_type 혼재 0건, vitest upsert 4/4 + parser 59/59 유지 | `4fd75e4` + `013bef6` |
 | 04-21 | **검증봇 복구 (Revert #3)** — 터미널 병행 작업 중 생긴 분리 커밋 531879a 를 revert. verify-cafe-sync.ts + cafe-sync-verify.yml 복구, scratchpad 검증봇 기록 복원 | (revert 예정) |
 | 04-21 | **품질 검증봇 리뷰 (reviewer)** — R1~R10 완료. 블록커 1개(R5 Linux CI 인자 수동 쿼터링 → 라벨/이슈/코멘트 기형) + 권장 4개. 1주차 dry-run 동안은 발현 X 이므로 2주차 전환 전 반드시 수정. 판정: 커밋 가능 여부 ❌(블록커 해소 권장) | (리뷰만) |
