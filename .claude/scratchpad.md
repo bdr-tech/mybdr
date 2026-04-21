@@ -30,21 +30,22 @@
 - **L3**: tournaments/[id] 쿼리 합치기 / series.is_public 체크 / `<img>` → next/image / EditionSwitcher flex-wrap
 - **L2**: OwnerEditButton 공용 추출(2곳 중복) / action-buttons.tsx `text-white` (conventions 위배) / Teams `<h3>` heading 계층 / 긴 팀명 title 툴팁
 
-## 현재 상태 스냅샷 (2026-04-21 L2 커밋 직후)
+## 현재 상태 스냅샷 (2026-04-21 세션 마감)
 
 | 항목 | 값 |
 |------|-----|
 | 브랜치 | subin |
-| subin HEAD | **`a04fad8`** (L2 본인·타인 프로필 통합) |
-| origin/subin | `a4cba6a` (뒤 1건) |
+| subin HEAD | **`b5f5e5a`** (any 3건 명시 타입화) |
+| origin/subin | `b5f5e5a` ✅ (동기화 완료) |
 | main / dev | `8de9be4` (PR #53 squash, PR #54 대기) |
-| 미푸시 | **1건** (a04fad8 L2) |
-| 백업 브랜치 | `subin-backup-2026-04-20` (f1779ff, 옵션 F 직전) |
+| 미푸시 | **0건** ✅ |
+| 백업 브랜치 | `subin-backup-2026-04-20` (f1779ff, 옵션 F 직전) — 1주일 후 삭제 권장 |
 | 오늘 PR merge | #47~#53 (6건) |
-| 열린 PR | #54 (dev → main, 원영 승인 대기) |
-| L2 상태 | 공용 컴포넌트 3종 + gamification 헬퍼 + /users/[id] 본인 분기 + Teams + /profile 대시보드 재정의 **로컬 완료** |
+| 열린 PR | **#54** (dev→main, 원영 승인 대기) / **#55** (subin→dev, 통합 리뷰 대기) |
+| L2 상태 | 공용 3종 + gamification 헬퍼 + /users/[id] 본인 분기 + Teams + /profile 대시보드 재정의 (PR #55 대기) |
 | L3 상태 | Organization brc + EditionSwitcher + SeriesCard ✅ dev 머지 완료 (PR #53) |
-| 카페 Phase 3 | GH Actions + 쿠키 갱신 + Slack + Pagination + 품질 검증봇 **운영 반영** ✅ |
+| 보이스카우트 | reviewer 5건 + 색상 7파일 + any 3건 정비 (PR #55 통합) |
+| 카페 Phase 3 | GH Actions + 쿠키 갱신 + Slack + Pagination + 품질 검증봇 + game_type 분류 수정 **운영 반영** ✅ |
 
 ## W1~W4 + L3 + L2 완료 요약 (2026-04-19 ~ 04-21)
 | 주차/항목 | 내용 | 계획 | 실제 |
@@ -77,7 +78,9 @@
 |------|------|------|------|
 | 04-21 | pm | **점진 정비 — any 타입 3건 명시 타입화** (community/page public_id null 정규화 + bulk-verify/bulk-register ExcelRow 공용 interface `src/lib/types/excel-row.ts` 신규) 4파일 tsc OK | ⏳ 커밋 대기 |
 | 04-21 | pm | **점진 정비 — 하드코딩 색상 7파일 CSS 변수화** (login/pricing/venues/community/registration/teams overview+games, 13개 색상 → var(--color-*)) | ⏳ 커밋 대기 |
-| 04-21 | pm | **reviewer 권장 5건 정비** — OwnerEditButton 공용(2곳 중복 해소) + action-buttons text-white→var(--color-on-primary) + Teams h3→h2 + UserRadar/UserStats/RecentGames h3→h2 + 긴 팀명 title 툴팁 + EditionSwitcher flex-wrap. 8파일(신규1+수정7) tsc OK | ⏳ 커밋 대기 |
+| 04-21 | pm | **점진 정비 — any 3건 명시 타입화** (community CommunityPost + bulk-verify/bulk-register ExcelRow 공용 interface) | ✅ b5f5e5a |
+| 04-21 | pm | **점진 정비 — 하드코딩 색상 7파일 CSS 변수화** (login/pricing/venues/community/registration/teams overview+games, 13개 색상) | ✅ 9a1c924 |
+| 04-21 | pm | **reviewer 권장 5건 정비** — OwnerEditButton 공용 + color/heading/wrap 보강. 9파일 | ✅ be6d7e1 |
 | 04-21 | pm | **L2 본인·타인 프로필 통합** — 공용 3종(Hero/MiniStat/RecentGames) + gamification 서버 헬퍼 + /users/[id] 본인 분기 + Teams(공개만) + 티어→레벨 통합 + /profile 대시보드 재정의 + 레거시 6파일 삭제. tester 14/14 / reviewer 통과(블록커 0, 권장 4). 15파일 +1347/-1286 | ✅ a04fad8 (미푸시) |
 | 04-21 | pm | **L3 다음 단위 5파일 완성** — EditionSwitcher+SeriesCard 신규 + Organization/Series(under org) Breadcrumb + Tournament series include. tester 10/10 / reviewer 통과 | ✅ a6b329f → PR #53 MERGED |
 | 04-20 | pm | **옵션 F — main 흡수 + 카페 분리 2회 + PR #51 머지 → PR #52 카페 Phase 3 합류 통합 머지** | ✅ 9836e88 (main/dev/subin 동기화) |
