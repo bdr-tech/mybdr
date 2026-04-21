@@ -68,7 +68,9 @@
 ## 🗂 카페 작업 로그 (본 세션 전용 — 2026-04-21~)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
-| 04-21 | pm-cafe | **IVd2 전량 이전 완료** — `--article-limit=95 --execute` 1회. listed=95 / body=92 / created=92 / failed=0 / skipped(dup)=0. 3건 차이는 본문 비어있는 글(삭제/보호) 자연 스킵. postId 369~463. 누적 community_posts (봇 id=3004) **192건** (E7hL 50 + bWL 50 + IVd2 92) | ✅ 0febceb(스크립트) + docs |
+| 04-21 | pm-cafe | **E7hL 실질 전량 이전 완료** — `--offset` 옵션으로 4회 분할 (`--max-pages=20 --article-limit=100 --execute` × 4, offset 0/100/200/300). 1차 47신규+50dup+3empty, 2차 99+1empty, 3차 100, 4차 100. 목록 400건 중 396건 created. **최종 community_posts 538건** (E7hL 396 + IVd2 92 + bWL 50). 시간 범위 **2021-11-28 ~ 2026-04-21 (4.5년치)**. postId 272~809 | ✅ fce8805(offset) + docs |
+| 04-21 | pm-cafe | **backfill 스크립트 `--offset` 옵션 추가** — `items.slice(0, N)` → `items.slice(offset, offset+N)`. 대규모 게시판 100건씩 분할 처리 가능. 기본 0(호환), 상한 400(max-pages=20 × 20건). tsc OK | ✅ fce8805 |
+| 04-21 | pm-cafe | **IVd2 전량 이전 완료** — `--article-limit=95 --execute` 1회. listed=95 / body=92 / created=92 / failed=0 / skipped(dup)=0. 3건 차이는 본문 비어있는 글(삭제/보호) 자연 스킵. postId 369~463. 누적 192건 (시점 기록) | ✅ 98f26f6 |
 | 04-21 | pm-cafe | **backfill 스크립트 `--article-limit` 상한 50→100** — IVd2 등 100건 이내 소규모 게시판 1회 전량 처리 가능. 기타 가드 유지. tsc OK | ✅ 0febceb |
 | 04-21 | pm-cafe | **N54V + IVd2 dry-run** — 각 5건 본문 fetch. N54V category=general (원본 닉네임 유지, dataid 63923 활발 게시판), IVd2 category=anonymous + **author="익명" 강제 오버라이드 Q3 결정 실전 검증 완료** (전체 ~95건 신설 게시판). **7게시판 파이프라인 전량 검증 완료** (IVHA/Dilr/MptT 운영 + E7hL/bWL 실전 + N54V/IVd2 dry-run) | ✅ a84d191 |
 | 04-21 | pm-cafe | **Stage B-1 확대 — E7hL/bWL 각 50건 이전** (`--article-limit=50 --execute` × 2). E7hL postId 272~326 / bWL postId 277~281 + 327~371. 각 `created=45 / skipped(dup)=5 / failed=0`. 규모 검증: category recruit:50/review:50, 시간범위 2025-07-09 ~ 2026-04-21. E7hL 9개월치(연 ~70건 추정, 전량 부담↓) / bWL 최근 며칠~주 (연 수천~수만, **전량 이전 전 범위 정책 논의 필요**) | ✅ a5d62a6 |
