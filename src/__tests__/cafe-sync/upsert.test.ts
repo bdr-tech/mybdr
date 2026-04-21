@@ -28,9 +28,9 @@ import { resolveGameType, buildMetadataHints } from "@/lib/cafe-sync/upsert";
 // 테스트 고정값 — board-map.ts 의 CAFE_BOARDS 와 동일 구조 (의존 안 하도록 복제)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const IVHA: CafeBoard = { id: "IVHA", gameType: "PICKUP", prefix: "PU", label: "픽업게임" };
-const Dilr: CafeBoard = { id: "Dilr", gameType: "GUEST", prefix: "GU", label: "게스트 모집" };
-const MptT: CafeBoard = { id: "MptT", gameType: "PRACTICE", prefix: "PR", label: "연습 경기" };
+const IVHA: CafeBoard = { id: "IVHA", target: "games", gameType: "PICKUP", prefix: "PU", label: "픽업게임" };
+const Dilr: CafeBoard = { id: "Dilr", target: "games", gameType: "GUEST", prefix: "GU", label: "게스트 모집" };
+const MptT: CafeBoard = { id: "MptT", target: "games", gameType: "PRACTICE", prefix: "PR", label: "연습 경기" };
 
 describe("upsert helpers — game_type board 강제 매핑 (2026-04-21)", () => {
   // ───────────────────────────────────────────────────────────────────────────

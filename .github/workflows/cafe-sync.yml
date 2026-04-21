@@ -171,8 +171,9 @@ jobs:
             echo "SLACK_WEBHOOK_URL 미설정 — 알림 스킵"
             exit 0
           fi
-          # 게시판별 수집 요약 추출 — sync-cafe.ts L150 실제 포맷: "[YYYY-MM-DD HH:MM:SS] [IVHA 픽업게임] N건 수집"
-          BOARD_SUMMARY=$(grep -E '\[(IVHA|Dilr|MptT) ' tmp/cafe-sync.log 2>/dev/null | head -n 20 || echo "(게시판 요약 없음)")
+          # 게시판별 수집 요약 추출 — sync-cafe.ts L150 실제 포맷: "[YYYY-MM-DD HH:MM:SS] [<id> <label>] N건 수집"
+          # [2026-04-21] 7게시판 확장: games 3종(IVHA/Dilr/MptT) + community 4종(N54V/IVd2/E7hL/bWL)
+          BOARD_SUMMARY=$(grep -E '\[(IVHA|Dilr|MptT|N54V|IVd2|E7hL|bWL) ' tmp/cafe-sync.log 2>/dev/null | head -n 20 || echo "(게시판 요약 없음)")
           # 마지막 50줄 + 2000바이트 제한 (Slack text 필드 여유)
           TAIL=$(tail -n 50 tmp/cafe-sync.log 2>/dev/null | head -c 2000 || echo "(로그 없음)")
           # BOARD_SUMMARY / TAIL / RUN_URL / RUN_ID 를 env 로 넘겨 JSON 안전 직렬화 (node)

@@ -413,7 +413,17 @@ function extractDatePublished(obj: unknown): string | null {
 export async function fetchArticle(
   board: CafeBoard,
   dataid: string,
-  options: { debug?: boolean; sleepMs?: number } = {},
+  options: {
+    debug?: boolean;
+    sleepMs?: number;
+    /**
+     * [2026-04-21] 일반 게시판(community_posts 타겟) 용 플래그.
+     * true 면 parseCafeGame 호출 생략 — parsed/parseStats=null, parseError="skipped".
+     * 본문 추출(content)과 postedAt 까지는 동일하게 수행.
+     * 왜: 자유/익명/칼럼/구인구팀은 "경기" 양식이 아니라 parser 호출해도 의미 없고 시간/에러만 발생.
+     */
+    skipGameParse?: boolean;
+  } = {},
 ): Promise<ArticleFetchResult> {
   // 9가드 1번 — 3초 대기
   const sleepMs = options.sleepMs ?? MIN_REQUEST_INTERVAL_MS;
@@ -529,7 +539,11 @@ export async function fetchArticle(
   let parseStats: ParseStats | null = null;
   let parseError: string | null = null;
 
-  if (!content) {
+  if (options.skipGameParse) {
+    // [2026-04-21] community 게시판은 "경기 모집" 양식이 아니므로 parser 호출 생략.
+    // content 와 postedAt 은 이미 추출 완료 — 호출자가 upsertCommunityPostFromCafe 로 전달.
+    parseError = "skipped (community board, skipGameParse=true)";
+  } else if (!content) {
     parseError = "본문 영역 미발견 (JS 변수 / DOM / JSON-LD 모두 실패)";
   } else {
     try {

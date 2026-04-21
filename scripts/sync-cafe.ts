@@ -38,6 +38,9 @@ import { maskPersonalInfo } from "../src/lib/security/mask-personal-info";
 import {
   upsertCafeSyncedGame,
   previewUpsert,
+  upsertCommunityPostFromCafe,
+  previewCommunityUpsert,
+  type CafeCommunityInput,
   type CafeSyncInput,
   type CafeSyncResult,
 } from "../src/lib/cafe-sync/upsert";
@@ -74,15 +77,28 @@ if (EXECUTE_MODE) {
 // 인자 파싱
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** --board=IVHA | Dilr | MptT | all */
+/**
+ * --board=IVHA | Dilr | MptT | N54V | IVd2 | E7hL | bWL | games | community | all
+ *
+ * [2026-04-21] 7게시판 확장:
+ *   - games 타겟(3): IVHA/Dilr/MptT
+ *   - community 타겟(4): N54V(자유)/IVd2(익명)/E7hL(BDR칼럼)/bWL(구인구팀)
+ *   - `games` / `community` 키워드로 타겟별 묶음 선택 가능
+ *   - `all` 또는 미지정 → 7게시판 전체
+ */
 function parseBoardArg(): CafeBoard[] {
   const arg = process.argv.find((a) => a.startsWith("--board="));
-  if (!arg) return CAFE_BOARDS; // 기본: 전체
+  if (!arg) return CAFE_BOARDS; // 기본: 전체 7개
   const val = arg.split("=")[1];
   if (!val || val === "all") return CAFE_BOARDS;
+  if (val === "games") return CAFE_BOARDS.filter((b) => b.target === "games");
+  if (val === "community") return CAFE_BOARDS.filter((b) => b.target === "community_posts");
   const b = getBoardById(val);
   if (!b) {
-    console.error(`⚠️ 알 수 없는 게시판 id: "${val}". 허용값: IVHA | Dilr | MptT | all`);
+    console.error(
+      `⚠️ 알 수 없는 게시판 id: "${val}". ` +
+        `허용값: IVHA | Dilr | MptT | N54V | IVd2 | E7hL | bWL | games | community | all`,
+    );
     process.exit(1);
   }
   return [b];
@@ -325,6 +341,12 @@ async function main() {
   const articleFailures: { boardId: string; dataid: string; error: string }[] = [];
   // Phase 2b 집계 — upsert 처리 결과
   const upsertResults: CafeSyncResult[] = [];
+  // [2026-04-21] community 게시판(N54V/IVd2/E7hL/bWL) upsert 집계 (games 와 별개)
+  const communityUpsertResults: Array<
+    | { action: "created"; postId: bigint }
+    | { action: "skipped_duplicate"; postId: bigint }
+    | { action: "failed"; error: string }
+  > = [];
 
   // 9가드 8번 — 403/429 3회 연속 시 전체 중단
   let consecutiveFailures = 0;
@@ -441,7 +463,11 @@ async function main() {
     for (let i = 0; i < targetItems.length; i++) {
       const it = targetItems[i];
       try {
-        const r = await fetchArticle(board, it.dataid, { debug });
+        const r = await fetchArticle(board, it.dataid, {
+          debug,
+          // [2026-04-21] community 게시판은 경기 parser 호출 생략 (시간/에러 절감)
+          skipGameParse: board.target === "community_posts",
+        });
         articleResults.push(r);
         // HTTP status 집계
         const key = String(r.httpStatus);
@@ -458,57 +484,91 @@ async function main() {
           //   maskPersonalInfo 는 멱등(idempotent) 이므로 upsert.ts 의 2차 가드와 중복돼도 안전.
           const maskedContent = maskPersonalInfo(r.content);
 
-          const syncInput: CafeSyncInput = {
-            board,
-            dataid: r.dataid,
-            // [2026-04-20] 정렬 tie-break 용 Int 복제본.
-            //   BoardItem.dataidNum 은 fetcher 에서 이미 NaN 가드 통과 → 유한 정수 보장.
-            //   article-fetcher 의 r.dataid(string) 은 BoardItem.dataid 와 동일 값이라
-            //   it.dataidNum 을 그대로 신뢰한다.
-            dataidNum: it.dataidNum,
-            title: it.title, // 목록에서 가져온 제목
-            author: it.author,
-            content: maskedContent, // ← 마스킹된 값으로 교체 (이전엔 r.content 원본 전달)
-            // [2026-04-20] 상세 페이지 HTML에는 시분만 있어 extractPostedAt이 null 반환 가능.
-            // BoardItem.postedAt(목록 articleElapsedTime 파싱, 날짜만 정확, 시분 00:00) fallback.
-            // 시분까지 정확히 얻는 로직은 다음 세션(middle 단계)에서 보강.
-            postedAt: r.postedAt ?? it.postedAt,
-            crawledAt: new Date(),
-            parsed: r.parsed,
-          };
+          // [2026-04-21] board.target 별 분기 — games vs community_posts
+          if (board.target === "community_posts") {
+            // ───── 커뮤니티 게시판 (N54V/IVd2/E7hL/bWL) ─────
+            const communityInput: CafeCommunityInput = {
+              board,
+              dataid: r.dataid,
+              dataidNum: it.dataidNum,
+              title: it.title,
+              author: it.author,
+              content: maskedContent,
+              postedAt: r.postedAt ?? it.postedAt,
+              crawledAt: new Date(),
+              // imageUrls/comments 는 Phase 2b 기본 빈 배열 (Phase 3 이후 확장)
+            };
 
-          if (EXECUTE_MODE && prisma) {
-            // 실제 DB 쓰기
-            const res = await upsertCafeSyncedGame(prisma, syncInput);
-            upsertResults.push(res);
-            if (res.error) {
-              console.log(`      ❌ upsert 실패: ${res.error}`);
+            if (EXECUTE_MODE && prisma) {
+              const res = await upsertCommunityPostFromCafe(prisma, communityInput);
+              communityUpsertResults.push(res);
+              if (res.action === "failed") {
+                console.log(`      ❌ community upsert 실패: ${res.error}`);
+              } else {
+                console.log(
+                  `      ✅ community: ${res.action} (postId=${res.postId}, category=${board.category})`,
+                );
+              }
             } else {
+              const preview = previewCommunityUpsert(communityInput);
               console.log(
-                `      ✅ upsert: cafe_post=${res.cafePost} (id=${res.cafePostId}), game=${res.game}` +
-                  (res.gameId ? ` (id=${res.gameId})` : ""),
+                `      🔍 community 예정: category=${preview.category} / ` +
+                  `author=${preview.authorNickname} / ` +
+                  `source_id=${preview.cafeSourceId} / ` +
+                  `willInsert=${preview.willInsert ? "YES" : "NO"}`,
               );
             }
           } else {
-            // dry-run 미리보기 — DB 접근 0
-            // Phase 2b Step 4 — 각 필드 옆에 (parsed/extracted/fallback) 소스를 괄호로 노출.
-            //   왜: "값이 DB 에 어떻게 들어갈지"뿐 아니라 "어떤 추출 경로로 나왔는지"를
-            //   스모크 테스트에서 한 눈에 보기 위함. 운영 투입 전 검증 효율↑.
-            const preview = previewUpsert(syncInput);
-            console.log(
-              `      🔍 upsert 예정: game_id=${preview.gameId} / ` +
-                `game_type=${preview.gameType} / ` +
-                `scheduled_at=${preview.scheduledAt} (${preview.scheduledAtSource}) / ` +
-                `game insert=${preview.willInsertGame ? "YES" : "NO (parsed 없음)"}`,
-            );
-            console.log(
-              `         fields: fee=${preview.fee}원(${preview.feeSource}) / ` +
-                `max=${preview.maxParticipants}명(${preview.maxParticipantsSource}) / ` +
-                `skill=${preview.skillLevel}(${preview.skillLevelSource}) / ` +
-                `city=${preview.city ?? "null"}(${preview.citySource}) / ` +
-                `district=${preview.district ?? "null"}(${preview.districtSource}) / ` +
-                `venue=${preview.venueName ?? "null"}(${preview.venueNameSource})`,
-            );
+            // ───── 경기 게시판 (IVHA/Dilr/MptT) ─────
+            const syncInput: CafeSyncInput = {
+              board,
+              dataid: r.dataid,
+              // [2026-04-20] 정렬 tie-break 용 Int 복제본.
+              //   BoardItem.dataidNum 은 fetcher 에서 이미 NaN 가드 통과 → 유한 정수 보장.
+              //   article-fetcher 의 r.dataid(string) 은 BoardItem.dataid 와 동일 값이라
+              //   it.dataidNum 을 그대로 신뢰한다.
+              dataidNum: it.dataidNum,
+              title: it.title, // 목록에서 가져온 제목
+              author: it.author,
+              content: maskedContent, // ← 마스킹된 값으로 교체 (이전엔 r.content 원본 전달)
+              // [2026-04-20] 상세 페이지 HTML에는 시분만 있어 extractPostedAt이 null 반환 가능.
+              // BoardItem.postedAt(목록 articleElapsedTime 파싱, 날짜만 정확, 시분 00:00) fallback.
+              // 시분까지 정확히 얻는 로직은 다음 세션(middle 단계)에서 보강.
+              postedAt: r.postedAt ?? it.postedAt,
+              crawledAt: new Date(),
+              parsed: r.parsed,
+            };
+
+            if (EXECUTE_MODE && prisma) {
+              // 실제 DB 쓰기
+              const res = await upsertCafeSyncedGame(prisma, syncInput);
+              upsertResults.push(res);
+              if (res.error) {
+                console.log(`      ❌ upsert 실패: ${res.error}`);
+              } else {
+                console.log(
+                  `      ✅ upsert: cafe_post=${res.cafePost} (id=${res.cafePostId}), game=${res.game}` +
+                    (res.gameId ? ` (id=${res.gameId})` : ""),
+                );
+              }
+            } else {
+              // dry-run 미리보기 — DB 접근 0
+              const preview = previewUpsert(syncInput);
+              console.log(
+                `      🔍 upsert 예정: game_id=${preview.gameId} / ` +
+                  `game_type=${preview.gameType} / ` +
+                  `scheduled_at=${preview.scheduledAt} (${preview.scheduledAtSource}) / ` +
+                  `game insert=${preview.willInsertGame ? "YES" : "NO (parsed 없음)"}`,
+              );
+              console.log(
+                `         fields: fee=${preview.fee}원(${preview.feeSource}) / ` +
+                  `max=${preview.maxParticipants}명(${preview.maxParticipantsSource}) / ` +
+                  `skill=${preview.skillLevel}(${preview.skillLevelSource}) / ` +
+                  `city=${preview.city ?? "null"}(${preview.citySource}) / ` +
+                  `district=${preview.district ?? "null"}(${preview.districtSource}) / ` +
+                  `venue=${preview.venueName ?? "null"}(${preview.venueNameSource})`,
+              );
+            }
           }
         }
 
@@ -617,6 +677,27 @@ async function main() {
       failedDetails.forEach((r, i) => {
         console.log(`  [${i + 1}] cafePostId=${r.cafePostId ?? "-"}, error=${r.error}`);
       });
+    }
+
+    // [2026-04-21] community 게시판 집계 (별도 표시)
+    if (communityUpsertResults.length > 0) {
+      const cCreated = communityUpsertResults.filter((r) => r.action === "created").length;
+      const cSkipped = communityUpsertResults.filter((r) => r.action === "skipped_duplicate").length;
+      const cFailed = communityUpsertResults.filter((r) => r.action === "failed").length;
+      console.log("");
+      console.log("── community_posts upsert 집계 ──");
+      console.log(
+        `  total: ${communityUpsertResults.length}건 / created=${cCreated} / ` +
+          `skipped(dup)=${cSkipped} / failed=${cFailed}`,
+      );
+      const cFails = communityUpsertResults.filter(
+        (r): r is { action: "failed"; error: string } => r.action === "failed",
+      );
+      if (cFails.length > 0) {
+        console.log("");
+        console.log("── community upsert 실패 상세 ──");
+        cFails.forEach((r, i) => console.log(`  [${i + 1}] ${r.error}`));
+      }
     }
   }
 

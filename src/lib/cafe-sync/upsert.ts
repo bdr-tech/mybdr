@@ -671,3 +671,309 @@ export function previewUpsert(input: CafeSyncInput): {
     },
   };
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// [2026-04-21] Community 게시판(일반 4종) upsert — community_posts 테이블 타겟
+// ═════════════════════════════════════════════════════════════════════════════
+//
+// 대상: N54V(자유) / IVd2(익명) / E7hL(BDR칼럼) / bWL(구인구팀)
+//
+// 설계 결정 (PM 확정 Q1~Q4):
+//   - Q1: 시스템 유저 = 카페 봇 1명 (email: cafe-bot@mybdr.local)
+//   - Q2: 카테고리 key 재사용 — `general` / `anonymous`(신규) / `review` / `recruit`
+//         ("대회후기" → "BDR칼럼" 라벨 변경은 UX 세션 담당, key 는 `review` 유지)
+//   - Q3: 익명게시판(IVd2) 은 author_nickname = "익명" 강제, images.cafe_author = null
+//   - Q4: 1차 이전 = E7hL + bWL 먼저 → 규모 검증 → 자유/익명 후속
+//
+// 중복 방지:
+//   - community_posts 에 `cafe_source_id` 컬럼 없음 (Prisma schema 변경 금지 — 운영 DB 가드)
+//   - `images` JSON 내 `cafe_source_id` 키로 관리 → `$queryRaw` + `images->>'cafe_source_id'` 매칭
+//   - source_id 포맷: `PU-CAFE-<boardId>-<dataid>` (boardId 포함 필수, 게시판 간 dataid 충돌 방지)
+
+/** 카페 봇 유저 email — seed-cafe-bot-user.ts 와 동일 상수 */
+export const CAFE_BOT_EMAIL = "cafe-bot@mybdr.local";
+
+/**
+ * 런타임 캐시: 카페 봇 user_id 를 프로세스당 1회만 DB 조회.
+ *
+ * 왜 캐시:
+ *   - backfill 이 수백~천 건 upsert 하면서 매번 User.findUnique 호출 시 N+1 느려짐.
+ *   - 캐시 히트 시 DB 왕복 0.
+ *
+ * 초기값 null — 최초 upsert 호출 시 lazy 로드.
+ */
+let CAFE_BOT_USER_ID: bigint | null = null;
+
+/**
+ * 카페 봇 user_id 를 반환. 없으면 throw (seed 먼저 실행 요구).
+ *
+ * 호출자:
+ *   - upsertCommunityPostFromCafe (내부)
+ *   - backfill-cafe-community.ts 등 스크립트에서 사전 로드 가능
+ */
+export async function resolveCafeBotUserId(prisma: PrismaClient): Promise<bigint> {
+  if (CAFE_BOT_USER_ID !== null) return CAFE_BOT_USER_ID;
+  const bot = await prisma.user.findUnique({ where: { email: CAFE_BOT_EMAIL } });
+  if (!bot) {
+    throw new Error(
+      `🛑 카페 봇 유저 없음 — \`npx tsx scripts/seed-cafe-bot-user.ts --execute\` 먼저 실행 필요. ` +
+        `(email: ${CAFE_BOT_EMAIL})`,
+    );
+  }
+  CAFE_BOT_USER_ID = bot.id;
+  return bot.id;
+}
+
+/**
+ * 테스트/재초기화용 — 캐시 리셋. 프로덕션 경로에선 호출 안 함.
+ */
+export function __resetCafeBotUserIdCacheForTest(): void {
+  CAFE_BOT_USER_ID = null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Community 입력/출력 타입
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface CafeCommunityInput {
+  /** 대상 게시판 (target="community_posts" 만 허용) */
+  board: CafeBoard;
+  /** 카페 dataid (string) */
+  dataid: string;
+  /** dataid 정수 변환 — tie-break/정렬 용 (optional) */
+  dataidNum?: number;
+  /** 원본 제목 (마스킹 전) */
+  title: string;
+  /** 원본 작성자 닉네임 (anonymousAuthor 면 저장 안 됨) */
+  author: string;
+  /** 본문 (마스킹 전 — upsertCommunityPostFromCafe 내에서 2차 마스킹) */
+  content: string;
+  /** 작성 시각 (없으면 now fallback) */
+  postedAt: Date | null;
+  /** 크롤 시각 */
+  crawledAt: Date;
+  /** 본문에서 추출한 이미지 URL 배열 (없으면 []) */
+  imageUrls?: string[];
+  /** 댓글 배열 — Phase 2b 시점은 빈 배열 기본 */
+  comments?: unknown[];
+}
+
+export type CommunityUpsertResult =
+  | {
+      action: "created";
+      postId: bigint;
+    }
+  | {
+      action: "skipped_duplicate";
+      postId: bigint;
+    }
+  | {
+      action: "failed";
+      error: string;
+    };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pure helpers — 단위 테스트용 (DB 무관)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 커뮤니티용 cafe_source_id 포맷.
+ *
+ * 왜 games 의 `buildCafeSourceId` 와 다른가:
+ *   - games 는 prefix(PU/GU/PR) 가 board 타입별로 고정되어 있었음 → `PU-CAFE-3928`
+ *   - community 는 prefix 개념 없음 + 4게시판 모두 dataid 체계 달라 **board id 명시 필수**
+ *   - 포맷: `COM-CAFE-<boardId>-<dataid>` (COM = Community)
+ *
+ * 중복 방지 핵심: 게시판 간 dataid 충돌 방어 (Dilr 320221 vs bWL 320221 별개 레코드)
+ */
+export function buildCommunityCafeSourceId(boardId: string, dataid: string): string {
+  return `COM-CAFE-${boardId}-${dataid}`;
+}
+
+/**
+ * author_nickname 결정 — 익명게시판(anonymousAuthor=true) 이면 "익명" 고정.
+ *
+ * 왜 헬퍼로 분리:
+ *   - 단위 테스트 용이 (DB 무관 pure function)
+ *   - upsert 와 preview 에서 동일 로직 공유
+ */
+export function resolveCommunityAuthorNickname(board: CafeBoard, author: string): string {
+  if (board.anonymousAuthor) return "익명";
+  return author || "카페 회원"; // 빈 문자열 방어
+}
+
+/**
+ * community_posts.images JSON 객체 조립 — 원본 이미지 URL 배열 + 카페 메타.
+ *
+ * 스키마(schema.prisma L815 주석): "이미지 URL 배열 + 카페 메타 (cafe_source_id, cafe_author, cafe_comments)"
+ *
+ * 구조: 객체 (PM 결정 — 메타 쿼리 가능, `images->>'cafe_source_id'` 로 중복 체크)
+ *
+ * 필드:
+ *   - cafe_source_id: 중복 방지 키
+ *   - cafe_board: 게시판 id (N54V/IVd2/E7hL/bWL)
+ *   - cafe_dataid: 원본 dataid (string)
+ *   - cafe_article_id: dataidNum (Int, 정렬 tie-break 용)
+ *   - cafe_author: 원본 닉네임 (익명게시판이면 null — Q3 "의도 존중")
+ *   - source_url: 원본 URL
+ *   - cafe_comments: 댓글 배열 (Phase 2b 기본 [])
+ *   - urls: 본문 이미지 URL 배열
+ */
+export function buildCommunityImagesMeta(input: CafeCommunityInput): Record<string, unknown> {
+  const isAnonymous = !!input.board.anonymousAuthor;
+  return {
+    cafe_source_id: buildCommunityCafeSourceId(input.board.id, input.dataid),
+    cafe_board: input.board.id,
+    cafe_dataid: input.dataid,
+    cafe_article_id: input.dataidNum, // undefined 면 키 자동 생략 (JSON.stringify 규칙)
+    cafe_author: isAnonymous ? null : input.author || null, // Q3: 익명은 원본도 저장 안 함
+    source_url: articleUrl(input.board, input.dataid),
+    cafe_comments: input.comments ?? [],
+    urls: input.imageUrls ?? [],
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// community_posts 중복 검사
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * `images->>'cafe_source_id'` 매칭으로 기존 행 조회.
+ *
+ * 왜 $queryRaw:
+ *   - community_posts 에 cafe_source_id 컬럼 없음 → JSON path 쿼리 필요.
+ *   - Prisma 가 JSON 연산자 공식 미지원.
+ *
+ * 성능: 현재 수백 scale 에서는 full scan 허용. GIN index 는 수천건 넘어가면 고려.
+ */
+async function findExistingCommunityPostByCafeSourceId(
+  prisma: PrismaClient,
+  cafeSourceId: string,
+): Promise<bigint | null> {
+  const rows = await prisma.$queryRaw<Array<{ id: bigint }>>`
+    SELECT id FROM community_posts
+    WHERE images->>'cafe_source_id' = ${cafeSourceId}
+    LIMIT 1
+  `;
+  return rows.length > 0 ? rows[0].id : null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// community_posts upsert 메인
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 카페 일반 게시판 1건 → community_posts INSERT (중복이면 skip).
+ *
+ * 동작:
+ *   1) assertDevDatabase() — 운영 DB 가드
+ *   2) resolveCafeBotUserId — 봇 user_id 캐시 로드 (없으면 throw)
+ *   3) buildCommunityCafeSourceId 로 source_id 생성
+ *   4) findExistingCommunityPostByCafeSourceId — 중복 확인
+ *   5) 중복이면 skipped_duplicate
+ *   6) 마스킹 + INSERT
+ *
+ * 트랜잭션: 단일 INSERT 라 $transaction 불필요.
+ * 실패 처리: throw 없이 result.failed 반환 (games 와 동일 패턴).
+ *
+ * 호출자 책임:
+ *   - board.target === "community_posts" 확인 후 호출
+ *   - input.content 는 원본 또는 마스킹 완료 (이 함수가 2차 마스킹)
+ */
+export async function upsertCommunityPostFromCafe(
+  prisma: PrismaClient,
+  input: CafeCommunityInput,
+): Promise<CommunityUpsertResult> {
+  // 1차 가드 — throw (전체 중단 의도)
+  assertDevDatabase();
+
+  try {
+    if (input.board.target !== "community_posts") {
+      return {
+        action: "failed",
+        error: `board.target 이 community_posts 가 아님 (${input.board.target})`,
+      };
+    }
+    if (!input.board.category) {
+      return {
+        action: "failed",
+        error: `board.category 누락 — community 게시판은 category 필수`,
+      };
+    }
+
+    // 봇 user_id 로드 (캐시, 없으면 throw)
+    const botUserId = await resolveCafeBotUserId(prisma);
+
+    // 중복 체크
+    const cafeSourceId = buildCommunityCafeSourceId(input.board.id, input.dataid);
+    const existing = await findExistingCommunityPostByCafeSourceId(prisma, cafeSourceId);
+    if (existing !== null) {
+      return { action: "skipped_duplicate", postId: existing };
+    }
+
+    // 2차 방어 마스킹 (9가드 #5) — title 도 포함
+    const maskedTitle = maskPersonalInfo(input.title);
+    const maskedContent = maskPersonalInfo(input.content);
+
+    const now = new Date();
+    const authorNickname = resolveCommunityAuthorNickname(input.board, input.author);
+    const images = buildCommunityImagesMeta({
+      ...input,
+      // 마스킹된 author 는 images 에 안 들어감 (buildCommunityImagesMeta 가 anonymousAuthor 판정)
+    });
+
+    const row = await prisma.community_posts.create({
+      data: {
+        user_id: botUserId,
+        title: maskedTitle.slice(0, 255), // VARCHAR 길이 방어
+        content: maskedContent,
+        category: input.board.category,
+        status: "published",
+        view_count: 0,
+        comments_count: 0,
+        likes_count: 0,
+        author_nickname: authorNickname,
+        // images: JSON — 배열이 아닌 객체로 저장 (PM 결정). UX 렌더링 시 Array.isArray 분기.
+        images: images as unknown as Prisma.InputJsonValue,
+        // created_at = 카페 원본 게시 시각 우선 (games 와 동일 정책)
+        created_at: input.postedAt ?? now,
+        updated_at: now,
+      },
+    });
+
+    return { action: "created", postId: row.id };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { action: "failed", error: msg };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// community preview (dry-run)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * --execute 없을 때 미리보기 — DB 접근 0 (중복 체크 제외).
+ *
+ * 호출 시점:
+ *   - sync-cafe.ts dry-run
+ *   - backfill-cafe-community.ts dry-run
+ *
+ * 중복 체크는 DB 접근 필요하므로 여기선 하지 않음 (호출자가 별도 판단).
+ */
+export function previewCommunityUpsert(input: CafeCommunityInput): {
+  cafeSourceId: string;
+  category: string;
+  authorNickname: string;
+  willInsert: boolean;
+  images: Record<string, unknown>;
+} {
+  const cafeSourceId = buildCommunityCafeSourceId(input.board.id, input.dataid);
+  return {
+    cafeSourceId,
+    category: input.board.category ?? "(category 누락)",
+    authorNickname: resolveCommunityAuthorNickname(input.board, input.author),
+    willInsert: input.board.target === "community_posts" && !!input.board.category,
+    images: buildCommunityImagesMeta(input),
+  };
+}
