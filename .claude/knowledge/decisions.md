@@ -2,6 +2,15 @@
 <!-- 담당: planner-architect | 최대 30항목 -->
 <!-- "왜 A 대신 B를 선택했는지" 기술 결정의 배경과 이유를 기록 -->
 
+### [2026-04-21] L2 본인/타인 프로필 통합 — 정책 Q1~Q7 + 편집 경로
+- **분류**: decision (L2 본 설계)
+- **결정자**: planner-architect + pm (수빈 확정)
+- **결정**: Q1 경로 = **A. 단일 `/users/[id]`** (본인 접근 시 분기). Q2 비공개 기본 범위 = **① 본인만**(현재 select whitelist 유지). Q3 `User.is_public` = **② select-level 유지**(Prisma 마이그레이션 0 — 운영 DB 변경 금지 준수). Q4 티어/레벨 = **① 레벨 하나로 통합**(`getTierBadge` 제거, 본인·타인 동일 Lv.N 배지). Q5 `/profile` = **① 대시보드로 재정의**(BasicInfo/Refund → `/profile/edit`로 이관). Q6 MVP 카드 = **③ 장식 존치**. Q7 Teams 섹션 = **① 추가**(공개 팀만, `team.is_public !== false`). **편집 경로 = B. 기존 `/profile/edit` 재활용**(신규 `/users/[me]/edit` 도입 시 네비 중복 + 308 리다이렉트 ≥4건 부담).
+- **배경**: L2 audit(2026-04-20) 완료 후 간극 10건·정책 질문 7건 확정 필요. Prisma 마이그레이션은 운영 DB 분리 완료(ops-db-sync-plan) 전까지 금지라 스키마 변경 옵션(Q3 ①/③) 전부 배제. 티어-레벨 이중 배지는 사용자 인지 부하 + 의미 중복(경기수는 이미 Hero 미니스탯에 표시)으로 레벨 통합 채택.
+- **대안 배제**: Q1 (B) 공용 컴포넌트만 분리 + 경로 유지 → "본인 시점 미리보기" UX 별도 구현 부담. Q4 (②) 타인=티어/본인=레벨 분리 → 중복 의미 축 혼란. Q5 프로필 정보 카드 유지 → 대시보드 성격 모호. 편집 경로 A(신규 `/users/[me]/edit`) → 기존 6개 `/profile/*` 서브 라우트와 네비 중복.
+- **영향**: 공용 3종(`src/components/profile/{profile-hero, mini-stat, recent-games}.tsx`) + `/api/web/users/[id]/gamification`(공개) + `UserTeamsGrid`(타인용) + `OwnerEditButton`. 레거시 `profile-header.tsx` 삭제. 총 공수 ~8h(병렬 반영).
+- **참조횟수**: 0
+
 ### [2026-04-20] L3 Organization 라우트 방식 — 기존 `/organizations/[slug]` 활용 (신규 라우트 금지)
 - **분류**: decision (L3 다음 단위 설계)
 - **결정자**: planner-architect
