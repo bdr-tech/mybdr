@@ -68,6 +68,7 @@
 ## 🗂 카페 작업 로그 (본 세션 전용 — 2026-04-21~)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-21 | pm-cafe | **Stage B-1 확대 — E7hL/bWL 각 50건 이전** (`--article-limit=50 --execute` × 2). E7hL postId 272~326 / bWL postId 277~281 + 327~371. 각 `created=45 / skipped(dup)=5 / failed=0`. 규모 검증: category recruit:50/review:50, 시간범위 2025-07-09 ~ 2026-04-21. E7hL 9개월치(연 ~70건 추정, 전량 부담↓) / bWL 최근 며칠~주 (연 수천~수만, **전량 이전 전 범위 정책 논의 필요**) | ✅ (DB only, 커밋 없음) |
 | 04-21 | pm-cafe | **Stage B-1 실전 INSERT 10건** — E7hL 5건(postId 272~276, category=review) + bWL 5건(postId 277~281, category=recruit). 모두 user_id=3004(봇) 통합 + author_nickname 원본 유지 + images JSON cafe_source_id 정상. title HTML entity는 설계상 DB 원본 보존(렌더 시점 디코드). 렌더 측 community 경로 `decodeHtmlEntities` 누락은 수정 요청 테이블에 인계 | ✅ (DB only, 커밋 없음) |
 | 04-21 | pm-cafe | **Stage B 선결 ③** — E7hL/bWL dry-run 각 5건 본문 fetch 성공(쿠키 재발급 효과 확인). 매핑/중복/포맷 모두 정상 | ✅ (DB only) |
 | 04-21 | pm-cafe | **Stage B 선결 ②** — 개발 DB 카페 봇 유저 seed (`seed-cafe-bot-user.ts --execute`). `cafe-bot@mybdr.local` / id=3004 생성. 멱등 확보 | ✅ (DB only, 커밋 없음) |
