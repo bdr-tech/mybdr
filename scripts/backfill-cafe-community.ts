@@ -36,6 +36,7 @@
  *   --board=E7hL|bWL|N54V|IVd2|community   (community = 4게시판 전부)
  *   --max-pages=N            기본 5, 상한 20 (페이지당 20건 * 20 = 400건/게시판)
  *   --article-limit=N        기본 10, 상한 100 (본문 fetch 건수). IVd2 전량(95건) 등 100건 이내 작은 게시판 1회 처리용으로 확대
+ *   --offset=N               기본 0, 상한 400 (목록 앞쪽 N건 건너뜀). 대규모 게시판 전량 이전 시 100건씩 분할 처리용. 예: 1차 --article-limit=100, 2차 --offset=100 --article-limit=100 ...
  *   --with-body              본문 fetch + upsert 실행 (기본 꺼짐)
  *   --list-only              목록만 (본문 스킵)
  *   --execute                실제 DB 쓰기 (dry-run 해제)
@@ -142,6 +143,7 @@ function assertDevDatabase(): void {
 async function main(): Promise<void> {
   const maxPages = parseNumArg("max-pages", 5, 1, 20);
   const articleLimit = parseNumArg("article-limit", 10, 1, 100);
+  const articleOffset = parseNumArg("offset", 0, 0, 400);
   const boards = parseBoardsArg();
 
   console.log("========================================");
@@ -152,7 +154,8 @@ async function main(): Promise<void> {
   console.log("========================================");
   console.log(
     `대상: ${boards.map((b) => `${b.id}(${b.label})`).join(", ")} / ` +
-      `max-pages=${maxPages} / article-limit=${articleLimit}`,
+      `max-pages=${maxPages} / article-limit=${articleLimit}` +
+      (articleOffset > 0 ? ` / offset=${articleOffset}` : ""),
   );
   console.log("");
 
@@ -274,9 +277,12 @@ async function main(): Promise<void> {
         continue;
       }
 
-      const targetItems = items.slice(0, articleLimit);
+      const targetItems = items.slice(articleOffset, articleOffset + articleLimit);
       console.log("");
-      console.log(`  [${board.id}] 본문 fetch ${targetItems.length}건 시작`);
+      console.log(
+        `  [${board.id}] 본문 fetch ${targetItems.length}건 시작` +
+          (articleOffset > 0 ? ` (offset=${articleOffset} 건너뜀)` : ""),
+      );
 
       let bodyFailures = 0;
       for (let i = 0; i < targetItems.length; i++) {
