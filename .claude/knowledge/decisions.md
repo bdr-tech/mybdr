@@ -2,6 +2,15 @@
 <!-- 담당: planner-architect | 최대 30항목 -->
 <!-- "왜 A 대신 B를 선택했는지" 기술 결정의 배경과 이유를 기록 -->
 
+### [2026-04-21] 카페 sync 3게시판 전면 board 강제 + parser 힌트 메타데이터화
+- **분류**: decision (카페 sync Phase 2b 후속)
+- **결정자**: pm + developer (2026-04-21 승인)
+- **결정**: IVHA/Dilr/MptT **3게시판 모두** `board.gameType` → `game_type` 1:1 강제 매핑. parser(`cafe-game-parser.ts`) 가 본문 키워드로 뽑는 `parsed.gameType` 은 **소비하지 않음**. 불일치 시 `metadata.mixed_type_hint` + `metadata.parser_game_type` 으로 보존 (정보 손실 방지). 기존 혼재 레코드(IVHA 7건)는 `scripts/backfill-cafe-game-type.ts --execute` 로 UPDATE. 구현: `src/lib/cafe-sync/upsert.ts` 의 `resolveGameType(board)` + pure fn `buildMetadataHints()` 분리. `cafe-game-parser.ts` 무수정(vitest 59/59 보호).
+- **배경**: 2026-04-20 까지는 MptT(PRACTICE) 만 board 강제였고 IVHA/Dilr 는 `parsed.gameType ?? board.gameType` 패턴이라 본문에 타 유형 키워드가 섞이면 parser 가 재분류 (예: IVHA에 "게스트 모집" 문구 → GUEST 로 뒤바뀜). 실측 IVHA 7건이 `game_type=1(GUEST)` 로 저장돼 `/games?type=0` 탭에서 사라짐. 운영자의 "어느 게시판에 올렸는가" 가 본문 키워드보다 훨씬 강한 의도 신호라 판단.
+- **대안 배제**: (A) parser 재튜닝 → 각 게시판마다 오염 키워드 셋이 다르고 MptT 에서 이미 강제로 해결 완료된 접근과 분기 발생. 파서 59/59 테스트 회귀 위험. (B) admin UI 수동 재분류 → 건마다 사람 개입 필요, 지속 sync 에서 계속 재발. (C) `games.game_type` 컬럼 외 별도 `board_game_type` 컬럼 추가 → 운영 DB 마이그레이션 필요(CLAUDE.md 금지 규칙 충돌).
+- **영향**: `insertGameFromCafe`/`previewUpsert` 두 경로 동기. 혼재 글 수집 시 탭 표시(/games?type=N)가 운영자 의도와 항상 일치. `metadata.mixed_type_hint` 로 admin "혼재 의심" 필터/통계 재활용 가능. 백필 스크립트가 매핑 소스(`resolveGameType` export) 재사용하여 매핑 규칙 단일 진입점 유지.
+- **참조횟수**: 0
+
 ### [2026-04-21] L2 본인/타인 프로필 통합 — 정책 Q1~Q7 + 편집 경로
 - **분류**: decision (L2 본 설계)
 - **결정자**: planner-architect + pm (수빈 확정)
