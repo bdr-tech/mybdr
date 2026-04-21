@@ -1,0 +1,141 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# cafe-sync-verify — 다음카페 sync 품질 검증봇
+# ═══════════════════════════════════════════════════════════════════════════════
+# 설계: .claude/scratchpad-cafe-sync.md
+#       "📋 카페 sync 품질 검증봇 설계안 (2026-04-21, planner-architect)"
+#
+# 동작 원칙:
+#   - 하루 1회 KST 08:10 자동 실행 (UTC 23:10 전날).
+#     이유: 07:00 첫 sync + 08:00 두 번째 sync 직후 안정 지점.
+#   - 1주차: execute_issues=false 기본 (dry-run). artifact 만 관찰.
+#   - 2주차: workflow_dispatch 로 execute_issues=true 전환 후 실제 이슈 생성 테스트.
+#
+# 본 workflow 는 기존 cafe-sync.yml / sync-cafe.ts 를 **절대 수정하지 않음**.
+# 완전 독립 실행 (읽기 전용 검증).
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: cafe-sync-verify
+
+on:
+  # ─── 스케줄 ────────────────────────────────────────────────────────────────
+  # KST 08:10 = UTC 23:10 (전일). cron 문법: "분 시 일 월 요일"
+  schedule:
+    - cron: "10 23 * * *"
+
+  # ─── 수동 트리거 (이슈 생성 테스트 및 임시 집계) ─────────────────────────
+  workflow_dispatch:
+    inputs:
+      execute_issues:
+        description: "실제 Issue 생성/코멘트/close (1주차 기본 false — 관찰용)"
+        type: boolean
+        default: false
+      since_hours:
+        description: "집계 기간 (시간). 기본 24"
+        type: string
+        default: "24"
+
+# ─── 권한 ─────────────────────────────────────────────────────────────────────
+# 이유:
+#   - issues:write → Issue 생성/코멘트/close
+#   - actions:read → workflow_runs / secrets metadata (I3/I4)
+#   - contents:read → checkout
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+# ─── 동시 실행 제어 ────────────────────────────────────────────────────────────
+# 이전 run 이 늦어져도 덮어쓰지 않음 (설계안 R6 관측성 보존).
+concurrency:
+  group: cafe-sync-verify
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: "카페 sync 품질 검증"
+    runs-on: ubuntu-latest
+    # DB 쿼리 + GH API 호출만 — 10분 넉넉.
+    timeout-minutes: 10
+
+    env:
+      CI: "true"
+      TZ: "Asia/Seoul"
+      # cafe-sync.yml 과 동일 Secret 재사용 (추가 등록 0)
+      DATABASE_URL: ${{ secrets.DATABASE_URL_DEV }}
+      # gh CLI 자동 인식 env
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      # ─── 1. 체크아웃 ────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ─── 2. Node 설치 ───────────────────────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ─── 3. Prisma Client 생성 (postinstall 실패 대비) ──────────────────────
+      - name: Prisma generate
+        run: npx prisma generate
+
+      # ─── 4. CI 운영 DB 가드 (cafe-sync.yml 과 동일 관습) ────────────────────
+      - name: Validate DB is development (CI guard)
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::DATABASE_URL secret 미설정"
+            exit 1
+          fi
+          if echo "$DATABASE_URL" | grep -q 'bwoorsgoijvlgutkrcvs'; then
+            echo "dev DB identifier confirmed"
+          else
+            echo "::error::DATABASE_URL 이 개발 DB 아님 (bwoorsgoijvlgutkrcvs 미포함). CI 중단."
+            exit 1
+          fi
+
+      # ─── 5. verify 스크립트 실행 ───────────────────────────────────────────
+      # 이유:
+      #   - workflow_dispatch 로 execute_issues=true 입력 시 --execute-issues 로 전환
+      #   - schedule 실행 시 기본 --dry-run (1주차 안전)
+      #   - since_hours 입력 없으면 24h 기본
+      - name: Run verify
+        id: verify
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p tmp
+
+          # execute_issues 입력 해석 (workflow_dispatch 전용, schedule 은 dry-run)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.execute_issues }}" = "true" ]; then
+            FLAGS="--execute-issues"
+            echo "모드: execute-issues (실제 Issue 관리 ON)"
+          else
+            FLAGS="--dry-run"
+            echo "모드: dry-run (Issue 생성 0)"
+          fi
+
+          SINCE="${{ github.event.inputs.since_hours || '24' }}"
+
+          npx tsx scripts/verify-cafe-sync.ts \
+            --since=${SINCE}h \
+            --output=console \
+            $FLAGS \
+            2>&1 | tee tmp/verify.log
+
+      # ─── 6. 리포트 artifact 업로드 (30일 보관) ─────────────────────────────
+      # if: always() 로 실패 시에도 디버깅 가능.
+      - name: Upload verify report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cafe-sync-verify-${{ github.run_id }}
+          path: |
+            tmp/verify-report-*.json
+            tmp/verify.log
+          retention-days: 30
+          if-no-files-found: warn
