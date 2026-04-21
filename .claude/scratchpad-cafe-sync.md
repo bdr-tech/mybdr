@@ -683,6 +683,9 @@ IVHA/Dilr는 혼재 글 많으므로 parser 재분류 유지.
 
 | 날짜 | 작업 | 커밋 |
 |------|------|------|
+| 04-21 | **game_type 오분류 수정** — 3게시판 전면 board 강제 + `buildMetadataHints()` 헬퍼 export + mixed_type_hint/parser_game_type 키 기록 + IVHA 7건 백필 (1→0) + smoke 통과. 검증 쿼리 3게시판 × game_type 혼재 0건, vitest upsert 4/4 + parser 59/59 유지 | `4fd75e4` + `013bef6` |
+| 04-20 | **Phase 3 #1+#3+#4 자동화 + 검증봇** — GH Actions cafe-sync.yml cron 매시 + refresh-cafe-cookie.ts + Slack step(비활성) / verify-cafe-sync.ts 6지표 (I1~I4,I6) + GitHub Issue 자동 관리 / R5 이중 쿼터링 fix. main까지 push 완료 (원영 합의) | `3173a91` / `25ca4e3` / `f18c9a1` |
+| 04-20 | **Phase 3 #6 Pagination** — BoardItem.bbsDepth + fetchBoardListApi(common-articles API) + `--max-pages=N` (기본 1, 호환 우선) + pageSize 50 상한 + 중단 조건 4종 + 페이지 간 3초 sleep. 스모크 IVHA/MptT dataid 단조 감소 확인 | `299c395` |
 | 04-20 | **D 미니 (extractPostedAt .num_subject 폴백)** — 상세 HTML 유일 시간 소스(.num_subject)를 4번째 fallback으로 추가. 과거 글 시분은 카페 원천 미제공 실측 확정(5/5 YY.MM.DD). postedAt null 5/5 → 0/5. tsc OK, 스모크 5/5 200 | `c84aba0` |
 | 04-20 | **A+E 완료 (카페 게시 순서 tie-break)** — metadata.cafe_article_id(Int) 저장 + listGames 메모리 정렬(created_at desc → cafe_article_id desc null last) + noticeContainer 방어 가드 + 기존 15건 백필 execute 완료. tester T1~T6 / reviewer R1~R6 전부 통과, 블록커 0 | `4bc41bf` |
 | 04-20 | **Phase 2b 지속동기화 기반** — postedAt fallback / created_at=카페게시순 / MptT PRACTICE 강제 / DISTRICT_TO_CITY 역매핑. 카페 출처 118건 초기화 + 3게시판 각 5건 재수집 | `4826018` |
@@ -693,7 +696,6 @@ IVHA/Dilr는 혼재 글 많으므로 parser 재분류 유지.
 | 04-19 | **Phase 2a 코드** — mask-personal-info + article-fetcher + sync-cafe `--with-body` | `2890224` |
 | 04-19 | **cafe-sync 계획 문서** (`Dev/cafe-sync-plan-2026-04-19.md`, 628줄) | `3cd61c4` |
 | 04-19 | **Phase 1 POC** — 3게시판 30건 실제 수집 (articles.push 정규식) | PR #39 |
-| 04-19 | 다음카페 크롤링 법적/기술 리스크 리서치 (9가드 decisions 승격) | — |
 
 ---
 
