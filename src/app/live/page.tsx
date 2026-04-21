@@ -55,19 +55,21 @@ export default function LivePage() {
   }, [fetchMatches]);
 
   return (
-    <div className="min-h-screen bg-[var(--color-background)] text-white">
+    <div className="min-h-screen bg-[var(--color-background)] text-[var(--color-text-primary)]">
       {/* 헤더 */}
-      <div className="bg-[var(--color-surface)] border-b border-white/10 px-4 py-4">
+      {/* 보더를 고정 white/10 → 변수로 치환해 라이트/다크 모두 일관되게 */}
+      <div className="bg-[var(--color-surface)] border-b border-[var(--color-border)] px-4 py-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🏀</span>
             <div>
               <h1 className="text-lg font-bold">BDR Live Score</h1>
-              <p className="text-xs text-gray-500">실시간 경기 스코어</p>
+              {/* 캡션 텍스트: muted 변수로 통일 */}
+              <p className="text-xs text-[var(--color-text-muted)]">실시간 경기 스코어</p>
             </div>
           </div>
           {lastUpdated && (
-            <span className="text-xs text-gray-600">
+            <span className="text-xs text-[var(--color-text-muted)]">
               {lastUpdated.toLocaleTimeString("ko-KR", {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -83,6 +85,7 @@ export default function LivePage() {
         {/* 로딩 */}
         {loading && (
           <div className="flex justify-center py-12">
+            {/* TODO: accent 변수 추가 시 var(--color-accent)로 매핑. 현재 warning 변수는 의미 불일치로 스킵. */}
             <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
           </div>
         )}
@@ -91,8 +94,9 @@ export default function LivePage() {
         {!loading && live.length === 0 && recent.length === 0 && (
           <div className="text-center py-16">
             <div className="text-5xl mb-4">🏀</div>
-            <p className="text-gray-400 text-lg font-medium">현재 진행 중인 경기가 없습니다</p>
-            <p className="text-gray-600 text-sm mt-2">
+            {/* 본문급 문구: secondary / 부가 설명: muted */}
+            <p className="text-[var(--color-text-secondary)] text-lg font-medium">현재 진행 중인 경기가 없습니다</p>
+            <p className="text-[var(--color-text-muted)] text-sm mt-2">
               경기가 시작되면 자동으로 표시됩니다
             </p>
           </div>
@@ -102,8 +106,9 @@ export default function LivePage() {
         {live.length > 0 && (
           <section>
             <div className="flex items-center gap-2 mb-3">
-              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wider">
+              {/* LIVE 펄스 점: status-live 변수 */}
+              <span className="w-2 h-2 bg-[var(--color-status-live)] rounded-full animate-pulse" />
+              <h2 className="text-sm font-semibold text-[var(--color-status-live)] uppercase tracking-wider">
                 Live Now
               </h2>
             </div>
@@ -118,7 +123,7 @@ export default function LivePage() {
         {/* 최근 종료 경기 */}
         {recent.length > 0 && (
           <section>
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+            <h2 className="text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
               최근 종료
             </h2>
             <div className="space-y-3">
@@ -138,20 +143,23 @@ function MatchCard({ match, isLive }: { match: LiveMatch; isLive?: boolean }) {
     <Link href={`/live/${match.id}`}>
       <div
         className={`bg-[var(--color-surface)] rounded-md p-4 transition-all hover:bg-[var(--color-elevated)] ${
-          isLive ? "ring-1 ring-red-500/30" : ""
+          // LIVE 링: status-live 30% 투명 (color-mix로 라이트/다크 모두 대응)
+          isLive ? "ring-1 ring-[color-mix(in_srgb,var(--color-status-live)_30%,transparent)]" : ""
         }`}
       >
         {/* 대회명 + 상태 */}
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs text-gray-500 truncate pr-2">
+          <span className="text-xs text-[var(--color-text-muted)] truncate pr-2">
             {match.tournament_name}
             {match.round_name ? ` · ${match.round_name}` : ""}
           </span>
           <span
             className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
               isLive
-                ? "bg-red-500/20 text-red-400"
-                : "bg-gray-700/50 text-gray-400"
+                // LIVE 뱃지: status-live 20% 배경 + 본색 텍스트
+                ? "bg-[color-mix(in_srgb,var(--color-status-live)_20%,transparent)] text-[var(--color-status-live)]"
+                // 기본 뱃지: elevated 배경 + secondary 텍스트
+                : "bg-[var(--color-elevated)] text-[var(--color-text-secondary)]"
             }`}
           >
             {STATUS_LABEL[match.status] ?? match.status}
@@ -169,7 +177,8 @@ function MatchCard({ match, isLive }: { match: LiveMatch; isLive?: boolean }) {
               H
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-gray-200 truncate">
+              {/* 팀명: primary 텍스트로 통일 */}
+              <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
                 {match.home_team.name}
               </p>
             </div>
@@ -183,7 +192,7 @@ function MatchCard({ match, isLive }: { match: LiveMatch; isLive?: boolean }) {
             >
               {match.home_score}
             </span>
-            <span className="text-gray-600 text-lg">:</span>
+            <span className="text-[var(--color-text-muted)] text-lg">:</span>
             <span
               className="text-3xl font-black tabular-nums"
               style={{ color: match.away_team.color }}
@@ -195,7 +204,8 @@ function MatchCard({ match, isLive }: { match: LiveMatch; isLive?: boolean }) {
           {/* 원정팀 */}
           <div className="flex items-center gap-3 flex-1 justify-end">
             <div className="min-w-0 text-right">
-              <p className="text-sm font-medium text-gray-200 truncate">
+              {/* 팀명: primary 텍스트로 통일 */}
+              <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
                 {match.away_team.name}
               </p>
             </div>
@@ -210,7 +220,7 @@ function MatchCard({ match, isLive }: { match: LiveMatch; isLive?: boolean }) {
 
         {/* 터치해서 박스스코어 보기 */}
         <div className="mt-3 text-center">
-          <span className="text-xs text-gray-600">
+          <span className="text-xs text-[var(--color-text-muted)]">
             터치하면 박스스코어를 볼 수 있습니다
           </span>
         </div>
