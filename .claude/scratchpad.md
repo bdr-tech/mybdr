@@ -1,17 +1,23 @@
 # 작업 스크래치패드
 
-## ⚠️ 세션 분리 원칙 (필수, 2026-04-21 재정의)
-> 2026-04-21부로 **본 세션 역할 뒤집음** — 이전 합의(본=일반)는 폐기
+## ⚠️ 세션 분리 원칙 (필수, 2026-04-22 재정의)
+> **기본 = 일반 작업 세션.** 카페 세션은 수빈이 **명시적으로 "카페 세션 시작"이라고 선언할 때만** 전환된다.
 
-- **본 세션 (Claude Code, 이 터미널)** = **다음카페 sync 전용**
-  - 허용 파일: `scripts/sync-cafe.ts`, `scripts/cafe-login.ts`, `scripts/_tmp-cafe-*`, `scripts/backfill-*cafe*.ts`, `scripts/verify-cafe-sync.ts`, `scripts/refresh-cafe-cookie.ts`, `scripts/seed-cafe-bot-user.ts`, `src/lib/cafe-sync/**`, `src/lib/parsers/cafe-*.ts`, `.github/workflows/cafe-*.yml`, `Dev/cafe-*.md`, `Dev/prompt-cafe-*.md`, 프리즈마 cafe 관련 migration
-  - 커밋 스코프 **필수**: `feat(cafe-sync):` / `fix(cafe-sync):` / `docs(cafe-sync):` / `chore(cafe-sync):` / `refactor(cafe-sync):`
-- **다른 세션 (병행)** = 일반 UX/기능 작업 — `(web)`/`(api/web)`/`(referee)`/`profile`/`tournaments` 등
-- **본 세션 PM 금지 파일**: 위 허용 목록 외 전부. 특히 `src/app/(web)/**`, `src/app/api/web/**`, `src/components/profile/**`, `src/app/(site)/**`, `src/app/api/v1/**`(카페 관련 제외)
-- **브랜치**: 양 세션 모두 `subin` 공용 (분리 안 함). 충돌 발생 시 `subin-cafe` 분리 재검토
+### 기본 모드 — 일반 작업 세션 (본 세션 기본값)
+- **대상**: `(web)`/`(api/web)`/`(referee)`/`profile`/`tournaments`/`components`/`lib` 등 — 일반 UX/기능/리팩토링/디자인
+- **커밋 스코프**: 자유 (`feat:` / `fix:` / `refactor:` / `docs:` / `style:` / `test:` 등)
+- **금지**: 카페 허용 파일군을 단독 수정 (카페 세션에서 하도록 남겨둠) — 단 타 작업 중 불가피한 경우 예외 가능, 이 경우 scratchpad에 사유 기록
+
+### 카페 모드 — 수빈이 "카페 세션 시작"이라고 말했을 때만 전환
+- **허용 파일**: `scripts/sync-cafe.ts`, `scripts/cafe-login.ts`, `scripts/_tmp-cafe-*`, `scripts/backfill-*cafe*.ts`, `scripts/verify-cafe-sync.ts`, `scripts/refresh-cafe-cookie.ts`, `scripts/seed-cafe-bot-user.ts`, `src/lib/cafe-sync/**`, `src/lib/parsers/cafe-*.ts`, `.github/workflows/cafe-*.yml`, `Dev/cafe-*.md`, `Dev/prompt-cafe-*.md`, 프리즈마 cafe 관련 migration
+- **커밋 스코프 필수**: `feat(cafe-sync):` / `fix(cafe-sync):` / `docs(cafe-sync):` / `chore(cafe-sync):` / `refactor(cafe-sync):`
+- **PM 금지 파일**: 위 허용 목록 외 전부 (특히 `src/app/(web)/**`, `src/app/api/web/**`, `src/components/profile/**`, `src/app/(site)/**`, `src/app/api/v1/**` 중 카페 관련 제외)
+- **scratchpad**: 카페 작업 로그 섹션에 `pm-cafe` 담당으로 기록
+
+### 공용 규칙 (두 모드 공통)
+- **브랜치**: `subin` 공용 (분리 안 함). 충돌 발생 시 `subin-cafe` 분리 재검토
 - **push 전 `git fetch origin subin` 필수** → 뒤처지면 `git pull --rebase`
-- **scratchpad**: 공용 유지. 카페 작업은 "카페 작업 로그" 섹션에 별도 기록 (담당 = `pm-cafe`)
-- **PR**: 본 세션은 카페 전용 신규 PR로. PR #55(혼재)는 그대로 머지 예정
+- **scratchpad**: 공용 유지
 
 ## 📍 다음 세션 진입점 (2026-04-21~ "이어서 하자" 시 이 순서대로)
 
@@ -87,7 +93,40 @@
 | 요청자 | 대상 파일 | 문제 설명 | 상태 |
 |--------|----------|----------|------|
 | 수빈(스모크 L3-2) | `src/app/(web)/organizations/[slug]/series/[seriesSlug]/page.tsx` | `/organizations/org-ny6os/series/bdr-series` 접근 시 500 + Turbopack "Jest worker ... retry limit" crash. Next 16.1.6 (stale) | ✅ 해결 — 코드 무결 / 워커 캐시 손상. PID 42564 종료 + `.next` 삭제 + 재기동 → **200 / 0.28s**. errors.md [2026-04-12] 재발 참조횟수 1 |
-| pm-cafe (Stage B-1) | `src/app/(web)/community/**` 렌더 컴포넌트 (리스트/상세) | **Stage A 확장 후속 누락** — 카페 sync가 `community_posts`로 확장(Stage A `47c2c97`)됐으나 렌더 측 `decodeHtmlEntities` 적용은 games 경로만 있고 community 경로 누락. postId 277 title `[시흥] 일요일팀 &#39;지역방어&#39;` 등. 저장은 설계상 원본 보존이라 정상, **렌더 시점** 디코드만 추가 필요. 유틸 기존: `@/lib/utils/decode-html#decodeHtmlEntities`. 참고 구현: `src/app/(web)/games/_components/games-content.tsx` | ⏳ 일반 세션 대기 |
+| pm-cafe (Stage B-1) | `src/app/(web)/community/**` 렌더 컴포넌트 (리스트/상세) | **Stage A 확장 후속 누락** — 카페 sync가 `community_posts`로 확장(Stage A `47c2c97`)됐으나 렌더 측 `decodeHtmlEntities` 적용은 games 경로만 있고 community 경로 누락. postId 277 title `[시흥] 일요일팀 &#39;지역방어&#39;` 등. 저장은 설계상 원본 보존이라 정상, **렌더 시점** 디코드만 추가 필요. 유틸 기존: `@/lib/utils/decode-html#decodeHtmlEntities`. 참고 구현: `src/app/(web)/games/_components/games-content.tsx` | ✅ 완료 — developer 5파일 렌더 경로 디코드 적용 (2026-04-22) |
+
+## 구현 기록 (developer)
+### [2026-04-22] 카페 community 렌더 HTML entity decode 적용
+- **변경 파일**: 5개
+- **파일별 변경**:
+  - `community-content.tsx`: L439(title) / L448(content_preview) / L474(author_nickname) — L467 `.charAt(0)` 원본 유지
+  - `community-sidebar.tsx`: L100(title 인기글) / L139(title 실시간 인기글)
+  - `[id]/page.tsx`: L194(title) / L227(displayNickname) / L275-277(post.content split 전 디코드) / L316·320(cafeComment.text·nickname) — L218 `.charAt(0)` 원본 유지
+  - `post-detail-sidebar.tsx`: L102(authorNickname) / L184(tp.title) — L93 `.charAt(0)` 원본 유지
+  - `comment-list.tsx`: L155(c.nickname) / L259(c.content) — L144 `.charAt(0)` 원본 유지
+- **적용 필드**: title, content, content_preview, author_nickname/nickname, cafeComment.text·nickname, tp.title
+- **제외 파일**: comment-form(사용자 입력) / like·share·post-actions(텍스트 렌더 없음)
+- **import 추가**: 5파일 모두 `import { decodeHtmlEntities } from "@/lib/utils/decode-html";` + `// [2026-04-22] 카페 원문 HTML entity 디코드 — Stage A 확장 후속` 주석
+- **.charAt(0) 처리**: 아바타 placeholder 이니셜은 원본 첫 글자 유지 (PM 지시). HTML entity `&`는 첫 글자가 `&`이므로 이니셜이 "&"로 나올 수 있으나 작성자 요구사항대로 유지
+- **tsc**: PASS (exit 0, 에러 0건)
+
+💡 tester 참고:
+- **테스트 방법**:
+  1. `/community` 리스트에서 `&#39;`/`&amp;`/`&nbsp;` 포함 제목·본문미리보기·작성자 확인 (예: postId 277 `[시흥] 일요일팀 &#39;지역방어&#39;` → `[시흥] 일요일팀 '지역방어'`)
+  2. 사이드바 인기글·실시간 인기글 제목 디코드 확인
+  3. `/community/[public_id]` 상세 진입 → 제목/본문/작성자 디코드 확인
+  4. 카페 댓글(isReply 가능) content + nickname 디코드 확인
+  5. 상세 사이드바 작성자 카드 + 실시간 인기글 디코드 확인
+- **정상 동작**: `&amp;` → `&`, `&#39;` → `'`, `&nbsp;` → (non-breaking space), 알 수 없는 엔티티는 원문 유지
+- **주의할 입력**:
+  - 사용자가 직접 작성한 DB 댓글(카페 아님) — HTML entity 없어서 변화 없어야 정상 (decodeHtmlEntities는 빈 문자열/null 그대로 반환)
+  - 사용자 작성 제목에 실제 `&` 문자 포함 시 그대로 표시되어야 함 (`&` 단독은 엔티티가 아니므로 유지)
+  - 아바타 이니셜(.charAt(0))은 의도적으로 디코드 안 함
+
+⚠️ reviewer 참고:
+- `[id]/page.tsx` L275 — `post.content?.split()` 호출 대상이 `decodeHtmlEntities(post.content)`로 바뀌었음. `decodeHtmlEntities`는 null/undefined/빈 문자열을 그대로 반환하므로 `?.split` 동작 동일
+- `comment-list.tsx`는 카페 댓글+DB 댓글 공용 렌더 경로. DB 댓글에도 디코드 적용되나 일반 텍스트에는 무해 (HTML entity 포함 문자만 치환). PM 지시는 L155/L259 위치 수정이라 명시했고 두 경로 분리는 불필요한 복잡도로 판단
+- `.charAt(0)` 3곳(community-content.tsx L467, page.tsx L218, post-detail-sidebar.tsx L93, comment-list.tsx L144)은 PM 지시에 따라 원본 유지
 
 ## 운영 팁
 - **gh 인증 풀림**: `GH_TOKEN=$(printf "protocol=https\nhost=github.com\n\n" | git credential fill 2>/dev/null | grep ^password= | cut -d= -f2) gh ...`
@@ -103,6 +142,7 @@
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-22 | developer | **카페 community 렌더 HTML entity decode 적용 (5파일)** — community-content/sidebar + [id]/page + post-detail-sidebar + comment-list. title/content/content_preview/nickname/cafeComment 전 필드 렌더 시점 `decodeHtmlEntities` 적용. `.charAt(0)` 원본 유지 (아바타 이니셜). tsc PASS. Stage A 확장 후속 수정요청 해결 | ✅ (커밋 대기) |
 | 04-22 | pm | **3순위+4순위 점진 정비 전체 완료 (11파일 44건 + reviewer 후속 2건)** — M1 `live/page.tsx` 16건 / M2a teams·games 3파일 5건 / M2b games 3파일 8건 / M3 games/new 3파일 13건 (하드코딩 색상 누계 **42건**) / any 정비 2건 + `export interface` 1건 (3파일) / D1+D2 L3 reviewer 후속 (tournaments/[id] 쿼리 2→1 + series.is_public 가드). 유지: 임의 배경 위 text-white, bg-black/60 백드롭, kakao map 공통 컴포넌트 any, 동적 유니폼 컬러. 6커밋 tsc 전부 통과 | ✅ 6f4b65e + 13112df + fff9c41 + bc817f9 + d547c6e + 6d962fd |
 | 04-22 | pm | **ops-db-sync-plan 선결 조건 5/6 반영** — Supabase 2개 가능(원영) / 운영 DB 증설 예정(원영) / PII 치환 범위(수빈) / 동기화 주 1회 + `/admin` 수동 버튼(수빈) / super_admin 공용 `admin@dev.local`(수빈) 확정. Flutter API URL 분기 1건 원영 대기 | ✅ docs |
 | 04-22 | pm | **박찬웅 계정 연결 (운영 DB)** — placeholder `user_id=2884`(박찬웅_194@placeholder...) → 실계정 `3000`(pcwman1004@naver.com) 로 TTP 2492(열혈농구단 SEASON2 전국 최강전) + TeamMember 2236(라이징이글스 상시팀) 각 1건 UPDATE. 원자 트랜잭션, after 카운트 일치. placeholder 2884 유지(히스토리) | ✅ (DB only) |

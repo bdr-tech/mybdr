@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { FollowButton } from "@/components/follow-button";
+// [2026-04-22] 카페 원문 HTML entity 디코드 — Stage A 확장 후속
+import { decodeHtmlEntities } from "@/lib/utils/decode-html";
 
 // 카테고리 라벨 매핑
 const categoryLabelMap: Record<string, string> = {
@@ -99,7 +101,7 @@ export async function PostDetailSidebar({
               className="block text-lg font-bold"
               style={{ color: "var(--color-text-primary)" }}
             >
-              {authorNickname}
+              {decodeHtmlEntities(authorNickname)}
             </span>
           </div>
         </div>
@@ -181,7 +183,7 @@ export async function PostDetailSidebar({
                 className="text-sm transition-colors line-clamp-1"
                 style={{ color: "var(--color-text-secondary)" }}
               >
-                {tp.title}
+                {decodeHtmlEntities(tp.title)}
               </p>
             </Link>
           ))}

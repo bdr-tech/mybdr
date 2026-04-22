@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+// [2026-04-22] 카페 원문 HTML entity 디코드 — Stage A 확장 후속
+import { decodeHtmlEntities } from "@/lib/utils/decode-html";
 
 // API에서 내려오는 게시글 타입 (community-content.tsx와 동일)
 interface PostFromApi {
@@ -97,7 +99,7 @@ export function CommunitySidebar({ posts }: CommunitySidebarProps) {
                   className="text-sm font-medium truncate transition-colors"
                   style={{ color: "var(--color-text-secondary)" }}
                 >
-                  {post.title}
+                  {decodeHtmlEntities(post.title)}
                 </p>
                 <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
                   조회수 {post.view_count.toLocaleString()}
@@ -136,7 +138,7 @@ export function CommunitySidebar({ posts }: CommunitySidebarProps) {
                 className="text-sm transition-colors line-clamp-1"
                 style={{ color: "var(--color-text-secondary)" }}
               >
-                {post.title}
+                {decodeHtmlEntities(post.title)}
               </p>
             </Link>
           ))}

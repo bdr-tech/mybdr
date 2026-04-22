@@ -11,6 +11,8 @@ import { LikeButton } from "./_components/like-button";
 import { PostActions } from "./_components/post-actions";
 import { CommentList } from "./_components/comment-list";
 import { getWebSession } from "@/lib/auth/web-session";
+// [2026-04-22] 카페 원문 HTML entity 디코드 — Stage A 확장 후속
+import { decodeHtmlEntities } from "@/lib/utils/decode-html";
 
 export const revalidate = 30;
 
@@ -191,7 +193,7 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
                 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 leading-tight"
                 style={{ color: "var(--color-text-primary)" }}
               >
-                {post.title}
+                {decodeHtmlEntities(post.title)}
               </h2>
 
               {/* 작성자 정보 + 공유/북마크 아이콘 */}
@@ -224,7 +226,7 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
                         className="text-sm font-semibold"
                         style={{ color: "var(--color-text-primary)" }}
                       >
-                        {displayNickname}
+                        {decodeHtmlEntities(displayNickname)}
                       </span>
                     </div>
                     <div
@@ -271,8 +273,8 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
               className="prose prose-invert max-w-none text-sm leading-relaxed space-y-4"
               style={{ color: "var(--color-text-secondary)" }}
             >
-              {/* 본문을 줄바꿈 기준으로 렌더링 */}
-              {post.content?.split("\n").map((line, i) => (
+              {/* 본문을 줄바꿈 기준으로 렌더링 (카페 원문 HTML entity 디코드 후 split) */}
+              {decodeHtmlEntities(post.content)?.split("\n").map((line, i) => (
                 <p key={i}>{line}</p>
               ))}
             </div>
@@ -309,15 +311,15 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
               <div className="mt-8">
                 <CommentList
                   comments={[
-                    // 카페 댓글 (크롤링 원본 — 먼저 표시)
+                    // 카페 댓글 (크롤링 원본 — 먼저 표시, HTML entity 디코드 적용)
                     ...cafeComments.map((c, i) => ({
                       id: `cafe-${i}`,
                       userId: "",
-                      content: c.text,
+                      content: decodeHtmlEntities(c.text),
                       likesCount: 0,
                       createdAt: c.date || "",
                       isPostAuthor: false,
-                      nickname: c.nickname || "익명",
+                      nickname: decodeHtmlEntities(c.nickname) || "익명",
                       profileImage: null as string | null,
                       isReply: c.is_reply,
                     })),
