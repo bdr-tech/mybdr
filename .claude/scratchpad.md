@@ -128,6 +128,24 @@
 - `comment-list.tsx`는 카페 댓글+DB 댓글 공용 렌더 경로. DB 댓글에도 디코드 적용되나 일반 텍스트에는 무해 (HTML entity 포함 문자만 치환). PM 지시는 L155/L259 위치 수정이라 명시했고 두 경로 분리는 불필요한 복잡도로 판단
 - `.charAt(0)` 3곳(community-content.tsx L467, page.tsx L218, post-detail-sidebar.tsx L93, comment-list.tsx L144)은 PM 지시에 따라 원본 유지
 
+### [2026-04-22] 하드코딩 색상 3파일 CSS 변수화
+- **변경 파일**: 3개 / 4건 치환
+- **파일별 변경**:
+  - `community/[id]/edit/page.tsx` L94: 2건 (bg 에러박스 + text 에러) — `bg-red-500/10 text-red-400` → `color-mix(in srgb, var(--color-error) 10%, transparent)` 배경 + `var(--color-error)` 텍스트 (인라인 style)
+  - `push-permission.tsx` L176: 1건 (border 에러) — `border-red-500` → `border-[var(--color-error)]` (arbitrary value)
+  - `image-uploader.tsx` L230: 1건 (text 에러) — `text-red-400` → 인라인 `style={{ color: "var(--color-error)" }}`
+- **유지 예외**: image-uploader 오버레이(bg-black/50, border-white, text-white 4건) / push-permission 버튼 text-white — 임의 이미지 위 오버레이·액션 버튼은 색상 토큰 대상 아님
+- **주석**: 3파일 모두 `// [2026-04-22] 하드코딩 ... → --color-error 변수로 토큰화` (image-uploader는 JSX 내부라 `{/* */}` 형태)
+- **tsc**: PASS (exit 0)
+
+💡 tester 참고:
+- **테스트 방법**:
+  1. `/community/[id]/edit` 진입 후 의도적 에러 유발(빈 제목 등) → 에러 박스 배경/텍스트 색상이 다크/라이트 테마 모두 일관되게 표시되는지 확인
+  2. 알림 권한을 브라우저에서 `denied`로 막은 상태에서 PushPermission 컴포넌트가 노출되는 페이지 방문 → 좌측 세로줄(border-l-4)이 에러 색상으로 표시되는지 확인
+  3. ImageUploader가 사용되는 화면(커뮤니티 글쓰기, 팀 로고 등)에서 업로드 실패 유발(초대형 파일 등) → 에러 문구 색상 확인
+- **정상 동작**: 3곳 모두 다크/라이트 테마에서 브랜드 에러 색상(#E31B23 계열)으로 일관 표시
+- **주의할 입력**: `color-mix`는 최신 브라우저 필요 (Chrome 111+/Safari 16.2+). 레거시 브라우저 fallback 없음 — 현재 프로젝트 지원 범위 내
+
 ## 운영 팁
 - **gh 인증 풀림**: `GH_TOKEN=$(printf "protocol=https\nhost=github.com\n\n" | git credential fill 2>/dev/null | grep ^password= | cut -d= -f2) gh ...`
 - **tsx 환경변수**: `npx tsx --env-file=.env.local scripts/xxx.ts` (Node 22)
@@ -142,7 +160,9 @@
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
-| 04-22 | developer | **카페 community 렌더 HTML entity decode 적용 (5파일)** — community-content/sidebar + [id]/page + post-detail-sidebar + comment-list. title/content/content_preview/nickname/cafeComment 전 필드 렌더 시점 `decodeHtmlEntities` 적용. `.charAt(0)` 원본 유지 (아바타 이니셜). tsc PASS. Stage A 확장 후속 수정요청 해결 | ✅ (커밋 대기) |
+| 04-22 | pm | **통합 스모크 체크리스트 문서 + B-1 시드 상태 확인** — `Dev/smoke-test-2026-04-22.md` 신규 (W4/L3/L2 + 4조합 + 오늘 커밋 검증 항목). B-1 follow-up 시드는 이미 충족 상태(Org 1 / Series 1 / Tournament 12 edition 혼재 / 공개 팀 14건)로 추가 시드 불필요 확인 | ✅ docs |
+| 04-22 | developer | **하드코딩 색상 3파일 CSS 변수화 (4건)** — community/edit(bg+text 2건) + push-permission(border 1건) + image-uploader(text 1건) 모두 `--color-error` 토큰화. `color-mix` 활용 에러 배경 10% 투명화. tsc PASS | ✅ 0f41e99 |
+| 04-22 | developer | **카페 community 렌더 HTML entity decode 적용 (5파일)** — community-content/sidebar + [id]/page + post-detail-sidebar + comment-list. title/content/content_preview/nickname/cafeComment 전 필드 렌더 시점 `decodeHtmlEntities` 적용. `.charAt(0)` 원본 유지 (아바타 이니셜). tsc PASS. Stage A 확장 후속 수정요청 해결 | ✅ bb488ce |
 | 04-22 | pm | **3순위+4순위 점진 정비 전체 완료 (11파일 44건 + reviewer 후속 2건)** — M1 `live/page.tsx` 16건 / M2a teams·games 3파일 5건 / M2b games 3파일 8건 / M3 games/new 3파일 13건 (하드코딩 색상 누계 **42건**) / any 정비 2건 + `export interface` 1건 (3파일) / D1+D2 L3 reviewer 후속 (tournaments/[id] 쿼리 2→1 + series.is_public 가드). 유지: 임의 배경 위 text-white, bg-black/60 백드롭, kakao map 공통 컴포넌트 any, 동적 유니폼 컬러. 6커밋 tsc 전부 통과 | ✅ 6f4b65e + 13112df + fff9c41 + bc817f9 + d547c6e + 6d962fd |
 | 04-22 | pm | **ops-db-sync-plan 선결 조건 5/6 반영** — Supabase 2개 가능(원영) / 운영 DB 증설 예정(원영) / PII 치환 범위(수빈) / 동기화 주 1회 + `/admin` 수동 버튼(수빈) / super_admin 공용 `admin@dev.local`(수빈) 확정. Flutter API URL 분기 1건 원영 대기 | ✅ docs |
 | 04-22 | pm | **박찬웅 계정 연결 (운영 DB)** — placeholder `user_id=2884`(박찬웅_194@placeholder...) → 실계정 `3000`(pcwman1004@naver.com) 로 TTP 2492(열혈농구단 SEASON2 전국 최강전) + TeamMember 2236(라이징이글스 상시팀) 각 1건 UPDATE. 원자 트랜잭션, after 카운트 일치. placeholder 2884 유지(히스토리) | ✅ (DB only) |
@@ -150,4 +170,3 @@
 | 04-21 | pm | **점진 정비 — any 3건 명시 타입화** (community CommunityPost + bulk-verify/bulk-register ExcelRow 공용 interface) | ✅ b5f5e5a |
 | 04-21 | pm | **점진 정비 — 하드코딩 색상 7파일 CSS 변수화** (login/pricing/venues/community/registration/teams overview+games, 13개 색상) | ✅ 9a1c924 |
 | 04-21 | pm | **reviewer 권장 5건 정비** — OwnerEditButton 공용 + color/heading/wrap 보강. 9파일 | ✅ be6d7e1 |
-| 04-21 | pm | **L2 본인·타인 프로필 통합** — 공용 3종(Hero/MiniStat/RecentGames) + gamification 서버 헬퍼 + /users/[id] 본인 분기 + Teams(공개만) + 티어→레벨 통합 + /profile 대시보드 재정의 + 레거시 6파일 삭제. tester 14/14 / reviewer 통과(블록커 0, 권장 4). 15파일 +1347/-1286 | ✅ a04fad8 (미푸시) |
