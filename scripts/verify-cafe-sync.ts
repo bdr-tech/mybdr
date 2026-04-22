@@ -368,7 +368,65 @@ function queryI3CronRate(sinceHours: number): IndicatorResult {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function queryI4CookieAge(): IndicatorResult {
-  // 1차: GH API Secret updated_at (값 0 노출, 메타만)
+  // [2026-04-22 개선] 1차 경로를 "주요 인증 쿠키 expires 최솟값" 으로 승격.
+  // 이유: Secret updated_at 은 GH API 권한 + 부정확(저장 시점이 실제 쿠키 수명 아님).
+  //   storageState 파일의 _T_/LSID/ALID/TIARA/DID 등 주요 인증 쿠키 expires 가
+  //   서버 세션 수명의 더 나은 프록시. TSID/_SUID 같은 추적 쿠키는 제외.
+  //   "로그인 상태 유지" 미체크 상태에서는 장기 인증 쿠키가 아예 없음 → 별도 warn.
+  if (existsSync(STORAGE_STATE_PATH)) {
+    try {
+      const parsed = JSON.parse(readFileSync(STORAGE_STATE_PATH, "utf8")) as {
+        cookies?: Array<{ name: string; expires?: number; domain?: string }>;
+      };
+      // daum/kakao 로그인 인증 계열 쿠키 이름 — 정확 매치 화이트리스트.
+      // 주의: `_T_ANO` (400일 익명 추적) 는 인증 쿠키 아님 → 제외.
+      //       `_TA_` 류도 추적용이라 제외.
+      const AUTH_NAMES = new Set([
+        "_T_",
+        "_T_SECURE",
+        "__T_",
+        "__T_SECURE",
+        "LSID",
+        "ALID",
+        "TIARA",
+        "DID",
+      ]);
+      const authCookies = (parsed.cookies ?? []).filter(
+        (c) =>
+          (AUTH_NAMES.has(c.name) || c.name.startsWith("KAKAO_AUTH")) &&
+          /\.(daum|kakao)(\.com|\.net)/.test(c.domain ?? ""),
+      );
+      const persistentAuth = authCookies.filter((c) => (c.expires ?? -1) > 0);
+      if (persistentAuth.length === 0) {
+        // 세션 쿠키만 있음 — "로그인 유지" 미체크 상태. 곧 만료.
+        return {
+          value: 0,
+          status: "alert",
+          threshold: { ok: ">=5일 남음", warn: "2~5일 남음", alert: "<2일 남음 or 없음" },
+          note: "장기 인증 쿠키 없음 — scripts/cafe-login.ts 재실행 시 '로그인 상태 유지' 체크 필수",
+          extra: { source: "storage_state_no_persistent_auth" },
+        };
+      }
+      const minExpires = Math.min(...persistentAuth.map((c) => c.expires ?? 0));
+      const nowSec = Date.now() / 1000;
+      const daysLeft = (minExpires - nowSec) / 86_400;
+      const status: Severity =
+        daysLeft < 2 ? "alert" : daysLeft < 5 ? "warn" : "ok";
+      return {
+        value: Number(daysLeft.toFixed(1)),
+        status,
+        threshold: { ok: ">=5일 남음", warn: "2~5일 남음", alert: "<2일 남음" },
+        extra: {
+          source: "storage_state_auth_cookie_min_expires",
+          persistent_auth_count: persistentAuth.length,
+        },
+      };
+    } catch {
+      // fallback 진입
+    }
+  }
+
+  // 2차 fallback: GH API Secret updated_at (권한/네트워크 의존, 가끔 실패)
   if (!SKIP_GITHUB_API && REPO && ghAvailable()) {
     const secJson = ghExec([
       "api",
@@ -380,13 +438,13 @@ function queryI4CookieAge(): IndicatorResult {
         const updatedAt = meta.updated_at ?? meta.created_at;
         if (updatedAt) {
           const ageDays = (Date.now() - new Date(updatedAt).getTime()) / 86_400_000;
-          // 임계치: 정상 <5일 / 경고 5~6일 / 알림 7일+
           const status: Severity =
             ageDays < 5 ? "ok" : ageDays < 7 ? "warn" : "alert";
           return {
             value: Number(ageDays.toFixed(1)),
             status,
             threshold: { ok: "<5", warn: "5~6", alert: ">=7" },
+            note: "storageState 파일 없음 → Secret updated_at 프록시 사용",
             extra: { source: "secret_updated_at", updated_at: updatedAt },
           };
         }
@@ -396,45 +454,11 @@ function queryI4CookieAge(): IndicatorResult {
     }
   }
 
-  // 2차 fallback: storageState cookies[].expires 최솟값 → 만료까지 남은 일수 계산
-  // 이 경우 지표 의미가 반전 (작을수록 위험) — 설계안 R3 참조
-  if (existsSync(STORAGE_STATE_PATH)) {
-    try {
-      const parsed = JSON.parse(readFileSync(STORAGE_STATE_PATH, "utf8")) as {
-        cookies?: Array<{ expires?: number; domain?: string }>;
-      };
-      const daumCookies = (parsed.cookies ?? []).filter((c) => {
-        const d = c.domain ?? "";
-        return d.endsWith(".daum.net") || d === "m.cafe.daum.net" || d === "daum.net";
-      });
-      const expiresArr = daumCookies
-        .map((c) => c.expires ?? -1)
-        .filter((e) => e > 0);
-      if (expiresArr.length > 0) {
-        const minExpires = Math.min(...expiresArr);
-        const nowSec = Date.now() / 1000;
-        const daysLeft = (minExpires - nowSec) / 86_400;
-        // 만료까지 <2일 = alert / 2~5일 = warn / 5+ = ok (반전 의미)
-        const status: Severity =
-          daysLeft < 2 ? "alert" : daysLeft < 5 ? "warn" : "ok";
-        return {
-          value: Number(daysLeft.toFixed(1)),
-          status,
-          threshold: { ok: ">=5일 남음", warn: "2~5일 남음", alert: "<2일 남음" },
-          note: "Secret updated_at 접근 실패 → storageState expires fallback 사용",
-          extra: { source: "storage_state_expires_days_left" },
-        };
-      }
-    } catch {
-      // 무시하고 unknown 반환
-    }
-  }
-
   return {
     value: null,
     status: "unknown",
-    threshold: { ok: "<5일", warn: "5~6일", alert: ">=7일" },
-    note: "Secret API 및 storageState fallback 모두 실패",
+    threshold: { ok: ">=5일 남음", warn: "2~5일 남음", alert: "<2일 남음" },
+    note: "storageState 파일 및 Secret API 모두 접근 실패",
   };
 }
 
