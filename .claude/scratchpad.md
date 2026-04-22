@@ -1,172 +1,122 @@
 # 작업 스크래치패드
 
-## ⚠️ 세션 분리 원칙 (필수, 2026-04-22 재정의)
-> **기본 = 일반 작업 세션.** 카페 세션은 수빈이 **명시적으로 "카페 세션 시작"이라고 선언할 때만** 전환된다.
+## ⚠️ 세션 분리 원칙 (2026-04-22 재정의)
+> **기본 = 일반 작업 세션.** 카페 세션은 수빈이 **"카페 세션 시작"이라고 선언할 때만** 전환.
 
-### 기본 모드 — 일반 작업 세션 (본 세션 기본값)
-- **대상**: `(web)`/`(api/web)`/`(referee)`/`profile`/`tournaments`/`components`/`lib` 등 — 일반 UX/기능/리팩토링/디자인
-- **커밋 스코프**: 자유 (`feat:` / `fix:` / `refactor:` / `docs:` / `style:` / `test:` 등)
-- **금지**: 카페 허용 파일군을 단독 수정 (카페 세션에서 하도록 남겨둠) — 단 타 작업 중 불가피한 경우 예외 가능, 이 경우 scratchpad에 사유 기록
+### 일반 모드 (기본값)
+- **대상**: `(web)`/`(api/web)`/`(referee)`/`profile`/`tournaments`/`components`/`lib` — 일반 UX/기능/리팩토링/디자인
+- **커밋**: 자유 스코프 (`feat:`/`fix:`/`refactor:`/`docs:`/`style:`/`test:`)
+- **금지**: 카페 허용 파일군 단독 수정 (불가피 시 scratchpad에 사유 기록)
 
-### 카페 모드 — 수빈이 "카페 세션 시작"이라고 말했을 때만 전환
-- **허용 파일**: `scripts/sync-cafe.ts`, `scripts/cafe-login.ts`, `scripts/_tmp-cafe-*`, `scripts/backfill-*cafe*.ts`, `scripts/verify-cafe-sync.ts`, `scripts/refresh-cafe-cookie.ts`, `scripts/seed-cafe-bot-user.ts`, `src/lib/cafe-sync/**`, `src/lib/parsers/cafe-*.ts`, `.github/workflows/cafe-*.yml`, `Dev/cafe-*.md`, `Dev/prompt-cafe-*.md`, 프리즈마 cafe 관련 migration
-- **커밋 스코프 필수**: `feat(cafe-sync):` / `fix(cafe-sync):` / `docs(cafe-sync):` / `chore(cafe-sync):` / `refactor(cafe-sync):`
-- **PM 금지 파일**: 위 허용 목록 외 전부 (특히 `src/app/(web)/**`, `src/app/api/web/**`, `src/components/profile/**`, `src/app/(site)/**`, `src/app/api/v1/**` 중 카페 관련 제외)
-- **scratchpad**: 카페 작업 로그 섹션에 `pm-cafe` 담당으로 기록
+### 카페 모드 ("카페 세션 시작" 선언 필요)
+- **허용**: `scripts/sync-cafe.ts`, `scripts/backfill-*cafe*.ts`, `scripts/*cafe*.ts`, `src/lib/cafe-sync/**`, `src/lib/parsers/cafe-*.ts`, `.github/workflows/cafe-*.yml`, `Dev/cafe-*.md`, 카페 관련 migration
+- **커밋 스코프 필수**: `feat(cafe-sync):` / `fix(cafe-sync):` / `docs(cafe-sync):` 등
+- **카페 작업 로그**: `.claude/scratchpad-cafe-sync.md` 로 분리 관리
 
-### 공용 규칙 (두 모드 공통)
-- **브랜치**: `subin` 공용 (분리 안 함). 충돌 발생 시 `subin-cafe` 분리 재검토
-- **push 전 `git fetch origin subin` 필수** → 뒤처지면 `git pull --rebase`
-- **scratchpad**: 공용 유지
+### 공용
+- **브랜치**: `subin` 공용. push 전 `git fetch origin subin` → 뒤처지면 `pull --rebase`
 
-## 📍 다음 세션 진입점 (2026-04-21~ "이어서 하자" 시 이 순서대로)
+---
 
-### 🥇 1순위 — W4 + L3 + L2 통합 스모크 테스트 (수빈 수동, 1.5h)
-- **W4**: `/profile/activity` / `/help/glossary` / 팀 상세 가입 UI / M6 알림 / M3 코트 지도 / M5 온보딩 / 카페 Phase 3 자동화
-- **L3**: Organization 2단 / Series(under org) 3단 / Tournament 소속 시리즈 카드 + EditionSwitcher (1회차/중간/최종/null 혼재)
-- **[신규] L2**: `/users/[id]` 본인/타인 분기 + 레벨 배지(Lv.N) 통합 + Teams 섹션(공개만) / `/profile` 대시보드 재정의 + 편집 경로 `/profile/edit` 확인
+## 📍 다음 세션 진입점
+
+### 🥇 1순위 — W4+L3+L2 통합 스모크 (수빈 수동, ~1.5h)
+- **체크리스트 문서**: `Dev/smoke-test-2026-04-22.md` (W4 7항목 / L3 3항목 / L2 4항목 / 오늘 커밋 검증)
 - **조합**: PC × 모바일 × 다크 × 라이트 4조합
-- **결과는 scratchpad 수정 요청 테이블에 기록**
-- **개발 DB 시드 follow-up**: Organization 1 + Series 1 + Tournament 3~4개(edition_number 혼재) + 공개 팀 1~2개 — 회귀 테스트용
+- **시드 상태**: ✅ 충족 (Org 1 / Series 1 bdr-series / Tournament 12 edition 혼재 / 공개 팀 14)
+- **결과는 수정 요청 테이블에 기록**
 
 ### 🥈 2순위 — 원영 협의 (30분~1h)
-- **문서**: `Dev/ops-db-sync-plan.md` (6개 선결 조건 체크박스) + `Dev/advancement-roadmap-2026-04-20.md` 10-2 아젠다
-- **옵션 A** 추천 (Supabase 두 번째 프로젝트)
-- 협의 완료 시 → 2026-04-18 lessons "개발 DB라 믿은 .env" 사건의 장기 해결 시작 + PR #54 원영 승인
+- `Dev/ops-db-sync-plan.md` (6개 선결 조건 5/6 반영, Flutter API URL 1건 대기)
+- `Dev/advancement-roadmap-2026-04-20.md` 10-2 아젠다
+- 옵션 A 추천 (Supabase 두 번째 프로젝트)
 
 ### 🥉 3순위 — 점진 정비 (보이스카우트)
-- 하드코딩 색상 잔존 ~30 파일 (lessons.md 2026-04-20 audit 목록)
-- `any` 타입 9회 / 8 파일
-- **원칙**: 해당 파일을 다른 이유로 건드릴 때 함께 정비
+- **하드코딩 색상**: 누계 53건 치환 / 잔존 **15파일 22건** (상위: tm-matches 3 / tm-site 3 / referee-login 2 / teams-new 2)
+- **any 타입**: ~6회 / ~6파일 (누계 정비 진행 중)
+- **원칙**: 다른 이유로 파일 건드릴 때 함께 정비. 대규모 일괄 치환 비추천
 
-### 4순위 — L3 + L2 reviewer 권장 후속 (nice-to-have)
-- **L3**: ✅ 쿼리 합치기(`6d962fd`) / ✅ series.is_public 가드(`6d962fd`) / ⏳ `<img>`→next/image (9곳 발견. **04-22 조사 결과**: 운영 DB organizations·Tournament 이미지 0건, Team logo 10건은 전부 `/team-logos/*.png` 로컬. image-uploader가 Supabase Storage 사용 → **운영 DB 분리 후** 양쪽 `<project-ref>.supabase.co` `remotePatterns` 등록 → phase 2 실행 권장) / ✅ EditionSwitcher flex-wrap (이미 처리됨)
-- **L2**: ✅ 전체 완료 (`be6d7e1` — OwnerEditButton 공용 + action-buttons.tsx text-white + Teams h3 heading + 팀명 툴팁)
+### 4순위 — reviewer 후속 (nice-to-have)
+- L3 `<img>`→next/image 9곳: 운영 DB 분리 후 양쪽 `<ref>.supabase.co` `remotePatterns` 등록 후 실행 권장
+- L3 쿼리 합치기 / is_public 가드 / EditionSwitcher flex-wrap ✅ 완료
 
-## 현재 상태 스냅샷 (2026-04-21 세션 마감)
+---
+
+## 현재 상태 스냅샷 (2026-04-22 세션 진행 중)
 
 | 항목 | 값 |
 |------|-----|
 | 브랜치 | subin |
-| subin HEAD | **`b5f5e5a`** (any 3건 명시 타입화) |
-| origin/subin | `b5f5e5a` ✅ (동기화 완료) |
-| main / dev | `8de9be4` (PR #53 squash, PR #54 대기) |
+| subin HEAD | `1958b9d` (docs smoke + 작업 로그 정리) |
+| origin/subin | `1958b9d` ✅ 동기화 완료 |
+| dev / main | `8de9be4` (PR #53 squash, PR #54 원영 승인 대기) |
 | 미푸시 | **0건** ✅ |
-| 백업 브랜치 | `subin-backup-2026-04-20` (f1779ff, 옵션 F 직전) — 1주일 후 삭제 권장 |
-| 오늘 PR merge | #47~#53 (6건) |
-| 열린 PR | **#54** (dev→main, 원영 승인 대기) / **#55** (subin→dev, 통합 리뷰 대기) |
-| L2 상태 | 공용 3종 + gamification 헬퍼 + /users/[id] 본인 분기 + Teams + /profile 대시보드 재정의 (PR #55 대기) |
-| L3 상태 | Organization brc + EditionSwitcher + SeriesCard ✅ dev 머지 완료 (PR #53) |
-| 보이스카우트 | reviewer 5건 + 색상 7파일 + any 3건 정비 (PR #55 통합) |
-| 카페 Phase 3 | GH Actions + 쿠키 갱신 + Slack + Pagination + 품질 검증봇 + game_type 분류 수정 **운영 반영** ✅ |
+| 오늘 커밋 (04-22) | `bb488ce` (community HTML decode) + `0f41e99` (스타일 3파일) + `1958b9d` (smoke+로그) |
+| 열린 PR | #54 (dev→main) / #55 (subin→dev) |
+| 카페 Phase 3 | 운영 반영 ✅ (GH Actions + 쿠키 갱신 + 메일 알림 + 품질 검증봇) |
 
-## W1~W4 + L3 + L2 완료 요약 (2026-04-19 ~ 04-21)
-| 주차/항목 | 내용 | 계획 | 실제 |
+---
+
+## W1~W4 + L3 + L2 완료 요약 (04-19 ~ 04-21)
+| 주차 | 내용 | 계획 | 실제 |
 |------|------|------|------|
-| W1 | Q1~Q12 (라우트/네비/배지/발견성/폴리시) | 20h | ~12h |
+| W1 | Q1~Q12 (라우트/네비/배지) | 20h | ~12h |
 | W2 | M1 좌측 네비 + M2 대회 sticky | 10h | ~6h |
 | W3 | M3/M5/M6 | 20h | ~7h |
-| W4 | M4/M7/L1 + Day 20 회고 + 후속 정비 | 17h | ~3h |
+| W4 | M4/M7/L1 + 회고 + 후속 정비 | 17h | ~3h |
 | L3 | Organization brc + EditionSwitcher + SeriesCard | 3h | ~1.5h |
-| L2 | 본인·타인 프로필 통합 + 공용 3종 + 대시보드 재정의 + 티어→레벨 | 15h | ~2h |
+| L2 | 프로필 통합 + 공용 3종 + 대시보드 + 티어→레벨 | 15h | ~2h |
 | **합계** | **4주 + L2·L3** | **~85h** | **~31.5h** (2.7배 절감) |
 
-## 🗂 카페 작업 로그 (본 세션 전용 — 2026-04-21~)
-| 날짜 | 담당 | 작업 | 결과 |
-|------|------|------|------|
-| 04-22 | pm-cafe | **알림 채널 Slack → 메일 전환** — cafe-sync.yml 실패 알림 + cafe-sync-verify.yml 일일 리포트 모두 `dawidd6/action-send-mail@v3` 로 교체. 수신자 `cobby8@stiz.kr`+`bdrbasket@gmail.com` 하드코딩. HTML 본문(severity 색상/이상 지표 표/추천 조치). Gmail SMTP 465. Secret 미등록 시 자동 스킵. `Dev/cafe-mail-setup.md` 설정 가이드 동봉 (수빈 Step 1~4 필요: Gmail 2FA → 앱 비밀번호 → MAIL_USERNAME/MAIL_APP_PASSWORD secret 등록 → workflow_dispatch 테스트) | ✅ 829f544 |
-| 04-22 | pm-cafe | **봇 운영 개선 4건 완료 (#1~#4)**. #1 cafe-sync.yml Slack 쿠키 만료 감지 힌트(403/401/unauthorized 패턴). #2 cafe-sync-verify.yml Slack 일일 리포트(ok 1줄/warn·alert 상세). #3 backfill-community `--posted-since`/`--posted-until` 긴급 백필 모드(KST 기준). #4 cron `--article-limit` 5→10 (게시판당 180건/일 수용). #5/#6은 사용자 결정상 스킵(현행 운영 유지) | ✅ fb3f5b7+56f7437+5cdc46c+a932eb6 |
-| 04-22 | pm-cafe | **"중" 범위 정책 완료 — bWL 200 + N54V 400** (offset 분할). bWL 1차 50new+49dup+1empty, 2차 99new+1empty (누적 199). N54V 1차 95new+5empty, 2차 94+6empty, 3차 100, 4차 97+3empty (누적 386). **최종 community_posts 1073건** (E7hL 396 + N54V 386 + bWL 199 + IVd2 92). postId 272~1344. 4게시판 파이프라인 전량/상한 스냅샷 이전 완료 | ✅ 08cc8db |
-| 04-21 | pm-cafe | **E7hL 실질 전량 이전 완료** — `--offset` 옵션으로 4회 분할 (`--max-pages=20 --article-limit=100 --execute` × 4, offset 0/100/200/300). 1차 47신규+50dup+3empty, 2차 99+1empty, 3차 100, 4차 100. 목록 400건 중 396건 created. 누적 538건 (시점). 시간 범위 **2021-11-28 ~ 2026-04-21 (4.5년치)**. postId 272~809 | ✅ fce8805(offset) + 5a5104a |
-| 04-21 | pm-cafe | **backfill 스크립트 `--offset` 옵션 추가** — `items.slice(0, N)` → `items.slice(offset, offset+N)`. 대규모 게시판 100건씩 분할 처리 가능. 기본 0(호환), 상한 400(max-pages=20 × 20건). tsc OK | ✅ fce8805 |
-| 04-21 | pm-cafe | **IVd2 전량 이전 완료** — `--article-limit=95 --execute` 1회. listed=95 / body=92 / created=92 / failed=0 / skipped(dup)=0. 3건 차이는 본문 비어있는 글(삭제/보호) 자연 스킵. postId 369~463. 누적 192건 (시점 기록) | ✅ 98f26f6 |
-| 04-21 | pm-cafe | **backfill 스크립트 `--article-limit` 상한 50→100** — IVd2 등 100건 이내 소규모 게시판 1회 전량 처리 가능. 기타 가드 유지. tsc OK | ✅ 0febceb |
-| 04-21 | pm-cafe | **N54V + IVd2 dry-run** — 각 5건 본문 fetch. N54V category=general (원본 닉네임 유지, dataid 63923 활발 게시판), IVd2 category=anonymous + **author="익명" 강제 오버라이드 Q3 결정 실전 검증 완료** (전체 ~95건 신설 게시판). **7게시판 파이프라인 전량 검증 완료** (IVHA/Dilr/MptT 운영 + E7hL/bWL 실전 + N54V/IVd2 dry-run) | ✅ a84d191 |
-| 04-21 | pm-cafe | **Stage B-1 확대 — E7hL/bWL 각 50건 이전** (`--article-limit=50 --execute` × 2). E7hL postId 272~326 / bWL postId 277~281 + 327~371. 각 `created=45 / skipped(dup)=5 / failed=0`. 규모 검증: category recruit:50/review:50, 시간범위 2025-07-09 ~ 2026-04-21. E7hL 9개월치(연 ~70건 추정, 전량 부담↓) / bWL 최근 며칠~주 (연 수천~수만, **전량 이전 전 범위 정책 논의 필요**) | ✅ a5d62a6 |
-| 04-21 | pm-cafe | **Stage B-1 실전 INSERT 10건** — E7hL 5건(postId 272~276, category=review) + bWL 5건(postId 277~281, category=recruit). 모두 user_id=3004(봇) 통합 + author_nickname 원본 유지 + images JSON cafe_source_id 정상. title HTML entity는 설계상 DB 원본 보존(렌더 시점 디코드). 렌더 측 community 경로 `decodeHtmlEntities` 누락은 수정 요청 테이블에 인계 | ✅ (DB only, 커밋 없음) |
-| 04-21 | pm-cafe | **Stage B 선결 ③** — E7hL/bWL dry-run 각 5건 본문 fetch 성공(쿠키 재발급 효과 확인). 매핑/중복/포맷 모두 정상 | ✅ (DB only) |
-| 04-21 | pm-cafe | **Stage B 선결 ②** — 개발 DB 카페 봇 유저 seed (`seed-cafe-bot-user.ts --execute`). `cafe-bot@mybdr.local` / id=3004 생성. 멱등 확보 | ✅ (DB only, 커밋 없음) |
-| 04-21 | pm-cafe | **game_type 오분류 설계안 + 실행 프롬프트 문서 커밋** (Dev/cafe-classification-fix-2026-04-21.md / Dev/prompt-cafe-classification-fix.md, 400줄). 대응 코드는 이미 머지됨(4fd75e4) | ✅ 8c0223a |
-| 04-21 | pm-cafe | **세션 재정의 — 본 세션 = 카페 전용** (scratchpad 원칙 뒤집음 + decisions.md 78항목 기록 + index.md 갱신) | ✅ aef2dcd |
+---
+
+## 🗂 카페 작업 로그
+→ `.claude/scratchpad-cafe-sync.md` 참조 (본 세션은 일반 모드이므로 여기에는 유지하지 않음)
+
+---
 
 ## 수정 요청
-| 요청자 | 대상 파일 | 문제 설명 | 상태 |
-|--------|----------|----------|------|
-| 수빈(스모크 L3-2) | `src/app/(web)/organizations/[slug]/series/[seriesSlug]/page.tsx` | `/organizations/org-ny6os/series/bdr-series` 접근 시 500 + Turbopack "Jest worker ... retry limit" crash. Next 16.1.6 (stale) | ✅ 해결 — 코드 무결 / 워커 캐시 손상. PID 42564 종료 + `.next` 삭제 + 재기동 → **200 / 0.28s**. errors.md [2026-04-12] 재발 참조횟수 1 |
-| pm-cafe (Stage B-1) | `src/app/(web)/community/**` 렌더 컴포넌트 (리스트/상세) | **Stage A 확장 후속 누락** — 카페 sync가 `community_posts`로 확장(Stage A `47c2c97`)됐으나 렌더 측 `decodeHtmlEntities` 적용은 games 경로만 있고 community 경로 누락. postId 277 title `[시흥] 일요일팀 &#39;지역방어&#39;` 등. 저장은 설계상 원본 보존이라 정상, **렌더 시점** 디코드만 추가 필요. 유틸 기존: `@/lib/utils/decode-html#decodeHtmlEntities`. 참고 구현: `src/app/(web)/games/_components/games-content.tsx` | ✅ 완료 — developer 5파일 렌더 경로 디코드 적용 (2026-04-22) |
+| 요청자 | 대상 | 문제 | 상태 |
+|--------|------|------|------|
+| 수빈(L3-2 스모크) | `/organizations/*/series/*/page.tsx` | 500 + Turbopack worker crash | ✅ 코드 무결 / `.next` 재기동으로 복구 (errors.md [2026-04-12] 재발 참조+1) |
+| pm-cafe (Stage B-1) | `(web)/community/**` 렌더 | HTML entity 디코드 누락 | ✅ 완료 `bb488ce` — 5파일 렌더 경로 decode 적용 |
 
-## 구현 기록 (developer)
-### [2026-04-22] 카페 community 렌더 HTML entity decode 적용
-- **변경 파일**: 5개
-- **파일별 변경**:
-  - `community-content.tsx`: L439(title) / L448(content_preview) / L474(author_nickname) — L467 `.charAt(0)` 원본 유지
-  - `community-sidebar.tsx`: L100(title 인기글) / L139(title 실시간 인기글)
-  - `[id]/page.tsx`: L194(title) / L227(displayNickname) / L275-277(post.content split 전 디코드) / L316·320(cafeComment.text·nickname) — L218 `.charAt(0)` 원본 유지
-  - `post-detail-sidebar.tsx`: L102(authorNickname) / L184(tp.title) — L93 `.charAt(0)` 원본 유지
-  - `comment-list.tsx`: L155(c.nickname) / L259(c.content) — L144 `.charAt(0)` 원본 유지
-- **적용 필드**: title, content, content_preview, author_nickname/nickname, cafeComment.text·nickname, tp.title
-- **제외 파일**: comment-form(사용자 입력) / like·share·post-actions(텍스트 렌더 없음)
-- **import 추가**: 5파일 모두 `import { decodeHtmlEntities } from "@/lib/utils/decode-html";` + `// [2026-04-22] 카페 원문 HTML entity 디코드 — Stage A 확장 후속` 주석
-- **.charAt(0) 처리**: 아바타 placeholder 이니셜은 원본 첫 글자 유지 (PM 지시). HTML entity `&`는 첫 글자가 `&`이므로 이니셜이 "&"로 나올 수 있으나 작성자 요구사항대로 유지
-- **tsc**: PASS (exit 0, 에러 0건)
-
-💡 tester 참고:
-- **테스트 방법**:
-  1. `/community` 리스트에서 `&#39;`/`&amp;`/`&nbsp;` 포함 제목·본문미리보기·작성자 확인 (예: postId 277 `[시흥] 일요일팀 &#39;지역방어&#39;` → `[시흥] 일요일팀 '지역방어'`)
-  2. 사이드바 인기글·실시간 인기글 제목 디코드 확인
-  3. `/community/[public_id]` 상세 진입 → 제목/본문/작성자 디코드 확인
-  4. 카페 댓글(isReply 가능) content + nickname 디코드 확인
-  5. 상세 사이드바 작성자 카드 + 실시간 인기글 디코드 확인
-- **정상 동작**: `&amp;` → `&`, `&#39;` → `'`, `&nbsp;` → (non-breaking space), 알 수 없는 엔티티는 원문 유지
-- **주의할 입력**:
-  - 사용자가 직접 작성한 DB 댓글(카페 아님) — HTML entity 없어서 변화 없어야 정상 (decodeHtmlEntities는 빈 문자열/null 그대로 반환)
-  - 사용자 작성 제목에 실제 `&` 문자 포함 시 그대로 표시되어야 함 (`&` 단독은 엔티티가 아니므로 유지)
-  - 아바타 이니셜(.charAt(0))은 의도적으로 디코드 안 함
-
-⚠️ reviewer 참고:
-- `[id]/page.tsx` L275 — `post.content?.split()` 호출 대상이 `decodeHtmlEntities(post.content)`로 바뀌었음. `decodeHtmlEntities`는 null/undefined/빈 문자열을 그대로 반환하므로 `?.split` 동작 동일
-- `comment-list.tsx`는 카페 댓글+DB 댓글 공용 렌더 경로. DB 댓글에도 디코드 적용되나 일반 텍스트에는 무해 (HTML entity 포함 문자만 치환). PM 지시는 L155/L259 위치 수정이라 명시했고 두 경로 분리는 불필요한 복잡도로 판단
-- `.charAt(0)` 3곳(community-content.tsx L467, page.tsx L218, post-detail-sidebar.tsx L93, comment-list.tsx L144)은 PM 지시에 따라 원본 유지
-
-### [2026-04-22] 하드코딩 색상 3파일 CSS 변수화
-- **변경 파일**: 3개 / 4건 치환
-- **파일별 변경**:
-  - `community/[id]/edit/page.tsx` L94: 2건 (bg 에러박스 + text 에러) — `bg-red-500/10 text-red-400` → `color-mix(in srgb, var(--color-error) 10%, transparent)` 배경 + `var(--color-error)` 텍스트 (인라인 style)
-  - `push-permission.tsx` L176: 1건 (border 에러) — `border-red-500` → `border-[var(--color-error)]` (arbitrary value)
-  - `image-uploader.tsx` L230: 1건 (text 에러) — `text-red-400` → 인라인 `style={{ color: "var(--color-error)" }}`
-- **유지 예외**: image-uploader 오버레이(bg-black/50, border-white, text-white 4건) / push-permission 버튼 text-white — 임의 이미지 위 오버레이·액션 버튼은 색상 토큰 대상 아님
-- **주석**: 3파일 모두 `// [2026-04-22] 하드코딩 ... → --color-error 변수로 토큰화` (image-uploader는 JSX 내부라 `{/* */}` 형태)
-- **tsc**: PASS (exit 0)
-
-💡 tester 참고:
-- **테스트 방법**:
-  1. `/community/[id]/edit` 진입 후 의도적 에러 유발(빈 제목 등) → 에러 박스 배경/텍스트 색상이 다크/라이트 테마 모두 일관되게 표시되는지 확인
-  2. 알림 권한을 브라우저에서 `denied`로 막은 상태에서 PushPermission 컴포넌트가 노출되는 페이지 방문 → 좌측 세로줄(border-l-4)이 에러 색상으로 표시되는지 확인
-  3. ImageUploader가 사용되는 화면(커뮤니티 글쓰기, 팀 로고 등)에서 업로드 실패 유발(초대형 파일 등) → 에러 문구 색상 확인
-- **정상 동작**: 3곳 모두 다크/라이트 테마에서 브랜드 에러 색상(#E31B23 계열)으로 일관 표시
-- **주의할 입력**: `color-mix`는 최신 브라우저 필요 (Chrome 111+/Safari 16.2+). 레거시 브라우저 fallback 없음 — 현재 프로젝트 지원 범위 내
+---
 
 ## 운영 팁
-- **gh 인증 풀림**: `GH_TOKEN=$(printf "protocol=https\nhost=github.com\n\n" | git credential fill 2>/dev/null | grep ^password= | cut -d= -f2) gh ...`
-- **tsx 환경변수**: `npx tsx --env-file=.env.local scripts/xxx.ts` (Node 22)
+- **tsx 환경변수**: `npx tsx --env-file=.env.local scripts/xxx.ts`
 - **포트 죽이기**: `netstat -ano | findstr :<포트>` → `taskkill //f //pid <PID>` (node.exe 통째 금지)
 - **신규 API 필드**: 추가 전 curl 1회로 raw 응답 확인 (snake_case 6회 재발)
 - **공식 기록 쿼리**: `officialMatchWhere()` 유틸 필수
-- **BreadcrumbItem**: `@/components/shared/breadcrumb` 재활용
-- **EditionSwitcher**: `@/components/shared/edition-switcher` (시리즈 회차 네비)
-- **[신규] 공용 프로필 컴포넌트**: `@/components/profile/{profile-hero, mini-stat, recent-games}`
-- **[신규] 레벨 배지 헬퍼**: `@/lib/profile/gamification` `getProfileLevelInfo(xp)` — 서버 컴포넌트 직접 호출 (API 경유 X, snake_case 재발 차단)
+- **공용 컴포넌트**: `@/components/shared/breadcrumb` / `edition-switcher` / `@/components/profile/{profile-hero, mini-stat, recent-games}`
+- **레벨 배지**: `@/lib/profile/gamification#getProfileLevelInfo(xp)` — 서버 컴포넌트 직접 호출 (API 경유 X)
+- **에러 색상 토큰 패턴**: `var(--color-error)` / 배경은 `color-mix(in srgb, var(--color-error) 10%, transparent)`
+- **gh 인증 풀림**: `GH_TOKEN=$(printf "protocol=https\nhost=github.com\n\n" | git credential fill 2>/dev/null | grep ^password= | cut -d= -f2) gh ...`
+
+---
+
+## 구현 기록 (developer)
+### [2026-04-22] 하드코딩 색상 3파일 CSS 변수화 (2차 묶음)
+- **변경 파일**: 3개 / 7건 치환
+- **파일별 변경**:
+  - `site-templates/classic.tsx`: 4건 (L273/L277/L394/L398 — 1위/3위 순위 → warning)
+  - `home/hero-bento.tsx`: 2건 (L258 LIVE NOW → error / L274 HOT → warning)
+  - `(admin)/admin/users/admin-users-table.tsx`: 1건 (L176 관리자 라벨 → warning)
+- **유지 예외**: classic statusColors (시맨틱 고정) / hero-bento 오버레이 bg-black·bg-white / admin-users-table 그라디언트 위
+- **tsc**: PASS
+
+---
 
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
-| 04-22 | pm | **통합 스모크 체크리스트 문서 + B-1 시드 상태 확인** — `Dev/smoke-test-2026-04-22.md` 신규 (W4/L3/L2 + 4조합 + 오늘 커밋 검증 항목). B-1 follow-up 시드는 이미 충족 상태(Org 1 / Series 1 / Tournament 12 edition 혼재 / 공개 팀 14건)로 추가 시드 불필요 확인 | ✅ docs |
-| 04-22 | developer | **하드코딩 색상 3파일 CSS 변수화 (4건)** — community/edit(bg+text 2건) + push-permission(border 1건) + image-uploader(text 1건) 모두 `--color-error` 토큰화. `color-mix` 활용 에러 배경 10% 투명화. tsc PASS | ✅ 0f41e99 |
-| 04-22 | developer | **카페 community 렌더 HTML entity decode 적용 (5파일)** — community-content/sidebar + [id]/page + post-detail-sidebar + comment-list. title/content/content_preview/nickname/cafeComment 전 필드 렌더 시점 `decodeHtmlEntities` 적용. `.charAt(0)` 원본 유지 (아바타 이니셜). tsc PASS. Stage A 확장 후속 수정요청 해결 | ✅ bb488ce |
-| 04-22 | pm | **3순위+4순위 점진 정비 전체 완료 (11파일 44건 + reviewer 후속 2건)** — M1 `live/page.tsx` 16건 / M2a teams·games 3파일 5건 / M2b games 3파일 8건 / M3 games/new 3파일 13건 (하드코딩 색상 누계 **42건**) / any 정비 2건 + `export interface` 1건 (3파일) / D1+D2 L3 reviewer 후속 (tournaments/[id] 쿼리 2→1 + series.is_public 가드). 유지: 임의 배경 위 text-white, bg-black/60 백드롭, kakao map 공통 컴포넌트 any, 동적 유니폼 컬러. 6커밋 tsc 전부 통과 | ✅ 6f4b65e + 13112df + fff9c41 + bc817f9 + d547c6e + 6d962fd |
-| 04-22 | pm | **ops-db-sync-plan 선결 조건 5/6 반영** — Supabase 2개 가능(원영) / 운영 DB 증설 예정(원영) / PII 치환 범위(수빈) / 동기화 주 1회 + `/admin` 수동 버튼(수빈) / super_admin 공용 `admin@dev.local`(수빈) 확정. Flutter API URL 분기 1건 원영 대기 | ✅ docs |
-| 04-22 | pm | **박찬웅 계정 연결 (운영 DB)** — placeholder `user_id=2884`(박찬웅_194@placeholder...) → 실계정 `3000`(pcwman1004@naver.com) 로 TTP 2492(열혈농구단 SEASON2 전국 최강전) + TeamMember 2236(라이징이글스 상시팀) 각 1건 UPDATE. 원자 트랜잭션, after 카운트 일치. placeholder 2884 유지(히스토리) | ✅ (DB only) |
-| 04-21 | pm | **L3 IA 스모크 완료** — BDR 시리즈 시드(12대회 편입, edition 혼재) + L3-2 500 운영 복구(Turbopack 워커 재발, PID + `.next` 재기동, errors.md [2026-04-12] 참조횟수 1) + 수빈 4조합 대표 통과 | ✅ 14b1934 (미푸시) + docs |
-| 04-21 | pm | **점진 정비 — any 3건 명시 타입화** (community CommunityPost + bulk-verify/bulk-register ExcelRow 공용 interface) | ✅ b5f5e5a |
-| 04-21 | pm | **점진 정비 — 하드코딩 색상 7파일 CSS 변수화** (login/pricing/venues/community/registration/teams overview+games, 13개 색상) | ✅ 9a1c924 |
-| 04-21 | pm | **reviewer 권장 5건 정비** — OwnerEditButton 공용 + color/heading/wrap 보강. 9파일 | ✅ be6d7e1 |
+| 04-22 | developer | **하드코딩 색상 3파일 CSS 변수화 (2차, 7건)** — classic(1위/3위 순위 4건 → warning) + hero-bento(LIVE→error / HOT→warning) + admin-users-table(★라벨→warning). classic statusColors 시맨틱 고정은 유지. tsc PASS | ✅ (커밋 대기) |
+| 04-22 | pm | **통합 스모크 체크리스트 + B-1 시드 상태 확인** — `Dev/smoke-test-2026-04-22.md` 신규 / B-1 이미 충족 | ✅ `1958b9d` |
+| 04-22 | developer | **하드코딩 색상 3파일 CSS 변수화 (4건)** — community/edit + push-permission + image-uploader, `--color-error` 토큰화 | ✅ `0f41e99` |
+| 04-22 | developer | **카페 community HTML entity decode (5파일)** — 렌더 시점 `decodeHtmlEntities` 적용 (리스트/사이드바/상세/댓글/사이드바) | ✅ `bb488ce` |
+| 04-22 | pm | **3~4순위 점진 정비 전체 (11파일 44건 + reviewer 2건)** — live/teams/games/games-new 색상 42건 + any 3건 + L3 쿼리 합치기 + is_public 가드 | ✅ 6커밋 tsc PASS |
+| 04-22 | pm | **ops-db-sync-plan 선결 조건 5/6 반영** (원영 대기 1건) | ✅ docs |
+| 04-22 | pm | **박찬웅 계정 연결 (운영 DB)** — placeholder 2884 → 실계정 3000, TTP+TeamMember 2건 UPDATE | ✅ DB only |
+| 04-21 | pm | **L3 IA 스모크 완료** — BDR 시리즈 12대회 시드 + L3-2 복구 + 수빈 4조합 대표 통과 | ✅ `14b1934` |
+| 04-21 | pm | **점진 정비 — any 3건 명시 타입화** | ✅ `b5f5e5a` |
+| 04-21 | pm | **점진 정비 — 하드코딩 색상 7파일 13건 CSS 변수화** | ✅ `9a1c924` |

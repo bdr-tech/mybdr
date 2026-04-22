@@ -255,7 +255,8 @@ export function HeroBento() {
 
         {/* LIVE NOW 배지: 현재 슬라이드가 라이브일 때만 표시 */}
         {currentVideo.is_live && (
-          <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded shadow-lg animate-pulse">
+          // LIVE 배지: 시맨틱 error 토큰 사용 (하드코딩 bg-red-600 → var(--color-error))
+          <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 bg-(--color-error) text-white text-xs font-bold rounded shadow-lg animate-pulse">
             <span className="w-2 h-2 bg-white rounded-full" />
             실시간
           </div>
@@ -267,11 +268,12 @@ export function HeroBento() {
             {currentVideo.badges
               .filter((b) => b !== "LIVE")
               .map((badge) => (
+                // HOT 배지: warning 토큰 사용 (하드코딩 bg-orange-500 → var(--color-warning)), 기본 오버레이는 유지 예외
                 <span
                   key={badge}
                   className={`px-2 py-1 text-xs font-bold rounded ${
                     badge === "HOT"
-                      ? "bg-orange-500 text-white"
+                      ? "bg-(--color-warning) text-white"
                       : "bg-white/20 text-white backdrop-blur-sm"
                   }`}
                 >
