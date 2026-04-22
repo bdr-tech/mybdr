@@ -84,7 +84,7 @@ export function GameApplyButton({
         {message && (
           <p
             className={`text-sm ${
-              message.type === "success" ? "text-green-600" : "text-red-500"
+              message.type === "success" ? "text-[var(--color-success)]" : "text-[var(--color-error)]"
             }`}
           >
             {message.text}

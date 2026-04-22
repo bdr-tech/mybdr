@@ -51,7 +51,7 @@ export function HostActions({ gameId }: { gameId: string }) {
         </Button>
         <button
           onClick={() => setShowConfirm(true)}
-          className="flex items-center gap-1.5 rounded px-4 py-2.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-500/10"
+          className="flex items-center gap-1.5 rounded px-4 py-2.5 text-sm font-medium text-[var(--color-error)] transition-colors hover:bg-[var(--color-error)]/10"
         >
           <span className="material-symbols-outlined text-base">cancel</span>
           경기 취소
@@ -70,7 +70,7 @@ export function HostActions({ gameId }: { gameId: string }) {
           >
             {/* 경고 아이콘 */}
             <div className="mb-4 flex justify-center">
-              <span className="material-symbols-outlined text-4xl text-red-500">
+              <span className="material-symbols-outlined text-4xl text-[var(--color-error)]">
                 warning
               </span>
             </div>
@@ -91,7 +91,7 @@ export function HostActions({ gameId }: { gameId: string }) {
               <button
                 onClick={handleCancel}
                 disabled={cancelling}
-                className="flex-1 rounded bg-red-500 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+                className="flex-1 rounded bg-[var(--color-error)] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-error)]/90 disabled:opacity-50"
               >
                 {cancelling ? "취소 처리중..." : "경기 취소"}
               </button>
