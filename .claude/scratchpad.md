@@ -34,7 +34,7 @@
 - **원칙**: 해당 파일을 다른 이유로 건드릴 때 함께 정비
 
 ### 4순위 — L3 + L2 reviewer 권장 후속 (nice-to-have)
-- **L3**: ✅ 쿼리 합치기(`6d962fd`) / ✅ series.is_public 가드(`6d962fd`) / ⏳ `<img>`→next/image (9곳 발견, Supabase storage `remotePatterns` 조사 선행 필요) / ✅ EditionSwitcher flex-wrap (이미 처리됨)
+- **L3**: ✅ 쿼리 합치기(`6d962fd`) / ✅ series.is_public 가드(`6d962fd`) / ⏳ `<img>`→next/image (9곳 발견. **04-22 조사 결과**: 운영 DB organizations·Tournament 이미지 0건, Team logo 10건은 전부 `/team-logos/*.png` 로컬. image-uploader가 Supabase Storage 사용 → **운영 DB 분리 후** 양쪽 `<project-ref>.supabase.co` `remotePatterns` 등록 → phase 2 실행 권장) / ✅ EditionSwitcher flex-wrap (이미 처리됨)
 - **L2**: ✅ 전체 완료 (`be6d7e1` — OwnerEditButton 공용 + action-buttons.tsx text-white + Teams h3 heading + 팀명 툴팁)
 
 ## 현재 상태 스냅샷 (2026-04-21 세션 마감)
