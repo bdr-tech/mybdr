@@ -33,7 +33,7 @@
 
 ### 🥉 3순위 — 점진 정비 (보이스카우트)
 - **하드코딩 색상**: 누계 **71건** 치환 / **실질 완결**. 남은 것은 의도 예외 2건(live orange 스피너 — accent 변수 추가 시 정비 / tm-org-new dark:페어 — 단일 토큰 검증 후) + false positive 2건(hero-bento 주석). tournament-admin 영역 ✅ 완결
-- **any 타입**: ~6회 / ~6파일 (누계 정비 진행 중)
+- **any 타입**: ✅ **실질 완결** (오늘 4건 정비 — home-sidebar 3 + Prisma WhereInput 1). 예외 유지 13건: kakao SDK 9 / Next.js HOF 3 / SW 1 — 모두 근거 있음
 - **원칙**: 다른 이유로 파일 건드릴 때 함께 정비. 대규모 일괄 치환 비추천
 
 ### 4순위 — reviewer 후속 (nice-to-have)
@@ -47,11 +47,11 @@
 | 항목 | 값 |
 |------|-----|
 | 브랜치 | subin |
-| subin HEAD | `42c5066` (스타일 4차 + conventions 승격) + 로컬 5차 대기 |
-| origin/subin | `dfa5b9a` |
+| subin HEAD | `6a7569b` (스타일 5차 완결) + 로컬 any 정비 대기 |
+| origin/subin | `6a7569b` ✅ 동기화 (7커밋 푸시 완료) |
 | dev / main | `8de9be4` (PR #53 squash, PR #54 원영 승인 대기) |
-| 미푸시 | **1~2건** (4차 `42c5066` + 5차 대기) |
-| 오늘 커밋 (04-22) | `bb488ce`+`0f41e99`+`1958b9d`+`672dc9a`+`dfa5b9a`+`42c5066` 6건 / 5차 대기 |
+| 미푸시 | **0~1건** (any 정비 대기) |
+| 오늘 커밋 (04-22) | `bb488ce`+`0f41e99`+`1958b9d`+`672dc9a`+`dfa5b9a`+`42c5066`+`6a7569b` 7건 푸시 / any 대기 |
 | 열린 PR | #54 (dev→main) / #55 (subin→dev) |
 | 카페 Phase 3 | 운영 반영 ✅ (GH Actions + 쿠키 갱신 + 메일 알림 + 품질 검증봇) |
 
@@ -123,6 +123,15 @@
   - `tm/new/wizard/page.tsx`: L414 (에러 박스)
 - **tsc**: PASS
 
+### [2026-04-22] any 4건 명시 타입화 (SWR fallback 3 + Prisma WhereInput 1)
+- **변경 파일**: 2개 / 4건
+- **파일별 변경**:
+  - `components/home/home-sidebar.tsx` L26/L27/L28: SWR fallback props 3건 명시 타입화 (자식 컴포넌트 TeamData/PostData 재사용)
+  - `api/web/admin/associations/members/route.ts` L42: Prisma.RefereeWhereInput 적용
+- **부수 변경**: `right-sidebar-logged-in.tsx` TeamData/PostData `export` 추가 (home-sidebar에서 import하여 중복 정의 방지)
+- **예외 유지 13건**: kakao SDK 9(kakao-map 6 + courts 2 + heatmap 1) / Next.js HOF 3(web-session) / SW 1(sw.ts) — 근거 주석·eslint-disable 이미 존재
+- **tsc**: PASS
+
 ### [2026-04-22] 하드코딩 색상 5차 — 잔존 정비 (7건) + 예외 2건 명시
 - **변경 파일**: 5개 / 7건 치환
 - **파일별 변경**:
@@ -142,7 +151,8 @@
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
-| 04-22 | developer | **하드코딩 색상 5차 — 잔존 정비 (5파일 7건) + 예외 2건 명시** — referee/signup(에러) + referee/login(2건) + verify(warning) + teams/[id]/manage(해산 버튼 hover solid+tone-down) + teams/new(2건). 예외: live orange 스피너(accent TODO) / tm-org-new dark:페어(단일 토큰 검증 전). **하드코딩 색상 audit 실질 완결** | ✅ (커밋 대기) |
+| 04-22 | developer | **any 4건 명시 타입화** — home-sidebar(SWR fallback 3건 → TeamData/PostData 재사용) + members/route.ts(Prisma.RefereeWhereInput). 예외 13건(kakao/HOF/SW) 유지. right-sidebar-logged-in 타입 `export` 추가 | ✅ (커밋 대기) |
+| 04-22 | developer | **하드코딩 색상 5차 — 잔존 정비 (5파일 7건) + 예외 2건 명시** — referee/signup(에러) + referee/login(2건) + verify(warning) + teams/[id]/manage(해산 버튼 hover solid+tone-down) + teams/new(2건). 예외: live orange 스피너(accent TODO) / tm-org-new dark:페어(단일 토큰 검증 전). **하드코딩 색상 audit 실질 완결** | ✅ `6a7569b` |
 | 04-22 | developer+pm | **하드코딩 색상 3파일 CSS 변수화 (4차, 4건) + conventions.md 승격** — tm-admins(error+success 페어) + tm/[id]/wizard + tm/new/wizard. **tournament-admin 영역 전체 완결** (3차+4차 = 6파일 11건). color-mix Tailwind arbitrary 언더스코어 문법을 conventions.md 승격 | ✅ `42c5066` |
 | 04-22 | developer | **하드코딩 색상 3파일 CSS 변수화 (3차, 7건)** — tm-matches(에러 text+삭제 버튼 hover color-mix+에러 박스 3건) + tm-site(에러 박스 3건) + tm-bracket(에러 박스 1건). Tailwind v4 arbitrary `color-mix` 언더스코어 문법 next build PASS 검증 | ✅ `dfa5b9a` |
 | 04-22 | developer | **하드코딩 색상 3파일 CSS 변수화 (2차, 7건)** — classic(1위/3위 순위 4건 → warning) + hero-bento(LIVE→error / HOT→warning) + admin-users-table(★라벨→warning). classic statusColors 시맨틱 고정은 유지. tsc PASS | ✅ `672dc9a` |
@@ -151,4 +161,3 @@
 | 04-22 | developer | **카페 community HTML entity decode (5파일)** — 렌더 시점 `decodeHtmlEntities` 적용 (리스트/사이드바/상세/댓글/사이드바) | ✅ `bb488ce` |
 | 04-22 | pm | **3~4순위 점진 정비 전체 (11파일 44건 + reviewer 2건)** — live/teams/games/games-new 색상 42건 + any 3건 + L3 쿼리 합치기 + is_public 가드 | ✅ 6커밋 tsc PASS |
 | 04-22 | pm | **ops-db-sync-plan 선결 조건 5/6 반영** (원영 대기 1건) | ✅ docs |
-| 04-22 | pm | **박찬웅 계정 연결 (운영 DB)** — placeholder 2884 → 실계정 3000, TTP+TeamMember 2건 UPDATE | ✅ DB only |

@@ -15,17 +15,20 @@
  * ============================================================ */
 
 import { useEffect, useState } from "react";
-import { RightSidebarLoggedIn } from "./right-sidebar-logged-in";
+import { RightSidebarLoggedIn, type TeamData, type PostData } from "./right-sidebar-logged-in";
 import { RightSidebarGuest } from "./right-sidebar-guest";
 
 /* 서버에서 프리페치한 데이터를 그대로 전달받는 props
  * 사이드바 컴포넌트 내부에서 SWR fallbackData로 사용되므로
- * 여기서는 제네릭 타입으로 받아 그대로 전달한다 */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ * 자식 컴포넌트의 SWR 응답 타입과 정확히 동일한 구조를 명시한다
+ * (기존 any 3건 제거 — 자식의 TeamData/PostData 재사용으로 단일 원본 유지) */
 interface HomeSidebarProps {
-  fallbackTeams?: any;
-  fallbackCommunity?: any;
-  fallbackStats?: any;
+  // /api/web/teams 프리페치 응답 ({ teams: [...] })
+  fallbackTeams?: { teams: TeamData[] };
+  // /api/web/community 프리페치 응답 ({ posts: [...] })
+  fallbackCommunity?: { posts: PostData[] };
+  // /api/web/stats 프리페치 응답 (snake_case 3필드)
+  fallbackStats?: { team_count: number; match_count: number; user_count: number };
 }
 
 export function HomeSidebar({

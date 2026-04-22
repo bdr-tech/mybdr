@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { getAssociationAdmin } from "@/lib/auth/admin-guard";
 import { prisma } from "@/lib/db/prisma";
@@ -38,8 +39,8 @@ export async function GET(req: Request) {
     const skip = (page - 1) * limit;
 
     // where 조건: 소속 협회 + 선택적 필터
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    // Prisma 생성 타입 사용 — level/match_status/certificates 필드 타입체커 검증
+    const where: Prisma.RefereeWhereInput = {
       association_id: associationId,
     };
     if (levelParam) {
