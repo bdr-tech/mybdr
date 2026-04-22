@@ -131,7 +131,12 @@ function ScoreModal({
           {match.roundName ?? "경기"} – {match.match_number ? `#${match.match_number}` : ""}
         </h3>
 
-        {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
+        {/* [2026-04-22] 하드코딩 색상 → --color-* 토큰화 */}
+        {error && (
+          <p className="mb-3 text-sm" style={{ color: "var(--color-error)" }}>
+            {error}
+          </p>
+        )}
 
         {/* 팀 배정 */}
         <div className="mb-4 grid grid-cols-2 gap-3">
@@ -243,9 +248,10 @@ function ScoreModal({
 
         <div className="flex gap-2">
           <Button variant="secondary" onClick={onClose} className="flex-1">취소</Button>
+          {/* [2026-04-22] 하드코딩 색상 → --color-* 토큰화 (Tailwind arbitrary + color-mix, hover 10→20%) */}
           <button
             onClick={del}
-            className="rounded-full bg-red-500/10 px-4 py-2 text-sm text-red-400 hover:bg-red-500/20"
+            className="rounded-full px-4 py-2 text-sm bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)] hover:bg-[color-mix(in_srgb,var(--color-error)_20%,transparent)] text-[var(--color-error)]"
           >
             삭제
           </button>
@@ -337,8 +343,17 @@ export default function TournamentMatchesPage() {
         </div>
       </div>
 
+      {/* [2026-04-22] 하드코딩 색상 → --color-* 토큰화 */}
       {error && (
-        <div className="mb-4 rounded-[12px] bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
+        <div
+          className="mb-4 rounded-[12px] px-4 py-3 text-sm"
+          style={{
+            backgroundColor: "color-mix(in srgb, var(--color-error) 10%, transparent)",
+            color: "var(--color-error)",
+          }}
+        >
+          {error}
+        </div>
       )}
 
       {matches.length === 0 ? (

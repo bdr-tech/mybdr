@@ -173,8 +173,17 @@ export default function BracketAdminPage() {
         )}
       </div>
 
+      {/* [2026-04-22] 하드코딩 색상 → --color-* 토큰화 */}
       {error && (
-        <div className="mb-4 rounded-[12px] bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
+        <div
+          className="mb-4 rounded-[12px] px-4 py-3 text-sm"
+          style={{
+            backgroundColor: "color-mix(in srgb, var(--color-error) 10%, transparent)",
+            color: "var(--color-error)",
+          }}
+        >
+          {error}
+        </div>
       )}
 
       {/* 버전 현황 */}
