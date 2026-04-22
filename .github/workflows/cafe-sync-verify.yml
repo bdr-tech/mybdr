@@ -98,6 +98,24 @@ jobs:
             exit 1
           fi
 
+      # ─── 4-b. [2026-04-22] storageState 복원 — I4 지표 실측 입력용 ──────────
+      # 이유: verify 스크립트의 I4 쿠키 나이 지표는 .auth/cafe-state.json 파일을
+      #       읽어 주요 인증 쿠키의 expires 를 분석. CI 기본 환경엔 파일이 없어서
+      #       secret 에서 base64 디코드 → 복원. 존재 안 하면 조용히 스킵(I4=unknown).
+      - name: Restore cafe storageState from Secret (for I4)
+        env:
+          CAFE_STATE_B64: ${{ secrets.DAUM_CAFE_STORAGE_STATE_B64 }}
+        run: |
+          if [ -z "$CAFE_STATE_B64" ]; then
+            echo "DAUM_CAFE_STORAGE_STATE_B64 secret 미설정 — I4 지표 unknown 가능"
+            exit 0
+          fi
+          mkdir -p .auth
+          echo "$CAFE_STATE_B64" | base64 -d > .auth/cafe-state.json
+          chmod 600 .auth/cafe-state.json
+          # 기본 검증만 (verify 측에서 상세 파싱)
+          node -e "const s=JSON.parse(require('fs').readFileSync('.auth/cafe-state.json','utf8'));console.log('storageState OK ('+(s.cookies?.length ?? 0)+' cookies)')"
+
       # ─── 5. verify 스크립트 실행 ───────────────────────────────────────────
       # 이유:
       #   - workflow_dispatch 로 execute_issues=true 입력 시 --execute-issues 로 전환

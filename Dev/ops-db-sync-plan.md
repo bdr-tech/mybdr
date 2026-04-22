@@ -61,7 +61,7 @@
 
 ## 4. 선결 조건 (원영 확인 필요)
 
-> 2026-04-22 협의 진행 — **6건 중 5건 확정**, Flutter 1건 대기
+> 2026-04-22 협의 진행 — **전 조건 확정** (Flutter 앱은 원영이 별도 관리 중으로 본 계획에서 제외)
 
 - [x] **Supabase 청구 플랜 확인** — ✅ 계정당 **프로젝트 2개 생성 가능** (원영, 2026-04-22). 옵션 A 실현 가능
 - [x] **운영 DB 크기** — ✅ 현재 무료 tier 500MB지만 **원영이 증설 예정** (2026-04-22). 용량 제약 해제
@@ -73,8 +73,8 @@
   - 유지: `nickname` / `height` / `weight` / `city` / `district` (비-PII)
   - 추가 대상: `payments.*` 결제 정보 / `community_posts.content` / `comments.content` freetext 휴리스틱 치환
 - [x] **동기화 주기** — ✅ **매주 일요일 새벽 3시 자동 + `/admin` 수동 실행 버튼** (수빈 결정, 2026-04-22). GH Actions cron + `workflow_dispatch`, 카페 sync 구조 재활용. 긴급 시 수동 1클릭
-- [ ] **Flutter 앱의 개발용 DATABASE_URL** — ⏳ **원영 추가 확인 중** (2026-04-22). 질문 재정의: 앱이 서버 API BASE_URL(예: `mybdr.kr` vs `mybdr-git-dev-mybdr.vercel.app`)을 빌드별로 분기 가능한지. 불가 시 앱 테스트가 운영 DB를 계속 호출 → 분리 효과 반감
 - [x] **super_admin 계정** — ✅ 개발 DB에 **공용 `admin@dev.local` 1개** 생성 (수빈 승인, 2026-04-22). `admin_role="super_admin"` + `isAdmin=true`. `scripts/seed-dev-admin.ts` 신규 예정
+- ~~Flutter 앱 개발용 DATABASE_URL~~ — 본 계획 범위 제외. Flutter 앱은 원영이 별도 관리 중이라 본 프로젝트의 DB 분리 영향 없음
 
 ### 담당 분업 (2026-04-22 확정)
 - 스크립트 작성 (익명화 dump + seed-dev-admin + 동기화 cron) → **수빈**
@@ -111,7 +111,6 @@
 
 ## 7. 리스크 · 주의
 
-- **Flutter 앱 환경 분리**: 앱 쪽에서 개발 DB용 JWT/URL 환경이 없으면 앱 테스트는 계속 운영 DB 사용 → 별도 이슈
 - **운영 DB 용량 증가 시 재동기화 비용**: 주기가 잦을수록 트래픽·시간 부담
 - **익명화 누락**: 휴대폰/실명/이메일 외에 freetext(게임 제목, 커뮤니티 게시글 등)에 PII가 들어있을 수 있음 — 휴리스틱 검증 필요
 - **개발 DB에서 재현 안 되는 운영 버그**: 동기화 빈도가 낮으면 운영만의 상태 버그가 개발에 없을 수 있음 → 보조로 **운영 읽기 전용 replica 계정** 고려
