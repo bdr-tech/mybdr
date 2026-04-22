@@ -1,6 +1,22 @@
 # 코딩 규칙 및 스타일
 <!-- 담당: developer, reviewer | 최대 30항목 -->
 
+### [2026-04-22] Tailwind v4 arbitrary value에서 color-mix 문법 (반투명 색상 토큰화)
+- **분류**: convention (styling)
+- **발견자**: developer + pm (C 3차 dfa5b9a 검증)
+- **배경**: 하드코딩 `bg-red-500/10` 같은 반투명 에러 배경을 `var(--color-error)` 기반 토큰화할 때, hover 상태(`hover:bg-red-500/20`)도 같이 처리해야 의도(hover 시 진해짐) 유지. 인라인 style로는 `:hover`를 표현 불가 → Tailwind arbitrary value 활용.
+- **규칙**: Tailwind v4 arbitrary value 내 공백은 **언더스코어(`_`)로 치환**
+  - 기본: `bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)]`
+  - hover: `hover:bg-[color-mix(in_srgb,var(--color-error)_20%,transparent)]`
+  - 텍스트: `text-[var(--color-error)]`
+- **언제 이 문법, 언제 인라인 style**:
+  - **Tailwind arbitrary**: hover/focus/active 같은 의사클래스 필요 시 (`:hover` 분기)
+  - **인라인 style**: hover 없는 단순 반투명 (6건 중 5건, 0f41e99 1차 패턴)
+- **검증**: `next build` PASS로 Tailwind v4 arbitrary value parse 확인 (3차 dfa5b9a tm-matches L248 삭제 버튼)
+- **대체 금지 패턴**: `hover:opacity-80` (희미해짐 — 원본 "진해짐" 의도와 반대)
+- **참조**: lessons.md [2026-04-20] 하드코딩 색상 audit
+- **참조횟수**: 0
+
 ### [2026-04-20] 도메인 용어 정의 (용어 사전 단일 소스)
 - **분류**: convention (UX/용어)
 - **발견자**: pm (W4 L1)

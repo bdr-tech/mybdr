@@ -32,7 +32,7 @@
 - 옵션 A 추천 (Supabase 두 번째 프로젝트)
 
 ### 🥉 3순위 — 점진 정비 (보이스카우트)
-- **하드코딩 색상**: 누계 60건 치환 / 잔존 **12파일 15건** (상위: referee-login 2 / teams-new 2 / tm-admins 2 / tm-wizard 계열 2 / 1건짜리 6파일)
+- **하드코딩 색상**: 누계 64건 치환 / 잔존 **9파일 11건** (상위: referee-login 2 / teams-new 2 / 1건짜리 7파일). tournament-admin 영역 ✅ 완결
 - **any 타입**: ~6회 / ~6파일 (누계 정비 진행 중)
 - **원칙**: 다른 이유로 파일 건드릴 때 함께 정비. 대규모 일괄 치환 비추천
 
@@ -47,11 +47,11 @@
 | 항목 | 값 |
 |------|-----|
 | 브랜치 | subin |
-| subin HEAD | `672dc9a` (스타일 2차 묶음) + 로컬 3차 대기 |
-| origin/subin | `1958b9d` |
+| subin HEAD | `dfa5b9a` (스타일 3차) + 로컬 4차 대기 |
+| origin/subin | `dfa5b9a` ✅ 동기화 |
 | dev / main | `8de9be4` (PR #53 squash, PR #54 원영 승인 대기) |
-| 미푸시 | **1~2건** (2차 `672dc9a` + 3차 대기) |
-| 오늘 커밋 (04-22) | `bb488ce` decode + `0f41e99` 1차 + `1958b9d` smoke + `672dc9a` 2차 + 3차 예정 |
+| 미푸시 | **1건** (4차 대기) |
+| 오늘 커밋 (04-22) | `bb488ce`+`0f41e99`+`1958b9d`+`672dc9a`+`dfa5b9a` 5건 푸시 / 4차 대기 |
 | 열린 PR | #54 (dev→main) / #55 (subin→dev) |
 | 카페 Phase 3 | 운영 반영 ✅ (GH Actions + 쿠키 갱신 + 메일 알림 + 품질 검증봇) |
 
@@ -114,12 +114,22 @@
 - **hover 처리**: #2 matches L248 Tailwind arbitrary `color-mix` 10%→20% (의도 유지)
 - **tsc / build**: tsc PASS / `next build` PASS (Tailwind arbitrary parse 성공, 3개 라우트 정상 빌드)
 
+### [2026-04-22] 하드코딩 색상 3파일 CSS 변수화 (4차 — tm 영역 완결)
+- **변경 파일**: 3개 / 4건 치환
+- **tournament-admin 영역 전체 완료** (matches/site/bracket 3차 + admins/wizard×2 4차)
+- **파일별 변경**:
+  - `tm/[id]/admins/page.tsx`: L94(error) / L95(success) — 시맨틱 메시지 페어
+  - `tm/[id]/wizard/page.tsx`: L462 (에러 박스)
+  - `tm/new/wizard/page.tsx`: L414 (에러 박스)
+- **tsc**: PASS
+
 ---
 
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
-| 04-22 | developer | **하드코딩 색상 3파일 CSS 변수화 (3차, 7건)** — tm-matches(에러 text+삭제 버튼 hover color-mix+에러 박스 3건) + tm-site(에러 박스 3건) + tm-bracket(에러 박스 1건). Tailwind v4 arbitrary `color-mix` 언더스코어 문법 next build PASS 검증 | ✅ (커밋 대기) |
+| 04-22 | developer+pm | **하드코딩 색상 3파일 CSS 변수화 (4차, 4건) + conventions.md 승격** — tm-admins(error+success 페어) + tm/[id]/wizard + tm/new/wizard. **tournament-admin 영역 전체 완결** (3차+4차 = 6파일 11건). color-mix Tailwind arbitrary 언더스코어 문법을 conventions.md 승격 | ✅ (커밋 대기) |
+| 04-22 | developer | **하드코딩 색상 3파일 CSS 변수화 (3차, 7건)** — tm-matches(에러 text+삭제 버튼 hover color-mix+에러 박스 3건) + tm-site(에러 박스 3건) + tm-bracket(에러 박스 1건). Tailwind v4 arbitrary `color-mix` 언더스코어 문법 next build PASS 검증 | ✅ `dfa5b9a` |
 | 04-22 | developer | **하드코딩 색상 3파일 CSS 변수화 (2차, 7건)** — classic(1위/3위 순위 4건 → warning) + hero-bento(LIVE→error / HOT→warning) + admin-users-table(★라벨→warning). classic statusColors 시맨틱 고정은 유지. tsc PASS | ✅ `672dc9a` |
 | 04-22 | pm | **통합 스모크 체크리스트 + B-1 시드 상태 확인** — `Dev/smoke-test-2026-04-22.md` 신규 / B-1 이미 충족 | ✅ `1958b9d` |
 | 04-22 | developer | **하드코딩 색상 3파일 CSS 변수화 (4건)** — community/edit + push-permission + image-uploader, `--color-error` 토큰화 | ✅ `0f41e99` |
@@ -128,4 +138,3 @@
 | 04-22 | pm | **ops-db-sync-plan 선결 조건 5/6 반영** (원영 대기 1건) | ✅ docs |
 | 04-22 | pm | **박찬웅 계정 연결 (운영 DB)** — placeholder 2884 → 실계정 3000, TTP+TeamMember 2건 UPDATE | ✅ DB only |
 | 04-21 | pm | **L3 IA 스모크 완료** — BDR 시리즈 12대회 시드 + L3-2 복구 + 수빈 4조합 대표 통과 | ✅ `14b1934` |
-| 04-21 | pm | **점진 정비 — any 3건 명시 타입화** | ✅ `b5f5e5a` |

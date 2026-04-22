@@ -91,8 +91,9 @@ export default function TournamentAdminsPage() {
       {/* 추가 폼 */}
       <Card className="mb-6">
         <h2 className="mb-4 text-base font-semibold">관리자 추가</h2>
-        {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
-        {success && <p className="mb-3 text-sm text-green-400">{success}</p>}
+        {/* 하드코딩 색상 → CSS 변수 토큰 (시맨틱 메시지: 실패/성공) */}
+        {error && <p className="mb-3 text-sm text-[var(--color-error)]">{error}</p>}
+        {success && <p className="mb-3 text-sm text-[var(--color-success)]">{success}</p>}
         <div className="flex flex-col gap-3 sm:flex-row">
           <input
             type="email"
