@@ -34,8 +34,8 @@
 - **원칙**: 해당 파일을 다른 이유로 건드릴 때 함께 정비
 
 ### 4순위 — L3 + L2 reviewer 권장 후속 (nice-to-have)
-- **L3**: tournaments/[id] 쿼리 합치기 / series.is_public 체크 / `<img>` → next/image / EditionSwitcher flex-wrap
-- **L2**: OwnerEditButton 공용 추출(2곳 중복) / action-buttons.tsx `text-white` (conventions 위배) / Teams `<h3>` heading 계층 / 긴 팀명 title 툴팁
+- **L3**: ✅ 쿼리 합치기(`6d962fd`) / ✅ series.is_public 가드(`6d962fd`) / ⏳ `<img>`→next/image (9곳 발견, Supabase storage `remotePatterns` 조사 선행 필요) / ✅ EditionSwitcher flex-wrap (이미 처리됨)
+- **L2**: ✅ 전체 완료 (`be6d7e1` — OwnerEditButton 공용 + action-buttons.tsx text-white + Teams h3 heading + 팀명 툴팁)
 
 ## 현재 상태 스냅샷 (2026-04-21 세션 마감)
 
@@ -103,8 +103,7 @@
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
-| 04-22 | developer | **3순위 점진 정비 — any 2건 + export interface 1건 (3파일)** — session-complete-card.tsx `export interface SessionCompleteCardProps` / court-checkin.tsx `CheckoutResult` interface + `useState<any>`→`useState<CheckoutResult\|null>` + eslint-disable 제거 / community.ts `Prisma.PrismaPromise<unknown>[]` + `as any` 제거. courts-content.tsx(kakao map 연쇄)는 범위 외 유지. tsc 통과(폴백 불필요) | ✅ (미커밋) |
-| 04-22 | pm | **3순위 점진 정비 — 하드코딩 색상 M1+M2a+M2b (7파일 29건)** — M1 `live/page.tsx` 16건(루트 text-white 라이트모드 버그 수정 포함) / M2a teams·games 3파일 5건(yellow→tier-gold, green→success, 2단 다크배너 단일화) / M2b games 3파일 8건(red→error, hover:red-600→error/90 불투명도). 유지: 임의 배경 위 text-white, bg-black/60 백드롭. 3커밋 tsc 통과 | ✅ 6f4b65e + 13112df + fff9c41 |
+| 04-22 | pm | **3순위+4순위 점진 정비 전체 완료 (11파일 44건 + reviewer 후속 2건)** — M1 `live/page.tsx` 16건 / M2a teams·games 3파일 5건 / M2b games 3파일 8건 / M3 games/new 3파일 13건 (하드코딩 색상 누계 **42건**) / any 정비 2건 + `export interface` 1건 (3파일) / D1+D2 L3 reviewer 후속 (tournaments/[id] 쿼리 2→1 + series.is_public 가드). 유지: 임의 배경 위 text-white, bg-black/60 백드롭, kakao map 공통 컴포넌트 any, 동적 유니폼 컬러. 6커밋 tsc 전부 통과 | ✅ 6f4b65e + 13112df + fff9c41 + bc817f9 + d547c6e + 6d962fd |
 | 04-22 | pm | **ops-db-sync-plan 선결 조건 5/6 반영** — Supabase 2개 가능(원영) / 운영 DB 증설 예정(원영) / PII 치환 범위(수빈) / 동기화 주 1회 + `/admin` 수동 버튼(수빈) / super_admin 공용 `admin@dev.local`(수빈) 확정. Flutter API URL 분기 1건 원영 대기 | ✅ docs |
 | 04-22 | pm | **박찬웅 계정 연결 (운영 DB)** — placeholder `user_id=2884`(박찬웅_194@placeholder...) → 실계정 `3000`(pcwman1004@naver.com) 로 TTP 2492(열혈농구단 SEASON2 전국 최강전) + TeamMember 2236(라이징이글스 상시팀) 각 1건 UPDATE. 원자 트랜잭션, after 카운트 일치. placeholder 2884 유지(히스토리) | ✅ (DB only) |
 | 04-21 | pm | **L3 IA 스모크 완료** — BDR 시리즈 시드(12대회 편입, edition 혼재) + L3-2 500 운영 복구(Turbopack 워커 재발, PID + `.next` 재기동, errors.md [2026-04-12] 참조횟수 1) + 수빈 4조합 대표 통과 | ✅ 14b1934 (미푸시) + docs |
@@ -112,4 +111,3 @@
 | 04-21 | pm | **점진 정비 — 하드코딩 색상 7파일 CSS 변수화** (login/pricing/venues/community/registration/teams overview+games, 13개 색상) | ✅ 9a1c924 |
 | 04-21 | pm | **reviewer 권장 5건 정비** — OwnerEditButton 공용 + color/heading/wrap 보강. 9파일 | ✅ be6d7e1 |
 | 04-21 | pm | **L2 본인·타인 프로필 통합** — 공용 3종(Hero/MiniStat/RecentGames) + gamification 서버 헬퍼 + /users/[id] 본인 분기 + Teams(공개만) + 티어→레벨 통합 + /profile 대시보드 재정의 + 레거시 6파일 삭제. tester 14/14 / reviewer 통과(블록커 0, 권장 4). 15파일 +1347/-1286 | ✅ a04fad8 (미푸시) |
-| 04-21 | pm | **L3 다음 단위 5파일 완성** — EditionSwitcher+SeriesCard 신규 + Organization/Series(under org) Breadcrumb + Tournament series include. tester 10/10 / reviewer 통과 | ✅ a6b329f → PR #53 MERGED |
