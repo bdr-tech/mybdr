@@ -1,4 +1,22 @@
-# Claude Cowork — 다음카페 쿠키 자동 갱신 셋업 가이드
+# Claude Cowork — 다음카페 쿠키 자동 갱신 셋업 가이드 ⚠️ **폐기 — 회고용 아카이브**
+
+> **[2026-04-23 폐기]** 이 문서의 전제가 틀렸습니다. Cowork 은 Anthropic 클라우드
+> Linux 샌드박스에서 실행되며 로컬 Windows Chrome 프로필 / 저장 ID·PW / 파일
+> 시스템에 접근할 수 없습니다. 실제 첫 실행에서 `browserType.launch: Executable
+> doesn't exist` 오류 + `DISPLAY` 부재로 실패 확인.
+>
+> **현재 운영**: `Dev/cafe-daily-refresh.md` — 매일 30초 수동 루틴
+>
+> **교훈**: "desktop agent" 표현을 "로컬 데스크톱 제어"로 추정하지 말 것.
+> Anthropic 공식 문서에서 **실행 환경** 확인을 먼저 해야 함. Computer Use 도
+> 실제로는 클라우드 VM 기반으로 작동하며, 로컬 제어는 별도 엔터프라이즈 설정
+> (Managed Agents 등) 이 있어야 가능.
+>
+> 본 문서는 **같은 실수 방지** 목적으로 원본 그대로 보존.
+
+---
+
+# Claude Cowork — 다음카페 쿠키 자동 갱신 셋업 가이드 (원본)
 
 > 작성: 2026-04-23 · 대상: 수빈
 > 목적: 다음카페 세션 쿠키가 카카오 정책상 **매일 만료**되는 문제를 Cowork(desktop agent)로 완전 자동화
