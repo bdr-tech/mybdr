@@ -140,13 +140,16 @@ export async function GamesTab({ teamId, accent }: GamesTabProps) {
             let outcomeColor = "text-[var(--color-text-muted)] bg-[var(--color-surface-high)]";
             if (m.status === "live") {
               outcomeLabel = TM_STATUS_LABEL.live;
-              outcomeColor = "text-yellow-500 bg-yellow-500/10";
+              // 진행중 = warning(amber), CSS 변수
+              outcomeColor = "text-[var(--color-warning)] bg-[var(--color-warning)]/10";
             } else if (myScore > oppScore) {
               outcomeLabel = "승";
-              outcomeColor = "text-green-500 bg-green-500/10";
+              // 승리 = success(green)
+              outcomeColor = "text-[var(--color-success)] bg-[var(--color-success)]/10";
             } else if (myScore < oppScore) {
               outcomeLabel = "패";
-              outcomeColor = "text-red-500 bg-red-500/10";
+              // 패배 = error(red)
+              outcomeColor = "text-[var(--color-error)] bg-[var(--color-error)]/10";
             } else {
               // 0-0 동점이어도 공식 기록이면 표시 (라벨만 "-")
               outcomeLabel = "-";
@@ -212,9 +215,11 @@ export async function GamesTab({ teamId, accent }: GamesTabProps) {
           const statusNum = g.status;
           const statusColor =
             statusNum === 3
-              ? "text-green-500 bg-green-500/10"
+              // 완료/성공 = success(green)
+              ? "text-[var(--color-success)] bg-[var(--color-success)]/10"
               : statusNum === 4
-                ? "text-red-500 bg-red-500/10"
+                // 취소 = error(red)
+                ? "text-[var(--color-error)] bg-[var(--color-error)]/10"
                 : statusNum === 1
                   ? `bg-[${accent}22]`
                   : "text-[var(--color-text-muted)] bg-[var(--color-surface-high)]";

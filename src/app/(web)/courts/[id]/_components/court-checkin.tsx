@@ -10,7 +10,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
-import { SessionCompleteCard } from "./session-complete-card";
+import { SessionCompleteCard, type SessionCompleteCardProps } from "./session-complete-card";
 
 // SWR fetcher (JSON 반환)
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -48,6 +48,15 @@ interface CheckinData {
   } | null;
 }
 
+// 체크아웃 API 응답 — 응답 키는 snake_case (apiSuccess 자동 변환 규칙 준수)
+// gamification은 SessionCompleteCard 쪽 props 타입을 재사용해 단일 출처 유지
+interface CheckoutResult {
+  session_id: string;
+  duration_minutes: number;
+  xp_earned: number;
+  gamification: SessionCompleteCardProps["gamification"];
+}
+
 export function CourtCheckin({ courtId, courtLat, courtLng }: CourtCheckinProps) {
   const router = useRouter();
 
@@ -74,8 +83,7 @@ export function CourtCheckin({ courtId, courtLat, courtLng }: CourtCheckinProps)
   const [checkedInCourtName, setCheckedInCourtName] = useState<string | null>(null);
 
   // 세션 완료 카드 표시 데이터 (체크아웃 성공 시 설정)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [sessionResult, setSessionResult] = useState<any>(null);
+  const [sessionResult, setSessionResult] = useState<CheckoutResult | null>(null);
 
   const mySession = data?.my_session;
   const activeCount = data?.active_count ?? 0;

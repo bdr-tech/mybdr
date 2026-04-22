@@ -113,7 +113,7 @@ function CheckoutContent() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-[12px] bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        <div className="mb-4 rounded-[12px] bg-[var(--color-error-light)] px-4 py-3 text-sm text-[var(--color-error)]">
           {error}
         </div>
       )}

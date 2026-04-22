@@ -834,10 +834,11 @@ export default function TeamManagePage({ params }: { params: Promise<{ id: strin
               >
                 취소
               </button>
+              {/* 팀 해산 확정 버튼 — red-500/600 → error 토큰 + hover color-mix 85% black 15%로 톤다운 */}
               <button
                 onClick={handleDissolve}
                 disabled={dissolving}
-                className="flex-1 rounded bg-red-500 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+                className="flex-1 rounded bg-[var(--color-error)] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[color-mix(in_srgb,var(--color-error)_85%,black)] disabled:opacity-50"
               >
                 {dissolving ? "해산 처리중..." : "팀 해산"}
               </button>

@@ -173,7 +173,8 @@ export function AdminUsersTable({ users, updateUserRoleAction, updateUserStatusA
                   <div>
                     <h2 className="text-base font-bold text-white flex items-center gap-1.5">
                       {u.nickname ?? "-"}
-                      {u.isAdmin && <span className="text-yellow-300 text-xs">★ 관리자</span>}
+                      {/* 관리자 라벨: warning 토큰 (그라디언트 배경 위지만 시맨틱 강조 의미 유지) */}
+                      {u.isAdmin && <span className="text-(--color-warning) text-xs">★ 관리자</span>}
                     </h2>
                     <p className="text-xs text-white/70">{u.email}</p>
                   </div>

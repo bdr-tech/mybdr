@@ -60,11 +60,11 @@ export function StepSettings({ data, updateData, errors, generateTitle }: StepSe
           placeholder={suggestedTitle || "경기 제목"}
           maxLength={50}
           className={`w-full rounded-[16px] border bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50 ${
-            errors.title ? "border-red-400" : "border-[var(--color-border)]"
+            errors.title ? "border-[var(--color-error)]" : "border-[var(--color-border)]"
           }`}
         />
         {errors.title && (
-          <p role="alert" className="mt-1 text-xs text-red-400">{errors.title}</p>
+          <p role="alert" className="mt-1 text-xs text-[var(--color-error)]">{errors.title}</p>
         )}
         {suggestedTitle && !data.title && (
           <button
@@ -206,11 +206,11 @@ export function StepSettings({ data, updateData, errors, generateTitle }: StepSe
             onChange={(e) => updateData("contactPhone", e.target.value)}
             placeholder="010-1234-5678"
             className={`w-full rounded-[16px] border bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50 ${
-              errors.contactPhone ? "border-red-400" : "border-[var(--color-border)]"
+              errors.contactPhone ? "border-[var(--color-error)]" : "border-[var(--color-border)]"
             }`}
           />
           {errors.contactPhone && (
-            <p role="alert" className="mt-1 text-xs text-red-400">{errors.contactPhone}</p>
+            <p role="alert" className="mt-1 text-xs text-[var(--color-error)]">{errors.contactPhone}</p>
           )}
         </div>
       )}
@@ -246,11 +246,11 @@ function TeamMatchSettings({
           placeholder="예: 우리팀 vs 도전자 모집"
           maxLength={50}
           className={`w-full rounded-[16px] border bg-[var(--color-card)] px-4 py-3 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50 ${
-            errors.title ? "border-red-400" : "border-[var(--color-border)]"
+            errors.title ? "border-[var(--color-error)]" : "border-[var(--color-border)]"
           }`}
         />
         {errors.title && (
-          <p role="alert" className="mt-1 text-xs text-red-400">{errors.title}</p>
+          <p role="alert" className="mt-1 text-xs text-[var(--color-error)]">{errors.title}</p>
         )}
       </div>
 

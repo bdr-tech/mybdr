@@ -267,14 +267,15 @@ function HomePage({
                     className="border-b border-(--color-border) last:border-0 hover:bg-(--color-surface)"
                   >
                     <td className="px-4 py-3">
+                      {/* 순위 색상: 1위(금)/3위(동)은 warning 토큰으로 통일 — 하드코딩 제거 */}
                       <span
                         className={`text-sm font-bold ${
                           i === 0
-                            ? "text-yellow-500"
+                            ? "text-(--color-warning)"
                             : i === 1
                             ? "text-(--color-text-secondary)"
                             : i === 2
-                            ? "text-amber-600"
+                            ? "text-(--color-warning)"
                             : "text-[var(--color-text-disabled)]"
                         }`}
                       >
@@ -388,14 +389,15 @@ function TeamsPage({ teams, primary }: { teams: TeamEntry[]; primary: string }) 
                 className="border-b border-(--color-border) last:border-0 hover:bg-(--color-surface)"
               >
                 <td className="px-4 py-3 text-center">
+                  {/* 순위 색상: 1위(금)/3위(동)은 warning 토큰으로 통일 — 하드코딩 제거 */}
                   <span
                     className={`text-sm font-bold ${
                       i === 0
-                        ? "text-yellow-500"
+                        ? "text-(--color-warning)"
                         : i === 1
                         ? "text-(--color-text-secondary)"
                         : i === 2
-                        ? "text-amber-600"
+                        ? "text-(--color-warning)"
                         : "text-[var(--color-text-disabled)]"
                     }`}
                   >

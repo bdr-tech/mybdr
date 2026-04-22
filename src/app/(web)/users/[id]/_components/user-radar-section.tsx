@@ -55,14 +55,14 @@ export function UserRadarSection({
         backgroundColor: "var(--color-surface)",
       }}
     >
-      {/* 헤더 */}
+      {/* 헤더 — 페이지 h1(닉네임) 바로 아래 섹션이므로 h2 */}
       <div className="flex justify-between items-center mb-6">
-        <h3
+        <h2
           className="font-bold text-lg"
           style={{ color: "var(--color-text-primary)" }}
         >
           역량 레이더
-        </h3>
+        </h2>
         <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
           종합 스코어 {overallScore}
         </span>

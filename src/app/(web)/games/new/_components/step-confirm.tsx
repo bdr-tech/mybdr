@@ -69,8 +69,8 @@ export function StepConfirm({ data, updateData, generateTitle, submitError }: St
     <div>
       {/* 에러 메시지 */}
       {submitError && (
-        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600 flex items-center gap-2" role="alert">
-          <span className="material-symbols-outlined text-red-500">error</span>
+        <div className="mb-4 rounded-lg bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 px-4 py-3 text-sm text-[var(--color-error)] flex items-center gap-2" role="alert">
+          <span className="material-symbols-outlined text-[var(--color-error)]">error</span>
           {submitError}
         </div>
       )}

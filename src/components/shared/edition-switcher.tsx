@@ -45,7 +45,9 @@ export function EditionSwitcher({
     <nav
       role="navigation"
       aria-label="회차 이동"
-      className="flex items-center justify-between gap-2"
+      // ≤320px 극단 화면에서 3버튼이 한 줄에 못 들어갈 때 줄바꿈 허용.
+      // gap-2 유지로 세로 쌓여도 간격 자연스럽게 유지.
+      className="flex flex-wrap items-center justify-between gap-2"
     >
       {/* 이전 회차 버튼 — prevTournamentId null이면 span 폴백 (aria-disabled) */}
       {prevTournamentId ? (

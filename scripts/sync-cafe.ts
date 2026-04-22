@@ -32,12 +32,15 @@
  */
 
 import { CAFE_BOARDS, CafeBoard, getBoardById } from "../src/lib/cafe-sync/board-map";
-import { fetchBoardList, BoardItem } from "../src/lib/cafe-sync/fetcher";
+import { fetchBoardList, fetchBoardListApi, BoardItem, sleep } from "../src/lib/cafe-sync/fetcher";
 import { fetchArticle, ArticleFetchResult } from "../src/lib/cafe-sync/article-fetcher";
 import { maskPersonalInfo } from "../src/lib/security/mask-personal-info";
 import {
   upsertCafeSyncedGame,
   previewUpsert,
+  upsertCommunityPostFromCafe,
+  previewCommunityUpsert,
+  type CafeCommunityInput,
   type CafeSyncInput,
   type CafeSyncResult,
 } from "../src/lib/cafe-sync/upsert";
@@ -74,27 +77,68 @@ if (EXECUTE_MODE) {
 // 인자 파싱
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** --board=IVHA | Dilr | MptT | all */
+/**
+ * --board=IVHA | Dilr | MptT | N54V | IVd2 | E7hL | bWL | games | community | all
+ *
+ * [2026-04-21] 7게시판 확장:
+ *   - games 타겟(3): IVHA/Dilr/MptT
+ *   - community 타겟(4): N54V(자유)/IVd2(익명)/E7hL(BDR칼럼)/bWL(구인구팀)
+ *   - `games` / `community` 키워드로 타겟별 묶음 선택 가능
+ *   - `all` 또는 미지정 → 7게시판 전체
+ */
 function parseBoardArg(): CafeBoard[] {
   const arg = process.argv.find((a) => a.startsWith("--board="));
-  if (!arg) return CAFE_BOARDS; // 기본: 전체
+  if (!arg) return CAFE_BOARDS; // 기본: 전체 7개
   const val = arg.split("=")[1];
   if (!val || val === "all") return CAFE_BOARDS;
+  if (val === "games") return CAFE_BOARDS.filter((b) => b.target === "games");
+  if (val === "community") return CAFE_BOARDS.filter((b) => b.target === "community_posts");
   const b = getBoardById(val);
   if (!b) {
-    console.error(`⚠️ 알 수 없는 게시판 id: "${val}". 허용값: IVHA | Dilr | MptT | all`);
+    console.error(
+      `⚠️ 알 수 없는 게시판 id: "${val}". ` +
+        `허용값: IVHA | Dilr | MptT | N54V | IVd2 | E7hL | bWL | games | community | all`,
+    );
     process.exit(1);
   }
   return [b];
 }
 
-/** --limit=N (기본 10) */
+/**
+ * --limit=N (기본 10).
+ *
+ * [2026-04-20 Phase 3 #6] 의미는 **페이지당 건수**(API pageSize 와 동일) 로 유지.
+ *   - 기존 호환성: `--limit=5` 는 여전히 1페이지 5건 의미.
+ *   - API pageSize 실측 상한 50 이므로 최대 50 유지 (101~ 은 서버 500).
+ *   - 실제 수집 합계 = limit × max-pages.
+ */
 function parseLimitArg(): number {
   const arg = process.argv.find((a) => a.startsWith("--limit="));
   if (!arg) return 10;
   const n = Number(arg.split("=")[1]);
   if (!Number.isFinite(n) || n < 1 || n > 50) {
     console.error(`⚠️ --limit 값이 유효하지 않음 (1~50): "${arg}"`);
+    process.exit(1);
+  }
+  return Math.floor(n);
+}
+
+/**
+ * --max-pages=N (기본 1).
+ *
+ * 왜 신규:
+ *   - Phase 3 #6 Pagination — 2페이지 이후 `/api/v1/common-articles` API 로 커서 순회.
+ *   - **기본 1** 로 기존 호환성 100% 유지 (지정 안 하면 1페이지만 수집).
+ *   - 상한 20 — 페이지당 최대 50건 × 20페이지 = 1000건 (한 게시판 전체 커버 충분, R1 과다 요청 방어).
+ *
+ * 참조: scratchpad-cafe-sync.md "옵션 스펙 변경" 표
+ */
+function parseMaxPagesArg(): number {
+  const arg = process.argv.find((a) => a.startsWith("--max-pages="));
+  if (!arg) return 1;
+  const n = Number(arg.split("=")[1]);
+  if (!Number.isFinite(n) || n < 1 || n > 20) {
+    console.error(`⚠️ --max-pages 값이 유효하지 않음 (1~20): "${arg}"`);
     process.exit(1);
   }
   return Math.floor(n);
@@ -245,6 +289,8 @@ async function countdown(seconds: number, totalPosts: number): Promise<void> {
 async function main() {
   const targets = parseBoardArg();
   const limit = parseLimitArg();
+  // [2026-04-20 Phase 3 #6] --max-pages=N (기본 1 — 호환). 2페이지 이후는 API cursor 순회.
+  const maxPages = parseMaxPagesArg();
   // --debug 플래그: fetcher에 전달하여 응답 HTML 덤프 + 진단 정보 출력 활성화.
   const debug = process.argv.includes("--debug");
   // --with-body: Phase 2a 본문 fetch + 파싱. --execute와 조합하면 Phase 2b DB 쓰기.
@@ -270,6 +316,7 @@ async function main() {
   console.log("========================================");
   console.log(
     `대상 게시판: ${targets.map((b) => `${b.id}(${b.label})`).join(", ")} / limit=${limit}` +
+      ` / max-pages=${maxPages}` +
       (withBody ? ` / with-body=ON / article-limit=${articleLimit}` : "") +
       (debug ? " / debug=ON" : "") +
       (EXECUTE_MODE ? " / execute=ON" : ""),
@@ -294,18 +341,22 @@ async function main() {
   const articleFailures: { boardId: string; dataid: string; error: string }[] = [];
   // Phase 2b 집계 — upsert 처리 결과
   const upsertResults: CafeSyncResult[] = [];
+  // [2026-04-21] community 게시판(N54V/IVd2/E7hL/bWL) upsert 집계 (games 와 별개)
+  const communityUpsertResults: Array<
+    | { action: "created"; postId: bigint }
+    | { action: "skipped_duplicate"; postId: bigint }
+    | { action: "failed"; error: string }
+  > = [];
 
   // 9가드 8번 — 403/429 3회 연속 시 전체 중단
   let consecutiveFailures = 0;
   const MAX_CONSECUTIVE_FAILURES = 3;
 
   for (const board of targets) {
-    // ─── 목록 fetch ───
+    // ─── 목록 fetch (1페이지 — HTML SSR 경로 유지, 이중 안전망 R3) ───
     let items: BoardItem[] = [];
     try {
       items = await fetchBoardList(board, limit, { debug });
-      printBoardResult(board, items);
-      console.log(""); // 게시판 간 구분 빈 줄
       perBoardCount[board.id] = items.length;
       consecutiveFailures = 0;
     } catch (err) {
@@ -321,6 +372,87 @@ async function main() {
       continue; // 목록 실패한 게시판은 본문 fetch 스킵
     }
 
+    // ─── Phase 3 #6: 2페이지 이후 API cursor 순회 ───
+    // 종료 조건 4종:
+    //   (1) maxPages 도달
+    //   (2) 커서(bbsDepth) 없음 — 1P 마지막 글에 bbsDepth 파싱 실패 시 자동 중단
+    //   (3) articles=[] 반환 (게시판 끝)
+    //   (4) 이전 페이지 dataid 와 중복 (방어적 — API 이상 응답 대비)
+    //   + consecutiveFailures 3회 (9가드 #8, 기존 카운터 재사용)
+    if (maxPages > 1 && items.length > 0) {
+      // 커서: 1P 마지막 글의 bbsDepth. 없으면 루프 진입 자체 포기.
+      let cursor: string | undefined = items[items.length - 1]?.bbsDepth;
+      // 본 게시판 내 페이지 실패 카운터 (게시판 간에는 초기화)
+      let boardFailures = 0;
+      // dataid 중복 감지 (조건 4)
+      const seenDataids = new Set<string>(items.map((it) => it.dataid));
+
+      for (let pageNo = 2; pageNo <= maxPages; pageNo++) {
+        if (!cursor) {
+          console.log(`  [${board.id}] page=${pageNo} 커서 없음 — pagination 종료`);
+          break;
+        }
+
+        // 페이지 간 sleep **3초** — 9가드 #1.
+        //   fetchBoardListApi 내부에는 sleep 없음(중복 방지). 여기서만 대기.
+        await sleep(3000);
+
+        let pageItems: BoardItem[] = [];
+        try {
+          pageItems = await fetchBoardListApi(board, cursor, pageNo, limit, { debug });
+          boardFailures = 0; // 성공 → 실패 카운터 리셋 (본 게시판 기준)
+          consecutiveFailures = 0; // 전체 카운터도 리셋
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.error(`  [${board.id}] page=${pageNo} API 실패: ${msg}`);
+          boardFailures++;
+          consecutiveFailures++;
+          if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+            console.error("🛑 API 연속 실패 3회 감지 — 전체 중단");
+            break;
+          }
+          // 본 게시판 3회 연속 실패면 이 게시판만 종료하고 다음 게시판으로
+          if (boardFailures >= 3) {
+            console.error(`  [${board.id}] API 연속 3회 실패 — 이 게시판 pagination 종료`);
+            break;
+          }
+          continue; // 다음 페이지 시도
+        }
+
+        // 종료 조건 3: 빈 배열 = 게시판 끝
+        if (pageItems.length === 0) {
+          console.log(`  [${board.id}] page=${pageNo} articles=[] — 게시판 끝`);
+          break;
+        }
+
+        // 종료 조건 4: 첫 dataid 가 이미 누적된 세트에 있음 = API 이상 응답(방어)
+        if (seenDataids.has(pageItems[0].dataid)) {
+          console.warn(
+            `  [${board.id}] page=${pageNo} 첫 dataid=${pageItems[0].dataid} 중복 감지 — pagination 종료`,
+          );
+          break;
+        }
+
+        // 정상 누적
+        for (const it of pageItems) seenDataids.add(it.dataid);
+        items.push(...pageItems);
+        // 다음 페이지 커서 업데이트 (이번 페이지 마지막 글)
+        cursor = pageItems[pageItems.length - 1]?.bbsDepth;
+
+        console.log(
+          `  [${board.id}] page=${pageNo}: +${pageItems.length}건 (누적 ${items.length}건, ` +
+            `첫 dataid=${pageItems[0].dataid}, 마지막 dataid=${pageItems[pageItems.length - 1].dataid})`,
+        );
+      }
+
+      if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) break;
+      perBoardCount[board.id] = items.length; // 누적 반영
+    }
+
+    // pagination 완료 후 한 번에 출력
+    printBoardResult(board, items);
+    console.log(""); // 게시판 간 구분 빈 줄
+
     // ─── Phase 2a: 본문 fetch ───
     if (!withBody || items.length === 0) continue;
 
@@ -331,7 +463,11 @@ async function main() {
     for (let i = 0; i < targetItems.length; i++) {
       const it = targetItems[i];
       try {
-        const r = await fetchArticle(board, it.dataid, { debug });
+        const r = await fetchArticle(board, it.dataid, {
+          debug,
+          // [2026-04-21] community 게시판은 경기 parser 호출 생략 (시간/에러 절감)
+          skipGameParse: board.target === "community_posts",
+        });
         articleResults.push(r);
         // HTTP status 집계
         const key = String(r.httpStatus);
@@ -348,57 +484,91 @@ async function main() {
           //   maskPersonalInfo 는 멱등(idempotent) 이므로 upsert.ts 의 2차 가드와 중복돼도 안전.
           const maskedContent = maskPersonalInfo(r.content);
 
-          const syncInput: CafeSyncInput = {
-            board,
-            dataid: r.dataid,
-            // [2026-04-20] 정렬 tie-break 용 Int 복제본.
-            //   BoardItem.dataidNum 은 fetcher 에서 이미 NaN 가드 통과 → 유한 정수 보장.
-            //   article-fetcher 의 r.dataid(string) 은 BoardItem.dataid 와 동일 값이라
-            //   it.dataidNum 을 그대로 신뢰한다.
-            dataidNum: it.dataidNum,
-            title: it.title, // 목록에서 가져온 제목
-            author: it.author,
-            content: maskedContent, // ← 마스킹된 값으로 교체 (이전엔 r.content 원본 전달)
-            // [2026-04-20] 상세 페이지 HTML에는 시분만 있어 extractPostedAt이 null 반환 가능.
-            // BoardItem.postedAt(목록 articleElapsedTime 파싱, 날짜만 정확, 시분 00:00) fallback.
-            // 시분까지 정확히 얻는 로직은 다음 세션(middle 단계)에서 보강.
-            postedAt: r.postedAt ?? it.postedAt,
-            crawledAt: new Date(),
-            parsed: r.parsed,
-          };
+          // [2026-04-21] board.target 별 분기 — games vs community_posts
+          if (board.target === "community_posts") {
+            // ───── 커뮤니티 게시판 (N54V/IVd2/E7hL/bWL) ─────
+            const communityInput: CafeCommunityInput = {
+              board,
+              dataid: r.dataid,
+              dataidNum: it.dataidNum,
+              title: it.title,
+              author: it.author,
+              content: maskedContent,
+              postedAt: r.postedAt ?? it.postedAt,
+              crawledAt: new Date(),
+              // imageUrls/comments 는 Phase 2b 기본 빈 배열 (Phase 3 이후 확장)
+            };
 
-          if (EXECUTE_MODE && prisma) {
-            // 실제 DB 쓰기
-            const res = await upsertCafeSyncedGame(prisma, syncInput);
-            upsertResults.push(res);
-            if (res.error) {
-              console.log(`      ❌ upsert 실패: ${res.error}`);
+            if (EXECUTE_MODE && prisma) {
+              const res = await upsertCommunityPostFromCafe(prisma, communityInput);
+              communityUpsertResults.push(res);
+              if (res.action === "failed") {
+                console.log(`      ❌ community upsert 실패: ${res.error}`);
+              } else {
+                console.log(
+                  `      ✅ community: ${res.action} (postId=${res.postId}, category=${board.category})`,
+                );
+              }
             } else {
+              const preview = previewCommunityUpsert(communityInput);
               console.log(
-                `      ✅ upsert: cafe_post=${res.cafePost} (id=${res.cafePostId}), game=${res.game}` +
-                  (res.gameId ? ` (id=${res.gameId})` : ""),
+                `      🔍 community 예정: category=${preview.category} / ` +
+                  `author=${preview.authorNickname} / ` +
+                  `source_id=${preview.cafeSourceId} / ` +
+                  `willInsert=${preview.willInsert ? "YES" : "NO"}`,
               );
             }
           } else {
-            // dry-run 미리보기 — DB 접근 0
-            // Phase 2b Step 4 — 각 필드 옆에 (parsed/extracted/fallback) 소스를 괄호로 노출.
-            //   왜: "값이 DB 에 어떻게 들어갈지"뿐 아니라 "어떤 추출 경로로 나왔는지"를
-            //   스모크 테스트에서 한 눈에 보기 위함. 운영 투입 전 검증 효율↑.
-            const preview = previewUpsert(syncInput);
-            console.log(
-              `      🔍 upsert 예정: game_id=${preview.gameId} / ` +
-                `game_type=${preview.gameType} / ` +
-                `scheduled_at=${preview.scheduledAt} (${preview.scheduledAtSource}) / ` +
-                `game insert=${preview.willInsertGame ? "YES" : "NO (parsed 없음)"}`,
-            );
-            console.log(
-              `         fields: fee=${preview.fee}원(${preview.feeSource}) / ` +
-                `max=${preview.maxParticipants}명(${preview.maxParticipantsSource}) / ` +
-                `skill=${preview.skillLevel}(${preview.skillLevelSource}) / ` +
-                `city=${preview.city ?? "null"}(${preview.citySource}) / ` +
-                `district=${preview.district ?? "null"}(${preview.districtSource}) / ` +
-                `venue=${preview.venueName ?? "null"}(${preview.venueNameSource})`,
-            );
+            // ───── 경기 게시판 (IVHA/Dilr/MptT) ─────
+            const syncInput: CafeSyncInput = {
+              board,
+              dataid: r.dataid,
+              // [2026-04-20] 정렬 tie-break 용 Int 복제본.
+              //   BoardItem.dataidNum 은 fetcher 에서 이미 NaN 가드 통과 → 유한 정수 보장.
+              //   article-fetcher 의 r.dataid(string) 은 BoardItem.dataid 와 동일 값이라
+              //   it.dataidNum 을 그대로 신뢰한다.
+              dataidNum: it.dataidNum,
+              title: it.title, // 목록에서 가져온 제목
+              author: it.author,
+              content: maskedContent, // ← 마스킹된 값으로 교체 (이전엔 r.content 원본 전달)
+              // [2026-04-20] 상세 페이지 HTML에는 시분만 있어 extractPostedAt이 null 반환 가능.
+              // BoardItem.postedAt(목록 articleElapsedTime 파싱, 날짜만 정확, 시분 00:00) fallback.
+              // 시분까지 정확히 얻는 로직은 다음 세션(middle 단계)에서 보강.
+              postedAt: r.postedAt ?? it.postedAt,
+              crawledAt: new Date(),
+              parsed: r.parsed,
+            };
+
+            if (EXECUTE_MODE && prisma) {
+              // 실제 DB 쓰기
+              const res = await upsertCafeSyncedGame(prisma, syncInput);
+              upsertResults.push(res);
+              if (res.error) {
+                console.log(`      ❌ upsert 실패: ${res.error}`);
+              } else {
+                console.log(
+                  `      ✅ upsert: cafe_post=${res.cafePost} (id=${res.cafePostId}), game=${res.game}` +
+                    (res.gameId ? ` (id=${res.gameId})` : ""),
+                );
+              }
+            } else {
+              // dry-run 미리보기 — DB 접근 0
+              const preview = previewUpsert(syncInput);
+              console.log(
+                `      🔍 upsert 예정: game_id=${preview.gameId} / ` +
+                  `game_type=${preview.gameType} / ` +
+                  `scheduled_at=${preview.scheduledAt} (${preview.scheduledAtSource}) / ` +
+                  `game insert=${preview.willInsertGame ? "YES" : "NO (parsed 없음)"}`,
+              );
+              console.log(
+                `         fields: fee=${preview.fee}원(${preview.feeSource}) / ` +
+                  `max=${preview.maxParticipants}명(${preview.maxParticipantsSource}) / ` +
+                  `skill=${preview.skillLevel}(${preview.skillLevelSource}) / ` +
+                  `city=${preview.city ?? "null"}(${preview.citySource}) / ` +
+                  `district=${preview.district ?? "null"}(${preview.districtSource}) / ` +
+                  `venue=${preview.venueName ?? "null"}(${preview.venueNameSource})`,
+              );
+            }
           }
         }
 
@@ -507,6 +677,27 @@ async function main() {
       failedDetails.forEach((r, i) => {
         console.log(`  [${i + 1}] cafePostId=${r.cafePostId ?? "-"}, error=${r.error}`);
       });
+    }
+
+    // [2026-04-21] community 게시판 집계 (별도 표시)
+    if (communityUpsertResults.length > 0) {
+      const cCreated = communityUpsertResults.filter((r) => r.action === "created").length;
+      const cSkipped = communityUpsertResults.filter((r) => r.action === "skipped_duplicate").length;
+      const cFailed = communityUpsertResults.filter((r) => r.action === "failed").length;
+      console.log("");
+      console.log("── community_posts upsert 집계 ──");
+      console.log(
+        `  total: ${communityUpsertResults.length}건 / created=${cCreated} / ` +
+          `skipped(dup)=${cSkipped} / failed=${cFailed}`,
+      );
+      const cFails = communityUpsertResults.filter(
+        (r): r is { action: "failed"; error: string } => r.action === "failed",
+      );
+      if (cFails.length > 0) {
+        console.log("");
+        console.log("── community upsert 실패 상세 ──");
+        cFails.forEach((r, i) => console.log(`  [${i + 1}] ${r.error}`));
+      }
     }
   }
 

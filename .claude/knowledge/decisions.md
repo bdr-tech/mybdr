@@ -2,6 +2,33 @@
 <!-- 담당: planner-architect | 최대 30항목 -->
 <!-- "왜 A 대신 B를 선택했는지" 기술 결정의 배경과 이유를 기록 -->
 
+### [2026-04-21] 세션 역할 재정의 — 본 세션 = 다음카페 sync 전용
+- **분류**: decision (운영 워크플로우)
+- **결정자**: pm + 수빈 (2026-04-21 승인)
+- **결정**: 2026-04-21부로 **본 세션(이 Claude Code 터미널) = 다음카페 sync 전용**으로 역할 뒤집음. 이전(2026-04-20) "본=일반, 다른=카페" 합의 폐기. 옵션 A 조합 채택: (1) **브랜치**: 양 세션 `subin` 공용 유지. (2) **커밋 스코프**: 본 세션 모든 커밋에 `(cafe-sync)` 스코프 필수 — `feat/fix/docs/chore/refactor(cafe-sync):`. (3) **PR**: 신규 카페 작업은 별도 PR로 오픈. PR #55(혼재)는 그대로 머지. (4) **scratchpad**: 공용 `.claude/scratchpad.md` 유지 + "카페 작업 로그" 섹션 분리(담당=`pm-cafe`). (5) **충돌 방지**: push 전 `git fetch origin subin` 필수, scratchpad 동시 편집 금지(섹션 다르면 OK).
+- **배경**: 2026-04-20부터 "본=일반" 원칙이었으나 실제 `subin` 브랜치 커밋 이력상 카페 sync 작업이 혼재됐고, PR 분리 시도 2회(`531b3261` / `98433ca`·`2f67ddc` Revert) 모두 되돌림. PR #55도 "L2 + 보이스카우트 + 카페 sync 후속 (통합)" 혼재 상태. 더 이상 같은 세션에서 두 도메인을 섞지 않고 이 터미널을 **카페 전용**으로 굳히는 게 리뷰/검수 부담 최소.
+- **대안 배제**: (B) `subin-cafe` 브랜치 분리 → 과거 PR 분리 실패 이력 + 브랜치 관리 오버헤드. 필요시 나중에 전환. (C) 현 상태 유지(두 도메인 섞기) → PR 리뷰 난이도 높음, 책임 경계 모호.
+- **영향**: 본 세션은 `src/lib/cafe-sync/**`, `src/lib/parsers/cafe-*.ts`, `scripts/sync-cafe.ts`, `scripts/cafe-login.ts`, `scripts/backfill-*cafe*.ts`, `scripts/_tmp-cafe-*`, `Dev/cafe-*.md`, `Dev/prompt-cafe-*.md`, 프리즈마 cafe migration **만** 수정. 그 외 파일 터치 시 PM이 차단. 다른 세션(일반)은 반대로 이 목록을 금지 파일로.
+- **참조횟수**: 0
+
+### [2026-04-21] 카페 sync 3게시판 전면 board 강제 + parser 힌트 메타데이터화
+- **분류**: decision (카페 sync Phase 2b 후속)
+- **결정자**: pm + developer (2026-04-21 승인)
+- **결정**: IVHA/Dilr/MptT **3게시판 모두** `board.gameType` → `game_type` 1:1 강제 매핑. parser(`cafe-game-parser.ts`) 가 본문 키워드로 뽑는 `parsed.gameType` 은 **소비하지 않음**. 불일치 시 `metadata.mixed_type_hint` + `metadata.parser_game_type` 으로 보존 (정보 손실 방지). 기존 혼재 레코드(IVHA 7건)는 `scripts/backfill-cafe-game-type.ts --execute` 로 UPDATE. 구현: `src/lib/cafe-sync/upsert.ts` 의 `resolveGameType(board)` + pure fn `buildMetadataHints()` 분리. `cafe-game-parser.ts` 무수정(vitest 59/59 보호).
+- **배경**: 2026-04-20 까지는 MptT(PRACTICE) 만 board 강제였고 IVHA/Dilr 는 `parsed.gameType ?? board.gameType` 패턴이라 본문에 타 유형 키워드가 섞이면 parser 가 재분류 (예: IVHA에 "게스트 모집" 문구 → GUEST 로 뒤바뀜). 실측 IVHA 7건이 `game_type=1(GUEST)` 로 저장돼 `/games?type=0` 탭에서 사라짐. 운영자의 "어느 게시판에 올렸는가" 가 본문 키워드보다 훨씬 강한 의도 신호라 판단.
+- **대안 배제**: (A) parser 재튜닝 → 각 게시판마다 오염 키워드 셋이 다르고 MptT 에서 이미 강제로 해결 완료된 접근과 분기 발생. 파서 59/59 테스트 회귀 위험. (B) admin UI 수동 재분류 → 건마다 사람 개입 필요, 지속 sync 에서 계속 재발. (C) `games.game_type` 컬럼 외 별도 `board_game_type` 컬럼 추가 → 운영 DB 마이그레이션 필요(CLAUDE.md 금지 규칙 충돌).
+- **영향**: `insertGameFromCafe`/`previewUpsert` 두 경로 동기. 혼재 글 수집 시 탭 표시(/games?type=N)가 운영자 의도와 항상 일치. `metadata.mixed_type_hint` 로 admin "혼재 의심" 필터/통계 재활용 가능. 백필 스크립트가 매핑 소스(`resolveGameType` export) 재사용하여 매핑 규칙 단일 진입점 유지.
+- **참조횟수**: 0
+
+### [2026-04-21] L2 본인/타인 프로필 통합 — 정책 Q1~Q7 + 편집 경로
+- **분류**: decision (L2 본 설계)
+- **결정자**: planner-architect + pm (수빈 확정)
+- **결정**: Q1 경로 = **A. 단일 `/users/[id]`** (본인 접근 시 분기). Q2 비공개 기본 범위 = **① 본인만**(현재 select whitelist 유지). Q3 `User.is_public` = **② select-level 유지**(Prisma 마이그레이션 0 — 운영 DB 변경 금지 준수). Q4 티어/레벨 = **① 레벨 하나로 통합**(`getTierBadge` 제거, 본인·타인 동일 Lv.N 배지). Q5 `/profile` = **① 대시보드로 재정의**(BasicInfo/Refund → `/profile/edit`로 이관). Q6 MVP 카드 = **③ 장식 존치**. Q7 Teams 섹션 = **① 추가**(공개 팀만, `team.is_public !== false`). **편집 경로 = B. 기존 `/profile/edit` 재활용**(신규 `/users/[me]/edit` 도입 시 네비 중복 + 308 리다이렉트 ≥4건 부담).
+- **배경**: L2 audit(2026-04-20) 완료 후 간극 10건·정책 질문 7건 확정 필요. Prisma 마이그레이션은 운영 DB 분리 완료(ops-db-sync-plan) 전까지 금지라 스키마 변경 옵션(Q3 ①/③) 전부 배제. 티어-레벨 이중 배지는 사용자 인지 부하 + 의미 중복(경기수는 이미 Hero 미니스탯에 표시)으로 레벨 통합 채택.
+- **대안 배제**: Q1 (B) 공용 컴포넌트만 분리 + 경로 유지 → "본인 시점 미리보기" UX 별도 구현 부담. Q4 (②) 타인=티어/본인=레벨 분리 → 중복 의미 축 혼란. Q5 프로필 정보 카드 유지 → 대시보드 성격 모호. 편집 경로 A(신규 `/users/[me]/edit`) → 기존 6개 `/profile/*` 서브 라우트와 네비 중복.
+- **영향**: 공용 3종(`src/components/profile/{profile-hero, mini-stat, recent-games}.tsx`) + `/api/web/users/[id]/gamification`(공개) + `UserTeamsGrid`(타인용) + `OwnerEditButton`. 레거시 `profile-header.tsx` 삭제. 총 공수 ~8h(병렬 반영).
+- **참조횟수**: 0
+
 ### [2026-04-20] L3 Organization 라우트 방식 — 기존 `/organizations/[slug]` 활용 (신규 라우트 금지)
 - **분류**: decision (L3 다음 단위 설계)
 - **결정자**: planner-architect

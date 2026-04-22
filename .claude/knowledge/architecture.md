@@ -2,6 +2,18 @@
 <!-- 담당: planner-architect, developer | 최대 30항목 -->
 <!-- 프로젝트의 폴더 구조, 파일 역할, 핵심 패턴을 기록 -->
 
+### [2026-04-21] L2 본 설계 — 공용 컴포넌트 3종 + `/users/[id]` 본인 분기 + 티어 제거
+- **분류**: architecture
+- **발견자**: planner-architect
+- **내용**: L2 본 설계(audit 후속). (1) **공용 컴포넌트 3종 위치**: `src/components/profile/profile-hero.tsx`(공용, viewMode "owner"|"visitor" prop + ownerAction/visitorAction slot) + `mini-stat.tsx`(추출) + `recent-games.tsx`(variant "list"|"table" prop, 본인=list+chevron / 타인=table+스탯). 기존 `/profile/_components/profile-hero.tsx`는 re-export wrapper로 축소하여 import 경로 호환. `/profile/_components/recent-games-section.tsx`도 동일. (2) **`/users/[id]` 본인 분기**: `isOwner = BigInt(session?.sub) === user.id` → ActionButtons 숨김 + OwnerEditButton 렌더(→ `/profile/edit`) + 비공개 필드(email/phone/birth_date/weight/bank_name/account_number) select 추가. (3) **티어 제거 + 레벨 통합**: `getTierBadge()` (users/[id]/page.tsx L50-56) 제거 → 본인·타인 모두 Lv.N 배지(BDR Red round) 동일 컴포넌트. (4) **편집 경로 = B. 기존 `/profile/edit` 재활용** (신규 `/users/[me]/edit` 도입 시 네비 중복 + 308 ≥4건 필요). (5) **gamification 공개 API**: `GET /api/web/users/[id]/gamification`(비인증, xp select 후 getLevelInfo → {level,title,emoji}). 단 `/users/[id]` 서버 컴포넌트는 API 대신 getLevelInfo 함수 직접 호출로 snake_case 재발 리스크 0. (6) **Teams 섹션**: 타인 프로필에 신규 `<UserTeamsGrid>` 추가 (Hero 아래, 레이더 위). 필터 `team.is_public !== false && team.status === "active"`. 기존 `current-team-card.tsx`는 본인 전용이라 재활용 불가. (7) **`/profile` 대시보드 재정의**: BasicInfoCard/RefundAccountCard 제거 → `/profile/edit` 상단 읽기전용 요약 블록으로 이관. 유지: Hero + 다음 경기 + 활동 요약(M4) + 빠른메뉴 + 로그아웃. Client 유지(useSWR 패턴). 네비 라벨 "내 정보" 유지(변경 불필요). (8) **레거시 삭제**: `profile-header.tsx`(207L, import 0건). (9) **Prisma 마이그레이션 0** (User.is_public 도입 X, select-level 유지). 총 공수 ~8h (병렬 반영).
+- **참조횟수**: 0
+
+### [2026-04-20] L2 진입 전 audit — `/users/[id]` ↔ `/profile` 공통/차이
+- **분류**: architecture
+- **발견자**: planner-architect
+- **내용**: L2 착수 전 현행 분석. (1) **`/users/[id]`** = Server 컴포넌트 + prisma 직접 7쿼리(Promise.all), `/api/web/users/[id]` 루트 route 없음. Hero+티어배지+MVP카드+레이더+시즌스탯+최근5경기. (2) **`/profile`** = `"use client"` + useSWR 3개(`/api/web/profile` + `/gamification` + `/stats`), ProfileShell 래퍼로 좌220px 네비 7항목 + 4카드 그리드(BasicInfo/Teams·Tournaments/Refund/Danger). (3) **공통 섹션**: Hero(아바타·이름·포지션/지역/신장), 팔로워/팔로잉 카운트, 승률(`getPlayerStats` 재사용), 경기수. (4) **본인 전용**: email/phone/birth_date/환불계좌/레벨·칭호/next_game/편집·설정·구독·결제·주간리포트. (5) **타인 전용**: 티어배지(경기수 기반)/MVP카드(더미)/레이더/시즌스탯/최근경기. (6) **컴포넌트 분산 맵**: radar-chart는 `profile/_components/`에서 `users/[id]/_components/user-radar-section.tsx`가 이미 import 재사용 ✅. Hero/MiniStat/RecentGames/StatsDetail은 전부 2벌 중복. `profile/_components/profile-header.tsx`(207L)는 어디에서도 import 0건 = 레거시. (7) **스키마**: User 모델(schema.prisma L11-168)에 `is_public`/`privacy`/`visibility` **전무** — 공개/비공개 정책은 `page.tsx`의 select 필드 whitelist로만 강제. (8) **간극 10건** / **선행 정책 질문 7건**(경로 전략 A vs B / 비공개 기본 범위 / User.is_public 도입 여부 / 티어 vs 레벨 통합 / `/profile` 정체성 / MVP 카드 처리 / Teams 섹션 공개 여부). (9) **공수 재추정 11~13h**(기획 15h 대비 −20% — 공용 컴포넌트 일부 선행 존재 + API 변경 불필요 확인).
+- **참조횟수**: 0
+
 ### [2026-04-20] L3 다음 단위 — Organization 브레드크럼 + SeriesCard + EditionSwitcher
 - **분류**: architecture
 - **발견자**: planner-architect

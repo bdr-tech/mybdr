@@ -8,7 +8,7 @@
  * 닫기 버튼으로 사라진다.
  */
 
-interface SessionCompleteCardProps {
+export interface SessionCompleteCardProps {
   durationMinutes: number;
   xpEarned: number;
   gamification: {

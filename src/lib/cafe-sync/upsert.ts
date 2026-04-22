@@ -125,27 +125,85 @@ export interface CafeSyncResult {
 
 /**
  * board → game_type 숫자 매핑.
- * parsed.gameType이 있으면 그걸 우선 사용, null이면 board 기반 fallback.
  *
- * [2026-04-20] PRACTICE 게시판은 board 강제 적용:
- *   MptT(연습경기) 글에 "게스트 모집" 키워드가 섞이면 parseCafeGame이
- *   GUEST(1)로 오분류하는 문제(실측 4/5). 운영자가 MptT 게시판을 택했다는 건
- *   팀-팀 매칭 의도이므로 board를 절대 기준으로 삼는다.
- *   PICKUP/GUEST 게시판은 혼재 글(픽업 게스트 구함 등)이 실제로 많으므로
- *   parser 재분류 결과를 유지 (설계대로).
+ * [2026-04-21] **3개 게시판 전체 board 강제** (PM 승인):
+ *   2026-04-20 에 MptT(PRACTICE) 만 board 강제로 바꿨는데,
+ *   IVHA/Dilr 에서도 같은 오분류 패턴 발견 (본문에 타 유형 키워드 혼입 시
+ *   parser 가 GUEST/PICKUP 로 재분류 → 실제 의도와 탭 표시 불일치).
+ *   운영자가 **어느 게시판에 올렸는가** 가 가장 강한 의도 신호이므로
+ *   board → game_type 1:1 매핑을 절대 기준으로 삼는다.
+ *
+ *   parser 결과(parsed.gameType) 는 소비하지 않고, 대신
+ *   `buildMetadataHints()` 에서 metadata.mixed_type_hint 로 보존한다
+ *   (admin UI 의 "혼재 의심" 필터 재활용 대비).
+ *
+ * export 이유: 백필 스크립트(scripts/backfill-cafe-game-type.ts) 에서
+ *   동일 매핑을 재사용하기 위해 공개.
  */
-function resolveGameType(parsed: ParsedCafeGame | null, board: CafeBoard): number {
-  // MptT(PRACTICE) 강제 규칙
-  if (board.gameType === "PRACTICE") return 2;
-
-  // parsed.gameType: 0 | 1 | 2 | null | undefined
-  if (parsed && typeof parsed.gameType === "number") {
-    return parsed.gameType;
-  }
-  // board fallback: IVHA=0 / Dilr=1 / MptT=2(이미 위에서 처리)
+export function resolveGameType(board: CafeBoard): number {
+  // 1:1 매핑만 남김 — parser 결과 분기 제거 (2026-04-21)
   if (board.gameType === "PICKUP") return 0;
   if (board.gameType === "GUEST") return 1;
-  return 2; // PRACTICE
+  if (board.gameType === "PRACTICE") return 2;
+  return 2; // 이론상 도달 불가 — CafeBoard.gameType 은 3가지 유니온
+}
+
+/**
+ * parser 재분류 결과가 board 와 다를 때 metadata 힌트 객체 생성.
+ *
+ * 왜 분리했나 (2026-04-21):
+ *   - 단위 테스트 가능 (DB 없이 pure function 검증)
+ *   - insertGameFromCafe 와 previewUpsert 두 곳에서 같은 로직 재사용
+ *   - 분기 조건이 4 단계(null/undefined/일치/불일치) 라 조립 지점에
+ *     ternary 쌓으면 가독성 나빠짐
+ *
+ * 반환 규칙:
+ *   - parsed === null                              → {}  (파서 실패, 힌트 없음)
+ *   - parsed.gameType == null/undefined            → {}  (파서가 미분류)
+ *   - parsed.gameType === resolvedType             → {}  (의도 일치, 힌트 불필요)
+ *   - 불일치                                         → { mixed_type_hint, parser_game_type }
+ *
+ * - mixed_type_hint.suggested_type: 문자열 라벨 ("PICKUP"/"GUEST"/"PRACTICE")
+ * - mixed_type_hint.reason: "parser_mismatch_board_forced" (고정)
+ * - mixed_type_hint.original_parser_type: parser 가 뽑은 숫자 (0/1/2)
+ * - parser_game_type: parser 가 뽑은 숫자 그대로 (top-level 복제 — admin 쿼리 편의)
+ */
+type GameTypeLabel = "PICKUP" | "GUEST" | "PRACTICE";
+function labelOfGameType(n: number): GameTypeLabel {
+  if (n === 0) return "PICKUP";
+  if (n === 1) return "GUEST";
+  return "PRACTICE"; // 2 또는 이론상 도달 불가
+}
+
+export interface MetadataHints {
+  mixed_type_hint?: {
+    suggested_type: GameTypeLabel;
+    reason: "parser_mismatch_board_forced";
+    original_parser_type: 0 | 1 | 2;
+  };
+  parser_game_type?: 0 | 1 | 2;
+}
+
+export function buildMetadataHints(
+  board: CafeBoard,
+  parsed: ParsedCafeGame | null,
+  resolvedType: number,
+): MetadataHints {
+  // 파서가 본문 판정 못한 경우 힌트 없음
+  if (!parsed) return {};
+  if (parsed.gameType == null) return {};
+  // board 강제 결과와 파서 결과가 같으면 혼재 글 아님
+  if (parsed.gameType === resolvedType) return {};
+
+  const n = parsed.gameType as 0 | 1 | 2;
+  return {
+    mixed_type_hint: {
+      suggested_type: labelOfGameType(n),
+      reason: "parser_mismatch_board_forced",
+      original_parser_type: n,
+    },
+    parser_game_type: n,
+  };
 }
 
 /**
@@ -292,7 +350,9 @@ async function insertGameFromCafe(
 
   const now = new Date();
   const parsed = input.parsed;
-  const gameType = resolveGameType(parsed, input.board);
+  // [2026-04-21] board 강제 매핑 — parsed.gameType 무시. 혼재 글은 hints 로 기록.
+  const gameType = resolveGameType(input.board);
+  const hints = buildMetadataHints(input.board, parsed, gameType);
   const gameId = buildGameId(input.board, input.dataid);
   const organizerId = resolveOrganizerId();
 
@@ -320,7 +380,7 @@ async function insertGameFromCafe(
   //   id=397 실측: parser 가 "장소 :" 라벨 변형 못 잡아 null, extracted 가 구제.
   const venueName = parsed.venueName ?? extracted.venueName ?? null;
 
-  // metadata 8키 — D1-B 스펙 + [2026-04-20] cafe_article_id 추가
+  // metadata 8키 + [2026-04-21] 혼재 글 힌트 (조건부 0~2키 추가)
   //
   // 왜 cafe_article_id (Int) 를 별도 저장:
   //   - listGames 정렬에서 `created_at desc` 동률일 때 2차 tie-break 키로 사용.
@@ -328,6 +388,10 @@ async function insertGameFromCafe(
   //     JSON 안에 Int 로 직렬화된 복제본을 둔다.
   //   - dataidNum 이 optional 이라 누락 시 undefined → JSON 키 자체 생략(JSON.stringify 규칙).
   //     이 경우 정렬에서 null 로 취급되어 같은 분 안에서 뒤로 밀릴 뿐, 기능 이상 없음.
+  //
+  // 왜 hints 를 spread:
+  //   - buildMetadataHints 가 빈 객체 또는 2키 객체를 반환 → 불일치 케이스에만 metadata 에 섞임.
+  //   - 일치 케이스에선 mixed_type_hint / parser_game_type 키 자체가 없어 스토리지 깨끗.
   const metadata = {
     cafe_dataid: input.dataid,
     cafe_article_id: input.dataidNum, // ← 8번째 키 (정렬 tie-break 용, Int)
@@ -337,6 +401,7 @@ async function insertGameFromCafe(
     cafe_created: input.postedAt ? input.postedAt.toISOString() : null,
     cafe_comments: [], // Phase 2b에선 아직 댓글 수집 안 함. 빈 배열로 스키마만 확보.
     cafe_source_id: buildCafeSourceId(input.board, input.dataid),
+    ...hints, // [2026-04-21] board 와 parser 판정 불일치 시 mixed_type_hint + parser_game_type
   } as const;
 
   const row = await tx.games.create({
@@ -484,7 +549,9 @@ export function previewUpsert(input: CafeSyncInput): {
   metadata: Record<string, unknown>;
 } {
   const parsed = input.parsed;
-  const gameType = resolveGameType(parsed, input.board);
+  // [2026-04-21] insert 경로와 동일한 board 강제 매핑 — 미리보기 결과 일관성 유지.
+  const gameType = resolveGameType(input.board);
+  const hints = buildMetadataHints(input.board, parsed, gameType);
   // Phase 2b Step 4 — 실제 insert 와 동일한 체인을 dry-run 미리보기에서도 적용.
   // 로그 라인에 "어느 단계에서 값이 왔는가"를 표시하기 위해 *Source 필드도 함께 계산.
   const extracted = extractFallbacks(input.content, input.crawledAt);
@@ -590,7 +657,7 @@ export function previewUpsert(input: CafeSyncInput): {
     venueName,
     venueNameSource,
     willInsertGame: parsed !== null,
-    // 실제 insert 경로(insertGameFromCafe)와 동일한 8키 구성 — 미리보기 정확성 유지.
+    // 실제 insert 경로(insertGameFromCafe)와 동일한 8키 + hints 구성 — 미리보기 정확성 유지.
     metadata: {
       cafe_dataid: input.dataid,
       cafe_article_id: input.dataidNum, // ← 8번째 키 (Int, tie-break 2차키)
@@ -600,6 +667,313 @@ export function previewUpsert(input: CafeSyncInput): {
       cafe_created: input.postedAt ? input.postedAt.toISOString() : null,
       cafe_comments: [],
       cafe_source_id: buildCafeSourceId(input.board, input.dataid),
+      ...hints, // [2026-04-21] 혼재 글 힌트 (insert 와 동일)
     },
+  };
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// [2026-04-21] Community 게시판(일반 4종) upsert — community_posts 테이블 타겟
+// ═════════════════════════════════════════════════════════════════════════════
+//
+// 대상: N54V(자유) / IVd2(익명) / E7hL(BDR칼럼) / bWL(구인구팀)
+//
+// 설계 결정 (PM 확정 Q1~Q4):
+//   - Q1: 시스템 유저 = 카페 봇 1명 (email: cafe-bot@mybdr.local)
+//   - Q2: 카테고리 key 재사용 — `general` / `anonymous`(신규) / `review` / `recruit`
+//         ("대회후기" → "BDR칼럼" 라벨 변경은 UX 세션 담당, key 는 `review` 유지)
+//   - Q3: 익명게시판(IVd2) 은 author_nickname = "익명" 강제, images.cafe_author = null
+//   - Q4: 1차 이전 = E7hL + bWL 먼저 → 규모 검증 → 자유/익명 후속
+//
+// 중복 방지:
+//   - community_posts 에 `cafe_source_id` 컬럼 없음 (Prisma schema 변경 금지 — 운영 DB 가드)
+//   - `images` JSON 내 `cafe_source_id` 키로 관리 → `$queryRaw` + `images->>'cafe_source_id'` 매칭
+//   - source_id 포맷: `PU-CAFE-<boardId>-<dataid>` (boardId 포함 필수, 게시판 간 dataid 충돌 방지)
+
+/** 카페 봇 유저 email — seed-cafe-bot-user.ts 와 동일 상수 */
+export const CAFE_BOT_EMAIL = "cafe-bot@mybdr.local";
+
+/**
+ * 런타임 캐시: 카페 봇 user_id 를 프로세스당 1회만 DB 조회.
+ *
+ * 왜 캐시:
+ *   - backfill 이 수백~천 건 upsert 하면서 매번 User.findUnique 호출 시 N+1 느려짐.
+ *   - 캐시 히트 시 DB 왕복 0.
+ *
+ * 초기값 null — 최초 upsert 호출 시 lazy 로드.
+ */
+let CAFE_BOT_USER_ID: bigint | null = null;
+
+/**
+ * 카페 봇 user_id 를 반환. 없으면 throw (seed 먼저 실행 요구).
+ *
+ * 호출자:
+ *   - upsertCommunityPostFromCafe (내부)
+ *   - backfill-cafe-community.ts 등 스크립트에서 사전 로드 가능
+ */
+export async function resolveCafeBotUserId(prisma: PrismaClient): Promise<bigint> {
+  if (CAFE_BOT_USER_ID !== null) return CAFE_BOT_USER_ID;
+  const bot = await prisma.user.findUnique({ where: { email: CAFE_BOT_EMAIL } });
+  if (!bot) {
+    throw new Error(
+      `🛑 카페 봇 유저 없음 — \`npx tsx scripts/seed-cafe-bot-user.ts --execute\` 먼저 실행 필요. ` +
+        `(email: ${CAFE_BOT_EMAIL})`,
+    );
+  }
+  CAFE_BOT_USER_ID = bot.id;
+  return bot.id;
+}
+
+/**
+ * 테스트/재초기화용 — 캐시 리셋. 프로덕션 경로에선 호출 안 함.
+ */
+export function __resetCafeBotUserIdCacheForTest(): void {
+  CAFE_BOT_USER_ID = null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Community 입력/출력 타입
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface CafeCommunityInput {
+  /** 대상 게시판 (target="community_posts" 만 허용) */
+  board: CafeBoard;
+  /** 카페 dataid (string) */
+  dataid: string;
+  /** dataid 정수 변환 — tie-break/정렬 용 (optional) */
+  dataidNum?: number;
+  /** 원본 제목 (마스킹 전) */
+  title: string;
+  /** 원본 작성자 닉네임 (anonymousAuthor 면 저장 안 됨) */
+  author: string;
+  /** 본문 (마스킹 전 — upsertCommunityPostFromCafe 내에서 2차 마스킹) */
+  content: string;
+  /** 작성 시각 (없으면 now fallback) */
+  postedAt: Date | null;
+  /** 크롤 시각 */
+  crawledAt: Date;
+  /** 본문에서 추출한 이미지 URL 배열 (없으면 []) */
+  imageUrls?: string[];
+  /** 댓글 배열 — Phase 2b 시점은 빈 배열 기본 */
+  comments?: unknown[];
+}
+
+export type CommunityUpsertResult =
+  | {
+      action: "created";
+      postId: bigint;
+    }
+  | {
+      action: "skipped_duplicate";
+      postId: bigint;
+    }
+  | {
+      action: "failed";
+      error: string;
+    };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pure helpers — 단위 테스트용 (DB 무관)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 커뮤니티용 cafe_source_id 포맷.
+ *
+ * 왜 games 의 `buildCafeSourceId` 와 다른가:
+ *   - games 는 prefix(PU/GU/PR) 가 board 타입별로 고정되어 있었음 → `PU-CAFE-3928`
+ *   - community 는 prefix 개념 없음 + 4게시판 모두 dataid 체계 달라 **board id 명시 필수**
+ *   - 포맷: `COM-CAFE-<boardId>-<dataid>` (COM = Community)
+ *
+ * 중복 방지 핵심: 게시판 간 dataid 충돌 방어 (Dilr 320221 vs bWL 320221 별개 레코드)
+ */
+export function buildCommunityCafeSourceId(boardId: string, dataid: string): string {
+  return `COM-CAFE-${boardId}-${dataid}`;
+}
+
+/**
+ * author_nickname 결정 — 익명게시판(anonymousAuthor=true) 이면 "익명" 고정.
+ *
+ * 왜 헬퍼로 분리:
+ *   - 단위 테스트 용이 (DB 무관 pure function)
+ *   - upsert 와 preview 에서 동일 로직 공유
+ */
+export function resolveCommunityAuthorNickname(board: CafeBoard, author: string): string {
+  if (board.anonymousAuthor) return "익명";
+  return author || "카페 회원"; // 빈 문자열 방어
+}
+
+/**
+ * community_posts.images JSON 객체 조립 — 원본 이미지 URL 배열 + 카페 메타.
+ *
+ * 스키마(schema.prisma L815 주석): "이미지 URL 배열 + 카페 메타 (cafe_source_id, cafe_author, cafe_comments)"
+ *
+ * 구조: 객체 (PM 결정 — 메타 쿼리 가능, `images->>'cafe_source_id'` 로 중복 체크)
+ *
+ * 필드:
+ *   - cafe_source_id: 중복 방지 키
+ *   - cafe_board: 게시판 id (N54V/IVd2/E7hL/bWL)
+ *   - cafe_dataid: 원본 dataid (string)
+ *   - cafe_article_id: dataidNum (Int, 정렬 tie-break 용)
+ *   - cafe_author: 원본 닉네임 (익명게시판이면 null — Q3 "의도 존중")
+ *   - source_url: 원본 URL
+ *   - cafe_comments: 댓글 배열 (Phase 2b 기본 [])
+ *   - urls: 본문 이미지 URL 배열
+ */
+export function buildCommunityImagesMeta(input: CafeCommunityInput): Record<string, unknown> {
+  const isAnonymous = !!input.board.anonymousAuthor;
+  return {
+    cafe_source_id: buildCommunityCafeSourceId(input.board.id, input.dataid),
+    cafe_board: input.board.id,
+    cafe_dataid: input.dataid,
+    cafe_article_id: input.dataidNum, // undefined 면 키 자동 생략 (JSON.stringify 규칙)
+    cafe_author: isAnonymous ? null : input.author || null, // Q3: 익명은 원본도 저장 안 함
+    source_url: articleUrl(input.board, input.dataid),
+    cafe_comments: input.comments ?? [],
+    urls: input.imageUrls ?? [],
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// community_posts 중복 검사
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * `images->>'cafe_source_id'` 매칭으로 기존 행 조회.
+ *
+ * 왜 $queryRaw:
+ *   - community_posts 에 cafe_source_id 컬럼 없음 → JSON path 쿼리 필요.
+ *   - Prisma 가 JSON 연산자 공식 미지원.
+ *
+ * 성능: 현재 수백 scale 에서는 full scan 허용. GIN index 는 수천건 넘어가면 고려.
+ */
+async function findExistingCommunityPostByCafeSourceId(
+  prisma: PrismaClient,
+  cafeSourceId: string,
+): Promise<bigint | null> {
+  const rows = await prisma.$queryRaw<Array<{ id: bigint }>>`
+    SELECT id FROM community_posts
+    WHERE images->>'cafe_source_id' = ${cafeSourceId}
+    LIMIT 1
+  `;
+  return rows.length > 0 ? rows[0].id : null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// community_posts upsert 메인
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 카페 일반 게시판 1건 → community_posts INSERT (중복이면 skip).
+ *
+ * 동작:
+ *   1) assertDevDatabase() — 운영 DB 가드
+ *   2) resolveCafeBotUserId — 봇 user_id 캐시 로드 (없으면 throw)
+ *   3) buildCommunityCafeSourceId 로 source_id 생성
+ *   4) findExistingCommunityPostByCafeSourceId — 중복 확인
+ *   5) 중복이면 skipped_duplicate
+ *   6) 마스킹 + INSERT
+ *
+ * 트랜잭션: 단일 INSERT 라 $transaction 불필요.
+ * 실패 처리: throw 없이 result.failed 반환 (games 와 동일 패턴).
+ *
+ * 호출자 책임:
+ *   - board.target === "community_posts" 확인 후 호출
+ *   - input.content 는 원본 또는 마스킹 완료 (이 함수가 2차 마스킹)
+ */
+export async function upsertCommunityPostFromCafe(
+  prisma: PrismaClient,
+  input: CafeCommunityInput,
+): Promise<CommunityUpsertResult> {
+  // 1차 가드 — throw (전체 중단 의도)
+  assertDevDatabase();
+
+  try {
+    if (input.board.target !== "community_posts") {
+      return {
+        action: "failed",
+        error: `board.target 이 community_posts 가 아님 (${input.board.target})`,
+      };
+    }
+    if (!input.board.category) {
+      return {
+        action: "failed",
+        error: `board.category 누락 — community 게시판은 category 필수`,
+      };
+    }
+
+    // 봇 user_id 로드 (캐시, 없으면 throw)
+    const botUserId = await resolveCafeBotUserId(prisma);
+
+    // 중복 체크
+    const cafeSourceId = buildCommunityCafeSourceId(input.board.id, input.dataid);
+    const existing = await findExistingCommunityPostByCafeSourceId(prisma, cafeSourceId);
+    if (existing !== null) {
+      return { action: "skipped_duplicate", postId: existing };
+    }
+
+    // 2차 방어 마스킹 (9가드 #5) — title 도 포함
+    const maskedTitle = maskPersonalInfo(input.title);
+    const maskedContent = maskPersonalInfo(input.content);
+
+    const now = new Date();
+    const authorNickname = resolveCommunityAuthorNickname(input.board, input.author);
+    const images = buildCommunityImagesMeta({
+      ...input,
+      // 마스킹된 author 는 images 에 안 들어감 (buildCommunityImagesMeta 가 anonymousAuthor 판정)
+    });
+
+    const row = await prisma.community_posts.create({
+      data: {
+        user_id: botUserId,
+        title: maskedTitle.slice(0, 255), // VARCHAR 길이 방어
+        content: maskedContent,
+        category: input.board.category,
+        status: "published",
+        view_count: 0,
+        comments_count: 0,
+        likes_count: 0,
+        author_nickname: authorNickname,
+        // images: JSON — 배열이 아닌 객체로 저장 (PM 결정). UX 렌더링 시 Array.isArray 분기.
+        images: images as unknown as Prisma.InputJsonValue,
+        // created_at = 카페 원본 게시 시각 우선 (games 와 동일 정책)
+        created_at: input.postedAt ?? now,
+        updated_at: now,
+      },
+    });
+
+    return { action: "created", postId: row.id };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { action: "failed", error: msg };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// community preview (dry-run)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * --execute 없을 때 미리보기 — DB 접근 0 (중복 체크 제외).
+ *
+ * 호출 시점:
+ *   - sync-cafe.ts dry-run
+ *   - backfill-cafe-community.ts dry-run
+ *
+ * 중복 체크는 DB 접근 필요하므로 여기선 하지 않음 (호출자가 별도 판단).
+ */
+export function previewCommunityUpsert(input: CafeCommunityInput): {
+  cafeSourceId: string;
+  category: string;
+  authorNickname: string;
+  willInsert: boolean;
+  images: Record<string, unknown>;
+} {
+  const cafeSourceId = buildCommunityCafeSourceId(input.board.id, input.dataid);
+  return {
+    cafeSourceId,
+    category: input.board.category ?? "(category 누락)",
+    authorNickname: resolveCommunityAuthorNickname(input.board, input.author),
+    willInsert: input.board.target === "community_posts" && !!input.board.category,
+    images: buildCommunityImagesMeta(input),
   };
 }

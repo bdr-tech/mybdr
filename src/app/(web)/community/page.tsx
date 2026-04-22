@@ -32,10 +32,16 @@ export default async function CommunityPage() {
     fallbackData = undefined;
   }
 
+  // 프리페치 결과의 public_id는 string|null이지만, 클라이언트 PostFromApi는 string을 기대한다.
+  // null인 경우 빈 문자열로 폴백하여 타입을 맞춘다 (public_id가 없는 게시글은 라우팅 불가 → 빈 값이 적절).
+  const normalizedPosts = fallbackData?.posts.map((p) => ({
+    ...p,
+    public_id: p.public_id ?? "",
+  }));
+
   return (
     <Suspense fallback={<CommunityLoading />}>
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- 서버 프리페치 타입과 클라이언트 타입의 null 허용 차이를 맞추기 위한 단언 */}
-      <CommunityContent fallbackPosts={fallbackData?.posts as any} />
+      <CommunityContent fallbackPosts={normalizedPosts} />
     </Suspense>
   );
 }

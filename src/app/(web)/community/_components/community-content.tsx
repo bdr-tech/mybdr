@@ -7,6 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePreferFilter } from "@/contexts/prefer-filter-context";
 import { TossCard } from "@/components/toss/toss-card";
 import { TossSectionHeader } from "@/components/toss/toss-section-header";
+// [2026-04-22] 카페 원문 HTML entity 디코드 — Stage A 확장 후속
+import { decodeHtmlEntities } from "@/lib/utils/decode-html";
 
 // API에서 내려오는 게시글 데이터 타입 (apiSuccess가 snake_case로 자동 변환)
 interface PostFromApi {
@@ -436,7 +438,7 @@ function PostCard({ post }: { post: PostFromApi }) {
           className="text-sm font-bold leading-snug line-clamp-2 mb-2"
           style={{ color: "var(--color-text-primary)" }}
         >
-          {post.title}
+          {decodeHtmlEntities(post.title)}
         </h3>
 
         {/* 3행: 본문 미리보기 (있으면 표시) */}
@@ -445,7 +447,7 @@ function PostCard({ post }: { post: PostFromApi }) {
             className="text-xs line-clamp-2 mb-3"
             style={{ color: "var(--color-text-muted)" }}
           >
-            {post.content_preview}
+            {decodeHtmlEntities(post.content_preview)}
           </p>
         )}
 
@@ -471,7 +473,7 @@ function PostCard({ post }: { post: PostFromApi }) {
               className="text-xs font-medium"
               style={{ color: "var(--color-text-secondary)" }}
             >
-              {post.author_nickname}
+              {decodeHtmlEntities(post.author_nickname)}
             </span>
           </div>
 

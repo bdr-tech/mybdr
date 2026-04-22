@@ -226,8 +226,9 @@ export function ImageUploader({
       )}
 
       {/* 에러 메시지 */}
+      {/* [2026-04-22] 하드코딩 text-red-400 → --color-error 변수로 토큰화 */}
       {error && (
-        <p className="text-xs text-red-400">{error}</p>
+        <p className="text-xs" style={{ color: "var(--color-error)" }}>{error}</p>
       )}
 
       {/* 숨겨진 file input */}

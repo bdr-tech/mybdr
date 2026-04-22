@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import { updateCommentAction, deleteCommentAction } from "@/app/actions/community";
+// [2026-04-22] 카페 원문 HTML entity 디코드 — Stage A 확장 후속
+import { decodeHtmlEntities } from "@/lib/utils/decode-html";
 
 /**
  * 댓글 1개의 직렬화된 데이터 타입
@@ -152,7 +154,7 @@ function CommentRow({
               className="text-sm font-bold"
               style={{ color: "var(--color-text-primary)" }}
             >
-              {c.nickname}
+              {decodeHtmlEntities(c.nickname)}
             </span>
             {/* 게시글 작성자 표시 */}
             {c.isPostAuthor && (
@@ -256,7 +258,7 @@ function CommentRow({
               className="text-sm leading-relaxed"
               style={{ color: "var(--color-text-secondary)" }}
             >
-              {c.content}
+              {decodeHtmlEntities(c.content)}
             </p>
 
             {/* 좋아요 + 답글 */}

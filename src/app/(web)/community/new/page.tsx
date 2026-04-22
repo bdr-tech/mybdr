@@ -36,7 +36,7 @@ export default function NewPostPage() {
       <h1 className="mb-6 text-2xl font-extrabold uppercase tracking-wide sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>글쓰기</h1>
       <Card>
         {state?.error && (
-          <div className="mb-4 rounded-[12px] bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <div className="mb-4 rounded-[12px] bg-[var(--color-error-light)] px-4 py-3 text-sm text-[var(--color-error)]">
             {state.error}
           </div>
         )}

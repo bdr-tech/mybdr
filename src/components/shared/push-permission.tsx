@@ -173,7 +173,8 @@ export function PushPermissionBanner() {
   // 권한이 차단됨
   if (permission === "denied") {
     return (
-      <div className="flex items-center justify-between rounded-md px-4 py-3 border-l-4 border-red-500"
+      // [2026-04-22] 하드코딩 border-red-500 → --color-error 변수로 토큰화
+      <div className="flex items-center justify-between rounded-md px-4 py-3 border-l-4 border-[var(--color-error)]"
         style={{ backgroundColor: "var(--color-surface)" }}>
         <div className="flex items-center gap-3">
           <span className="material-symbols-outlined text-xl"

@@ -139,7 +139,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<Page
           {/* 평점 + 리뷰 */}
           {court.average_rating && Number(court.average_rating) > 0 && (
             <div className="flex items-center gap-2 mt-2">
-              <span className="material-symbols-outlined text-sm text-yellow-300" style={{ fontVariationSettings: "'FILL' 1" }}>
+              <span className="material-symbols-outlined text-sm text-[var(--color-warning)]" style={{ fontVariationSettings: "'FILL' 1" }}>
                 star
               </span>
               <span className="text-sm text-white font-medium">

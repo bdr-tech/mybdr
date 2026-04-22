@@ -91,7 +91,14 @@ export default function EditPostPage() {
       <Card>
         {/* Server Action 에러 메시지 */}
         {state?.error && (
-          <div className="mb-4 rounded-[12px] bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          // [2026-04-22] 하드코딩 red-500/red-400 → CSS 변수 --color-error 로 토큰화
+          <div
+            className="mb-4 rounded-[12px] px-4 py-3 text-sm"
+            style={{
+              backgroundColor: "color-mix(in srgb, var(--color-error) 10%, transparent)",
+              color: "var(--color-error)",
+            }}
+          >
             {state.error}
           </div>
         )}

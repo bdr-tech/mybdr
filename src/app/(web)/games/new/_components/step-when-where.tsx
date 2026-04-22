@@ -290,7 +290,7 @@ export function StepWhenWhere({
                 min={minDate}
                 onChange={(e) => updateData("scheduledDate", e.target.value)}
                 className={`w-full px-4 py-3 rounded-md border bg-[var(--color-surface-lowest)] text-[var(--color-text-primary)] text-sm focus:border-[var(--color-primary)] focus:outline-none focus:ring-0 ${
-                  errors.scheduledAt ? "border-red-400" : "border-[var(--color-border)]"
+                  errors.scheduledAt ? "border-[var(--color-error)]" : "border-[var(--color-border)]"
                 }`}
               />
             </div>
@@ -321,7 +321,7 @@ export function StepWhenWhere({
             </div>
           </div>
 
-          {errors.scheduledAt && <p role="alert" className="text-xs text-red-400">{errors.scheduledAt}</p>}
+          {errors.scheduledAt && <p role="alert" className="text-xs text-[var(--color-error)]">{errors.scheduledAt}</p>}
 
           {/* LOCATION SEARCH (Kakao style) */}
           <div>
@@ -492,7 +492,7 @@ export function StepWhenWhere({
                       </p>
                     </button>
                     <button type="button" onClick={() => handleDeletePreset(i)}
-                      className="text-xs text-[var(--color-text-secondary)] hover:text-red-400">삭제</button>
+                      className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-error)]">삭제</button>
                   </div>
                 ))}
               </div>

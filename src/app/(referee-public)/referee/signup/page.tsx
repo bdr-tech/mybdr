@@ -105,9 +105,9 @@ function RefereeSignupContent() {
         <div className="rounded-[4px] border p-5" style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)", boxShadow: "var(--shadow-card)" }}>
           <p className="mb-4 text-center text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>이메일로 가입</p>
 
-          {/* 서버 액션 에러 메시지 */}
+          {/* 서버 액션 에러 메시지 — 하드코딩 red-500 → CSS 변수 토큰 (bg: color-mix 10%, text: error) */}
           {state?.error && (
-            <div className="mb-3 rounded-[4px] bg-red-500/10 px-3 py-2 text-sm text-red-500">{state.error}</div>
+            <div className="mb-3 rounded-[4px] bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)] px-3 py-2 text-sm text-[var(--color-error)]">{state.error}</div>
           )}
 
           <form action={formAction} className="space-y-3">

@@ -155,8 +155,9 @@ export default function VerifyPage() {
               <p className="text-sm text-[var(--color-text-muted)]">
                 <span className="font-medium text-[var(--color-text-primary)]">{phone}</span>으로 인증 코드를 보냈습니다.
               </p>
+              {/* [개발 모드] 인증 코드 노출 박스 — amber 하드코딩 → warning 토큰 (semantic 일치) */}
               {sentCode && (
-                <div className="rounded-[10px] bg-amber-500/10 px-3 py-2 text-xs text-amber-600">
+                <div className="rounded-[10px] bg-[color-mix(in_srgb,var(--color-warning)_10%,transparent)] px-3 py-2 text-xs text-[var(--color-warning)]">
                   [개발 모드] 인증 코드: <span className="font-bold">{sentCode}</span>
                 </div>
               )}

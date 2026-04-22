@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { getWebSession } from "@/lib/auth/web-session";
 
@@ -58,7 +59,9 @@ export async function toggleLikeAction(postPublicId: string): Promise<{ liked: b
       // 좋아요 안 한 상태 -> 추가 (생성 + 카운트 +1)
       // 본인 글이 아닌 경우에만 알림도 함께 생성
       const isOwnPost = post.user_id === userId;
-      const txOps = [
+      // 세 가지 Prisma delegate의 create/update 반환 타입이 다르므로
+      // 트랜잭션 배열의 공통 타입으로 PrismaPromise<unknown>[] 사용
+      const txOps: Prisma.PrismaPromise<unknown>[] = [
         prisma.community_post_likes.create({
           data: {
             community_post_id: post.id,
@@ -96,7 +99,7 @@ export async function toggleLikeAction(postPublicId: string): Promise<{ liked: b
               created_at: new Date(),
               updated_at: new Date(),
             },
-          }) as any  // 트랜잭션 배열 타입 호환
+          })
         );
       }
 

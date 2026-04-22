@@ -196,6 +196,7 @@ export default async function GameDetailPage({
         const decodedNick = decodeHtmlEntities(game.author_nickname) ?? "";
         return (
           <div className="flex items-center gap-2">
+            {/* TODO: --color-navy 토큰 globals.css에 정의되지 않음 (fallback #1B3C87로 동작 중). 별도 토큰 정리 안건 */}
             <div
               className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
               style={{ backgroundColor: "var(--color-navy, #1B3C87)" }}
@@ -281,7 +282,7 @@ export default async function GameDetailPage({
 
             {/* 이미 승인된 경우 */}
             {session && !isHost && myApplication?.status === 1 && (
-              <div className="flex items-center gap-2 rounded-lg bg-green-50 dark:bg-green-900/20 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+              <div className="flex items-center gap-2 rounded-lg bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 px-4 py-3 text-sm text-[var(--color-success)]">
                 <span className="material-symbols-outlined text-sm">check_circle</span>
                 참가가 승인되었습니다.
               </div>

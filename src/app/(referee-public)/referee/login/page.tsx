@@ -134,7 +134,8 @@ function RefereeLoginContent() {
               className="text-sm underline disabled:opacity-50" style={{ color: "var(--color-text-muted)" }}>
               {devPending ? "..." : "Dev 자동 로그인"}
             </button>
-            {devState?.error && <p className="mt-1 text-sm text-red-400">{devState.error}</p>}
+            {/* Dev 자동 로그인 에러 텍스트 — red-400 → error 토큰 */}
+            {devState?.error && <p className="mt-1 text-sm text-[var(--color-error)]">{devState.error}</p>}
           </form>
         )}
 
@@ -174,9 +175,9 @@ function RefereeLoginContent() {
               </button>
             </div>
 
-            {/* 로그인 에러 */}
+            {/* 로그인 에러 — 하드코딩 red-500 → CSS 변수 토큰 (bg: color-mix 10%, text: error) */}
             {loginState?.error && (
-              <div className="mb-3 rounded-[4px] bg-red-500/10 px-3 py-2 text-sm text-red-500">{loginState.error}</div>
+              <div className="mb-3 rounded-[4px] bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)] px-3 py-2 text-sm text-[var(--color-error)]">{loginState.error}</div>
             )}
 
             {/* 로그인 폼: redirect hidden input 으로 복귀 경로 전달 */}

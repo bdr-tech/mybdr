@@ -177,7 +177,7 @@ export default function GameEditPage({
   if (error || !game) {
     return (
       <div className="py-20 text-center">
-        <p className="text-sm text-red-500">{error ?? "경기를 찾을 수 없습니다."}</p>
+        <p className="text-sm text-[var(--color-error)]">{error ?? "경기를 찾을 수 없습니다."}</p>
         <button
           onClick={() => router.back()}
           className="mt-4 text-sm text-[var(--color-primary)] underline"

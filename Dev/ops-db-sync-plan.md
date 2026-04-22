@@ -61,12 +61,24 @@
 
 ## 4. 선결 조건 (원영 확인 필요)
 
-- [ ] **Supabase 청구 플랜 확인** — 두 번째 프로젝트 생성 가능 여부. 무료 tier는 프로젝트당 500MB 제한
-- [ ] **운영 DB 크기** — 현 시점 pg_dump 예상 크기
-- [ ] **익명화 스크립트 작성 합의** — PII 필드 정의, 해싱/고정값/null 중 무엇으로 치환
-- [ ] **동기화 주기** — 주 1회 / 월 1회 / 수동
-- [ ] **Flutter 앱의 개발용 DATABASE_URL** — 앱 환경 분리 여부 (앱 환경 전환 가능한가?)
-- [ ] **super_admin 계정** 개발 DB에 별도로 만들지 — 운영 admin 계정을 익명화하면 로그인 불가
+> 2026-04-22 협의 진행 — **6건 중 5건 확정**, Flutter 1건 대기
+
+- [x] **Supabase 청구 플랜 확인** — ✅ 계정당 **프로젝트 2개 생성 가능** (원영, 2026-04-22). 옵션 A 실현 가능
+- [x] **운영 DB 크기** — ✅ 현재 무료 tier 500MB지만 **원영이 증설 예정** (2026-04-22). 용량 제약 해제
+- [x] **익명화 스크립트 작성 합의** — ✅ PII 치환 범위 확정 (수빈 승인, 2026-04-22):
+  - `email` → `user-{id}@dev.local` (unique 제약 충족)
+  - `passwordDigest` → 고정 bcrypt (공용 개발 비번)
+  - `name` → null 또는 `"테스터{id}"`
+  - `phone` / `bank_name` / `bank_code` / `account_number` / `account_holder` / `toss_id` / `oauth_token` / `oauth_expires_at` / `birth_date` / `provider` / `uid` → null
+  - 유지: `nickname` / `height` / `weight` / `city` / `district` (비-PII)
+  - 추가 대상: `payments.*` 결제 정보 / `community_posts.content` / `comments.content` freetext 휴리스틱 치환
+- [x] **동기화 주기** — ✅ **매주 일요일 새벽 3시 자동 + `/admin` 수동 실행 버튼** (수빈 결정, 2026-04-22). GH Actions cron + `workflow_dispatch`, 카페 sync 구조 재활용. 긴급 시 수동 1클릭
+- [ ] **Flutter 앱의 개발용 DATABASE_URL** — ⏳ **원영 추가 확인 중** (2026-04-22). 질문 재정의: 앱이 서버 API BASE_URL(예: `mybdr.kr` vs `mybdr-git-dev-mybdr.vercel.app`)을 빌드별로 분기 가능한지. 불가 시 앱 테스트가 운영 DB를 계속 호출 → 분리 효과 반감
+- [x] **super_admin 계정** — ✅ 개발 DB에 **공용 `admin@dev.local` 1개** 생성 (수빈 승인, 2026-04-22). `admin_role="super_admin"` + `isAdmin=true`. `scripts/seed-dev-admin.ts` 신규 예정
+
+### 담당 분업 (2026-04-22 확정)
+- 스크립트 작성 (익명화 dump + seed-dev-admin + 동기화 cron) → **수빈**
+- 리뷰 + Flutter 앱 영향 범위 확인 → **원영**
 
 ---
 

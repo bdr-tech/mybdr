@@ -19,14 +19,17 @@ import useSWR from "swr";
 /* ---------- 타입 정의 ---------- */
 
 // /api/web/teams 응답의 팀 하나
-interface TeamData {
+// 왜 export인가: 부모 컴포넌트(home-sidebar.tsx)의 fallback props 타입에 재사용하여
+// 중복 정의 없이 단일 원본(single source of truth)을 유지하기 위함
+export interface TeamData {
   id: string;
   name: string;
   wins: number;
 }
 
 // /api/web/community 응답의 게시글 하나 (apiSuccess가 snake_case로 변환)
-interface PostData {
+// export 사유: TeamData와 동일 (부모에서 fallback props 타입으로 재사용)
+export interface PostData {
   id: string;
   public_id: string | null;
   title: string;

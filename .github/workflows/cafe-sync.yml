@@ -29,9 +29,9 @@ on:
         required: false
         default: "2"
       article_limit:
-        description: "본문 수집 건수 (1~10, 기본 5)"
+        description: "본문 수집 건수 (1~10, 기본 10)"
         required: false
-        default: "5"
+        default: "10"
 
 # ─── 동시 실행 제어 ────────────────────────────────────────────────────────────
 # 이전 실행이 늦어져도 덮어쓰지 않음 (9가드 #8 연속 실패 상황 보존).
@@ -140,7 +140,7 @@ jobs:
           npx tsx scripts/sync-cafe.ts \
             --board=all \
             --with-body \
-            --article-limit=${{ github.event.inputs.article_limit || '5' }} \
+            --article-limit=${{ github.event.inputs.article_limit || '10' }} \
             --max-pages=${{ github.event.inputs.max_pages || '2' }} \
             --execute \
             2>&1 | tee tmp/cafe-sync.log
@@ -156,47 +156,82 @@ jobs:
           path: tmp/cafe-sync.log
           retention-days: 14
 
-      # ─── 8. Slack 실패 알림 ─────────────────────────────────────────────────
-      # 이유: Incoming Webhook + curl (의존성 0). payload 에 run URL / run id /
-      #       게시판 요약 / tail 50줄 포함. Secret 값은 --data 인자로만 사용 (로그 미노출).
-      - name: Slack notify on failure
+      # ─── 8. 실패 알림 메일 준비 ─────────────────────────────────────────────
+      # [2026-04-22] Slack → 메일 전환. 수신자: cobby8@stiz.kr, bdrbasket@gmail.com
+      # 이유: 팀 운영자 선호 채널. Slack 대비 (1) 검색 용이 (2) 히스토리 보존
+      #       (3) 멤버십 관리 불필요.
+      - name: Prepare failure mail body
         if: failure()
+        id: prep_mail
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
           RUN_ID: ${{ github.run_id }}
         shell: bash
         run: |
-          if [ -z "$SLACK_WEBHOOK_URL" ]; then
-            echo "SLACK_WEBHOOK_URL 미설정 — 알림 스킵"
-            exit 0
+          # 게시판 요약 + tail + 쿠키 만료 감지 — 기존 Slack step 과 동일 로직
+          BOARD_SUMMARY=$(grep -E '\[(IVHA|Dilr|MptT|N54V|IVd2|E7hL|bWL) ' tmp/cafe-sync.log 2>/dev/null | head -n 20 || echo "(게시판 요약 없음)")
+          TAIL=$(tail -n 50 tmp/cafe-sync.log 2>/dev/null | head -c 4000 || echo "(로그 없음)")
+
+          COOKIE_HINT=""
+          SUBJECT_SUFFIX=""
+          if grep -qE '(\b403\b|\b401\b|unauthorized|로그인이 필요|세션.*만료|session.*expired)' tmp/cafe-sync.log 2>/dev/null; then
+            COOKIE_HINT="쿠키 만료 의심 — 로그에 403/401/unauthorized 감지. scripts/cafe-login.ts 재실행 후 DAUM_CAFE_STORAGE_STATE_B64 secret 갱신 필요"
+            SUBJECT_SUFFIX=" (쿠키 만료 의심)"
           fi
-          # 게시판별 수집 요약 추출 — sync-cafe.ts L150 실제 포맷: "[YYYY-MM-DD HH:MM:SS] [IVHA 픽업게임] N건 수집"
-          BOARD_SUMMARY=$(grep -E '\[(IVHA|Dilr|MptT) ' tmp/cafe-sync.log 2>/dev/null | head -n 20 || echo "(게시판 요약 없음)")
-          # 마지막 50줄 + 2000바이트 제한 (Slack text 필드 여유)
-          TAIL=$(tail -n 50 tmp/cafe-sync.log 2>/dev/null | head -c 2000 || echo "(로그 없음)")
-          # BOARD_SUMMARY / TAIL / RUN_URL / RUN_ID 를 env 로 넘겨 JSON 안전 직렬화 (node)
-          # 이유: sed 기반 이스케이프는 따옴표/개행 처리가 취약. node JSON.stringify 가 안전.
-          export BOARD_SUMMARY TAIL
-          PAYLOAD=$(node -e "
+
+          export BOARD_SUMMARY TAIL COOKIE_HINT
+          # HTML 본문 생성 (node 로 이스케이프 안전하게)
+          HTML=$(node -e "
             const url = process.env.RUN_URL;
             const id = process.env.RUN_ID;
             const board = process.env.BOARD_SUMMARY || '(없음)';
-            const tail = (process.env.TAIL || '(없음)').slice(0, 2000);
-            const text = [
-              '🚨 *cafe-sync 실패* <' + url + '|런 #' + id + ' 열기>',
-              '',
-              '*게시판 요약*',
-              '\`\`\`',
-              board,
-              '\`\`\`',
-              '',
-              '*최근 로그 (tail 50)*',
-              '\`\`\`',
-              tail,
-              '\`\`\`'
-            ].join('\n');
-            process.stdout.write(JSON.stringify({ text }));
+            const tail = (process.env.TAIL || '(없음)').slice(0, 4000);
+            const cookieHint = process.env.COOKIE_HINT || '';
+            const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const hintBlock = cookieHint
+              ? '<div style=\"background:#fffbe6;border:1px solid #ffe58f;padding:12px 16px;margin:12px 0;border-radius:4px;\"><b>⚠️ ' + esc(cookieHint) + '</b></div>'
+              : '';
+            const html = [
+              '<!doctype html><html><body style=\"font-family:-apple-system,Segoe UI,Pretendard,sans-serif;color:#222;max-width:760px;margin:0 auto;padding:24px;\">',
+              '<h2 style=\"color:#d32f2f;\">🚨 cafe-sync 실패 — 런 #' + esc(id) + '</h2>',
+              '<p><a href=\"' + esc(url) + '\">런 상세 보기 ↗</a></p>',
+              hintBlock,
+              '<h3>게시판 요약</h3>',
+              '<pre style=\"background:#f5f5f5;padding:12px;border-radius:4px;overflow-x:auto;font-size:12px;\">' + esc(board) + '</pre>',
+              '<h3>최근 로그 (tail 50)</h3>',
+              '<pre style=\"background:#f5f5f5;padding:12px;border-radius:4px;overflow-x:auto;font-size:12px;white-space:pre-wrap;\">' + esc(tail) + '</pre>',
+              '<hr style=\"margin-top:32px;border:none;border-top:1px solid #eee;\">',
+              '<p style=\"color:#888;font-size:12px;\">mybdr cafe-sync bot · GitHub Actions</p>',
+              '</body></html>'
+            ].join('');
+            process.stdout.write(html);
           ")
-          # Secret 값은 --data 인자로만 사용 (로그 미노출). curl 실패해도 step 은 계속.
-          curl -sS -X POST -H 'Content-Type: application/json' --data "$PAYLOAD" "$SLACK_WEBHOOK_URL" || true
+          SUBJECT="[cafe-sync] 실패${SUBJECT_SUFFIX} — 런 #${RUN_ID}"
+
+          # GITHUB_OUTPUT 에 multiline 전달 (heredoc 문법)
+          {
+            echo "subject=$SUBJECT"
+            echo "html<<HTML_EOF"
+            echo "$HTML"
+            echo "HTML_EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "mail body prepared (subject=$SUBJECT)"
+
+      # ─── 9. 메일 전송 — MAIL_USERNAME secret 없으면 자동 스킵 ────────────────
+      # 이유: secret 미등록 상태에서는 조용히 패스 (Slack 과 동일 관습).
+      #       secret 존재 여부는 env 로 옮겨서 if 에서 평가 (GH 보안 제약 우회).
+      - name: Send failure mail
+        if: failure() && env.HAS_MAIL_SECRET == 'true'
+        env:
+          HAS_MAIL_SECRET: ${{ secrets.MAIL_USERNAME != '' }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_APP_PASSWORD }}
+          from: mybdr cafe-sync bot <${{ secrets.MAIL_USERNAME }}>
+          to: cobby8@stiz.kr, bdrbasket@gmail.com
+          subject: ${{ steps.prep_mail.outputs.subject }}
+          html_body: ${{ steps.prep_mail.outputs.html }}

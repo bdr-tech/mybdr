@@ -4,6 +4,8 @@ import {
   hasPermission,
 } from "@/lib/auth/admin-guard";
 import { prisma } from "@/lib/db/prisma";
+// 공용 ExcelRow 타입 — xlsx sheet_to_json 결과의 행 타입 (any 제거)
+import type { ExcelRow } from "@/lib/types/excel-row";
 import * as XLSX from "xlsx";
 
 /**
@@ -184,8 +186,8 @@ export async function POST(req: Request) {
     }
 
     const sheet = workbook.Sheets[sheetName];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const jsonData = XLSX.utils.sheet_to_json<any>(sheet, { defval: "" });
+    // 공용 ExcelRow 타입 — 동적 키 + 원시타입 허용 (any 제거)
+    const jsonData = XLSX.utils.sheet_to_json<ExcelRow>(sheet, { defval: "" });
 
     if (jsonData.length === 0) {
       return apiError("데이터가 없습니다.", 400, "EMPTY_DATA");

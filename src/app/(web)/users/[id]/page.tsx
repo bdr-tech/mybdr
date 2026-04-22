@@ -1,36 +1,53 @@
 import type { Metadata } from "next";
-import { prisma } from "@/lib/db/prisma";
-import { notFound } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
+import { notFound } from "next/navigation";
+
+import { prisma } from "@/lib/db/prisma";
+import { getWebSession } from "@/lib/auth/web-session";
+import { getPlayerStats } from "@/lib/services/user";
+import { getProfileLevelInfo } from "@/lib/profile/gamification";
+
+import { ProfileHero } from "@/components/profile/profile-hero";
+import { RecentGames } from "@/components/profile/recent-games";
+// 본인 프로필 볼 때 "프로필 편집" 버튼 — 공용 컴포넌트 (2곳 중복 해소)
+import { OwnerEditButton } from "@/components/profile/owner-edit-button";
 import { UserRadarSection } from "./_components/user-radar-section";
 import { UserStatsSection } from "./_components/user-stats-section";
-import { UserRecentGames } from "./_components/user-recent-games";
 import { ActionButtons } from "./_components/action-buttons";
-// 내 프로필과 동일한 승률 계산 로직을 재사용
-import { getPlayerStats } from "@/lib/services/user";
-import { getWebSession } from "@/lib/auth/web-session";
 
 /**
- * 타인 프로필 페이지 (/users/[id])
+ * 타인 프로필 페이지 (/users/[id]) — L2 통합 구현
  *
- * 서버 컴포넌트 - prisma 직접 쿼리 유지
- * 기존 user 쿼리 유지 + matchPlayerStat 집계 추가 (Promise.all)
+ * 왜:
+ * - L2 본 설계 (Q1=A): 본인 프로필도 `/users/[id]`로 통합하되 isOwner 분기로 액션/편집 버튼만 교체.
+ * - 서버 컴포넌트 유지 (Promise.all 7쿼리 유지).
+ * - 티어 배지 제거(Q4): 경기수 기반 BRONZE/GOLD 등 제거 → 레벨(Lv.N) 배지로 통합.
+ * - Teams 섹션 추가(Q7): 공개 팀만 카드 그리드로 렌더.
+ * - gamification은 API 대신 getProfileLevelInfo 헬퍼 직접 호출 (snake_case 6회 재발 패턴 차단).
  *
- * 디자인 시안(bdr_2/4):
- * - 프로필 헤더: 아바타 + 티어 배지 + 이름 + 통계 4칸 + CTA 버튼
- * - 2열: 레이더 차트 + 시즌 상세 데이터
- * - 최근 경기 기록 테이블
+ * 어떻게:
+ * - session.sub와 user.id를 BigInt로 비교해 isOwner 판단.
+ * - ProfileHero actionSlot으로 본인=편집 링크 / 타인=ActionButtons / 비로그인=미표시.
+ * - 공용 컴포넌트(ProfileHero, RecentGames) 사용 → 인라인 JSX 제거.
  */
 
+// 60초 ISR — 기존 동일
 export const revalidate = 60;
 
-// SEO: 유저 프로필 동적 메타데이터 — 닉네임을 DB에서 조회하여 title에 반영
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+// SEO: 닉네임 동적 메타
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
   const { id } = await params;
-  const user = await prisma.user.findUnique({
-    where: { id: BigInt(id) },
-    select: { nickname: true, position: true },
-  }).catch(() => null);
+  const user = await prisma.user
+    .findUnique({
+      where: { id: BigInt(id) },
+      select: { nickname: true, position: true },
+    })
+    .catch(() => null);
   if (!user) return { title: "선수 프로필 | MyBDR" };
   return {
     title: `${user.nickname || "선수"} 프로필 | MyBDR`,
@@ -38,140 +55,146 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-const POSITION_LABEL: Record<string, string> = {
-  PG: "포인트가드",
-  SG: "슈팅가드",
-  SF: "스몰포워드",
-  PF: "파워포워드",
-  C: "센터",
-};
-
-/** 티어 배지 계산 - 총 경기수 기반 */
-function getTierBadge(totalGames: number): { label: string; color: string } {
-  if (totalGames >= 100) return { label: "PLATINUM", color: "var(--color-tertiary)" };
-  if (totalGames >= 60) return { label: "GOLD", color: "var(--color-tier-gold)" };
-  if (totalGames >= 30) return { label: "SILVER", color: "var(--color-tier-silver)" };
-  if (totalGames >= 10) return { label: "BRONZE", color: "var(--color-tier-bronze)" };
-  return { label: "ROOKIE", color: "var(--color-text-muted)" };
-}
-
-export default async function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function UserProfilePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
+  const userIdBigInt = BigInt(id);
 
-  // 로그인 유저 세션 확인 (팔로우 상태 조회용)
+  // 로그인 세션 (팔로우 상태 조회 + isOwner 판정용)
   const session = await getWebSession();
   const isLoggedIn = !!session;
+  // isOwner: 세션의 sub(문자열)를 BigInt로 변환해 target과 비교
+  const isOwner = !!session && BigInt(session.sub) === userIdBigInt;
 
-  // 기존 user 쿼리 유지 + matchPlayerStat 집계 추가 (병렬 실행)
-  // playerStats: 내 프로필과 동일한 서비스 함수로 승률(winRate) 계산
-  // 팔로워/팔로잉 수 + 기존 쿼리를 병렬 실행
-  const [user, statAgg, recentGames, playerStats, followRecord, followersCount, followingCount] = await Promise.all([
-    // 1) 기존 유저 정보 쿼리 (유지)
-    prisma.user.findUnique({
-      where: { id: BigInt(id) },
-      select: {
-        id: true,
-        name: true,
-        nickname: true,
-        position: true,
-        height: true,
-        city: true,
-        district: true,
-        bio: true,
-        profile_image_url: true,
-        total_games_participated: true,
-        createdAt: true,
-        teamMembers: {
-          where: { status: "active" },
-          include: {
-            team: {
-              select: { id: true, name: true, primaryColor: true, city: true },
+  // 병렬 쿼리 — 기존 7개 유지 + teamMembers include 확장 (team.is_public/logoUrl/city/status)
+  const [
+    user,
+    statAgg,
+    recentGames,
+    playerStats,
+    followRecord,
+    followersCount,
+    followingCount,
+  ] = await Promise.all([
+    // 1) 유저 기본 정보 + 공개 팀 필터용 필드 확장
+    prisma.user
+      .findUnique({
+        where: { id: userIdBigInt },
+        select: {
+          id: true,
+          name: true,
+          nickname: true,
+          position: true,
+          height: true,
+          city: true,
+          district: true,
+          bio: true,
+          profile_image_url: true,
+          total_games_participated: true,
+          xp: true, // 레벨 배지 계산용
+          createdAt: true,
+          teamMembers: {
+            where: { status: "active" },
+            include: {
+              team: {
+                select: {
+                  id: true,
+                  name: true,
+                  logoUrl: true,
+                  city: true,
+                  district: true,
+                  is_public: true,
+                  status: true,
+                  primaryColor: true,
+                },
+              },
+            },
+            orderBy: { joined_at: "desc" },
+          },
+        },
+      })
+      .catch(() => null),
+
+    // 2) matchPlayerStat 집계 (레이더/시즌)
+    prisma.matchPlayerStat
+      .aggregate({
+        where: {
+          tournamentTeamPlayer: {
+            userId: userIdBigInt,
+          },
+        },
+        _avg: {
+          points: true,
+          total_rebounds: true,
+          assists: true,
+          steals: true,
+          blocks: true,
+        },
+        _count: { id: true },
+      })
+      .catch(() => null),
+
+    // 3) 최근 경기 5건 (개인 스탯 포함)
+    prisma.matchPlayerStat
+      .findMany({
+        where: {
+          tournamentTeamPlayer: {
+            userId: userIdBigInt,
+          },
+        },
+        select: {
+          points: true,
+          total_rebounds: true,
+          assists: true,
+          steals: true,
+          tournamentMatch: {
+            select: {
+              roundName: true,
+              scheduledAt: true,
             },
           },
-          orderBy: { joined_at: "desc" },
         },
-      },
-    }).catch(() => null),
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      })
+      .catch(() => []),
 
-    // 2) 추가: matchPlayerStat 집계 쿼리 (레이더 차트 + 시즌 데이터용)
-    prisma.matchPlayerStat.aggregate({
-      where: {
-        tournamentTeamPlayer: {
-          userId: BigInt(id),
-        },
-      },
-      _avg: {
-        points: true,
-        total_rebounds: true,
-        assists: true,
-        steals: true,
-        blocks: true,
-      },
-      _count: {
-        id: true,
-      },
-    }).catch(() => null),
+    // 4) 승률 계산 (내 프로필과 동일 로직)
+    getPlayerStats(userIdBigInt).catch(() => null),
 
-    // 3) 추가: 최근 경기 기록 (개인 스탯 포함)
-    prisma.matchPlayerStat.findMany({
-      where: {
-        tournamentTeamPlayer: {
-          userId: BigInt(id),
-        },
-      },
-      select: {
-        points: true,
-        total_rebounds: true,
-        assists: true,
-        steals: true,
-        tournamentMatch: {
-          select: {
-            roundName: true,
-            scheduledAt: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-    }).catch(() => []),
-
-    // 4) 승률 계산 - 내 프로필과 동일한 서비스 함수 재사용
-    getPlayerStats(BigInt(id)).catch(() => null),
-
-    // 5) 팔로우 여부 확인 (로그인 상태일 때만 실제 쿼리)
+    // 5) 팔로우 여부 (로그인 상태일 때만)
     session
-      ? prisma.follows.findUnique({
-          where: {
-            follower_id_following_id: {
-              follower_id: BigInt(session.sub),
-              following_id: BigInt(id),
+      ? prisma.follows
+          .findUnique({
+            where: {
+              follower_id_following_id: {
+                follower_id: BigInt(session.sub),
+                following_id: userIdBigInt,
+              },
             },
-          },
-        }).catch(() => null)
+          })
+          .catch(() => null)
       : Promise.resolve(null),
 
-    // 6) 팔로워 수: 이 유저를 팔로우하는 사람 수
-    prisma.follows.count({
-      where: { following_id: BigInt(id) },
-    }).catch(() => 0),
+    // 6) 팔로워 수
+    prisma.follows
+      .count({ where: { following_id: userIdBigInt } })
+      .catch(() => 0),
 
-    // 7) 팔로잉 수: 이 유저가 팔로우하는 사람 수
-    prisma.follows.count({
-      where: { follower_id: BigInt(id) },
-    }).catch(() => 0),
+    // 7) 팔로잉 수
+    prisma.follows
+      .count({ where: { follower_id: userIdBigInt } })
+      .catch(() => 0),
   ]);
-
-  const isFollowing = !!followRecord;
 
   if (!user) return notFound();
 
-  const displayName = user.nickname ?? user.name ?? "사용자";
-  const initial = displayName.charAt(0).toUpperCase();
-  const location = [user.city, user.district].filter(Boolean).join(" ");
-  const totalGames = user.total_games_participated ?? 0;
-  const tier = getTierBadge(totalGames);
+  const isFollowing = !!followRecord;
 
-  // 스탯 집계 데이터 정리
+  // 스탯 집계 정리
   const avgPoints = statAgg?._avg?.points ?? 0;
   const avgRebounds = statAgg?._avg?.total_rebounds ?? 0;
   const avgAssists = statAgg?._avg?.assists ?? 0;
@@ -180,8 +203,11 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
   const gamesPlayed = statAgg?._count?.id ?? 0;
   const hasStats = gamesPlayed > 0;
 
-  // 최근 경기 데이터 변환 (tournamentMatch의 roundName과 scheduledAt 사용)
-  const recentGameRecords = (recentGames ?? []).map((g) => ({
+  // 레벨 배지 정보 (본인·타인 동일) — API 대신 헬퍼 직접 호출
+  const levelInfo = getProfileLevelInfo(user.xp);
+
+  // 최근 경기 → 공용 RecentGames 형태로 변환
+  const recentGameRows = (recentGames ?? []).map((g) => ({
     gameTitle: g.tournamentMatch?.roundName ?? null,
     scheduledAt: g.tournamentMatch?.scheduledAt?.toISOString() ?? null,
     points: g.points ?? 0,
@@ -190,196 +216,133 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
     steals: g.steals ?? 0,
   }));
 
+  // 공개 팀 필터 (Q7): status="active" AND is_public !== false
+  // is_public은 Boolean?(default true)라서 null/true 모두 공개로 간주, false만 제외
+  const publicTeams = user.teamMembers
+    .filter((tm) => {
+      const t = tm.team;
+      if (!t) return false;
+      if (t.status !== "active") return false;
+      if (t.is_public === false) return false;
+      return true;
+    })
+    .map((tm) => tm.team);
+
   return (
     <div className="space-y-6 max-w-7xl">
-      {/* ===== 프로필 헤더 섹션 (2열: 프로필 정보 + MVP 카드) ===== */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
-        {/* 좌측: 프로필 정보 카드 */}
-        <div
-          className="lg:col-span-8 rounded-lg p-6 relative overflow-hidden border"
+      {/* ===== 1) 공용 Hero — actionSlot으로 본인/타인 분기 ===== */}
+      <ProfileHero
+        user={{
+          id: user.id,
+          name: user.name,
+          nickname: user.nickname,
+          profile_image_url: user.profile_image_url,
+          position: user.position,
+          city: user.city,
+          district: user.district,
+          height: user.height,
+          bio: user.bio,
+          total_games_participated: user.total_games_participated,
+        }}
+        stats={playerStats ? { winRate: playerStats.winRate ?? null } : null}
+        levelInfo={levelInfo}
+        followersCount={followersCount}
+        followingCount={followingCount}
+        actionSlot={
+          // 본인: 편집 버튼 / 타인(로그인/비로그인): ActionButtons
+          isOwner ? (
+            <OwnerEditButton />
+          ) : (
+            <ActionButtons
+              targetUserId={id}
+              initialFollowed={isFollowing}
+              isLoggedIn={isLoggedIn}
+            />
+          )
+        }
+      />
+
+      {/* ===== 2) Teams 섹션 (Q7) — 공개 팀만 ===== */}
+      {publicTeams.length > 0 && (
+        <section
+          className="rounded-lg border overflow-hidden"
           style={{
             borderColor: "var(--color-border)",
             backgroundColor: "var(--color-surface)",
           }}
         >
-          {/* 배경 장식: 빨강 원형 블러 */}
           <div
-            className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"
-            style={{ backgroundColor: "rgba(227, 27, 35, 0.05)" }}
-          />
-
-          <div className="relative flex flex-col md:flex-row items-center md:items-start gap-6">
-            {/* 아바타: 빨간 원형 테두리 */}
-            <div
-              className="w-28 h-28 md:w-36 md:h-36 rounded-full border-4 p-1 overflow-hidden flex-shrink-0"
-              style={{
-                borderColor: "var(--color-primary)",
-                backgroundColor: "var(--color-background)",
-              }}
+            className="px-5 py-4 border-b"
+            style={{ borderColor: "var(--color-border)" }}
+          >
+            {/* h1(닉네임) 바로 아래 섹션이므로 h2가 올바른 heading 계층 */}
+            <h2
+              className="font-bold text-lg"
+              style={{ color: "var(--color-text-primary)" }}
             >
-              {user.profile_image_url ? (
-                <Image
-                  src={user.profile_image_url}
-                  alt={displayName}
-                  width={144}
-                  height={144}
-                  className="w-full h-full object-cover rounded-full"
-                />
-              ) : (
+              소속 팀
+            </h2>
+          </div>
+          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {publicTeams.map((team) => (
+              <Link
+                key={team.id.toString()}
+                href={`/teams/${team.id.toString()}`}
+                className="flex items-center gap-3 rounded border p-3 transition-colors hover:opacity-80"
+                style={{
+                  borderColor: "var(--color-border)",
+                  backgroundColor: "var(--color-card)",
+                  borderRadius: "4px",
+                }}
+              >
+                {/* 팀 로고: 이미지 있으면 표시, 없으면 primaryColor 기반 이니셜 원 */}
                 <div
-                  className="w-full h-full rounded-full flex items-center justify-center text-4xl font-bold"
+                  className="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden flex items-center justify-center font-bold text-sm"
                   style={{
-                    color: "var(--color-primary)",
-                    backgroundColor: "var(--color-surface)",
+                    backgroundColor:
+                      team.primaryColor ?? "var(--color-primary)",
+                    color: "var(--color-on-primary, #FFFFFF)",
                   }}
                 >
-                  {initial}
+                  {team.logoUrl ? (
+                    <Image
+                      src={team.logoUrl}
+                      alt={team.name}
+                      width={40}
+                      height={40}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    team.name.trim()[0]?.toUpperCase() ?? "T"
+                  )}
                 </div>
-              )}
-            </div>
-
-            {/* 이름 + 티어 + 포지션/지역 */}
-            <div className="flex-1 text-center md:text-left">
-              <div className="flex flex-col md:flex-row md:items-center gap-2 mb-2">
-                <h1
-                  className="text-2xl md:text-3xl font-bold"
-                  style={{ color: "var(--color-text-primary)" }}
-                >
-                  {displayName}
-                </h1>
-                {/* 티어 배지 */}
-                <span
-                  className="inline-flex items-center px-3 py-1 text-white text-xs font-bold rounded"
-                  style={{ backgroundColor: tier.color }}
-                >
-                  {tier.label}
-                </span>
-              </div>
-
-              {/* 메타 정보 */}
-              <div
-                className="mb-4 flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm"
-                style={{ color: "var(--color-text-secondary)" }}
-              >
-                {location && (
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">location_on</span>
-                    {location}
-                  </span>
-                )}
-                {user.position && (
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">sports_basketball</span>
-                    {user.position}
-                    {POSITION_LABEL[user.position] ? ` (${POSITION_LABEL[user.position]})` : ""}
-                  </span>
-                )}
-                {user.height && (
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">straighten</span>
-                    {user.height}cm
-                  </span>
-                )}
-              </div>
-
-              {/* CTA 버튼: 메시지 + 팔로우 (클라이언트 컴포넌트로 분리) */}
-              <ActionButtons
-                targetUserId={id}
-                initialFollowed={isFollowing}
-                isLoggedIn={isLoggedIn}
-              />
-            </div>
-
-            {/* 우측: 미니 통계 2x2 그리드 */}
-            <div className="hidden xl:grid grid-cols-2 gap-3">
-              <div
-                className="p-3 rounded-lg text-center min-w-[90px]"
-                style={{ backgroundColor: "var(--color-card)" }}
-              >
-                <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>경기 수</p>
-                <p className="text-xl font-bold" style={{ color: "var(--color-text-primary)" }}>
-                  {totalGames}
-                </p>
-              </div>
-              <div
-                className="p-3 rounded-lg text-center min-w-[90px]"
-                style={{ backgroundColor: "var(--color-card)" }}
-              >
-                {/* 팔로워: 이 유저를 팔로우하는 사람 수 */}
-                <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>팔로워</p>
-                <p className="text-xl font-bold" style={{ color: "var(--color-text-primary)" }}>
-                  {followersCount}
-                </p>
-              </div>
-              <div
-                className="p-3 rounded-lg text-center min-w-[90px]"
-                style={{ backgroundColor: "var(--color-card)" }}
-              >
-                {/* 승률: getPlayerStats 서비스로 계산 (내 프로필과 동일 로직) */}
-                <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>승률</p>
-                <p className="text-xl font-bold" style={{ color: "var(--color-primary)" }}>
-                  {playerStats?.winRate != null ? `${playerStats.winRate}%` : "-%"}
-                </p>
-              </div>
-              <div
-                className="p-3 rounded-lg text-center min-w-[90px]"
-                style={{ backgroundColor: "var(--color-card)" }}
-              >
-                {/* 팔로잉: 이 유저가 팔로우하는 사람 수 */}
-                <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>팔로잉</p>
-                <p className="text-xl font-bold" style={{ color: "var(--color-text-primary)" }}>
-                  {followingCount}
-                </p>
-              </div>
-            </div>
+                <div className="min-w-0">
+                  {/* truncate로 말줄임될 때 hover 툴팁으로 풀네임 확인 가능 */}
+                  <p
+                    className="font-medium text-sm truncate"
+                    style={{ color: "var(--color-text-primary)" }}
+                    title={team.name ?? ""}
+                  >
+                    {team.name}
+                  </p>
+                  {(team.city || team.district) && (
+                    <p
+                      className="text-xs truncate"
+                      style={{ color: "var(--color-text-muted)" }}
+                    >
+                      {[team.city, team.district].filter(Boolean).join(" ")}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            ))}
           </div>
+        </section>
+      )}
 
-          {/* 바이오 */}
-          {user.bio && (
-            <p
-              className="relative mt-5 border-t pt-4 text-sm leading-relaxed"
-              style={{
-                borderColor: "var(--color-border)",
-                color: "var(--color-text-secondary)",
-              }}
-            >
-              {user.bio}
-            </p>
-          )}
-        </div>
-
-        {/* 우측: MVP 하이라이트 카드 (시즌 MVP는 DB에 없으므로 장식용) */}
-        <div
-          className="lg:col-span-4 rounded-lg p-6 flex flex-col items-center justify-center text-center border"
-          style={{
-            borderColor: "var(--color-border)",
-            background: "linear-gradient(135deg, var(--color-accent) 0%, var(--color-background) 100%)",
-          }}
-        >
-          <div
-            className="w-20 h-20 mb-4 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
-          >
-            <span
-              className="material-symbols-outlined text-5xl text-white"
-              style={{ fontVariationSettings: "'FILL' 1" }}
-            >
-              emoji_events
-            </span>
-          </div>
-          <h3 className="text-lg font-bold text-white mb-2">선수 하이라이트</h3>
-          <p className="text-white/60 text-sm mb-4">
-            {hasStats
-              ? `총 ${gamesPlayed}경기에서 평균 ${avgPoints.toFixed(1)}점을 기록했습니다.`
-              : "아직 경기 기록이 없습니다."}
-          </p>
-        </div>
-      </section>
-
-      {/* ===== 스탯 섹션 (2열: 레이더 차트 + 시즌 상세 데이터) ===== */}
+      {/* ===== 3) 스탯 섹션 (레이더 + 시즌 상세) — hasStats일 때만 ===== */}
       {hasStats && (
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* 좌측: 레이더 차트 (1칸) */}
           <UserRadarSection
             avgPoints={avgPoints}
             avgRebounds={avgRebounds}
@@ -387,8 +350,6 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
             avgSteals={avgSteals}
             avgBlocks={avgBlocks}
           />
-
-          {/* 우측: 시즌 상세 데이터 (2칸) */}
           <div className="lg:col-span-2">
             <UserStatsSection
               avgPoints={avgPoints}
@@ -401,8 +362,8 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
         </section>
       )}
 
-      {/* ===== 최근 경기 기록 테이블 ===== */}
-      <UserRecentGames games={recentGameRecords} />
+      {/* ===== 4) 공용 RecentGames (variant=table) ===== */}
+      <RecentGames games={recentGameRows} variant="table" title="최근 경기 기록" />
     </div>
   );
 }

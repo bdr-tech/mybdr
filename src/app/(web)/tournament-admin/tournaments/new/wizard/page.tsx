@@ -409,9 +409,9 @@ export default function NewTournamentWizardPage() {
         ))}
       </div>
 
-      {/* 에러 메시지 */}
+      {/* 에러 메시지 — 하드코딩 색상 → CSS 변수 토큰 (배경은 color-mix 10% 투명) */}
       {error && (
-        <div className="mb-4 rounded-md bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
+        <div className="mb-4 rounded-md bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)] px-4 py-3 text-sm text-[var(--color-error)]">{error}</div>
       )}
 
       {/* ================================================================

@@ -1,6 +1,40 @@
 # 코딩 규칙 및 스타일
 <!-- 담당: developer, reviewer | 최대 30항목 -->
 
+### [2026-04-22] `any` 타입 예외 허용 규칙 (audit 재발 방지)
+- **분류**: convention (types)
+- **발견자**: developer + pm (any audit 2차 — 3f54daa)
+- **배경**: lessons.md [2026-04-20] audit에서 "kakao map 공통 컴포넌트 any 유지"만 예외 명시. 04-22 재스캔 시 Next.js HOF / Service Worker에서도 동일 판단 필요 → convention으로 승격해 audit 재발 방지.
+- **정비 원칙 (3건 이상 any 발견 시 이 순서로 검토)**:
+  1. **API 응답 any** → snake_case 인터페이스 명시 (CLAUDE.md 규칙)
+  2. **Prisma where/select any** → `Prisma.{Model}WhereInput` / `Prisma.{Model}Select`
+  3. **props / SWR fallback any** → 자식 컴포넌트 타입 재사용 또는 구체 interface
+  4. **as any (unsafe cast)** → `unknown` + narrowing
+- **허용 예외 (audit 시 건드리지 말 것)**:
+  - **카카오맵 SDK**: `kakao-map.tsx`, `heatmap-overlay.tsx`, `courts-content.tsx` 등 — 공식 @types 미제공, eslint-disable + 근거 주석 이미 존재
+  - **Next.js API handler HOF**: `withWebAuth` (`lib/auth/web-session.ts`) / `withAuth` (v1) — 런타임 `handler.length`로 3종 시그니처 분기, 타입 시스템으로 표현하면 오버로드 3개 × ctx 주입 변환 과도
+  - **Service Worker globalScope**: `sw.ts` `declare const self: any` — `lib.webworker` 도입은 브라우저 lib과 self 타입 충돌 → 전체 tsconfig 손대는 비용 과도
+- **신규 예외 추가 절차**: audit 중 새로운 SDK/런타임 예외 후보 발견 시 → PM 판단 → 여기 규칙에 추가 + 해당 파일에 근거 주석 1줄 병행
+- **검증**: audit Grep 패턴 `:\s*any\b|\bas\s+any\b|<any>|\bany\[\]` 대비 현 프로젝트 잔존 13건 = 예외 13건 (실질 완결)
+- **참조**: lessons.md [2026-04-20] 하드코딩 색상/any audit
+- **참조횟수**: 0
+
+### [2026-04-22] Tailwind v4 arbitrary value에서 color-mix 문법 (반투명 색상 토큰화)
+- **분류**: convention (styling)
+- **발견자**: developer + pm (C 3차 dfa5b9a 검증)
+- **배경**: 하드코딩 `bg-red-500/10` 같은 반투명 에러 배경을 `var(--color-error)` 기반 토큰화할 때, hover 상태(`hover:bg-red-500/20`)도 같이 처리해야 의도(hover 시 진해짐) 유지. 인라인 style로는 `:hover`를 표현 불가 → Tailwind arbitrary value 활용.
+- **규칙**: Tailwind v4 arbitrary value 내 공백은 **언더스코어(`_`)로 치환**
+  - 기본: `bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)]`
+  - hover: `hover:bg-[color-mix(in_srgb,var(--color-error)_20%,transparent)]`
+  - 텍스트: `text-[var(--color-error)]`
+- **언제 이 문법, 언제 인라인 style**:
+  - **Tailwind arbitrary**: hover/focus/active 같은 의사클래스 필요 시 (`:hover` 분기)
+  - **인라인 style**: hover 없는 단순 반투명 (6건 중 5건, 0f41e99 1차 패턴)
+- **검증**: `next build` PASS로 Tailwind v4 arbitrary value parse 확인 (3차 dfa5b9a tm-matches L248 삭제 버튼)
+- **대체 금지 패턴**: `hover:opacity-80` (희미해짐 — 원본 "진해짐" 의도와 반대)
+- **참조**: lessons.md [2026-04-20] 하드코딩 색상 audit
+- **참조횟수**: 0
+
 ### [2026-04-20] 도메인 용어 정의 (용어 사전 단일 소스)
 - **분류**: convention (UX/용어)
 - **발견자**: pm (W4 L1)

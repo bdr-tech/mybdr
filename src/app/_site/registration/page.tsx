@@ -73,7 +73,7 @@ export default function SiteRegistrationPage() {
       <Card>
         <form onSubmit={submit} className="space-y-4">
           {error && (
-            <div className="rounded-[12px] bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <div className="rounded-[12px] bg-[var(--color-error-light)] px-4 py-3 text-sm text-[var(--color-error)]">
               {error}
             </div>
           )}

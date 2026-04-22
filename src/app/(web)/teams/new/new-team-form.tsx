@@ -41,8 +41,9 @@ export function NewTeamForm() {
       <h1 className="mb-6 text-2xl font-extrabold uppercase tracking-wide sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>팀 만들기</h1>
 
       <Card>
+        {/* 팀 생성 서버 액션 에러 — 하드코딩 red-500/600 → error 토큰 (bg color-mix 10%, text error) */}
         {state?.error && (
-          <div className="mb-4 rounded-[12px] bg-red-500/10 px-4 py-3 text-sm text-red-600">
+          <div className="mb-4 rounded-[12px] bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)] px-4 py-3 text-sm text-[var(--color-error)]">
             {state.error}
           </div>
         )}
@@ -91,7 +92,8 @@ export function NewTeamForm() {
               }}
             />
             {nameEnError ? (
-              <p className="mt-1 text-xs text-red-500">{nameEnError}</p>
+              // 영문명 유효성 에러 텍스트 — red-500 → error 토큰
+              <p className="mt-1 text-xs text-[var(--color-error)]">{nameEnError}</p>
             ) : (
               <p className="mt-1 text-xs" style={{ color: "var(--color-text-muted)" }}>
                 대한민국농구협회 등록 영문명. 영문/숫자/공백/하이픈만 허용.

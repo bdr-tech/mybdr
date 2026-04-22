@@ -146,7 +146,7 @@ export default function LoginPage() {
               className="text-sm underline disabled:opacity-50" style={{ color: 'var(--color-text-muted)' }}>
               {devPending ? "..." : "Dev 자동 로그인"}
             </button>
-            {devState?.error && <p className="mt-1 text-sm text-red-400">{devState.error}</p>}
+            {devState?.error && <p className="mt-1 text-sm text-[var(--color-error)]">{devState.error}</p>}
           </form>
         )}
 
@@ -181,7 +181,7 @@ export default function LoginPage() {
 
             {/* 에러 메시지 */}
             {loginState?.error && (
-              <div className="mb-3 rounded-[10px] bg-red-500/10 px-3 py-2 text-sm text-red-500">{loginState.error}</div>
+              <div className="mb-3 rounded-[10px] bg-[var(--color-error-light)] px-3 py-2 text-sm text-[var(--color-error)]">{loginState.error}</div>
             )}
 
             {/* 로그인 폼: 입력 필드 테두리/배경 CSS 변수 */}

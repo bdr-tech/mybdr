@@ -91,8 +91,13 @@ export default async function TournamentDetailPage({
     : "overview";
 
   // ========================================
-  // 1) 대회 기본 정보 조회 (is_public 포함 — 비공개 가드용)
+  // 1) 대회 기본 정보 + 소속 시리즈 통합 조회 (is_public 포함 — 비공개 가드용)
   // ========================================
+  // 왜 tournament_series를 include로 통합?
+  // - 기존에 tournament.findUnique + tournament_series.findUnique 2쿼리였으나,
+  //   Prisma relation으로 단일 쿼리화해 왕복 1회 감소 (reviewer D1 권장).
+  // - series_id=null이면 Prisma가 자동으로 tournament_series=null 반환 → 조건 분기 불필요.
+  // - is_public은 select에 포함해 비공개 시리즈 차단 가드에 사용 (reviewer D2 권장).
   const tournament = await prisma.tournament.findUnique({
     where: { id },
     select: {
@@ -129,6 +134,28 @@ export default async function TournamentDetailPage({
       // settings JSON — contact_phone 등 부가 설정 포함
       settings: true,
       _count: { select: { tournamentTeams: true } },
+      // L3 D1: 소속 시리즈 + 단체 + 시리즈 내 모든 회차 (prev/next 계산용)
+      // edition_number null 대회는 필터에서 제외되지만, DB는 asc로 뒤로 밀어 정렬만 통일
+      tournament_series: {
+        select: {
+          name: true,
+          slug: true,
+          logo_url: true,
+          // D2: 비공개 시리즈 차단용
+          is_public: true,
+          organization: { select: { name: true, slug: true } },
+          tournaments: {
+            select: {
+              id: true,
+              edition_number: true,
+              startDate: true,
+              status: true,
+            },
+            // edition_number asc — null 대회는 뒤로, 계산 시 추가 필터로 제외
+            orderBy: { edition_number: "asc" },
+          },
+        },
+      },
     },
   });
   if (!tournament) return notFound();
@@ -145,48 +172,14 @@ export default async function TournamentDetailPage({
   // L3: 소속 시리즈/단체 메타 (브레드크럼 4단 + SeriesCard)
   // Home / 단체 / 시리즈 / 대회명 체인. series_id/organization_id null이면 해당 단계 skip.
   //
-  // 왜 tournaments 배열도 select 하나:
-  // - SeriesCard 내부 EditionSwitcher가 이전/다음 회차 UUID를 필요로 함.
-  // - edition_number 오름차순 정렬 후 현재 대회 인덱스 기준 ±1로 prev/next 계산.
-  // - edition_number null 대회는 혼재 방지를 위해 계산에서 제외.
-  let series:
-    | {
-        name: string;
-        slug: string;
-        logo_url: string | null;
-        organization: { name: string; slug: string } | null;
-        tournaments: {
-          id: string;
-          edition_number: number | null;
-          startDate: Date | null;
-          status: string | null;
-        }[];
-      }
-    | null = null;
-  if (tournament.series_id) {
-    series = await prisma.tournament_series
-      .findUnique({
-        where: { id: tournament.series_id },
-        select: {
-          name: true,
-          slug: true,
-          logo_url: true,
-          organization: { select: { name: true, slug: true } },
-          tournaments: {
-            select: {
-              id: true,
-              edition_number: true,
-              startDate: true,
-              status: true,
-            },
-            // edition_number asc 정렬 — prev/next 계산이 단순해짐.
-            // null 대회는 DB 레벨에서 뒤로 밀리며, 계산 시 추가로 제외.
-            orderBy: { edition_number: "asc" },
-          },
-        },
-      })
-      .catch(() => null);
-  }
+  // D1: tournament.findUnique include로 통합됨 (별도 쿼리 제거).
+  // D2: is_public=false 시리즈는 노출 금지 → series=null 폴백 → 기존 "시리즈 미소속" 분기 재활용.
+  //     notFound()가 아니라 폴백인 이유: Tournament 자체는 정상 표시해야 하며,
+  //     브레드크럼 2단 축소 + SeriesCard skip 이 자연스러운 UX.
+  const series =
+    tournament.tournament_series && tournament.tournament_series.is_public !== false
+      ? tournament.tournament_series
+      : null;
 
   // L3: prev/next 회차 계산
   // edition_number null 대회 제외 + 현재 대회도 edition_number가 있어야 SeriesCard 렌더.

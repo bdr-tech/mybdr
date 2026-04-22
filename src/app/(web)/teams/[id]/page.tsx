@@ -58,9 +58,9 @@ const TABS: { key: Tab; label: string; icon: string }[] = [
 function computeDivision(wins: number): { label: string; style: string } | null {
   if (wins >= 50) return { label: "PLATINUM", style: "border-[var(--color-text-secondary)] text-[var(--color-text-secondary)]" };
   if (wins >= 30) return { label: "PRO", style: "border-[var(--color-primary)] text-[var(--color-primary)]" };
-  if (wins >= 15) return { label: "GOLD", style: "border-yellow-500 text-yellow-500" };
+  if (wins >= 15) return { label: "GOLD", style: "border-[var(--color-tier-gold)] text-[var(--color-tier-gold)]" };
   if (wins >= 5) return { label: "SILVER", style: "border-[var(--color-text-muted)] text-[var(--color-text-muted)]" };
-  if (wins >= 1) return { label: "ROOKIE", style: "border-green-500 text-green-500" };
+  if (wins >= 1) return { label: "ROOKIE", style: "border-[var(--color-success)] text-[var(--color-success)]" };
   return null;
 }
 

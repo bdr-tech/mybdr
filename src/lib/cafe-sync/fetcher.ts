@@ -33,7 +33,7 @@ import * as cheerio from "cheerio";
 // 디버그 모드에서 응답 HTML을 파일로 저장하기 위함. 옵션 활성화 시에만 I/O 발생.
 import { writeFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
-import { CafeBoard, listUrl } from "./board-map";
+import { CafeBoard, listUrl, listApiUrl } from "./board-map";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 쿠키 감지 로그 (모듈 로드 시 1회)
@@ -99,6 +99,19 @@ export interface BoardItem {
   postedAt: Date | null;
   /** 원본 목록 URL (디버깅용) */
   listUrl: string;
+  /**
+   * 카페 내부 pagination 커서 문자열.
+   *
+   * 왜 optional:
+   *   - Phase 3 #6 (2026-04-20) — `/api/v1/common-articles` API 가 `afterBbsDepth` 파라미터를
+   *     "직전 페이지 마지막 글의 bbsDepth" 로 요구해서 도입.
+   *   - 1페이지 SSR HTML(articles.push)과 2페이지+ API JSON 모두 `bbsDepth` 필드를 제공 → 같은 파서.
+   *   - 저장/정렬/로직 대상 아님(**런타임 커서 전달용**) → upsert.ts/parser 수정 불필요.
+   *   - HTML 파싱 실패 시 undefined → sync-cafe 루프에서 자동 중단.
+   *
+   * 실측 예시: `"0010kzzzzzzzzzzzzzzzzzzzzzzzzz"` (IVHA 1P 마지막)
+   */
+  bbsDepth?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -436,6 +449,10 @@ export async function fetchBoardList(
     const title = extractField(block, "title");
     const author = extractField(block, "writerNickname");
     const elapsed = extractField(block, "articleElapsedTime");
+    // [2026-04-20] Phase 3 #6 — pagination 커서용. 1P HTML 파싱에서도 추출해서
+    //   sync-cafe 에서 마지막 글의 bbsDepth 를 다음 페이지 API 요청의 afterBbsDepth 로 쓴다.
+    //   미존재 시 null → BoardItem.bbsDepth undefined → 루프에서 커서 없음으로 자동 종료.
+    const bbsDepth = extractField(block, "bbsDepth");
 
     // 필수 필드 없으면 스킵
     if (!dataid || !title) continue;
@@ -456,6 +473,165 @@ export async function fetchBoardList(
       author: author ?? "",
       postedAt: parseCafeDate(elapsed ?? "", now),
       listUrl: url,
+      // 커서는 optional — null 이면 undefined 로 남겨둔다 (JSON.stringify/타입 모두 안전).
+      bbsDepth: bbsDepth ?? undefined,
+    });
+  }
+
+  return items;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 3 #6 — 2페이지 이후 API fetch (common-articles JSON)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** common-articles API 응답 JSON 스키마 (실측). 일부 필드만 선언, 나머지는 무시 */
+interface CommonArticlesResponse {
+  /** 글 배열. 빈 배열이면 게시판 끝 */
+  articles?: Array<{
+    dataid?: number | string;
+    title?: string;
+    writerNickname?: string;
+    articleElapsedTime?: string;
+    bbsDepth?: string;
+    fldid?: string;
+  }>;
+  /** 서버가 제안하는 다음 targetPage. 참고값 (sync-cafe 루프는 자체 페이지 카운터 사용) */
+  nextPage?: number;
+  /** 에러 응답은 `{ code: 0, description: "..." }` 형태 */
+  code?: number;
+  description?: string;
+}
+
+/** fetchBoardListApi 의 pageSize 실측 상한. 초과 시 서버 HTTP 500 반환 → 하드 가드 */
+const API_PAGE_SIZE_MAX = 50;
+
+/**
+ * 2페이지 이후 게시판 목록을 내부 API 로 가져온다.
+ *
+ * ──────────────────────────────────────────────────────────────────────────────
+ * 왜 별도 경로:
+ *   - 모바일 HTML SSR 은 1페이지만 담아 내려주고, 후속 페이지는 Vue 컴포넌트가 XHR 호출.
+ *   - `?page=N` 같은 단순 쿼리는 **전부 무시됨**(1P와 동일 응답, 실측 8패턴).
+ *   - 번들 역공학으로 확정한 엔드포인트: `/api/v1/common-articles?grpid=&fldid=&targetPage=&afterBbsDepth=&pageSize=`
+ *
+ * 동작:
+ *   1) pageSize 가드 (>50 → 즉시 throw. API 500 방지)
+ *   2) **sleep 없음** — 페이지 간 sleep 은 sync-cafe.ts 루프가 담당 (중복 방지)
+ *   3) XHR 헤더 3종 필수 (Accept:application/json + Referer + X-Requested-With) — 빠지면 403 위험
+ *   4) JSON 파싱 → BoardItem[] 변환 (HTML 파서와 동일 필드명이라 얇은 매핑)
+ *   5) `articles: []` 는 정상 응답(게시판 끝) — 빈 배열 반환
+ *
+ * 종료 신호:
+ *   - `articles.length === 0` → 호출자가 "페이지 끝" 감지
+ *   - 호출자가 cursor=null 이면 애초에 이 함수를 호출하지 않아야 함 (afterBbsDepth=0 은 빈 배열만 반환)
+ *
+ * 참조: scratchpad-cafe-sync.md "📋 Phase 3 #6 Pagination 설계안"
+ *
+ * @param board 대상 게시판
+ * @param cursor 직전 페이지 마지막 글의 bbsDepth (필수, 없으면 빈 배열만 나옴)
+ * @param targetPage 요청 페이지 번호 (2부터)
+ * @param pageSize 페이지당 건수 (1~50, 초과 시 throw)
+ */
+export async function fetchBoardListApi(
+  board: CafeBoard,
+  cursor: string,
+  targetPage: number,
+  pageSize: number,
+  options: { debug?: boolean } = {},
+): Promise<BoardItem[]> {
+  // ─── 가드: pageSize 실측 상한 (R2 완화) ───
+  if (pageSize < 1 || pageSize > API_PAGE_SIZE_MAX) {
+    throw new Error(
+      `[${board.id}] pageSize 범위 위반: ${pageSize} (허용 1~${API_PAGE_SIZE_MAX}). ` +
+        `실측 100 → HTTP 500 반환되므로 하드 가드.`,
+    );
+  }
+
+  const url = listApiUrl(board, cursor, targetPage, pageSize);
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  // ─── XHR 헤더 3종 필수 ───
+  // 실측: Accept/Referer/X-Requested-With 모두 있어야 200. 누락 시 403 위험 (R9).
+  // Referer 는 대상 게시판 모바일 URL 로 맞춘다 (Vue 컴포넌트가 실제로 보내는 값과 동일).
+  const cookie = process.env.DAUM_CAFE_COOKIE ?? "";
+  const headers: Record<string, string> = {
+    "User-Agent": USER_AGENT,
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
+    "Referer": listUrl(board),
+    "X-Requested-With": "XMLHttpRequest",
+  };
+  if (cookie) {
+    headers["Cookie"] = cookie;
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "GET",
+      headers,
+      signal: controller.signal,
+      redirect: "follow",
+    });
+  } catch (err) {
+    clearTimeout(timer);
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`[${board.id}] API fetch 실패(page=${targetPage}): ${msg}`);
+  }
+  clearTimeout(timer);
+
+  if (!res.ok) {
+    // 403/429/500 전부 여기서 throw — 호출자가 consecutiveFailures 카운팅
+    throw new Error(`[${board.id}] API HTTP ${res.status} ${res.statusText} (page=${targetPage})`);
+  }
+
+  // JSON 파싱. 응답 본문이 짧아도(빈 배열 28바이트) 안전.
+  const raw = await res.text();
+  let json: CommonArticlesResponse;
+  try {
+    json = JSON.parse(raw) as CommonArticlesResponse;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`[${board.id}] API JSON 파싱 실패(page=${targetPage}): ${msg}`);
+  }
+
+  // 서버 에러 응답 `{code:0, description:"..."}` — pageSize=100 같은 케이스에서 관찰
+  if (typeof json.code === "number" && json.code === 0 && json.description) {
+    throw new Error(`[${board.id}] API 서버 에러(page=${targetPage}): ${json.description}`);
+  }
+
+  if (options.debug) {
+    console.log(`[DEBUG ${board.id}] API page=${targetPage} articles=${json.articles?.length ?? 0} nextPage=${json.nextPage ?? "-"} bytes=${raw.length}`);
+  }
+
+  const now = new Date();
+  const items: BoardItem[] = [];
+
+  for (const a of json.articles ?? []) {
+    // fldid 교차검증 — API 에서 다른 게시판 글이 섞여 나올 가능성 0에 가깝지만 방어
+    if (a.fldid && a.fldid !== board.id) continue;
+
+    const dataid = a.dataid != null ? String(a.dataid) : null;
+    const title = a.title;
+    if (!dataid || !title) continue;
+
+    const dataidNum = Number(dataid);
+    if (!Number.isFinite(dataidNum)) {
+      console.warn(`[${board.id}] ⚠️ API 비숫자 dataid 스킵 (dataid="${dataid}")`);
+      continue;
+    }
+
+    items.push({
+      dataid,
+      dataidNum,
+      title,
+      author: a.writerNickname ?? "",
+      postedAt: parseCafeDate(a.articleElapsedTime ?? "", now),
+      listUrl: url, // API URL 저장 (원본 목록 URL 과 구분되지만 디버깅 충분)
+      bbsDepth: a.bbsDepth, // 다음 페이지 커서로 사용
     });
   }
 

@@ -106,7 +106,9 @@
 - **증상**: 로컬 `npm run dev`(Next.js 16.1.6 Turbopack) 중 `Jest worker encountered 2 child process exceptions, exceeding retry limit` 런타임 에러. Vercel 배포/운영(mybdr.kr)에선 정상, 로컬에서만 발생.
 - **원인**: Turbopack dev 서버는 HMR을 위해 Worker Pool을 메모리에 유지하는데, 짧은 시간에 여러 파일이 연속 수정되면 워커가 recompile을 겹쳐 받아 상태가 꼬이고 child process가 예외를 2회 이상 던지면 retry 한도를 넘어 에러. 코드 문법 이슈 아님 (빌드/운영은 멀쩡).
 - **해결**: (1) 포트 기반 dev 서버 재시작 — `netstat -ano | findstr :3001` → 해당 PID만 `taskkill //f //pid <PID>` → `npm run dev`. (2) 안 되면 `.next` 삭제 후 재시작. **절대 `taskkill //f //im node.exe` 쓰지 말 것** (다른 프로젝트 dev 서버/Claude Code까지 죽음).
-- **재발 방지**: 대량 파일 수정 시 중간에 dev 서버 한 번 재시작. 같은 PC에서 dev 서버 여러 개(worktree별) 동시 실행 시 메모리 압박 큼 — 하나씩만 돌리기.
+- **재발 방지**: 대량 파일 수정 시 중간에 dev 서버 한 번 재시작. 같은 PC에서 dev 서버 여러 개(worktree별) 동시 실행 시 메모리 압박 큼 — 하나씩만 돌리기. **신규 라우트/시드 추가 직후 첫 접근 전에도 재시작 권장**.
+- **참조횟수**: 1 (2026-04-21 L3 재발 — 신규 라우트 `/organizations/[slug]/series/[seriesSlug]` + BDR 시리즈 시드 직후 첫 접근 시 동일 500. `.next` 삭제 + PID 재시작으로 200 / 0.28s 복구)
+
 ### [2026-04-12] Prisma schema drift — users.gender 컬럼 누락 (db push 시 파괴적 DROP 예고)
 - **분류**: error / trap
 - **발견자**: developer (Commit 1 dry-run 중)
