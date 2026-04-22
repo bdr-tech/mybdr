@@ -37,6 +37,8 @@
  *   --max-pages=N            기본 5, 상한 20 (페이지당 20건 * 20 = 400건/게시판)
  *   --article-limit=N        기본 10, 상한 100 (본문 fetch 건수). IVd2 전량(95건) 등 100건 이내 작은 게시판 1회 처리용으로 확대
  *   --offset=N               기본 0, 상한 400 (목록 앞쪽 N건 건너뜀). 대규모 게시판 전량 이전 시 100건씩 분할 처리용. 예: 1차 --article-limit=100, 2차 --offset=100 --article-limit=100 ...
+ *   --posted-since=YYYY-MM-DD   해당 날짜(KST) 이후 게시글만 대상 (긴급 백필 모드). 예: --posted-since=2026-04-15 → 2026-04-15 00:00 KST 포함 이후. postedAt 없는 글(시분 미제공 등)은 필터 활성 시 자동 제외.
+ *   --posted-until=YYYY-MM-DD   해당 날짜(KST) 까지 게시글만 대상. end-inclusive (다음날 00:00 미포함). --posted-since 와 조합 가능.
  *   --with-body              본문 fetch + upsert 실행 (기본 꺼짐)
  *   --list-only              목록만 (본문 스킵)
  *   --execute                실제 DB 쓰기 (dry-run 해제)
@@ -93,6 +95,29 @@ function parseNumArg(flag: string, defaultVal: number, min: number, max: number)
   return Math.floor(n);
 }
 
+/**
+ * [2026-04-22] 긴급 백필 모드 — KST 기준 YYYY-MM-DD 파싱.
+ * 옵션 미지정 시 null 반환(필터 비활성).
+ * 잘못된 포맷은 process.exit(1).
+ */
+function parseDateArg(flag: string): Date | null {
+  const arg = process.argv.find((a) => a.startsWith(`--${flag}=`));
+  if (!arg) return null;
+  const raw = arg.split("=")[1];
+  // KST(UTC+9) 기준 해석 — 사용자 직관과 일치
+  const d = new Date(`${raw}T00:00:00+09:00`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw) || Number.isNaN(d.getTime())) {
+    console.error(`⚠️ --${flag} 포맷 오류 (YYYY-MM-DD 필수, KST 해석): ${raw}`);
+    process.exit(1);
+  }
+  return d;
+}
+
+/** Date 객체를 KST YYYY-MM-DD 로 포맷 (로그 출력용 — 사용자 입력과 일치) */
+function dateToKstYmd(d: Date): string {
+  return new Date(d.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
 function parseBoardsArg(): CafeBoard[] {
   const arg = process.argv.find((a) => a.startsWith("--board="));
   if (!arg) {
@@ -144,6 +169,12 @@ async function main(): Promise<void> {
   const maxPages = parseNumArg("max-pages", 5, 1, 20);
   const articleLimit = parseNumArg("article-limit", 10, 1, 100);
   const articleOffset = parseNumArg("offset", 0, 0, 400);
+  const postedSince = parseDateArg("posted-since");
+  const postedUntil = parseDateArg("posted-until");
+  // until end-inclusive: 다음날 00:00 KST 미포함 처리
+  const postedUntilExclusive = postedUntil
+    ? new Date(postedUntil.getTime() + 24 * 60 * 60 * 1000)
+    : null;
   const boards = parseBoardsArg();
 
   console.log("========================================");
@@ -155,7 +186,9 @@ async function main(): Promise<void> {
   console.log(
     `대상: ${boards.map((b) => `${b.id}(${b.label})`).join(", ")} / ` +
       `max-pages=${maxPages} / article-limit=${articleLimit}` +
-      (articleOffset > 0 ? ` / offset=${articleOffset}` : ""),
+      (articleOffset > 0 ? ` / offset=${articleOffset}` : "") +
+      (postedSince ? ` / since=${dateToKstYmd(postedSince)}` : "") +
+      (postedUntil ? ` / until=${dateToKstYmd(postedUntil)}` : ""),
   );
   console.log("");
 
@@ -277,7 +310,25 @@ async function main(): Promise<void> {
         continue;
       }
 
-      const targetItems = items.slice(articleOffset, articleOffset + articleLimit);
+      // [2026-04-22] 긴급 백필 모드 — posted-since/until 활성 시 시간 필터 우선 적용.
+      // postedAt null 인 글(시분 미제공)은 범위 불확실 → 필터 활성 시 제외.
+      let filtered = items;
+      if (postedSince || postedUntilExclusive) {
+        const before = filtered.length;
+        filtered = filtered.filter((it) => {
+          if (!it.postedAt) return false;
+          if (postedSince && it.postedAt < postedSince) return false;
+          if (postedUntilExclusive && it.postedAt >= postedUntilExclusive) return false;
+          return true;
+        });
+        console.log(
+          `  [${board.id}] 시간 필터: ${filtered.length}/${before}건 통과 ` +
+            `(since=${postedSince ? dateToKstYmd(postedSince) : "∞"}, ` +
+            `until=${postedUntil ? dateToKstYmd(postedUntil) : "∞"})`,
+        );
+      }
+
+      const targetItems = filtered.slice(articleOffset, articleOffset + articleLimit);
       console.log("");
       console.log(
         `  [${board.id}] 본문 fetch ${targetItems.length}건 시작` +
