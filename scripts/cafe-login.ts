@@ -1,121 +1,159 @@
 /**
- * 다음카페 Playwright 로그인 헬퍼.
+ * 다음카페 Playwright 로그인 헬퍼 (Cowork 호환).
  *
  * [왜]
- *   수동으로 DevTools에서 쿠키를 복사할 때 HttpOnly 쿠키(TIARA/DID 등 다음
- *   로그인 핵심)가 계속 누락되는 문제가 반복 발생. 이 스크립트는 실제 브라우저
- *   창을 띄워 사용자가 직접 로그인하게 하고, Playwright의 storageState 기능으로
- *   **모든 쿠키**(HttpOnly 포함)를 파일에 저장한다. 이후 article-fetcher가
- *   이 파일을 읽어 Cookie 헤더를 구성한다.
+ *   다음카페 세션 쿠키(TIARA/DID 등)는 카카오 통합 로그인 정책상
+ *   **~1일 수명**이며, "로그인 상태 유지" 옵션은 2026-04 현재 UI에서 제거됨.
+ *   따라서 매일 재로그인이 필요한데, 수동 단계를 최소화하기 위해 본 스크립트가
+ *   (1) Playwright headed 창 → (2) 쿠키 저장 → (3) GitHub Secret 갱신까지
+ *   한 명령으로 완결.
  *
- * [방법]
- *   1. Chromium 창 headed 모드로 열기 (m.cafe.daum.net/dongarry/IVHA)
- *   2. 사용자: 다음 로그인 → IVHA 게시판 글 하나 클릭해 본문이 보이는지 확인
- *   3. 터미널로 돌아와 [Enter]
- *   4. context.storageState({ path }) → .auth/cafe-state.json 저장
- *   5. 브라우저 자동 종료
+ * [기본 사용 (수동)]
+ *   npx tsx scripts/cafe-login.ts                    # 로그인 후 [Enter] 눌러 진행
+ *   npx tsx scripts/cafe-login.ts --push-secret      # 끝나면 Secret 자동 갱신
  *
- * [사용]
- *   npx tsx scripts/cafe-login.ts
+ * [Cowork/자동화 사용]
+ *   npx tsx scripts/cafe-login.ts --auto-wait --push-secret
+ *     --auto-wait: Enter 입력 대기 없이 로그인 완료(세션 쿠키 출현)를 자동 감지
+ *     --random-delay=N: 시작 시 0~N분 랜덤 sleep (봇 탐지 회피용)
  *
- * [재실행]
- *   세션 쿠키 만료 시 스크립트 재실행 = 세션 갱신 (파일 덮어쓰기).
+ * [옵션]
+ *   --auto-wait              Enter 대기 없이 세션 쿠키 감지로 자동 진행 (기본 꺼짐)
+ *   --push-secret            완료 시 refresh-cafe-cookie.ts --skip-login 자동 호출
+ *   --random-delay=N         시작 시 0~N분 랜덤 대기 (기본 0). N은 0~120 정수
+ *   --timeout=N              --auto-wait 모드 최대 대기 분 (기본 10, 상한 30)
  *
  * [보안]
- *   - 저장 파일 `.auth/cafe-state.json`은 **민감 정보**(세션 쿠키)
- *   - .gitignore에 추가되어 있어야 함 (이 작업에서 추가)
- *   - 유출 시 즉시 다음 로그아웃 → 재로그인 → 본 스크립트 재실행
+ *   - `.auth/cafe-state.json` 은 민감 (세션 쿠키) → .gitignore 필수
+ *   - Cowork 사용 시 Chrome에 카카오 ID/PW 저장 권장 (자동 채움)
  */
 
-import { chromium } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { chromium, Cookie } from "@playwright/test";
+import { execSync } from "node:child_process";
+import { mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 
 const LOGIN_URL = "https://m.cafe.daum.net/dongarry/IVHA";
-
-// article-fetcher.ts와 동일한 모바일 UA 사용 — 세션 일관성 확보
 const USER_AGENT =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
 
+// ────────────────────────────────────────────────────────────────────
+// CLI 인자
+// ────────────────────────────────────────────────────────────────────
+
+const argv = process.argv.slice(2);
+const AUTO_WAIT = argv.includes("--auto-wait");
+const PUSH_SECRET = argv.includes("--push-secret");
+
+function parseNumArg(flag: string, defaultVal: number, min: number, max: number): number {
+  const arg = argv.find((a) => a.startsWith(`--${flag}=`));
+  if (!arg) return defaultVal;
+  const n = Number(arg.split("=")[1]);
+  if (!Number.isFinite(n) || n < min || n > max) {
+    console.error(`⚠️  --${flag} 범위 위반 (${min}~${max}): ${arg}`);
+    process.exit(1);
+  }
+  return Math.floor(n);
+}
+
+const RANDOM_DELAY_MIN = parseNumArg("random-delay", 0, 0, 120);
+const AUTO_WAIT_TIMEOUT_MIN = parseNumArg("timeout", 10, 1, 30);
+
+// ────────────────────────────────────────────────────────────────────
+// 유틸: 세션 쿠키 감지 (로그인 완료 여부)
+// ────────────────────────────────────────────────────────────────────
+
+const SESSION_COOKIE_NAMES = ["TIARA", "LSID", "ALID", "DID", "_T_", "__T_"];
+
+function isLoggedIn(cookies: Cookie[]): boolean {
+  return cookies.some(
+    (c) =>
+      SESSION_COOKIE_NAMES.includes(c.name) &&
+      /\.(daum|kakao)(\.com|\.net)/.test(c.domain ?? ""),
+  );
+}
+
 async function main() {
+  // 시작 시 랜덤 대기 (봇 탐지 회피)
+  if (RANDOM_DELAY_MIN > 0) {
+    const delaySec = Math.floor(Math.random() * RANDOM_DELAY_MIN * 60);
+    const m = Math.floor(delaySec / 60);
+    const s = delaySec % 60;
+    console.log(`🎲 랜덤 대기: ${m}분 ${s}초 (0~${RANDOM_DELAY_MIN}분 범위)...`);
+    await new Promise((r) => setTimeout(r, delaySec * 1000));
+  }
+
   const authDir = resolve(process.cwd(), ".auth");
   mkdirSync(authDir, { recursive: true });
   const statePath = resolve(authDir, "cafe-state.json");
 
-  // headed 모드 — 사용자가 직접 로그인 인터랙션
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({
-    viewport: { width: 414, height: 896 }, // iPhone XR 근접 (모바일 웹)
+    viewport: { width: 414, height: 896 },
     userAgent: USER_AGENT,
   });
   const page = await context.newPage();
 
   const bar = "=".repeat(60);
   console.log(bar);
-  console.log("다음카페 로그인 세션 생성 (Playwright)");
+  console.log(`다음카페 로그인 세션 생성 (Playwright) ${AUTO_WAIT ? "— auto 모드" : ""}`);
   console.log(bar);
-  console.log("⭐ 1) 열린 브라우저에서 다음 로그인");
-  console.log("      → *** '로그인 상태 유지' 체크박스 반드시 클릭 *** ");
-  console.log("         (체크 안 하면 쿠키가 ~1일 만료. 체크하면 30일+ 유지)");
-  console.log("   2) IVHA 게시판에서 글 하나 클릭 → 본문이 보이는지 확인");
-  console.log("   3) 터미널로 돌아와 [Enter]");
+  if (AUTO_WAIT) {
+    console.log(`🤖 auto-wait 모드: 세션 쿠키 감지까지 최대 ${AUTO_WAIT_TIMEOUT_MIN}분 대기`);
+    console.log("   Chrome 자동 채움 / Cowork 제어로 로그인 진행하세요.");
+  } else {
+    console.log("1) 열린 브라우저에서 다음 로그인 (Chrome 저장된 ID/PW 자동 채움)");
+    console.log("2) IVHA 게시판 글 하나 열어 본문 보이는지 확인");
+    console.log("3) 터미널로 돌아와 [Enter]");
+  }
   console.log(bar);
 
   try {
     await page.goto(LOGIN_URL, { waitUntil: "domcontentloaded" });
   } catch (err) {
-    // 네트워크 느릴 때도 페이지는 로드 중일 수 있음 — 경고만
     const msg = err instanceof Error ? err.message : String(err);
     console.warn(`⚠️  초기 페이지 이동 경고 (계속 진행): ${msg}`);
   }
 
-  // [2026-04-22] "로그인 상태 유지" 체크박스 자동 클릭 시도 (best-effort)
-  // 실제 다음 모바일 로그인 폼의 selector 가 여러 변형 있을 수 있어 여러 개 순회.
-  // 실패해도 안내 메시지로 유저가 수동 체크 가능 → graceful.
-  (async () => {
-    const candidates = [
-      'input[name="keepsignin"]',
-      'input[name="saveSignIn"]',
-      'input[name="stayLogin"]',
-      'input[id="keepsignin"]',
-      'input[id*="keep" i]',
-      'input[type="checkbox"][name*="keep" i]',
-      'input[type="checkbox"][name*="save" i]',
-    ];
-    for (let attempt = 0; attempt < 3; attempt++) {
-      // 폼이 동적으로 뜰 수 있어 최대 3회 재시도 (각 2초 대기)
-      for (const sel of candidates) {
-        try {
-          const el = await page.waitForSelector(sel, { timeout: 500, state: "attached" });
-          if (el) {
-            await el.check({ timeout: 500 }).catch(() => {});
-            console.log(`✅ "로그인 상태 유지" 자동 체크 시도됨 (selector=${sel})`);
-            return;
-          }
-        } catch {
-          // 다음 selector / 다음 attempt
-        }
+  // ────────────── 로그인 완료 대기 ──────────────
+  if (AUTO_WAIT) {
+    // 세션 쿠키 감지 polling (3초마다, timeout 까지)
+    const deadline = Date.now() + AUTO_WAIT_TIMEOUT_MIN * 60_000;
+    let loggedIn = false;
+    while (Date.now() < deadline) {
+      const cookies = await context.cookies();
+      if (isLoggedIn(cookies)) {
+        loggedIn = true;
+        const remaining = Math.ceil((deadline - Date.now()) / 60_000);
+        console.log(`✅ 세션 쿠키 감지 — 로그인 완료 (남은 대기 ${remaining}분 skip)`);
+        break;
       }
-      await new Promise((r) => setTimeout(r, 2000));
+      await new Promise((r) => setTimeout(r, 3000));
     }
-    // 전부 실패해도 조용히 끝 — 유저가 수동 체크하면 됨
-  })().catch(() => {});
+    if (!loggedIn) {
+      console.error(`❌ auto-wait timeout (${AUTO_WAIT_TIMEOUT_MIN}분) — 세션 쿠키 감지 실패`);
+      console.error("   Cowork 로그인 자동화가 막혔거나 CAPTCHA/2FA 발생 가능.");
+      await browser.close();
+      process.exit(2);
+    }
+    // 본문 접근 권한 검증 — IVHA 글 목록에서 첫 번째 글 이동
+    console.log("🔍 본문 접근 권한 검증 중...");
+    await new Promise((r) => setTimeout(r, 2000)); // 리다이렉트 안정화
+  } else {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    await rl.question("로그인 + 본문 확인 완료 후 [Enter] ");
+    rl.close();
+  }
 
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  await rl.question("로그인 + 본문 확인 완료 후 [Enter] ");
-  rl.close();
-
-  // storageState 저장 — cookies(HttpOnly 포함) + localStorage/sessionStorage
+  // storageState 저장
   await context.storageState({ path: statePath });
   console.log(`\n✅ 쿠키 저장 완료: ${statePath}`);
 
-  // [2026-04-22] 저장 직후 쿠키 수명 진단 — "로그인 유지" 체크 됐는지 확인
-  // 주요 인증 쿠키 이름 패턴: _T_, __T_, LSID, ALID, TIARA, DID, KAKAO_AUTH
-  const state = JSON.parse(require("node:fs").readFileSync(statePath, "utf8")) as {
+  // 쿠키 수명 진단 — 장기 토큰 유무 (_T_ANO 제외)
+  const state = JSON.parse(readFileSync(statePath, "utf8")) as {
     cookies?: Array<{ name: string; domain?: string; expires?: number }>;
   };
-  // 주의: `_T_ANO` (400일 익명 추적) 는 인증 쿠키 아님 → 제외.
   const AUTH_NAMES = new Set([
     "_T_",
     "_T_SECURE",
@@ -132,26 +170,48 @@ async function main() {
       (c.domain ?? "").match(/\.(daum|kakao)(\.com|\.net)/),
   );
   const persistentAuth = authCookies.filter((c) => (c.expires ?? -1) > 0);
+  const totalAuthCount = authCookies.length;
   const nowSec = Date.now() / 1000;
-  if (persistentAuth.length === 0) {
+  if (totalAuthCount === 0) {
     console.log("");
-    console.log("⚠️  장기 인증 쿠키가 없습니다 (세션 쿠키만 저장됨).");
-    console.log("   '로그인 상태 유지' 체크박스를 클릭하지 않았을 수 있습니다.");
-    console.log("   쿠키 수명이 짧아 ~1일 내 만료 예상. 재로그인 권장.");
+    console.log("⚠️  인증 쿠키(TIARA/LSID/ALID/DID 등)가 전혀 없습니다.");
+    console.log("   로그인이 실제로 완료되지 않았을 수 있습니다. 재실행 권장.");
+  } else if (persistentAuth.length === 0) {
+    console.log("");
+    console.log(`ℹ️  세션 인증 쿠키 ${totalAuthCount}개 확인 (수명 ~1일, 카카오 정책 기본)`);
+    console.log("   매일 재로그인 필요 — Cowork recurring task 로 자동화 가능");
   } else {
     const minExpires = Math.min(...persistentAuth.map((c) => c.expires ?? 0));
     const daysLeft = ((minExpires - nowSec) / 86400).toFixed(1);
     console.log("");
-    console.log(`✅ 장기 인증 쿠키 ${persistentAuth.length}개 확인 / 최단 만료까지 ${daysLeft}일 남음`);
-    if (Number(daysLeft) < 7) {
-      console.log("   ⚠️  7일 미만 — '로그인 상태 유지' 체크 여부 재확인 권장");
-    }
+    console.log(`✅ 장기 인증 쿠키 ${persistentAuth.length}개 / 최단 만료 ${daysLeft}일 남음`);
   }
-  console.log("");
-  console.log("이제 다음 명령으로 GitHub Secret 갱신:");
-  console.log("  npx tsx scripts/refresh-cafe-cookie.ts --skip-login");
 
   await browser.close();
+
+  // ────────────── GitHub Secret 자동 갱신 ──────────────
+  if (PUSH_SECRET) {
+    console.log("");
+    console.log("─".repeat(60));
+    console.log("🔐 GitHub Secret 자동 갱신 (--push-secret)");
+    console.log("─".repeat(60));
+    try {
+      execSync("npx tsx scripts/refresh-cafe-cookie.ts --skip-login", {
+        stdio: "inherit",
+      });
+      console.log("✅ Secret 갱신 완료");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`❌ Secret 갱신 실패: ${msg}`);
+      console.error("   수동 실행: npx tsx scripts/refresh-cafe-cookie.ts --skip-login");
+      process.exit(3);
+    }
+  } else {
+    console.log("");
+    console.log("이제 다음 명령으로 GitHub Secret 갱신:");
+    console.log("  npx tsx scripts/refresh-cafe-cookie.ts --skip-login");
+    console.log("(또는 다음 실행에 --push-secret 플래그 추가하면 자동)");
+  }
 }
 
 main().catch((err) => {
