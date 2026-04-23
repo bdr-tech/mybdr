@@ -485,6 +485,59 @@ v2 `components.jsx` 340줄에서 재사용 단위 추출:
 
 ## 구현 기록
 
+### [2026-04-24] Phase 1 Games — v2 시안 기반 재구성
+- **브랜치**: design_v2 (이전 Phase 1 Home 커밋 위, PM 지시 대로 Games 착수)
+- **배경**: Phase 1 Home 이 완료되어 다음 페이지로 Games 를 재구성. 기존 `games-content.tsx`(토스 스타일 세로 스택 카드)는 v2 시안의 "auto-fill 320px 카드 그리드 + stripe + 배지 + 4행 info + 푸터 진행바" 구조와 전혀 다름. PM 확정안: DQ2 (URL+클라 혼합 필터) / DQ3 (태그 하드코딩 자동 파생) / Home 패턴(서버 컴포넌트 + 서버 prefetch)
+- **변경 5건**:
+  - `src/components/bdr-v2/game-card.tsx` **신규** (서버) — v2 Games.jsx L51~96 카드 1장 전용. 상단 4px kind stripe (TYPE_BADGE.bg 색) + 배지(종류/마감임박/만석) + area(우상단 mono) + 타이틀(2줄 line-clamp) + 4행 info grid(68px 라벨/1fr 값: 장소·일시·레벨·비용) + 자동 파생 tags + 푸터(호스트/진행바/신청). `formatScheduleShort("MM/DD · HH:mm")`/`isClosingSoon`(24h 이내 OR 80%+) 유틸 내장. `decodeHtmlEntities` 적용(title/venue/author). SKILL_LABEL 재사용. Disabled 처리: status 3/4 또는 만석 → opacity 0.6 + "마감" span. CSS 변수만 사용(하드코딩 색상 0)
+  - `src/components/bdr-v2/kind-tab-bar.tsx` **신규** ("use client") — URL `?type=0|1|2` 조작. 시안 스타일: border-bottom 1px + 활성 탭만 `3px solid var(--cafe-blue)` 밑줄 + `--ink`/비활성 `--ink-mute`. mono 건수 표기 (0도 표시). `no-scrollbar` 가로 스크롤 허용(탭 4개가 좁은 화면에서 넘칠 시). 기존 `game-type-tabs.tsx`와 동일 URL 규약 유지해 서버 컴포넌트의 `?type` 필터와 그대로 호환
+  - `src/components/bdr-v2/filter-chip-bar.tsx` **신규** ("use client") — 7칩 (DQ2 혼합). URL 그룹 4: 오늘/이번주 → `?date=today|week` 토글, 서울/경기 → `?city=서울|경기` 토글(부분 매칭 활성 판정 — `?city=서울특별시`도 "서울" 칩 활성). 클라 그룹 3: 주말/무료/초보환영 → 부모 Set 콜백 토글. 활성 칩 inline style: `background: var(--cafe-blue)` + `#fff`. .btn.btn--sm 클래스 재사용
+  - `src/app/(web)/games/_components/games-client.tsx` **신규** ("use client") — 서버→클라 경계 단일 포인트. props.games(GameForClient 평탄화 shape)를 받아 `FilterChipBar` 3개 클라 필터 state(Set<"weekend"|"free"|"beginner">) AND 결합으로 추가 필터링 + `deriveTags(g)` (무료/초보환영/주말 최대 3개) 계산해 GameCard 에 주입. 그리드: `repeat(auto-fill, minmax(320px, 1fr))` gap 14. 빈 상태 2 분기(전체 0건 vs 필터 결과 0건)
+  - `src/app/(web)/games/page.tsx` **재작성** — `"use client"` 래퍼 구조에서 async 서버 컴포넌트로 전환. `searchParams` 풀이(Next 15 Promise) → `resolveScheduledRange(date)` 유틸 + `listGames(filters)` + `prisma.games.groupBy` 병렬 `Promise.allSettled`. 결과를 `GameForClient[]` 로 평탄화(BigInt/Date/Decimal → string/ISO). `typeCounts` 변환(route.ts 로직 재현). 레이아웃: `.page` 쉘 + 헤더(eyebrow + h1 + 서브문구 + /games/new Link) + `<KindTabBar counts>` + `<GamesClient games>`. Suspense/Skeleton 제거(서버 prefetch 가 완료된 후 렌더 — 로딩 UI 불필요). API/route.ts/Prisma 무변경
+- **보존 (삭제 0)**:
+  - `src/app/(web)/games/_components/games-content.tsx` — v2 에서 미사용이지만 파일 유지 (Phase 9 cleanup 에서 재평가)
+  - `src/app/(web)/games/_components/game-type-tabs.tsx` — 동일
+  - `src/app/(web)/games/games-filter.tsx` — 동일
+  - `_components/{game-card-compact,guest-game-card,pickup-game-card,team-match-card}.tsx` — 동일
+- **검증**:
+  - `npx tsc --noEmit` → EXIT=0 **PASS**
+  - dev server 3001 기동 중(PID 102232) → HMR 자동 반영
+  - `curl /games` → **HTTP 200 / 0.54s / 243KB**
+  - `curl /games?type=0` → 200 / `curl /games?city=서울` → 200
+  - HTML 구조 검증 (grep):
+    - `class="page"` 쉘 1회
+    - `경기 · GAMES` eyebrow 2회 + `픽업 · 게스트 모집` h1 2회
+    - 탭 4개 (전체 active + 픽업/게스트 모집/연습경기) 정상 렌더, `aria-pressed="true"` 정확히 1개
+    - 필터 칩 7개 (오늘/이번주/주말/서울/경기/무료/초보환영) 전부 `btn btn--sm` + `aria-pressed="false"` 렌더
+    - `auto-fill` 그리드 1회 + `badge--red` (마감임박) 2회 확인 → 카드 실제 렌더 중
+    - `/games?type=0` / `?city=서울` 쿼리 조작 시 각 페이지 `aria-pressed="true"` 정확히 1개 (탭 전환/칩 활성 반영)
+
+💡 tester 참고:
+- **테스트 URL**: http://localhost:3001/games
+- **정상 동작 체크리스트**:
+  - `.page` 쉘 폭/중앙정렬 반영, 상단 "경기 · GAMES" eyebrow + 큰 h1 + 오른쪽 "모집 글쓰기" 버튼
+  - 탭 4개 클릭 시 URL `?type=0|1|2` 조작 + 건수 숫자 mono 폰트 표시. "전체" 탭은 ?type 삭제
+  - 칩 7개: 오늘/이번주/서울/경기는 URL 조작(?date=today/week, ?city=서울/경기) + 같은 칩 재클릭 시 삭제(토글). 주말/무료/초보환영은 URL 변경 없이 클라 필터만 적용
+  - 카드: 상단 4px stripe 색상이 종류별 다름(픽업=blue/게스트=green/연습=amber). 마감임박 빨간 배지는 (A) 24시간 이내 OR (B) 진행률 80%+ 인 경기만
+  - 태그 자동 파생: 무료/초보환영/주말 조건 만족 시 최대 3개 표시. 조건 0개면 태그 영역 자체 숨김(공백 안 생김)
+  - 그리드: 데스크톱 3~4열(minmax 320px) / 태블릿 2열 / 모바일(≤480) 1열
+- **주의할 입력**:
+  - `scheduled_at` null 경기 → "일정 미정" 표시. "주말" 필터 적용 시에는 제외됨
+  - `fee_per_person` null vs 0 → 둘 다 "무료"(녹색 볼드) 표시
+  - `status=3`(완료)/`status=4`(취소) 경기 → 카드 opacity 0.6 + "마감" span. 하지만 listGames 가 status 4를 제외하므로 실제로는 status=3 만 노출됨
+  - 만석(cur >= max) → "만석" 배지 + "마감" span
+  - `?type=0&date=today&city=서울` 처럼 필터 다중 적용 시 서버 prefetch 에 모두 반영되어 정확한 건수 + 목록 표시
+  - 클라 필터(주말/무료/초보환영)는 URL 에 반영되지 않으므로 새로고침 시 초기화됨 — 이는 의도(PM 확정)
+
+⚠️ reviewer 참고:
+- **서버 컴포넌트 + 클라 래퍼 분리**: 기존 `games-content.tsx`는 전체 클라 컴포넌트 + useSWR 로딩이었는데, v2 재구성에서는 Home 패턴을 따라 서버 prefetch + 작은 클라 래퍼로 전환. 장점: 초기 페인트에 데이터 포함(CLS 없음) + useSWR photoMap 제거로 네트워크 요청 수↓. 단점: prefer=true(로그인 맞춤 필터) 기능이 이번 재구성에서 빠짐 — 원래 `/api/web/games?prefer=true` 로 `preferredCities/gameTypes/skillLevels/days/timeSlots` 처리했던 로직은 GamesClient 에 없음. v2 Games.jsx 시안 자체에도 맞춤 필터 UI가 없으므로 의도된 범위(차후 Phase 에서 FilterChipBar 에 "내 조건" 칩 추가 검토)
+- **route.ts 로직 중복**: `resolveScheduledRange` / `countWhere` 구성 / `typeCounts` 딕셔너리 변환 3곳이 `api/web/games/route.ts` 와 동일 패턴. 서버 컴포넌트가 API 를 호출하지 않고 직접 DB 접근하는 Home 패턴을 따르느라 필연적. 향후 `listGames`/`getTypeCounts` 같은 공통 서비스 함수로 추출 가능 (Phase 9 정리 대상)
+- **태그 자동 파생 (DQ3)**: DB 에 tags 필드가 없어 3개 조건(fee=0/skill=beginner계열/weekend)으로 파생. 시안의 `g.tags` 는 시드 더미 데이터라 그대로 재현 불가 — PM 확정안대로 하드코딩 자동 파생으로 처리. `BEGINNER_SKILLS` 상수는 game-card.tsx 와 games-client.tsx 양쪽에 필요했으나 게시물 독립성 유지를 위해 양쪽에 정의(중복 7글자, dedup 비용 낮음)
+- **URL 조작 칩 "부분 매칭" 활성 판정**: "서울" 칩은 `?city=서울` 뿐 아니라 `?city=서울특별시` 같은 확장 매칭도 활성으로 본다(`current.includes(value)`). 장점: FloatingFilterPanel 등 다른 UI 가 full name 을 주입해도 칩이 꺼지지 않음. 단점: "경기" 칩이 `?city=경기도`/`?city=경기북부` 처럼 의도 외 케이스도 활성화. 실제 DB city 값 분포 확인 후 필요 시 엄격 비교로 전환
+- **기존 컴포넌트 미사용 (보존 0삭제)**: games-content/game-type-tabs/games-filter/guest-game-card/pickup-game-card/team-match-card/game-card-compact — 총 7개 파일이 이번 재구성에서 import 안 됨. 미사용 warning 은 안 나지만 Phase 9 cleanup 에서 일괄 삭제 결정 필요
+
+---
+
 ### [2026-04-22] Phase 1 Home 게시판 영역 시안 매칭 (HotPostRow 도입 + 배지 중복 제거)
 - **브랜치**: subin
 - **배경**: 직전 세션(04-22 A+B+C)에서 공지·인기글/방금 올라온 글 양쪽에 BoardRow를 사용하고 `categoryBadge`로 제목 앞 배지를 추가했으나, v2 Home.jsx L44~53 HOT_POSTS 원본은 **3열 grid(56px 배지 / 1fr 제목 / auto 조회수)** 간략 리스트 구조로 BoardRow(6열 테이블)와 정보 밀도가 다름. 또 "방금 올라온 글" 풀 테이블은 이미 3열에 게시판(카테고리) 컬럼이 있어 제목 앞 배지가 **중복 표시**
@@ -644,6 +697,7 @@ v2 `components.jsx` 340줄에서 재사용 단위 추출:
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-24 | developer | **Phase 1 Games — v2 시안 기반 재구성** — bdr-v2 신규 3종(game-card / kind-tab-bar / filter-chip-bar) + games/_components/games-client(클라 래퍼) + page.tsx 서버 컴포넌트 재작성(listGames + groupBy typeCounts 병렬 prefetch). DQ2 URL+클라 혼합(date/city URL / weekend·free·beginner 클라) + DQ3 태그 자동 파생(무료/초보환영/주말 최대 3). 기존 games-content/game-type-tabs/games-filter 보존(미사용). tsc EXIT=0 / `/games` 200 (0.54s) / `?type=0`·`?city=서울` 200. HTML: `.page` 쉘 + eyebrow + h1 + 탭 4(전체 active) + 칩 7(btn--sm) + auto-fill 그리드 + badge--red 마감임박 렌더 확인 | ✅ (커밋 대기) |
 | 04-22 | developer | **Phase 1 Home 시안 매칭 보완 (A+B+C)** — (A) page.tsx `className="page"` 확인(기반영) + (B) "열린 대회" 섹션 `BoardRow→TournamentRow` 교체 + 인덱스 accent 로테이션 `[--accent, #f59e0b, --accent-2]` + level 매핑 `registration→OPEN / in_progress→LIVE / 그외→INFO` + (C) board-row.tsx `categoryBadge` 렌더 로직 추가 + page.tsx 공지·인기글/방금 올라온 글에 `categoryBadge={notice?"red":"soft"}` 전달. tsc EXIT=0 / `/` 200 | ✅ (커밋 대기) |
 | 04-24 | developer | **Phase 1 S6+S7+S8 — 가로 네비 전면 전환** — bdr-v2/app-nav(유틸리티바 하드코딩 + 탭 8개 + 더보기 드롭다운 + 아바타=/profile Link) + bdr-v2/app-drawer(모바일 햄버거 슬라이드) + bdr-v2/theme-switch(이중 셀렉터 세팅) 3종 신규 + `(web)/layout.tsx` 431→137줄 전면 재작성(좌측사이드바/상단헤더/하단탭/우측사이드바/SlideMenu/PWA배너/ProfileCompletionBanner/NotificationBadge 전부 제거, SWR/PreferFilter/Toast Provider + /api/web/me·/notifications 폴링 + Footer 유지). tsc EXIT=0 / `/` 200 / 탭 8개 전 라우트 200 / HTML 검증 app-nav 1회 + 탭 8개 순서 정확 + 레거시 요소 0회 | ✅ (커밋 대기) |
 | 04-23 | developer | **Phase 1 Home S4+S5** — bdr-v2 신규 컴포넌트 4종(promo-card/stats-strip/board-row/card-panel, 서버) + prefetchOpenTournaments(home.ts, unstable_cache 60s, is_public+registration/in_progress) + page.tsx 전면 재구성(기존 6종 import 제거 → Promo/Stats/2컬럼 CardPanel/.board 풀 테이블 배치). tsc EXIT=0 / `/` 200. Turbopack worker crash 1회(errors.md 2026-04-12 5회차) → `.next` 삭제+재기동 복구 | ✅ (커밋 대기) |
@@ -653,4 +707,3 @@ v2 `components.jsx` 340줄에서 재사용 단위 추출:
 | 04-22 | pm | **knowledge 3파일 갱신 + docs planning 지연 커밋** — conventions +2(any 예외 + color-mix 문법) / lessons +1(영역 단위 정비 교훈) / index 갱신 + Dev/advancement-roadmap/weekly-status 04-20 커밋 | ✅ `ab46ae2` + `9023236` |
 | 04-22 | developer | **하드코딩 색상 5차 — 잔존 정비 (5파일 7건) + 예외 2건 명시** — referee/signup(에러) + referee/login(2건) + verify(warning) + teams/[id]/manage(해산 버튼 hover solid+tone-down) + teams/new(2건). 예외: live orange 스피너(accent TODO) / tm-org-new dark:페어(단일 토큰 검증 전). **하드코딩 색상 audit 실질 완결** | ✅ `6a7569b` |
 | 04-22 | developer+pm | **하드코딩 색상 3파일 CSS 변수화 (4차, 4건) + conventions.md 승격** — tm-admins(error+success 페어) + tm/[id]/wizard + tm/new/wizard. **tournament-admin 영역 전체 완결** (3차+4차 = 6파일 11건). color-mix Tailwind arbitrary 언더스코어 문법을 conventions.md 승격 | ✅ `42c5066` |
-| 04-22 | developer | **하드코딩 색상 3파일 CSS 변수화 (3차, 7건)** — tm-matches(에러 text+삭제 버튼 hover color-mix+에러 박스 3건) + tm-site(에러 박스 3건) + tm-bracket(에러 박스 1건). Tailwind v4 arbitrary `color-mix` 언더스코어 문법 next build PASS 검증 | ✅ `dfa5b9a` |
