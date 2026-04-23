@@ -28,6 +28,7 @@ export const metadata: Metadata = {
 import { PromoCard } from "@/components/bdr-v2/promo-card";
 import { StatsStrip } from "@/components/bdr-v2/stats-strip";
 import { BoardRow } from "@/components/bdr-v2/board-row";
+import { HotPostRow } from "@/components/bdr-v2/hot-post-row";
 import { TournamentRow } from "@/components/bdr-v2/tournament-row";
 import { CardPanel } from "@/components/bdr-v2/card-panel";
 import {
@@ -188,13 +189,14 @@ export default async function HomePage() {
           gap: 20,
         }}
       >
-        {/* 공지·인기글 패널 — BoardRow 방식으로 상위 5건 */}
+        {/* 공지·인기글 패널 — HotPostRow 방식 (시안 3열 grid 간략 리스트)
+         * v2 Home.jsx L44~53 HOT_POSTS 구조: 56px 배지 / 1fr 제목 / auto 조회수.
+         * "방금 올라온 글"의 풀 테이블(6열)과 정보 밀도가 달라 별도 컴포넌트 사용. */}
         <CardPanel
           title="공지 · 인기글"
           moreHref="/community"
           noPadding
         >
-          {/* .board 컨테이너 없이 BoardRow만 세로로 (간단 리스트) */}
           {hotPosts.length === 0 ? (
             <div
               style={{
@@ -207,20 +209,17 @@ export default async function HomePage() {
               아직 게시글이 없습니다.
             </div>
           ) : (
-            <div className="board" style={{ border: 0, borderRadius: 0 }}>
-              {hotPosts.map((post, idx) => (
-                <BoardRow
+            // 외부 `.board` 래퍼 불필요 — HotPostRow가 자체 grid 소유
+            <div>
+              {hotPosts.map((post) => (
+                <HotPostRow
                   key={post.id}
-                  num={idx + 1}
+                  category={communityCategoryLabel(post.category)}
                   title={post.title}
-                  board={communityCategoryLabel(post.category)}
-                  author={post.author_nickname}
-                  date={formatShortDate(post.created_at)}
-                  views={post.view_count}
                   commentsCount={post.comments_count}
-                  isNew={isWithin24h(post.created_at)}
-                  /* 공지 카테고리는 red 배지, 그 외는 soft 배지 — 시안 매칭 */
-                  categoryBadge={post.category === "notice" ? "red" : "soft"}
+                  views={post.view_count}
+                  /* 공지 카테고리만 red 배지로 강조 — 시안 매칭 */
+                  isNotice={post.category === "notice"}
                   href={`/community/${post.public_id ?? post.id}`}
                 />
               ))}
@@ -326,6 +325,9 @@ export default async function HomePage() {
               <div>조회</div>
             </div>
             {latestPosts.map((post, idx) => (
+              /* categoryBadge prop 제거 이유: BoardRow의 3열(게시판 이름)에
+               * 이미 카테고리 라벨이 표시되므로 제목 앞 배지는 중복 표시.
+               * 시안도 "방금 올라온 글"은 테이블 한 줄(배지 없음) 스타일 */
               <BoardRow
                 key={post.id}
                 num={idx + 1}
@@ -336,8 +338,6 @@ export default async function HomePage() {
                 views={post.view_count}
                 commentsCount={post.comments_count}
                 isNew={isWithin24h(post.created_at)}
-                /* 공지는 red 배지로 강조, 그 외는 soft 배지 */
-                categoryBadge={post.category === "notice" ? "red" : "soft"}
                 href={`/community/${post.public_id ?? post.id}`}
               />
             ))}

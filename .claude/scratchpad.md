@@ -485,6 +485,42 @@ v2 `components.jsx` 340줄에서 재사용 단위 추출:
 
 ## 구현 기록
 
+### [2026-04-22] Phase 1 Home 게시판 영역 시안 매칭 (HotPostRow 도입 + 배지 중복 제거)
+- **브랜치**: subin
+- **배경**: 직전 세션(04-22 A+B+C)에서 공지·인기글/방금 올라온 글 양쪽에 BoardRow를 사용하고 `categoryBadge`로 제목 앞 배지를 추가했으나, v2 Home.jsx L44~53 HOT_POSTS 원본은 **3열 grid(56px 배지 / 1fr 제목 / auto 조회수)** 간략 리스트 구조로 BoardRow(6열 테이블)와 정보 밀도가 다름. 또 "방금 올라온 글" 풀 테이블은 이미 3열에 게시판(카테고리) 컬럼이 있어 제목 앞 배지가 **중복 표시**
+- **변경 3건**:
+  - `src/components/bdr-v2/hot-post-row.tsx` **신규** — v2 Home.jsx 원본 구조 재현. Props: `category / title / commentsCount / views / href / isNotice`. `gridTemplateColumns: "56px 1fr auto"`, `padding: "11px 18px"`, `borderBottom: "1px solid var(--border)"`. 제목 ellipsis, 댓글 accent [N], 조회수는 Material Symbols `visibility` 아이콘. 공지면 `badge--red`, 아니면 `badge--soft`. 외부 `.board` 래퍼 불필요 — 자체 grid 소유 (BoardRow와 결정적 차이)
+  - `src/app/(web)/page.tsx` "공지·인기글" 섹션 — `BoardRow` → `HotPostRow` 교체. `<div className="board" style={{ border: 0, borderRadius: 0 }}>` 래퍼 제거(HotPostRow가 자체 구조). 더 이상 num/board/author/date prop 주입 불필요 → JSX 간결화. 주석에 "v2 Home.jsx L44~53 HOT_POSTS 구조 재현" 근거 명시
+  - `src/app/(web)/page.tsx` "방금 올라온 글" 섹션 — `categoryBadge={post.category === "notice" ? "red" : "soft"}` prop 제거. 이유를 BoardRow 호출 위 주석으로 명시("3열 게시판 컬럼에 이미 카테고리 라벨 — 제목 앞 배지는 중복"). BoardRow 컴포넌트 자체는 건드리지 않음(공지·인기 아닌 다른 Phase/페이지에서 배지 기능이 필요할 수 있어 옵션 prop 존치)
+- **검증**:
+  - `npx tsc --noEmit` → EXIT=0 **PASS**
+  - dev server 3001(PID 102232) 기동 중 → `curl /` **HTTP 200 (0.30s) PASS**
+  - `.badge--soft` / `.badge--red` / `.material-symbols-outlined` 전부 globals.css 기존 정의 사용 (신규 CSS 추가 없음)
+- **영향 파일**:
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/components/bdr-v2/hot-post-row.tsx | v2 HOT_POSTS 3열 grid 전용 컴포넌트 (서버) | 신규 |
+| src/app/(web)/page.tsx | 공지·인기글: BoardRow → HotPostRow. 방금 올라온 글: categoryBadge prop 제거 | 수정 |
+
+💡 tester 참고:
+- **테스트 URL**: http://localhost:3001/
+- **정상 동작**:
+  - "공지·인기글" 카드 내부가 56/1fr/auto 3열로 렌더 (번호/작성자/날짜 컬럼 없음 = 간략 모드)
+  - 공지(category=notice) 행은 좌측 배지가 빨강, 자유/Q&A 등은 카페블루 soft
+  - 댓글 수 0이면 [N] 미표시, >0이면 제목 뒤 accent 컬러 [3] 형식
+  - 조회수 옆에 `visibility`(눈) 아이콘 14px
+  - "방금 올라온 글" 테이블은 6열 구조 유지되나 **제목 앞 배지 사라짐** (게시판 컬럼에 카테고리 텍스트는 그대로)
+- **주의할 입력**:
+  - hotPosts 0건 → 기존 empty state "아직 게시글이 없습니다." 유지
+  - 긴 제목(>1줄 분량) → ellipsis로 말줄임 처리 확인
+  - 모바일(≤480px) 뷰 → HotPostRow는 자체 스타일이라 responsive.css 영향 받지 않음(시안에서도 동일 3열 유지가 자연스러움). 화면이 좁을 때 배지가 넘치지 않는지 체크
+
+⚠️ reviewer 참고:
+- **BoardRow의 `categoryBadge` prop은 존치**: 공지·인기에서 쓰지 않게 됐지만 BoardRow 시그니처에 남아있음. 다른 Phase/페이지(예: Phase 4 PostRow 추출 시)에서 풀 테이블이 아닌 축약 리스트에 배지가 필요할 수 있어 옵션 유지. dead code 판단은 Phase 9 cleanup에서
+- **HotPostRow의 스타일은 인라인 style로 작성**: globals.css에 `.hot-post__row` 같은 전용 클래스를 추가하는 대신 인라인 style 고수 — 시안 원본(Home.jsx)이 인라인 방식이고, 본 컴포넌트가 홈 1곳에서만 쓰여 전역 CSS에 이름을 주는 비용이 더 큼. 확장 시 전용 클래스로 승격 가능
+- **visibility 아이콘 14px**: 원본은 `<Icon.eye />` SVG. mybdr 컨벤션은 Material Symbols Outlined(lucide-react 금지)이므로 `visibility`로 대체. 크기는 숫자 12px에 맞춰 14px 선택(시각적 균형)
+
 ### [2026-04-22] Phase 1 Home 시안 매칭 보완 (A+B+C 3건)
 - **브랜치**: subin
 - **배경**: page.tsx는 이미 v2 구조(PromoCard/StatsStrip/CardPanel/BoardRow)로 완성돼 있으나, 시안 대비 3가지 gap 존재 — (A) 페이지 셸 클래스 (B) "열린 대회" 섹션 레이아웃 (C) 카테고리 배지
