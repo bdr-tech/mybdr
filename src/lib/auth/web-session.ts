@@ -5,9 +5,10 @@ import { unauthorized } from "@/lib/api/response";
 /**
  * __Host- prefix: Secure + Path=/ + Domain 미설정 필수.
  * localhost(HTTP)에서는 __Host-가 작동하지 않으므로 production에서만 적용.
+ * proxy.ts(middleware)와 반드시 동일한 이름을 사용해야 함.
  */
 const isProduction = process.env.NODE_ENV === "production";
-export const WEB_SESSION_COOKIE = "bdr_session";
+export const WEB_SESSION_COOKIE = isProduction ? "__Host-bdr_session" : "bdr_session";
 
 /**
  * 서버 컴포넌트 / Server Action에서 현재 로그인 유저를 가져옵니다.
