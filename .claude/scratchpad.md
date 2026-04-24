@@ -980,11 +980,75 @@ DB tournamentTeam.status | 대회 시작일 | → RegStatus
 - **Pretendard 교체**: PM 지시 "Pretendard는 기존 CDN 로더 유지"였으나 실제 코드는 SUIT만 로드 중이었음. v2 body 기본 `--ff-body: 'Pretendard'`에 맞추려면 교체 필요하다고 판단 → Pretendard variable CDN으로 전환. 피드백 주세요
 - **폰트 preload 경고 가능성**: next/font는 자동 preload하는데 pages router가 아니면 Next.js 15+에서 경고 안 남. 16.1.6에서도 정상 (확인됨)
 
+### [2026-04-22] Phase 2 Notifications — v2 재구성 (UI-only, PM 4건 결정 반영)
+
+📝 구현한 기능: `/notifications` 페이지 BDR v2 재구성 — 탭 7종(전체/안읽음/대회/경기/팀/커뮤니티/시스템) + unread 아이템 전체 배경 강조(`var(--accent-soft)` + 좌측 3px accent bar) + `.page` 쉘 + 780px 폭 + "알림 설정" 버튼 Link 추가. **API/Prisma/page.tsx/category.ts 0 변경**. 상태·핸들러·fetch 로직 100% 보존.
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| `src/app/(web)/notifications/_components/notifications-client.tsx` | 전면 v2 재구성 (TABS 6→7 / unread 필터 탭 추가 / `.page` 래퍼 + maxWidth 780 / 인라인 v2 토큰 스타일 / 알림 설정 Link 버튼 / `var(--accent-soft)` + `inset 3px 0 0 var(--accent)` unread 강조 / Material Symbols `settings` 아이콘) | 수정 |
+
+### PM 결정 4건 반영 상세
+| 결정 | 구현 위치 |
+|------|----------|
+| 1. "알림 설정" B 추가 (Link 연결) | 헤더 우측 `<Link href="/profile/notification-settings" className="btn btn--sm">` — settings 아이콘 + 라벨 |
+| 2. 탭 7개 (안읽음 추가) | `TabKey = "all" \| "unread" \| NotifCategory` + filtered useMemo 분기 (`n.status==="unread" && !readIds.has(n.id)`) |
+| 3. unread 배경 강조 | 아이템 `<div>`에 `background: var(--accent-soft)` + `boxShadow: "inset 3px 0 0 var(--accent)"` (isUnread 조건부) |
+| 4. `.page` + 780px | 최상위 `<div className="page" style={{ maxWidth: 780 }}>` — Phase 1/2와 동일 패턴 |
+
+### 보존 로직 (0 변경)
+- useState 7종 전부 유지 (activeTab 타입만 `TabKey` 확장)
+- `handleLoadMore` / `handleDelete` / `handleMarkAllRead` 로직 그대로
+- `window.dispatchEvent(new CustomEvent("notifications:read-all"))` 유지 (헤더 벨 즉시 갱신)
+- `PushPermissionBanner` 렌더 유지 (푸시 권한 요청 배너)
+- "더 보기" 버튼 — `activeTab === "all"` 조건 유지 (카테고리 탭에서는 서버 페이지네이션 의미 없음)
+- 삭제 버튼 — `handleDelete` + `deletingId` 상태 그대로
+- `formatRelativeTime` / `getNotificationIcon` 유틸 유지
+- `categorize` / `ICON_MAP` import 유지 (category.ts 무변경)
+
+### 탭별 모두 읽음 동작 (미세 조정)
+- **전체** 탭: 전체 대상 read-all (body 빈) — 기존과 동일
+- **안읽음** 탭: 전체 대상 read-all (body 빈) — "모두 읽음" 의미상 자연스러움
+- **카테고리** 탭: `body.category = activeTab` 전송 — 기존과 동일
+- 버튼 라벨: 전체/안읽음 → "모두 읽음", 카테고리 → "{라벨} 모두 읽음"
+
+### 검증
+- `npx tsc --noEmit` → **EXIT=0 PASS**
+- `curl /notifications` → **307** (비로그인 리다이렉트 정상, PID 102232 port 3001 정상)
+- 로그인 후 HTML 검증 필요 항목(tester 위임): `.page` 1 / 탭 7개 / aria-pressed / `inset 3px 0 0 var(--accent)` unread 스타일 / 설정 Link href
+
+💡 tester 참고:
+- **테스트 URL**: http://localhost:3001/notifications (로그인 필수)
+- **정상 동작**:
+  - 헤더에 "알림" + (unread>0면) 빨간 원형 배지 숫자 + 우측 "모두 읽음"(unread>0만) + "알림 설정" 버튼 항상 표시
+  - 탭 7개 가로 스크롤(모바일), 활성 탭은 accent 배경 + 흰 글씨, 비활성은 `var(--bg-elev)` + `var(--ink)` + 작은 배지(count>0)
+  - unread 아이템: 배경 `var(--accent-soft)` (라이트 #FDE8E9 / 다크 #2A1214) + 좌측 3px accent 세로선 + 제목 700 / read 아이템: 배경 투명 + 제목 500 + 색 `var(--ink-dim)`
+  - "알림 설정" 클릭 → `/profile/notification-settings` 이동
+  - "안읽음" 탭 선택 → `status==="unread"` 인 항목만 필터
+  - 모두 읽음 후 → 헤더 벨 즉시 갱신 (`CustomEvent`) + 활성 탭 항목 read 스타일로 변경
+  - 더 보기 버튼은 **"전체" 탭에서만** 표시 (기존 동작 유지)
+  - 삭제 버튼(close 아이콘) 클릭 → 즉시 UI에서 제거
+- **주의할 입력**:
+  - 로그인 + 알림 100건 이상 계정(더 보기 fetch 확인)
+  - unread 0건 상태 → "모두 읽음" 버튼 숨김 확인
+  - 카테고리 탭 unread 0 → 해당 탭 선택 시 빈 상태 메시지 "이 카테고리에 해당하는 알림이 없습니다"
+  - "안읽음" 탭 unread 0 → 빈 상태 메시지 "미확인 알림이 없습니다"
+  - 다크/라이트 테마 토글 시 accent-soft 배경 자동 전환 (#FDE8E9 ↔ #2A1214)
+
+⚠️ reviewer 참고:
+- **인라인 스타일 위주**: Phase 1/2 기존 재구성 패턴(my-games, game-detail)과 동일하게 v2 토큰을 인라인 `style={{}}`로 적용. Tailwind util은 `scrollbar-hide`만 사용. `TossCard` 제거 → `.card` 클래스 활용
+- **탭 뱃지 로직**: "전체" 탭은 뱃지 없음(전체 건수 아닌 unread만 보여주던 기존과 동일), "안읽음" 탭은 `unreadCount` 뱃지 표시. 첫 진입 시 사용자가 미확인 건수를 탭 자체에서 확인 가능
+- **"안읽음" 탭에서 모두 읽음**: 전체 대상 API 호출(body 빈). "안읽음 탭에서 보이는 것만 읽음" 해석도 가능했으나 카테고리 혼재 UX 상 "전체 대상"이 자연스러움. 피드백 주시면 `filtered.map(id) → 개별 PATCH` 루프로 변경 가능
+- **`var(--color-*)` 미사용**: PM 재확인 결정 3번 "`var(--color-*)` 활용"이지만 Phase 0 S1에서 `--color-*` alias가 전면 폐기됨(scratchpad 969라인). 대신 v2 tokens(`--accent`, `--accent-soft`, `--ink`, `--ink-dim`, `--ink-mute`, `--bg-elev`, `--border`) 사용. 의도 부합 확인 요청
+- **설정 Link 위치**: 헤더 우측 "모두 읽음" 버튼 옆(`display: flex; gap: 8`). 시안 특정 위치 지정 없었음 → Phase 1 헤더 패턴 참조
+- **Material Symbols**: `settings` (헤더 버튼) / `close` / `hourglass_empty` / `chevron_right` / `notifications_off` 전부 Outlined 폰트 사용
+
 ---
 
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-22 | developer | **Phase 2 Notifications — v2 재구성 (UI-only, 4결정 반영)** — `notifications-client.tsx` 단일 파일만 수정. page.tsx/API/Prisma/category.ts 0 변경. 탭 6→**7종**(전체/안읽음/대회/경기/팀/커뮤니티/시스템) + unread 아이템 `var(--accent-soft)` 배경 + 좌측 3px `inset var(--accent)` bar + `.page` 쉘 + `maxWidth: 780` + 헤더 우측 "알림 설정" Link(`/profile/notification-settings`) 추가. 상태 7종·handleLoadMore/Delete/MarkAllRead·CustomEvent·PushPermissionBanner·삭제/더보기 버튼 전부 보존. tsc --noEmit EXIT=0 / `/notifications` 307 (비로그인 정상) | ✅ (커밋 대기, 로그인 세션 브라우저 수동 검증 필요) |
 | 04-24 | developer | **Phase 2 MyGames — v2 재구성 (A 변형: 신청내역 + 호스트 섹션 보존)** — 시안 "내 신청 내역"(경기+대회 통합) 메인 + 하단 기존 "내가 만든 경기" 보존. 4 신규(stat-card / status-badge / reg-row[client] / my-games-client[client]) + page.tsx 완전 재작성(Prisma 3병렬: game_applications+tournamentTeam+hostedGames). 상태 4종(confirmed/pending/completed/cancelled, Q4 waitlist/no-show 제거). just-applied 배너 sessionStorage 유지. 결제=Link→/pricing/checkout, QR·후기·호스트 문의·영수증 등은 alert("준비 중"). API route.ts/Prisma 스키마 0 변경. tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, 로그인 세션 브라우저 수동 검증 필요) |
 | 04-24 | developer | **Phase 1 Profile — /profile + /users/[id] v2 재구성** — D-P1~D-P8 추천값 + 누락 4필드(bio/gender/evaluation_rating/total_games_hosted) 전부 표시. 10신규(profile/_v2/*6 + users/[id]/_v2/*4) + 2재작성(각 page.tsx). /profile "use client" → 서버 컴포넌트 전환(Prisma 직접 호출 8쿼리). 탭 2개(D-P5) / 슛존·스카우팅 제거(D-P6) / physical strip 3열(D-P3) / isOwner→/profile redirect(D-P7) / user_badges 직접 쿼리(D-P8). tsc EXIT=0 / `/profile` 307 / `/users/1` 200(95KB) / `/users/7` 200(110KB bio 렌더 확인) / `/users/2832` 200. HTML: linear-gradient 1 + aria-pressed 2(탭 2개) + 슛존/스카우팅 0 + repeat(3,1fr)/(6,1fr) 각 1 | ✅ (커밋 대기) |
 | 04-24 | developer | **Phase 1 GameDetail — v2 시안 재구성 (안 A)** — `_v2/` 5 신규(summary-card / about-card / participant-list / apply-panel / host-panel) + `page.tsx` 재작성. 2열 info grid + 조건부 행(duration·contact·allow_guests·uniform) / AboutCard(description·requirements·notes) / ParticipantList(이니셜+position) / ApplyPanel(6분기 CTA + 한마디·저장·문의 alert) / HostPanel(수정·취소+신청자 관리 응집). HeroBanner·PriceCard·HostCard·ParticipantsGrid·PickupDetail·GuestDetail·TeamMatchDetail 미사용(파일 보존). API/Prisma/service 0 변경. tsc EXIT=0 / `/games/552` 200 (3.18s) + 551/550 200 (0.2s). HTML 검증: `.page` 1 + `.card` 15 / 연락처·유니폼·게스트·참가자 필드 전부 렌더 | ✅ (커밋 대기) |

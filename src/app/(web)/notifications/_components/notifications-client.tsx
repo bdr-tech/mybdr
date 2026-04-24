@@ -1,21 +1,28 @@
 "use client";
 
 /**
- * 알림 페이지 클라이언트 컴포넌트 (M6)
+ * 알림 페이지 클라이언트 컴포넌트 (M6) — BDR v2 재구성
  *
- * 토스 스타일:
- * - pill 탭 6종 (전체/대회/경기/팀/커뮤니티/시스템) — 카테고리별 분류
- * - 읽지 않은 알림: 좌측 파란 점 + 굵은 텍스트
- * - "모두 읽음" 버튼 — 활성 카테고리에만 적용 (전체 탭이면 모든 카테고리)
- * - "더 보기" 버튼 — 50건씩 추가 로드 (서버에서 처음 50건 SSR + 추가는 fetch)
- * - 빈 상태: 종 아이콘 + 안내 문구
- * - mark-all-read 성공 시 헤더 벨 뱃지 즉시 갱신을 위해 window CustomEvent 발행
+ * 이유: Phase 1/2와 일관된 `.page` 쉘 + 780px 폭 + v2 tokens 적용. 단
+ *      상태/핸들러/fetch 로직은 기존 그대로 보존 (PM 지시: UI만 재구성).
+ *
+ * v2 변경점:
+ * - 탭 7종: 전체 / 안읽음 / 대회 / 경기 / 팀 / 커뮤니티 / 시스템
+ * - unread 아이템: 배경 강조 (var(--accent-soft) + 좌측 accent bar)
+ * - "알림 설정" 버튼: /profile/notification-settings 로 Link
+ * - .page 래퍼 + inline maxWidth 780
+ * - Material Symbols Outlined 아이콘 (이모지 금지)
+ *
+ * 불변:
+ * - SerializedNotification / Props 타입
+ * - useState 6종 (activeTab 제외) + handleLoadMore / handleDelete / handleMarkAllRead
+ * - window CustomEvent "notifications:read-all" 발행 (헤더 벨 즉시 갱신)
+ * - PushPermissionBanner 유지
+ * - 삭제 버튼 / 더 보기 버튼 유지
  */
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { TossCard } from "@/components/toss/toss-card";
-// 푸시 알림 구독 배너 — 권한 요청 + 서비스워커 구독 + 서버 저장까지 처리하는 완전한 구현
 import { PushPermissionBanner } from "@/components/shared/push-permission";
 import {
   type NotifCategory,
@@ -23,7 +30,7 @@ import {
   categorize,
 } from "@/lib/notifications/category";
 
-// 직렬화된 알림 타입 (서버에서 전달)
+// 직렬화된 알림 타입 (서버에서 전달) — 기존 그대로
 interface SerializedNotification {
   id: string;
   title: string;
@@ -34,11 +41,12 @@ interface SerializedNotification {
   created_at: string;
 }
 
-// 탭 정의 — 6종 (전체 + 5카테고리)
-// key가 "all"이면 필터 없음, 그 외는 NotifCategory enum 값
-type TabKey = "all" | NotifCategory;
+// 탭 정의 — 7종 (전체 + 안읽음 + 5카테고리)
+// key가 "all"이면 필터 없음, "unread"는 status==="unread"만, 그 외는 NotifCategory
+type TabKey = "all" | "unread" | NotifCategory;
 const TABS: { key: TabKey; label: string }[] = [
   { key: "all", label: "전체" },
+  { key: "unread", label: "안읽음" },
   { key: "tournament", label: "대회" },
   { key: "game", label: "경기" },
   { key: "team", label: "팀" },
@@ -108,20 +116,26 @@ export function NotificationsClient({
   const notifications = allNotifications.filter((n) => !deletedIds.has(n.id));
 
   // 탭별 필터링된 알림 목록
+  // - all: 전체
+  // - unread: status==="unread" && readIds에 없는 것만
+  // - 그 외: categorize 매칭
   const filtered = useMemo(() => {
     if (activeTab === "all") return notifications;
+    if (activeTab === "unread") {
+      return notifications.filter(
+        (n) => n.status === "unread" && !readIds.has(n.id),
+      );
+    }
     return notifications.filter((n) => categorize(n.notification_type) === activeTab);
-  }, [activeTab, notifications]);
+  }, [activeTab, notifications, readIds]);
 
   // 카테고리별 unread 카운트 (서버 SSR 값 + 클라이언트 read 처리 보정)
   // 이유: SSR 값은 정확하지만 사용자가 페이지에서 "모두 읽음" 누르면 0이 되어야 함
   const categoryCounts = useMemo(() => {
     const counts: Record<NotifCategory, number> = { ...initialCategoryCounts };
-    // 클라가 읽음 처리한 항목은 카테고리별로 차감
     for (const id of readIds) {
       const n = allNotifications.find((x) => x.id === id);
       if (!n) continue;
-      // SSR 시점에 이미 unread였던 항목만 차감 대상
       if (n.status !== "unread") continue;
       const cat = categorize(n.notification_type);
       counts[cat] = Math.max(0, counts[cat] - 1);
@@ -139,12 +153,18 @@ export function NotificationsClient({
 
   // 활성 탭 unread (모두 읽음 버튼 노출 판단)
   const activeTabUnread =
-    activeTab === "all" ? unreadCount : categoryCounts[activeTab];
+    activeTab === "all" || activeTab === "unread"
+      ? unreadCount
+      : categoryCounts[activeTab];
 
-  // 탭별 뱃지 카운트 (전체 탭은 unreadCount, 그 외는 categoryCounts[key])
+  // 탭별 뱃지 카운트
+  // - all: 전체 건수 (표시 안함 — unread가 아니라 total이므로 뱃지 없음)
+  // - unread: 미확인 총 건수
+  // - 각 카테고리: 해당 카테고리 unread
   const tabUnreadCounts = useMemo(() => {
     const counts: Record<TabKey, number> = {
-      all: unreadCount,
+      all: 0, // 전체 탭은 뱃지 미표시
+      unread: unreadCount,
       tournament: categoryCounts.tournament,
       game: categoryCounts.game,
       team: categoryCounts.team,
@@ -157,17 +177,17 @@ export function NotificationsClient({
   // 더 보기 가능 여부 (서버 total > 현재 누적 건수)
   const hasMore = allNotifications.length < total;
 
-  // 더 보기 — 다음 page fetch 후 append
+  // 더 보기 — 다음 page fetch 후 append (기존 로직 그대로)
   async function handleLoadMore() {
     setLoadingMore(true);
     try {
       const nextPage = page + 1;
       const res = await fetch(
         `/api/web/notifications?list=true&page=${nextPage}&limit=${PAGE_SIZE}`,
-        { credentials: "include" }
+        { credentials: "include" },
       );
       if (!res.ok) return;
-      // ⚠️ snake_case 응답 직접 사용 (apiSuccess 자동 변환). data.items / data.total 등
+      // snake_case 응답 직접 사용 (apiSuccess 자동 변환)
       const data = (await res.json()) as {
         items: Array<{
           id: string | number;
@@ -179,7 +199,6 @@ export function NotificationsClient({
           created_at: string;
         }>;
       };
-      // BigInt id가 string으로 변환되어 옴 (case.ts L8 처리)
       const newItems: SerializedNotification[] = data.items.map((n) => ({
         id: String(n.id),
         title: n.title,
@@ -198,7 +217,7 @@ export function NotificationsClient({
     }
   }
 
-  // 개별 알림 삭제: DELETE /api/web/notifications/[id]
+  // 개별 알림 삭제 (기존 로직 그대로)
   async function handleDelete(id: string) {
     setDeletingId(id);
     try {
@@ -207,7 +226,6 @@ export function NotificationsClient({
         credentials: "include",
       });
       if (res.ok) {
-        // 즉시 UI에서 제거
         setDeletedIds((prev) => new Set(prev).add(id));
       }
     } catch {
@@ -217,13 +235,17 @@ export function NotificationsClient({
     }
   }
 
-  // "모두 읽음" 처리 — 활성 카테고리에만 적용 (전체 탭이면 전체)
-  // 새 read-all API 사용 (body.category 지원)
+  // "모두 읽음" 처리 (기존 로직 그대로)
+  // - all/unread 탭: 전체 카테고리 대상
+  // - 개별 카테고리 탭: 해당 카테고리만
   async function handleMarkAllRead() {
     setMarkingAll(true);
     try {
       const body: { category?: NotifCategory } = {};
-      if (activeTab !== "all") body.category = activeTab;
+      // "unread" 탭은 전체를 읽음 처리 (전체 대상). 개별 카테고리만 category 전송
+      if (activeTab !== "all" && activeTab !== "unread") {
+        body.category = activeTab;
+      }
       const res = await fetch("/api/web/notifications/read-all", {
         method: "POST",
         credentials: "include",
@@ -231,98 +253,179 @@ export function NotificationsClient({
         body: JSON.stringify(body),
       });
       if (res.ok) {
-        // 활성 카테고리에 해당하는 알림을 로컬에서 읽음 처리
-        const targetIds = activeTab === "all"
-          ? notifications.map((n) => n.id)
-          : notifications
-              .filter((n) => categorize(n.notification_type) === activeTab)
-              .map((n) => n.id);
+        const targetIds =
+          activeTab === "all" || activeTab === "unread"
+            ? notifications.map((n) => n.id)
+            : notifications
+                .filter((n) => categorize(n.notification_type) === activeTab)
+                .map((n) => n.id);
         setReadIds((prev) => {
           const next = new Set(prev);
           targetIds.forEach((id) => next.add(id));
           return next;
         });
-        // 헤더 벨 뱃지 즉시 갱신 — layout.tsx의 polling useEffect 가 listen
-        // 같은 탭 내에서만 동작 (다른 탭은 30초 폴링이 처리)
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("notifications:read-all"));
         }
       }
     } catch {
-      // 실패 시 무시 (다음 새로고침에서 반영)
+      // 실패 시 무시
     } finally {
       setMarkingAll(false);
     }
   }
 
-  // 페이지 첫 마운트 시에도 헤더 벨 갱신 시그널 전송 (page 진입만으로는 폴링 30초 대기 → 즉시 갱신 유도)
-  // ※ 이는 read-all과 별개. 사용자가 알림 페이지에 들어왔다는 사실 자체는 unreadCount 변화 없음.
-  // (의도적으로 dispatch 안 함 — read-all을 누르기 전에는 read 상태 변화 없으므로)
   useEffect(() => {
-    /* no-op — 의도적으로 비워둠 (read 변화 없을 때 이벤트 발행은 부적절) */
+    /* no-op — 기존 주석 보존 */
   }, []);
 
+  // 활성 탭 라벨 (모두 읽음 버튼 문구용)
+  const activeTabLabel = TABS.find((t) => t.key === activeTab)?.label ?? "";
+
   return (
-    <div className="max-w-[640px] mx-auto space-y-6">
-      {/* ==== 헤더: 제목 + 읽지 않은 수 + 모두 읽음 ==== */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    // v2 시안 .page 쉘 + 알림 페이지는 780px로 좁힘 (Phase 1/2 일관)
+    <div className="page" style={{ maxWidth: 780 }}>
+      {/* ==== 헤더: 제목 + unread 배지 + 우측 액션 2개 ==== */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          marginBottom: 20,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
           <h1
-            className="text-2xl font-extrabold uppercase tracking-wide"
-            style={{ fontFamily: "var(--font-heading)" }}
+            style={{
+              margin: 0,
+              fontSize: 28,
+              fontWeight: 800,
+              letterSpacing: "-0.015em",
+              color: "var(--ink)",
+            }}
           >
             알림
           </h1>
           {unreadCount > 0 && (
             <span
-              className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-bold text-[var(--color-on-primary)]"
-              style={{ backgroundColor: "var(--color-primary)" }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minWidth: 22,
+                height: 22,
+                padding: "0 7px",
+                borderRadius: 999,
+                background: "var(--accent)",
+                color: "#fff",
+                fontSize: 11,
+                fontWeight: 700,
+              }}
             >
               {unreadCount}
             </span>
           )}
         </div>
-        {/* 모두 읽음 버튼 — 활성 탭에 unread가 있을 때만 표시 */}
-        {activeTabUnread > 0 && (
-          <button
-            onClick={handleMarkAllRead}
-            disabled={markingAll}
-            className="text-xs font-bold transition-opacity hover:opacity-70 disabled:opacity-40"
-            style={{ color: "var(--color-primary)" }}
+
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {/* "모두 읽음" — 활성 탭에 unread가 있을 때만 */}
+          {activeTabUnread > 0 && (
+            <button
+              type="button"
+              onClick={handleMarkAllRead}
+              disabled={markingAll}
+              className="btn btn--sm"
+              style={{
+                color: "var(--accent)",
+                borderColor: "var(--border)",
+                fontWeight: 700,
+              }}
+            >
+              {markingAll
+                ? "처리중..."
+                : activeTab === "all" || activeTab === "unread"
+                  ? "모두 읽음"
+                  : `${activeTabLabel} 모두 읽음`}
+            </button>
+          )}
+          {/* "알림 설정" — /profile/notification-settings 로 이동 */}
+          <Link
+            href="/profile/notification-settings"
+            className="btn btn--sm"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              textDecoration: "none",
+              color: "var(--ink)",
+            }}
           >
-            {markingAll
-              ? "처리중..."
-              : activeTab === "all"
-                ? "모두 읽음"
-                : `${TABS.find((t) => t.key === activeTab)?.label} 모두 읽음`}
-          </button>
-        )}
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: 16 }}
+            >
+              settings
+            </span>
+            알림 설정
+          </Link>
+        </div>
       </div>
 
       {/* ==== 푸시 알림 구독 배너: 권한 요청 + SW 구독 + 서버 저장 ==== */}
-      <PushPermissionBanner />
+      <div style={{ marginBottom: 16 }}>
+        <PushPermissionBanner />
+      </div>
 
-      {/* ==== pill 탭: 6카테고리 ==== */}
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+      {/* ==== 탭: 7종 (전체 / 안읽음 / 대회 / 경기 / 팀 / 커뮤니티 / 시스템) ==== */}
+      <div
+        className="scrollbar-hide"
+        style={{
+          display: "flex",
+          gap: 8,
+          overflowX: "auto",
+          marginBottom: 16,
+          paddingBottom: 4,
+        }}
+      >
         {TABS.map((tab) => {
           const isActive = activeTab === tab.key;
           const count = tabUnreadCounts[tab.key] ?? 0;
           return (
             <button
               key={tab.key}
+              type="button"
               onClick={() => setActiveTab(tab.key)}
-              className="flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition-all"
+              className="btn btn--sm"
+              aria-pressed={isActive}
               style={{
-                backgroundColor: isActive ? "var(--color-primary)" : "var(--color-surface)",
-                color: isActive ? "var(--color-on-primary)" : "var(--color-text-secondary)",
+                flexShrink: 0,
+                background: isActive ? "var(--accent)" : "var(--bg-elev)",
+                color: isActive ? "#fff" : "var(--ink)",
+                borderColor: isActive ? "var(--accent)" : "var(--border)",
+                fontWeight: 700,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
               }}
             >
               {tab.label}
-              {/* 읽지 않은 수가 있으면 작은 배지 표시 */}
+              {/* 뱃지 — 비활성 탭이고 unread > 0 일 때만 */}
               {count > 0 && !isActive && (
                 <span
-                  className="inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-[var(--color-on-primary)]"
-                  style={{ backgroundColor: "var(--color-primary)" }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: 16,
+                    height: 16,
+                    padding: "0 5px",
+                    borderRadius: 999,
+                    background: "var(--accent)",
+                    color: "#fff",
+                    fontSize: 10,
+                    fontWeight: 700,
+                  }}
                 >
                   {count}
                 </span>
@@ -335,73 +438,121 @@ export function NotificationsClient({
       {/* ==== 알림 목록 ==== */}
       {filtered.length > 0 ? (
         <>
-          <TossCard className="p-0">
-            {filtered.map((n) => {
+          <div
+            className="card"
+            style={{ padding: 0, overflow: "hidden" }}
+          >
+            {filtered.map((n, idx) => {
               const isUnread = n.status === "unread" && !readIds.has(n.id);
               const { icon, color } = getNotificationIcon(n.notification_type);
               const timeStr = formatRelativeTime(n.created_at);
+              const isLast = idx === filtered.length - 1;
 
               const itemContent = (
                 <div
-                  className="flex items-start gap-3 px-5 py-4 border-b transition-colors hover:bg-[var(--color-surface-bright)]"
-                  style={{ borderColor: "var(--color-border-subtle)" }}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 12,
+                    padding: "14px 16px",
+                    // unread 배경 강조 — accent-soft (라이트 #FDE8E9 / 다크 #2A1214)
+                    background: isUnread ? "var(--accent-soft)" : "transparent",
+                    // unread 좌측 accent bar (3px)
+                    boxShadow: isUnread
+                      ? "inset 3px 0 0 var(--accent)"
+                      : "none",
+                    borderBottom: isLast ? "none" : "1px solid var(--border)",
+                    transition: "background 0.15s ease",
+                  }}
                 >
-                  {/* 좌: 읽지 않은 알림 파란 점 */}
-                  <div className="flex flex-col items-center pt-1">
-                    {isUnread ? (
-                      <span
-                        className="h-2 w-2 rounded-full"
-                        style={{ backgroundColor: "var(--color-info)" }}
-                      />
-                    ) : (
-                      <span className="h-2 w-2" />
-                    )}
-                  </div>
-
-                  {/* 아이콘 */}
+                  {/* 아이콘 원형 배경 */}
                   <div
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-                    style={{ backgroundColor: color, opacity: isUnread ? 1 : 0.6 }}
+                    style={{
+                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 40,
+                      height: 40,
+                      borderRadius: 999,
+                      background: color,
+                      opacity: isUnread ? 1 : 0.55,
+                    }}
                   >
-                    <span className="material-symbols-outlined text-xl text-[var(--color-on-primary)]">
+                    <span
+                      className="material-symbols-outlined"
+                      style={{ fontSize: 20, color: "#fff" }}
+                    >
                       {icon}
                     </span>
                   </div>
 
-                  {/* 내용 */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
+                  {/* 본문 */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        justifyContent: "space-between",
+                        gap: 8,
+                      }}
+                    >
                       <p
-                        className={`text-sm truncate ${isUnread ? "font-bold" : "font-medium"}`}
-                        style={{ color: isUnread ? "var(--color-text-primary)" : "var(--color-text-secondary)" }}
+                        style={{
+                          margin: 0,
+                          fontSize: 14,
+                          fontWeight: isUnread ? 700 : 500,
+                          color: isUnread ? "var(--ink)" : "var(--ink-dim)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
                       >
                         {n.title}
                       </p>
                       <span
-                        className="whitespace-nowrap text-[11px] shrink-0"
-                        style={{ color: "var(--color-text-muted)" }}
+                        style={{
+                          flexShrink: 0,
+                          whiteSpace: "nowrap",
+                          fontSize: 11,
+                          color: "var(--ink-mute)",
+                        }}
                       >
                         {timeStr}
                       </span>
                     </div>
                     {n.content && (
                       <p
-                        className="mt-0.5 text-xs truncate"
-                        style={{ color: "var(--color-text-muted)" }}
+                        style={{
+                          margin: "4px 0 0",
+                          fontSize: 12,
+                          color: "var(--ink-mute)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
                       >
                         {n.content}
                       </p>
                     )}
                   </div>
 
-                  {/* 링크가 있으면 화살표 */}
+                  {/* action_url 화살표 */}
                   {n.action_url && (
-                    <span className="material-symbols-outlined text-lg shrink-0 self-center text-[var(--color-text-disabled)]">
+                    <span
+                      className="material-symbols-outlined"
+                      style={{
+                        flexShrink: 0,
+                        fontSize: 18,
+                        alignSelf: "center",
+                        color: "var(--ink-mute)",
+                      }}
+                    >
                       chevron_right
                     </span>
                   )}
 
-                  {/* 삭제 버튼 */}
+                  {/* 삭제 버튼 — 기존 로직 그대로 */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -410,11 +561,26 @@ export function NotificationsClient({
                       handleDelete(n.id);
                     }}
                     disabled={deletingId === n.id}
-                    className="ml-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full self-center transition-colors hover:bg-[var(--color-surface)]"
-                    style={{ color: "var(--color-text-muted)" }}
                     title="알림 삭제"
+                    style={{
+                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 28,
+                      height: 28,
+                      borderRadius: 999,
+                      border: "none",
+                      background: "transparent",
+                      color: "var(--ink-mute)",
+                      cursor: "pointer",
+                      alignSelf: "center",
+                    }}
                   >
-                    <span className="material-symbols-outlined text-base">
+                    <span
+                      className="material-symbols-outlined"
+                      style={{ fontSize: 16 }}
+                    >
                       {deletingId === n.id ? "hourglass_empty" : "close"}
                     </span>
                   </button>
@@ -423,27 +589,38 @@ export function NotificationsClient({
 
               if (n.action_url) {
                 return (
-                  <Link key={n.id} href={n.action_url} className="block">
+                  <Link
+                    key={n.id}
+                    href={n.action_url}
+                    style={{
+                      display: "block",
+                      textDecoration: "none",
+                      color: "inherit",
+                    }}
+                  >
                     {itemContent}
                   </Link>
                 );
               }
               return <div key={n.id}>{itemContent}</div>;
             })}
-          </TossCard>
+          </div>
 
-          {/* ==== 더 보기 버튼 ==== */}
+          {/* ==== 더 보기 — "전체" 탭에서만 노출 (기존 조건 유지) ==== */}
           {hasMore && activeTab === "all" && (
-            <div className="flex justify-center pt-2">
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                paddingTop: 12,
+              }}
+            >
               <button
+                type="button"
                 onClick={handleLoadMore}
                 disabled={loadingMore}
-                className="rounded px-5 py-2.5 text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
-                style={{
-                  backgroundColor: "var(--color-surface)",
-                  color: "var(--color-text-primary)",
-                  border: "1px solid var(--color-border)",
-                }}
+                className="btn"
+                style={{ fontWeight: 700 }}
               >
                 {loadingMore
                   ? "불러오는 중..."
@@ -453,26 +630,43 @@ export function NotificationsClient({
           )}
         </>
       ) : (
-        /* ==== 빈 상태: 종 아이콘 + 안내 ==== */
-        <TossCard className="py-16 text-center">
+        /* ==== 빈 상태 ==== */
+        <div
+          className="card"
+          style={{
+            padding: "64px 20px",
+            textAlign: "center",
+          }}
+        >
           <span
-            className="material-symbols-outlined text-5xl mb-4 block"
-            style={{ color: "var(--color-text-disabled)" }}
+            className="material-symbols-outlined"
+            style={{
+              fontSize: 48,
+              color: "var(--ink-mute)",
+              marginBottom: 12,
+              display: "inline-block",
+            }}
           >
             notifications_off
           </span>
           <p
-            className="text-sm font-medium mb-1"
-            style={{ color: "var(--color-text-secondary)" }}
+            style={{
+              margin: "0 0 4px",
+              fontSize: 14,
+              fontWeight: 600,
+              color: "var(--ink-dim)",
+            }}
           >
             알림이 없어요
           </p>
-          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-            {activeTab !== "all"
-              ? "이 카테고리에 해당하는 알림이 없습니다"
-              : "새로운 소식이 도착하면 여기에 표시됩니다"}
+          <p style={{ margin: 0, fontSize: 12, color: "var(--ink-mute)" }}>
+            {activeTab === "unread"
+              ? "미확인 알림이 없습니다"
+              : activeTab !== "all"
+                ? "이 카테고리에 해당하는 알림이 없습니다"
+                : "새로운 소식이 도착하면 여기에 표시됩니다"}
           </p>
-        </TossCard>
+        </div>
       )}
     </div>
   );
