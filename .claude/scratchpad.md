@@ -18,6 +18,70 @@
 
 ---
 
+## 🚧 추후 구현 목록 (DB/API 확장 필요) — 2026-04-25 신설
+> 사용자 원칙 (04-25 추가): "모든 페이지는 실사용. DB 미지원 기능도 **제거 금지** — UI 배치 + '준비 중' 표시 + 빈 상태로 두고 추후 구현."
+> design_v2 Phase 1~3에서 "UI only"로 배치된 항목 전부 수집. 각 항목은 별도 스토리 또는 소 Phase로 구현.
+
+### Phase 1 GameDetail (커밋 e70e673)
+- HeroBanner 이미지 — games 테이블에 `image_url` / `hero_image` 필드 추가
+- 한마디 메시지 — `game_applications.message` 서버 전송 미구현
+- 저장/북마크 — `bookmarks` 테이블 필요
+- 호스트 문의 — 쪽지/알림 기능
+
+### Phase 1 Profile (커밋 28be75f)
+- 슛존 성공률 — `match_player_stat`에 zone별 필드 (현재 제거 상태 → UI 복원 필요)
+- 스카우팅 리포트 — `scouting_reports` 테이블 (현재 제거 상태 → UI 복원 필요)
+- physical strip 윙스팬/주손/레이팅 — `users` 필드 추가 (현재 3열로 축소 → 6열 복원)
+- 시즌 히스토리 탭 — tournament별 집계 쿼리 (현재 탭 2개로 축소 → 4탭 복원)
+- VS 나 탭 — matchPlayerStat 조인 (현재 탭 제거 → 복원)
+- 다가오는 일정 3건 — API 확장 (현재 1건)
+- 최근 활동 timeline — `user_activities` 전용 테이블 (현재 community_posts+applications 혼합)
+
+### Phase 1 Games (커밋 93a4a49, 9616f41)
+- 종료 시각 `HH:mm ~ HH:mm` — listGames select에 `duration_hours` / `ended_at` 추가
+
+### Phase 2 MyGames (커밋 4edeb30)
+- waitlist 상태 — `game_applications`에 waitlist status
+- no-show 처리 — 참가 후 노쇼 집계
+- 영수증 — payment receipts
+- QR 티켓 — 체크인 시스템
+- 후기 작성 — game_reviews 테이블
+
+### Phase 2 GameResult (커밋 5920ff7)
+- 시드 (#N SEED) — `tournament_teams.seed_number` 노출
+- 팀 전적 (15W 4L · 레이팅) — 별도 집계 쿼리
+- 관중수 — `tournament_matches.attendance_count` 필드
+- 페인트 득점/패스트브레이크/벤치득점 — PBP에 zone/transition 필드 추가 (벤치득점은 is_starter로 계산 가능)
+- 경기 요약문(내러티브) — AI 생성 or 관리자 작성
+- 하이라이트 영상 — media 테이블
+- 공유/더 많은 통계 버튼 — 연계 기능
+- 샷차트 — PBP `shot_x` / `shot_y` 컬럼 추가 (UI 구조는 이미 완성 `tab-shot-chart.tsx`)
+- 리드 변동/최다 점수차/동점 횟수 — PBP `home_score_at_time/away_score_at_time` 기반 계산
+
+### Phase 3 Teams 목록 (커밋 609addf)
+- rating 필드 — `teams.rating` (현재 wins로 대체)
+- tag — `teams.tag` (현재 이름 첫 3자 fallback)
+
+### Phase 3 Teams 상세 (커밋 대기)
+- 로스터 PPG (개인 평균 득점) — `match_player_stat` 집계
+- 시즌 평균 4카드 (득점/실점/리바/어시) — 팀 평균 집계
+- 연습일 — `teams.practice_days` 필드 추가
+- 팀 레벨 — `teams.level` 필드 추가
+- 게스트 모집 상시 배지 — `teams.recruiting` 필드 추가
+- 팀 팔로우 — `team_follows` 테이블
+- 매치 신청 기능 — `team_match_requests` 테이블 (기존 JoinButton은 입단용)
+- 게스트 지원 (팀 단위) — 팀 단위 지원 모델
+- 쪽지 보내기 — DM 모델
+- 연락 카드 응답시간 — 메시지 응답 로그 집계
+
+### 공통 처리 원칙
+- UI는 **배치만 하고 동작 없음** → `alert("준비 중인 기능입니다")` 또는 `disabled` + `title="준비 중"`
+- 빈 데이터는 "준비 중" 텍스트 + 회색 placeholder
+- 데이터 있는 필드는 절대 숨기지 않음
+- 각 항목 완성 시 본 목록에서 제거 + 해당 Phase 커밋 링크 업데이트
+
+---
+
 ## 📍 다음 세션 진입점
 
 ### 🥇 1순위 — W4+L3+L2 통합 스모크
@@ -165,6 +229,92 @@
 - **매치 신청 disabled**: 기능 미구현이지만 시안 일관성을 위해 자리 유지. 향후 기능 추가 시 disabled 제거 + onClick 핸들러 붙이면 됨
 - **v2 토큰 의존**: `.btn`, `.btn--sm`, `.btn--primary`, `.eyebrow`, `--bg-elev`, `--border`, `--radius-chip`, `--ink*`, `--ok`, `--ff-display`, `--ff-mono` 등 v2 CSS 토큰 전역 적용된 상태 전제. Phase 1 에서 이미 전역 교체 완료되어 렌더 정상 확인
 - **SSR vs 클라이언트 fetch**: teams 데이터는 클라이언트에서 `/api/web/teams` 호출. Suspense fallback(`TeamsLoading`) → mounted 후 스켈레톤 → 카드. 초기 빈 `등록 팀 0팀` 깜빡임 가능 (기존 동작과 동일)
+
+---
+
+## 구현 기록 — Phase 3 Teams 상세 — v2 재구성 (DB 미지원 항목 준비 중 표시) [2026-04-22]
+
+📝 구현한 기능: `/teams/[id]` 상세 페이지를 v2 시안(`screens/TeamDetail.jsx`) 구조로 재구성. accent 카드형 Hero + cafe-blue 탭 4종 + 좌측 탭 컨텐츠 + 우측 320px 사이드 카드 (최근 폼 + 연락). API/Prisma 0 변경. DB 미지원 항목은 모두 "준비 중" placeholder.
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| `src/app/(web)/teams/[id]/_components_v2/team-hero-v2.tsx` | accent 그라디언트 카드(135deg, accent→accent+CC→card) + 우상단 거대 tag 워터마크(220px ff-display 900 opacity .12) + 96px Avatar + eyebrow(`TEAM · TAG · 창단 YYYY`) + 시안 52px h1(clamp 28-52) + 4스탯 인라인(레이팅/승/패/승률) + CTA 3종(팀장 한정 "팀 관리" 활성 / 팔로우·매치신청 disabled+title="준비 중") | 신규 |
+| `src/app/(web)/teams/[id]/_components_v2/team-tabs-v2.tsx` | sticky top-14 탭 네비. `border-bottom: 2px var(--border)` 컨테이너 + 활성 탭 `3px var(--cafe-blue)` 하단선 + `var(--ink)` 텍스트. 탭 4종 키: overview/roster/recent/stats. URL `?tab=` 파라미터 + scroll=false. `TEAM_TAB_KEYS` export 로 page.tsx 폴백 매핑 | 신규 |
+| `src/app/(web)/teams/[id]/_components_v2/overview-tab-v2.tsx` | `.card` 2개 — ① 팀 소개(description + null fallback) ② 팀 정보 6행 key-value(120px/1fr grid: 창단/홈코트/연습일/팀레벨/레이팅+#N위/게스트모집). 미지원 3행(연습일/팀레벨/게스트모집)은 ink-mute "준비 중" | 신규 |
+| `src/app/(web)/teams/[id]/_components_v2/roster-tab-v2.tsx` | `.board` 5열 grid(56/1fr/80/100/80) + ROLE_ORDER(captain→director→coach→manager→treasurer→member) 정렬 + 등번호 accent 색 + 22px 원형 이니셜 + position ff-mono 700 + role(captain=red badge / 스태프=soft badge / 일반=ink-mute 12px) + PPG="—" (match_player_stat 미지원) | 신규 |
+| `src/app/(web)/teams/[id]/_components_v2/recent-tab-v2.tsx` | `.board` 5열(80/1fr/120/80/160) — 토너먼트 공식 기록만 표시 (`officialMatchWhere` 가드). 날짜 MM.DD (KST mono 12px) / 상대팀명 / `MY:OPP` 스코어 (ff-mono 700) / 결과 W=ok badge / L=ink-dim filled / live=soft badge / 0-0=`—`. `computeRecentForm()` 헬퍼 export — page.tsx 사이드 카드용 5건 W/L 배열 산출 | 신규 |
+| `src/app/(web)/teams/[id]/_components_v2/stats-tab-v2.tsx` | 2026 시즌 평균 4카드 grid (득점/실점/리바/어시) + 헤더 우측 "준비 중" 라벨 + 모든 값 `—` + 하단 footnote "경기 기록이 충분히 쌓이면 자동 표시" | 신규 |
+| `src/app/(web)/teams/[id]/_components_v2/team-side-card-v2.tsx` | 우측 sticky aside (top:96) 2카드 — ① 최근 폼 5칸(28×28 W=ok / L=ink-dim / "-"=dashed border) + 게스트 지원(btn--primary btn--xl disabled) + 팀 매치 신청(btn 전폭 disabled) ② 연락 카드: 팀장 닉네임 + 응답시간 "준비 중" + 쪽지 보내기(btn--sm disabled) | 신규 |
+| `src/app/(web)/teams/[id]/page.tsx` | **완전 재작성**. 기존 Prisma 쿼리 100% 유지(team include teamMembers / tournamentTeam / completedMatches) + **신규 2쿼리**(team.count(wins.gt) → teamRank / `computeRecentForm()` → 사이드 폼). resolveAccent 유지 + resolveTag(영문우선→한글3자) 추가. v2 8컴포넌트 조립. 탭 키 4종(overview/roster/recent/stats) URL 파라미터 검증. 비공식 픽업 경기 통합 타임라인은 v2 시안에 없으므로 recent 탭은 공식 기록만 표시 | 수정(재작성) |
+| `src/app/(web)/teams/[id]/_tabs/{overview,roster,games,tournaments}-tab.tsx` | 유지 (롤백/레거시) — 본 v2 전환은 page.tsx 의 import 경로만 교체하므로 기존 파일은 미사용 상태로 보존 | — |
+
+### 데이터 매핑 결정 (PM 확정 그대로)
+- **rating**: DB 필드 없음 → `wins`로 대체 (Phase 3 Teams 목록과 동일 규칙). Hero 4스탯 첫 칸 + Overview 정보 카드 "레이팅" 행
+- **teamRank**: `team.count({ where: { wins: { gt } } }) + 1` — wins desc 전체 순위. 0건이어도 1위 부여 (수치는 모든 팀이 wins=0이면 1위 동률 — 시안의 "전체 N위" 의미만 유지)
+- **tag**: 영문명 우선(`name_en`) → 없으면 한글명 첫 3글자 `.toUpperCase()` (목록 v2 와 통일)
+- **founded**: `founded_year` 우선 → 없으면 `created_at` 연도 → 둘 다 null이면 `—`
+- **homeCourt**: `[city, district].filter(Boolean).join(" ")` — DB에 home_court 컬럼 없어 시/구 조합으로 대체
+- **recentForm**: 공식 기록 5건 (`officialMatchWhere` 가드) — 최신순 그대로 (시안은 최신이 왼쪽). 5건 미만이면 "-" 칸으로 채워 항상 5칸 유지
+- **captainName**: `teamMembers.find(role==="captain").user.nickname` (없으면 name) — 사이드 연락 카드 표시용
+
+### DB 미지원 → "준비 중" 항목 매핑
+| 항목 | 위치 | 향후 DB 추가 필드 |
+|------|------|-------------------|
+| 팔로우 | Hero CTA | `team_follows` 테이블 |
+| 매치 신청 | Hero CTA + 사이드 | `team_match_requests` 테이블 |
+| 게스트 지원 | 사이드 | 팀 단위 지원 모델 |
+| 쪽지 보내기 | 사이드 연락 | DM 모델 |
+| 응답시간 | 사이드 연락 | 메시지 응답 로그 집계 |
+| 연습일 | Overview 정보 | `teams.practice_days` |
+| 팀 레벨 | Overview 정보 | `teams.level` |
+| 게스트 모집 상시 badge | Overview 정보 | `teams.recruiting` |
+| PPG (개인 평균 득점) | Roster 5열째 | `match_player_stat` 집계 |
+| 시즌 평균 4스탯 (득점/실점/리바/어시) | Stats 탭 | 팀 평균 집계 쿼리 |
+
+### 검증 결과
+- `npx tsc --noEmit` ✅ EXIT=0 (에러 0)
+- `curl /teams/201?tab={overview,roster,recent,stats}` → **4탭 전부 HTTP 200**
+- v2 시안 마커 SSR 렌더 확인:
+  - Hero: `창단` `레이팅` `승률` `팔로우` `매치 신청` 모두 렌더
+  - 탭 4종: `>개요<` `>로스터<` `>최근 경기<` `>기록<` 모두 렌더
+  - Overview: `팀 소개` `팀 정보`
+  - Roster: 5열 헤더 (`>#<` `>이름<` `>포지션<` `>역할<` `>PPG<`)
+  - Stats: `2026 시즌 평균` `득점` `실점` `리바` `어시` `준비 중` 라벨
+  - Recent (몽키즈 공식 기록 0건): 빈 상태 "최근 공식 경기 기록이 없습니다" 정상 노출
+  - 사이드: `최근 폼` `게스트 지원` `쪽지 보내기`
+  - "준비 중" 텍스트 21건 / disabled 버튼 다수 — DB 미지원 placeholder 정상 작동
+
+💡 tester 참고:
+- **테스트 URL**: `http://localhost:3001/teams/{id}` — 예: 201(몽키즈), 197(제주 리딤), 199(펜타곤)
+- **탭 전환**: `?tab=overview` (기본) / `roster` / `recent` / `stats` — sticky 탭에서 클릭 시 URL만 바뀌고 sticky 위치 유지(scroll=false)
+- **정상 동작**:
+  1. Hero — accent 그라디언트 카드 + 우상단 거대 tag 워터마크 + 좌측 96px Avatar + 4스탯 인라인 (모바일에선 세로 스택)
+  2. 팀장 본인이 로그인했을 때만 Hero 우측 CTA 그룹에 "팀 관리" 흰 outline 버튼 노출
+  3. 팔로우 / 매치 신청 / 게스트 지원 / 팀 매치 신청 / 쪽지 보내기 → hover 시 `title="준비 중인 기능입니다"` 툴팁
+  4. Overview — 팀 소개 + 팀 정보 6행 (창단/홈코트/연습일/팀레벨/레이팅+#N위/게스트모집)
+  5. Roster — 주장이 맨 위, 등번호 accent 색, PPG는 `—`. 행 클릭 시 `/users/{id}` 이동
+  6. Recent — 5열 board(날짜/상대/스코어/결과/대회). 행 클릭 시 `/tournaments/{id}` 이동. 공식 기록 0건이면 빈 상태
+  7. Stats — 4카드 grid(전부 `—`) + "준비 중" 라벨 + footnote
+  8. 사이드 카드 — 최근 폼 5칸(W=초록/L=회색/공란=점선) + 연락 카드(팀장 닉네임 + 응답시간 "준비 중")
+- **모바일**: lg(1024) 미만에서는 본문 1열 + 사이드 카드는 본문 아래로 스택. lg 이상에서 `minmax(0,1fr) 320px` 2열 grid + 사이드 sticky top:96
+- **주의할 입력**:
+  - `primary_color` null/`#ffffff` → secondary 또는 `#1B3C87` 폴백 (resolveAccent)
+  - `name_en` null → 한글명 첫 3자 toUpperCase (resolveTag)
+  - `founded_year` null + `created_at` null → 창단 `—`
+  - `description` null → "아직 소개가 작성되지 않았습니다" placeholder
+  - 공식 경기 0건 → recent 탭 빈 상태 + 사이드 최근 폼 전부 `-` 점선 칸
+  - 팀장이 teamMembers 에 없는 비정상 케이스 → captainName=null → 연락 카드 "팀장 · —"
+
+⚠️ reviewer 참고:
+- **resolveAccent 로컬 복사**: Phase 3 Teams 목록(team-card-v2.tsx)에 이어 본 page.tsx 에도 동일 로직 존재. 양쪽 모두 기존 `team-card.tsx`의 export 안 된 함수를 로컬 복사한 상태. v2 전환 안정화 후 `@/lib/utils/team-display.ts` 로 통합 권장 (현재는 기존 카드 보존 원칙 + 로컬 복사 우선)
+- **resolveTag 로컬 복사**: 위와 동일 — 목록 v2 카드와 본 page.tsx 양쪽에 동일 함수. 향후 통합 권장
+- **teamRank 신규 쿼리 1건 추가**: `prisma.team.count({ where: { wins: { gt } } })` — N+1 위험 없음(단일 count). 200ms 미만 추가 비용. 시안의 "전체 N위" 표시를 위해 불가피
+- **공식 경기 통합 타임라인 제거**: 기존 GamesTab은 픽업 경기(games 테이블) + 토너먼트 경기 30건 통합. v2 recent 탭은 공식 토너먼트 경기 10건만. 픽업 경기는 시안 컨셉상 "팀의 공식 전적 기록"에 포함되지 않으므로 의도된 단순화. 향후 픽업/스크림 통합이 필요하면 별도 탭 또는 toggle 추가
+- **사이드 카드 sticky top:96**: 시안은 top:120이지만 mybdr `<AppNav>` 헤더 높이(약 56px) + 탭 sticky(약 40px) 고려해 96px 로 조정. 헤더 높이 변경 시 함께 조정 필요
+- **Hero 4스탯 wins=0 표시**: rating=0 / wins=0 / losses=0 / winRate=`—` 상태(완전 신규 팀)에서도 시안 레이아웃이 그대로 노출되어 빈 느낌이 들 수 있음. 데이터가 쌓이면 자연스럽게 채워지므로 의도된 정직성 (가짜 수치 생성 금지)
+- **stats 탭 footnote "준비 중" 명시**: 4카드 모두 `—` 일 때 사용자가 "버그인가?" 의심하지 않도록 헤더에 "준비 중" 라벨 + 하단 footnote 양쪽 명시. 향후 집계 추가 시 라벨/footnote 제거
+- **레거시 _tabs 4파일 보존**: overview/roster/games/tournaments-tab.tsx 4파일은 import 0회로 dead code 상태이지만 롤백용으로 유지. Phase 9 정리 시 제거 권장
+- **v2 토큰 의존**: `.btn`, `.btn--accent`, `.btn--primary`, `.btn--xl`, `.btn--sm`, `.badge--ok`, `.badge--soft`, `.badge--red`, `.board`, `.board__head`, `.board__row`, `.card`, `.page`, `.page--wide`, `.t-display`, `--ok`, `--ink`, `--ink-mute`, `--ink-dim`, `--ink-soft`, `--cafe-blue`, `--bg-alt`, `--border`, `--radius-card`, `--radius-chip`, `--ff-display`, `--ff-mono` — 전부 globals.css Phase 0 토큰. 이미 다른 v2 페이지에서 검증된 상태
 
 ---
 
@@ -1349,6 +1499,7 @@ DB tournamentTeam.status | 대회 시작일 | → RegStatus
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-22 | developer | **Phase 3 Teams 상세 — v2 재구성 (DB 미지원 항목 준비 중 표시)** — `_components_v2/` 7 신규(team-hero-v2 / team-tabs-v2 / overview-tab-v2 / roster-tab-v2 / recent-tab-v2 + computeRecentForm helper / stats-tab-v2 / team-side-card-v2) + `page.tsx` 완전 재작성. accent 카드형 Hero(135deg 그라디언트 + 우상단 거대 tag 워터마크 + 96px Avatar + 4스탯 + 팔로우/매치신청 disabled) + cafe-blue sticky 탭 4종(overview/roster/recent/stats) + 좌측 탭 + 우측 320px sticky aside(최근 폼 5칸 + 게스트지원/팀매치신청 disabled + 연락 카드 응답시간 "준비 중"). 신규 쿼리 2건(team.count(wins.gt) → teamRank / computeRecentForm 5건). 기존 `_tabs/*` 4파일 보존(롤백용). API/Prisma 스키마 0 변경. DB 미지원 10항목 모두 "준비 중"(팔로우·매치신청·게스트지원·쪽지·응답시간·연습일·팀레벨·게스트모집·PPG·시즌4스탯). tsc EXIT=0 / `/teams/201?tab={overview,roster,recent,stats}` 4탭 모두 200. HTML: 시안 마커(창단/레이팅/승률/팀 소개/팀 정보/최근 폼/2026 시즌 평균) + 탭 4종 + "준비 중" 21건 + disabled 다수 전부 렌더 | ✅ (커밋 대기, PM 처리) |
 | 04-22 | developer | **Phase 2 GameResult — /live/[id] finished/completed 분기 v2 재구성** — API `/api/live/[id]/route.ts` 응답 필드 2개 신규 추가(`mvp_player` GameScore 공식 + `play_by_plays` 상위 50건 roster 직접 매핑). `_v2/` 8 신규(game-result 메인+탭상태 / hero-scoreboard 135deg 그라디언트+쿼터표 / mvp-banner 팀색 원형 / tab-summary TOP 퍼포머 4 / tab-team-stats 9항목 좌우 비교바 / tab-players 14컬럼 박스스코어+DNP+MVP★ / tab-timeline action_type 한국어 매핑+역순 / tab-shot-chart 준비중 카드+코트 SVG). `page.tsx` 1829줄 0 수정 — MatchData interface에 `mvp_player?` 추가 + import 1줄 + 분기 3줄만. 라이브/진행중 UI 완전 보존. D2-B 샷차트 유지(준비중 안내) / D5 시드·전적·관중수·페인트·내러티브·영상공유 생략. tsc EXIT=0 / Playwright: `/live/102`(completed)=FINAL+WINNER+GAME MVP+탭5+gradient 전부 렌더·v1 zoom 없음 / `/live/92`(live)=v1 UI 그대로·v2 요소 0건 | ✅ (커밋 대기, PM 처리) |
 | 04-22 | developer | **Phase 2 Match (목록+상세) — /tournaments v2 재구성 (A. 래퍼 신규)** — **Phase A 목록**: 신규 `v2-tournament-list.tsx`(6상태 칩 + 포스터 카드 2열 grid + `deriveV2Status` 단일 소스) + `tournaments-content.tsx` 수정(기존 `TournamentCard`/4상태 탭 제거 → `<V2TournamentList>` 호출, 캘린더/주간 뷰·페이지네이션·필터·prefer·photoMap SWR 유지, `.page` + eyebrow + "열린 대회 · 예정 대회" 헤더). **Phase B 상세**: 신규 `v2-tournament-hero.tsx`(135deg 그라디언트 + 포스터 200×280 + t-display 48px) + `v2-registration-sidebar.tsx`(D-day 44px + 참가비/진행바/6상태 CTA 분기) + `tournament-tabs.tsx` 수정(`"rules"` 탭 추가, 5탭 순서 시안 반영, rulesContent prop) + `page.tsx` 수정(TournamentHero→V2, RegistrationStickyCard→V2, Prisma select `rules`+`edition_number` 추가, rulesContent 서버 렌더, `ALLOWED_TABS`에 `"rules"`). **API route.ts / Prisma 스키마 / 서비스 0 변경**. 기존 `tournament-hero.tsx` 450줄 + `registration-sticky-card.tsx` 239줄 + 세션/비공개 가드/SEO/시리즈 카드/디비전 현황/입금 정보/모바일 플로팅 CTA 0 수정. tsc --noEmit EXIT=0 / `/tournaments` 200(0.55s) / `/tournaments/[id]` 200(1.08s) / `?tab=rules` 200 / HTML: `linear-gradient(135deg` + `>규정<` + `>접수 현황<` + 5탭 전부 확인 | ✅ (커밋 대기, PM이 Phase A/B 2커밋 분리) |
 | 04-22 | developer | **Phase 2 CreateGame — 단일 폼 v2 재구성 (위자드 → 3카드 + 고급 설정 아코디언으로 DB 필드 보존)** — 5 신규(`_v2/game-form.tsx` + `kind-selector.tsx` + `basic-info-section.tsx` + `conditions-section.tsx` + `advanced-section.tsx`) + `new-game-form.tsx` 수정(`GameFormV2` 호출로 교체). 시안 3카드(종류 3버튼 / 정보 9필드 / 조건 체크박스 6개→requirements JOIN) + 고급 설정 아코디언(9필드 보존) + 액션 3버튼(취소/임시저장/경기 개설). FormData 키 23개 전부 기존 `createGameAction` 시그니처 유지. 위자드 전용 6파일(`game-wizard` + `step-*` 4종 + `wizard-progress`) 삭제 없이 import만 끊음. UpgradeModal/SuccessOverlay 재사용. Kakao postcode + 지난 경기 복사(`/api/web/games/my-last-game`) + 최근 장소(`/recent-venues`) + localStorage 프리셋(`bdr_game_presets`) 전부 보존. tsc --noEmit EXIT=0 PASS / `/games/new` 비로그인 200(로그인 페이지 리다이렉트) | ✅ (커밋 대기, 로그인 세션 브라우저 수동 검증 필요) |
@@ -1358,4 +1509,3 @@ DB tournamentTeam.status | 대회 시작일 | → RegStatus
 | 04-24 | developer | **Phase 1 Profile — /profile + /users/[id] v2 재구성** — D-P1~D-P8 추천값 + 누락 4필드(bio/gender/evaluation_rating/total_games_hosted) 전부 표시. 10신규(profile/_v2/*6 + users/[id]/_v2/*4) + 2재작성(각 page.tsx). /profile "use client" → 서버 컴포넌트 전환(Prisma 직접 호출 8쿼리). 탭 2개(D-P5) / 슛존·스카우팅 제거(D-P6) / physical strip 3열(D-P3) / isOwner→/profile redirect(D-P7) / user_badges 직접 쿼리(D-P8). tsc EXIT=0 / `/profile` 307 / `/users/1` 200(95KB) / `/users/7` 200(110KB bio 렌더 확인) / `/users/2832` 200. HTML: linear-gradient 1 + aria-pressed 2(탭 2개) + 슛존/스카우팅 0 + repeat(3,1fr)/(6,1fr) 각 1 | ✅ (커밋 대기) |
 | 04-24 | developer | **Phase 1 GameDetail — v2 시안 재구성 (안 A)** — `_v2/` 5 신규(summary-card / about-card / participant-list / apply-panel / host-panel) + `page.tsx` 재작성. 2열 info grid + 조건부 행(duration·contact·allow_guests·uniform) / AboutCard(description·requirements·notes) / ParticipantList(이니셜+position) / ApplyPanel(6분기 CTA + 한마디·저장·문의 alert) / HostPanel(수정·취소+신청자 관리 응집). HeroBanner·PriceCard·HostCard·ParticipantsGrid·PickupDetail·GuestDetail·TeamMatchDetail 미사용(파일 보존). API/Prisma/service 0 변경. tsc EXIT=0 / `/games/552` 200 (3.18s) + 551/550 200 (0.2s). HTML 검증: `.page` 1 + `.card` 15 / 연락처·유니폼·게스트·참가자 필드 전부 렌더 | ✅ (커밋 대기) |
 | 04-24 | developer | **Phase 1 Games — v2 시안 기반 재구성** — bdr-v2 신규 3종(game-card / kind-tab-bar / filter-chip-bar) + games/_components/games-client(클라 래퍼) + page.tsx 서버 컴포넌트 재작성(listGames + groupBy typeCounts 병렬 prefetch). DQ2 URL+클라 혼합(date/city URL / weekend·free·beginner 클라) + DQ3 태그 자동 파생(무료/초보환영/주말 최대 3). 기존 games-content/game-type-tabs/games-filter 보존(미사용). tsc EXIT=0 / `/games` 200 (0.54s) / `?type=0`·`?city=서울` 200. HTML: `.page` 쉘 + eyebrow + h1 + 탭 4(전체 active) + 칩 7(btn--sm) + auto-fill 그리드 + badge--red 마감임박 렌더 확인 | ✅ (커밋 대기) |
-| 04-22 | developer | **Phase 1 Home 시안 매칭 보완 (A+B+C)** — (A) page.tsx `className="page"` 확인(기반영) + (B) "열린 대회" 섹션 `BoardRow→TournamentRow` 교체 + 인덱스 accent 로테이션 `[--accent, #f59e0b, --accent-2]` + level 매핑 `registration→OPEN / in_progress→LIVE / 그외→INFO` + (C) board-row.tsx `categoryBadge` 렌더 로직 추가 + page.tsx 공지·인기글/방금 올라온 글에 `categoryBadge={notice?"red":"soft"}` 전달. tsc EXIT=0 / `/` 200 | ✅ (커밋 대기) |
