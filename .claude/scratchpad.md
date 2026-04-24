@@ -533,6 +533,103 @@ v2 `components.jsx` 340줄에서 재사용 단위 추출:
 
 ## 구현 기록
 
+### [2026-04-24] Phase 1 Profile — /profile + /users/[id] v2 재구성 (데이터 보존)
+- **브랜치**: design_v2 (GameDetail 커밋 위)
+- **배경**: Phase 1 Games/GameDetail 완료 후 Profile 쌍(본인 `/profile` + 타인 `/users/[id]`) v2 재구성. 기존 ProfileHero/RecentGames/UserRadarSection/UserStatsSection 등 공용 컴포넌트는 `--color-*` 구식 변수 사용 + v2 시안과 레이아웃 불일치. PM 확정 8건 (D-P1~D-P8 전부 추천값) + 누락 DB 필드 4종(bio/gender/evaluation_rating/total_games_hosted) 전부 화면 표시
+- **PM 원칙**: API/route.ts/Prisma 스키마 0 변경 / 서버 컴포넌트 Prisma 직접 호출 OK (D-P2 timeline + D-P8 badges) / 카페 세션 파일 금지 / 기존 파일 삭제 금지 / 데이터 있는 DB 필드 숨김 금지
+
+- **변경 12건** (10 신규 + 2 재작성):
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| src/app/(web)/profile/_v2/hero-card.tsx | 좌측 aside 320px Hero — 96px 아바타 + 닉네임 + 팀·포지션·지역 메타 + gender·★evaluation_rating 메타 2줄 + Lv/PRO/인증 배지 3종 + "프로필 편집"·"알림 N건 확인" CTA 2개 + total_games_hosted 활동 요약 + bio 구분선 아래 문단 | 신규 |
+| src/app/(web)/profile/_v2/season-stats.tsx | 6열 grid 시즌 스탯 — 경기/승률/PPG/APG/RPG/★레이팅(evaluation_rating 대체). ff-display 900 24px + ff-mono 라벨. null/0은 "-" 폴백 | 신규 |
+| src/app/(web)/profile/_v2/upcoming-games.tsx | 다가오는 일정 1건(D-P4) — 72px MM.DD(accent) + 제목/장소·시간 + D-N 배지. KST 기준 calcDDay. 0건 시 "예정된 경기가 없습니다" 빈 상태 | 신규 |
+| src/app/(web)/profile/_v2/activity-timeline.tsx | 최근 활동 5건(D-P2) — 60px 날짜/80px 태그(soft/ok badge)/1fr 타겟. post=게시글 작성·application=경기 신청 kind 2종. posts+applications merge + 날짜 desc 정렬 | 신규 |
+| src/app/(web)/profile/_v2/team-side-card.tsx | 소속 팀 사이드 — 32px 팀 로고(primaryColor fallback) + 팀명 + "외 N팀" 메타. Link → /teams/[id] | 신규 |
+| src/app/(web)/profile/_v2/badges-side-card.tsx | user_badges 4개 2x2 그리드(D-P8) — 이모지(badge_type 매핑) + 이름 line-clamp 2 + earnedAt YYYY.MM. 0건이면 페이지에서 조건부 숨김 | 신규 |
+| src/app/(web)/profile/page.tsx | **"use client" → 서버 컴포넌트 전환**. useSWR 3개 제거 → Promise.all 8 쿼리 병렬(user 확장 select / teamMember / nextGame / getPlayerStats / notifications.count(status=unread) / community_posts 5 / game_applications 5 / user_badges 4). 누락 4필드 select 포함. 비로그인 시 /login 유도 CTA | 수정 |
+| src/app/(web)/users/[id]/_v2/player-hero.tsx | 그라디언트 Hero(primaryColor 기반 color-mix) + 120px 아바타 + 포지션·팀명 eyebrow + h1 닉네임 36px + 실명·지역·gender 메타 + Lv/★ 배지 + bio 그라디언트 내부 + Physical strip 3열 축소(키/몸무게/최근접속, D-P3). last_login_at relative 포맷 | 신규 |
+| src/app/(web)/users/[id]/_v2/profile-tabs.tsx ("use client") | 탭 2개(D-P5) — 개요/최근 경기. React state 토글 + cafe-blue 밑줄. overview·games ReactNode prop 주입 | 신규 |
+| src/app/(web)/users/[id]/_v2/overview-tab.tsx | 개요 탭 — 좌측 시즌 스탯 6열(경기/승률/PPG/APG/RPG/BPG) + 우측 aside(소속팀 리스트 + 활동 요약[가입일/경기참가/주최/최근접속] + 뱃지 2x2). **슛존/스카우팅 제거 D-P6** | 신규 |
+| src/app/(web)/users/[id]/_v2/recent-games-tab.tsx | 최근 경기 탭 — board__head + board__row 재사용. 6열(날짜/경기/PTS/REB/AST/STL). 0건 시 empty state. ff-mono 숫자 | 신규 |
+| src/app/(web)/users/[id]/page.tsx | 재작성 — isOwner 시 `/profile` redirect(D-P7). Promise.all 8 쿼리(user+teamMembers include / statAgg / recentGames 10 / getPlayerStats / followRecord / followersCount / followingCount / user_badges 4 D-P8). 기존 UserRadarSection/UserStatsSection import 제거 | 수정 |
+
+- **보존 (삭제 0, import만 끊김, Phase 9 cleanup 대상)**:
+  - `@/components/profile/profile-hero.tsx` (ProfileHero 공용) — v2 HeroCard/PlayerHero 로 대체
+  - `@/components/profile/recent-games.tsx` — v2 RecentGamesTab 로 대체
+  - `@/components/profile/mini-stat.tsx` — SeasonStats 내장
+  - `src/app/(web)/profile/_components/teams-tournaments-card.tsx` — v2 UpcomingGames 로 대체
+  - `src/app/(web)/profile/_components/danger-zone-card.tsx` — 이번 범위 아님, 차후 Settings 페이지 재배치 검토
+  - `src/app/(web)/users/[id]/_components/user-radar-section.tsx` / `user-stats-section.tsx` — 슛존/스카우팅 제거로 미사용
+
+- **DB 필드 표시 확인** (PM 강조 4종):
+  - ✅ `bio` → HeroCard 하단 구분선 아래 + PlayerHero 그라디언트 영역 내 (pre-wrap + word-break)
+  - ✅ `gender` → HeroCard 메타 2줄 (남/여/혼성 매핑) + PlayerHero 실명 메타 줄
+  - ✅ `evaluation_rating` → HeroCard ★ 메타 + SeasonStats "레이팅" 6번째 셀 + PlayerHero ★ 배지. 0 또는 null이면 **조건부 숨김**(UI 잡음 방지). DB 드리프트로 0인 유저 많아 의도된 조건부
+  - ✅ `total_games_hosted` → HeroCard "주최 N경기" (0 초과 시만) + OverviewTab aside "주최 N" 라인
+
+- **검증**:
+  - `npx tsc --noEmit` → EXIT=0 **PASS**
+  - dev server 3001(PID 102232) 기동 중 → HMR 자동 반영
+  - `curl /profile` → **307** (비로그인 리다이렉트, PM 명시대로 정상)
+  - `curl /users/1` → **200** / 0.35s / 95KB (BDR_Admin — bio 있음)
+  - `curl /users/7` → **200** / 0.30s / 110KB (bdr 마스터 — bio "ㅇㅇㅇㅇ")
+  - `curl /users/2832` → **200** (Wonyoung Ryu — 정상)
+  - `curl /users/2` → **404** (DB에 없음, notFound() 정상 동작)
+  - HTML 구조 검증 (/users/1):
+    - `.page` 쉘 1회 / `linear-gradient` Hero 그라디언트 1회 / `L.` 레벨 배지 2회(desktop+mobile)
+    - 탭: `aria-pressed` 2건 (true 1 + false 1) = **탭 2개** (개요 active + 최근 경기) D-P5 ✅
+    - **슛존/스카우팅 0건** (슛 존/림 부근/shotChart/스카우팅 전부 0) D-P6 ✅
+    - Physical strip: `repeat(3, 1fr)` 1회 (키/몸무게/최근접속 3열) D-P3 ✅
+    - Season stats: `repeat(6, 1fr)` 1회 (6열 grid) ✅
+  - bio 렌더: user 1 "BDR_Admin입니다" 3회 / user 7 "ㅇㅇㅇㅇ" 2회 (그라디언트 내부)
+  - gender 매핑: "남"/"여" HTML에 렌더됨 (user.gender 있는 케이스)
+
+💡 tester 참고:
+- **테스트 URL (비로그인 기준)**:
+  - `/profile` → 307 자동 리다이렉트 (로그인 페이지로). 로그인 후 200 + Hero + 시즌 스탯 + 다가오는 일정 + 최근 활동 + 좌측 aside(팀·뱃지)
+  - `/users/1` (BDR_Admin) → 200. 그라디언트 Hero + physical strip 3열 + 개요 탭 기본 활성
+  - `/users/7` → 200. bio "ㅇㅇㅇㅇ" Hero 내부 렌더 확인 용도
+  - `/users/2832` (Wonyoung) → 200
+  - 본인 계정으로 로그인 후 `/users/{본인id}` → `/profile` 로 307 redirect (D-P7)
+- **정상 동작 체크리스트**:
+  - `/profile` 좌측 aside는 sticky(top:120) — 스크롤해도 Hero/팀/뱃지 고정
+  - `/profile` 우측 main: 시즌 스탯 6열 → 다가오는 일정 → 최근 활동 세로 순
+  - `/users/[id]` Hero는 소속팀 primaryColor 기반 그라디언트 (팀 없으면 var(--bdr-red))
+  - 탭 "개요" 클릭 시 시즌 스탯 + 팀/활동/뱃지 aside
+  - 탭 "최근 경기" 클릭 시 board 테이블 (날짜/경기/PTS/REB/AST/STL 6열)
+  - 배지 "Lv.N" 은 emoji + 레벨 번호. 클릭 불가(정보성)
+  - 소속 팀 카드 클릭 시 `/teams/{id}` 이동
+  - evaluation_rating > 0 인 유저만 ★ 표시 (0/null 유저는 자연스럽게 숨김 — 시안 충실도보다 데이터 무결성 우선)
+- **주의할 입력**:
+  - bio, gender, evaluation_rating, total_games_hosted 전부 nullable — 페이지에서 옵셔널 체이닝 + 조건부 렌더. null 유저도 500 없음
+  - user_badges 0개 유저 → BadgesSideCard 자체 숨김
+  - teamMembers 0개 유저 → TeamSideCard/OverviewTab 소속팀 카드 숨김
+  - last_login_at null → "가입일 기준 N일 전" 로 relative 폴백
+  - 로그인한 사용자가 자신의 `/users/[id]` 진입 시 307 redirect to `/profile` (D-P7)
+
+⚠️ reviewer 참고:
+- **서버 컴포넌트 전환 — /profile `"use client"` 제거**: 기존은 useSWR 3개(`/api/web/profile` + gamification + stats)로 CSR 렌더. PM "API route.ts 0 변경" + "데이터 있는 DB 필드 전부 표시" 두 규칙 동시 만족하려면 API select 확장 불가 → 페이지에서 Prisma 직접 호출이 유일 해법. `/api/web/profile` 응답 select(`PROFILE_DETAIL_SELECT`)에는 gender/evaluation_rating/total_games_hosted 누락. 서버 컴포넌트 전환으로 필드 완비
+- **ProfileShell(client) → children(server) 구조**: `/profile/layout.tsx`의 ProfileShell은 `"use client"`지만 children prop을 통해 server 컴포넌트 children을 받는다. React Server Components 규약 상 정상 패턴. layout.tsx metadata도 유지
+- **bigint/Decimal 직렬화**: user.id, teamMember.team.id 등 BigInt → `.toString()` 변환. evaluation_rating Decimal → `Number()` 변환. Date → `.toISOString()`
+- **시안 vs 실 데이터 차이 타협**:
+  - 시안 "시즌 스탯 2026 Spring" (계절 라벨) → 실 구현은 `seasonLabel="통산"` (시즌 구분 DB 필드 없음)
+  - 시안 "레이팅 1,684" → evaluation_rating 0.00~5.00 별점으로 대체 (DB 없음)
+  - 시안 "다가오는 일정 3건" (slice(0,3)) → D-P4 확정대로 next_game 1건만
+  - 시안 overview의 "상대팀 vs REDEEM" recent games → 간단한 게임 제목 + 개인 스탯 테이블 (tournament 미연결 경기가 대부분)
+- **ActionButtons 기존 컴포넌트 재사용**: FollowButton 내부 로직(기존 팔로우 API)은 건드리지 않음. /users/[id]/_components/action-buttons.tsx 유지
+- **tab state URL 미반영**: ProfileTabs가 URL ?tab= 대신 React.useState 사용. 탭 전환이 새로고침에 유지되지 않음 — 2개뿐이라 단순화 (복잡도 대비 효익 낮음). 차후 확장 시 useSearchParams 로 전환 가능
+- **Prisma notifications status 필드**: 스키마상 `is_read` 없음. `status: "unread"` 로 미확인 카운트. 초기 구현 시 is_read 라고 실수 → 수정 커밋
+- **UpcomingGames link slice**: uuid slice(0,8)이 기존 /games/[slug] 패턴. id 문자열 길이 < 8이면 raw id 그대로 (fallback)
+
+#### 수정 이력
+| 회차 | 날짜 | 수정 내용 | 수정 파일 | 사유 |
+|------|------|----------|----------|------|
+| (초기 구현) | 2026-04-24 | 10신규 + 2재작성 | profile/_v2/* / users/[id]/_v2/* / 각 page.tsx | PM 확정 D-P1~D-P8 + 누락 4필드 |
+
+---
+
 ### [2026-04-24] Phase 1 GameDetail — v2 시안 재구성 (안 A: 2열 info grid + 조건부 행)
 - **브랜치**: design_v2 (Phase 1 Games 커밋 위)
 - **배경**: Games 목록은 v2 전환 완료, 같은 Phase 1 범위인 `/games/[id]` 상세 재구성. 기존 구조(HeroBanner/PriceCard/PickupDetail·GuestDetail·TeamMatchDetail 3종/ParticipantsGrid)는 시안과 공간 리듬 불일치 + DB 필드 중 contact_phone/requirements/notes/allow_guests/uniform_home·away_color 5개가 UI 미노출. PM 확정: 데이터 있는 필드 전부 화면 표시 / HeroBanner 이미지 DB 필드 없어 제거 / API·route.ts·Prisma 0 변경 / 기존 파일 삭제 금지 (import만 빠짐)
@@ -807,6 +904,7 @@ v2 `components.jsx` 340줄에서 재사용 단위 추출:
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-24 | developer | **Phase 1 Profile — /profile + /users/[id] v2 재구성** — D-P1~D-P8 추천값 + 누락 4필드(bio/gender/evaluation_rating/total_games_hosted) 전부 표시. 10신규(profile/_v2/*6 + users/[id]/_v2/*4) + 2재작성(각 page.tsx). /profile "use client" → 서버 컴포넌트 전환(Prisma 직접 호출 8쿼리). 탭 2개(D-P5) / 슛존·스카우팅 제거(D-P6) / physical strip 3열(D-P3) / isOwner→/profile redirect(D-P7) / user_badges 직접 쿼리(D-P8). tsc EXIT=0 / `/profile` 307 / `/users/1` 200(95KB) / `/users/7` 200(110KB bio 렌더 확인) / `/users/2832` 200. HTML: linear-gradient 1 + aria-pressed 2(탭 2개) + 슛존/스카우팅 0 + repeat(3,1fr)/(6,1fr) 각 1 | ✅ (커밋 대기) |
 | 04-24 | developer | **Phase 1 GameDetail — v2 시안 재구성 (안 A)** — `_v2/` 5 신규(summary-card / about-card / participant-list / apply-panel / host-panel) + `page.tsx` 재작성. 2열 info grid + 조건부 행(duration·contact·allow_guests·uniform) / AboutCard(description·requirements·notes) / ParticipantList(이니셜+position) / ApplyPanel(6분기 CTA + 한마디·저장·문의 alert) / HostPanel(수정·취소+신청자 관리 응집). HeroBanner·PriceCard·HostCard·ParticipantsGrid·PickupDetail·GuestDetail·TeamMatchDetail 미사용(파일 보존). API/Prisma/service 0 변경. tsc EXIT=0 / `/games/552` 200 (3.18s) + 551/550 200 (0.2s). HTML 검증: `.page` 1 + `.card` 15 / 연락처·유니폼·게스트·참가자 필드 전부 렌더 | ✅ (커밋 대기) |
 | 04-24 | developer | **Phase 1 Games — v2 시안 기반 재구성** — bdr-v2 신규 3종(game-card / kind-tab-bar / filter-chip-bar) + games/_components/games-client(클라 래퍼) + page.tsx 서버 컴포넌트 재작성(listGames + groupBy typeCounts 병렬 prefetch). DQ2 URL+클라 혼합(date/city URL / weekend·free·beginner 클라) + DQ3 태그 자동 파생(무료/초보환영/주말 최대 3). 기존 games-content/game-type-tabs/games-filter 보존(미사용). tsc EXIT=0 / `/games` 200 (0.54s) / `?type=0`·`?city=서울` 200. HTML: `.page` 쉘 + eyebrow + h1 + 탭 4(전체 active) + 칩 7(btn--sm) + auto-fill 그리드 + badge--red 마감임박 렌더 확인 | ✅ (커밋 대기) |
 | 04-22 | developer | **Phase 1 Home 시안 매칭 보완 (A+B+C)** — (A) page.tsx `className="page"` 확인(기반영) + (B) "열린 대회" 섹션 `BoardRow→TournamentRow` 교체 + 인덱스 accent 로테이션 `[--accent, #f59e0b, --accent-2]` + level 매핑 `registration→OPEN / in_progress→LIVE / 그외→INFO` + (C) board-row.tsx `categoryBadge` 렌더 로직 추가 + page.tsx 공지·인기글/방금 올라온 글에 `categoryBadge={notice?"red":"soft"}` 전달. tsc EXIT=0 / `/` 200 | ✅ (커밋 대기) |
@@ -815,5 +913,3 @@ v2 `components.jsx` 340줄에서 재사용 단위 추출:
 | 04-24 | planner-architect | **BDR v2 전체 로드맵 설계** — v2 48 시안 × 기존 88 페이지 3 버킷 매핑(A 18/B 16/C 17) + 10 Phase 구성(0~9, 총 77~94h) + 공통 컴포넌트 분해(Phase 0 선제 6 + 점진 추출) + PR 전략 C 혼합(Phase 0+1 선 머지 → 주간 rolling 6회) + 리스크 매트릭스 + 사용자 결정 8건(필수 3 + 선택 5). scratchpad 기획설계 섹션 추가 + architecture.md 1항목 추가 | ✅ 이번 세션 Phase 0 S1~S3 착수 가능 상태 |
 | 04-22 | tester | **위임 스모크 W4+L3+L2 Playwright 자동화** — 60 테스트(desktop×30 + mobile×30) 4조합(PC/Mobile × Light/Dark) 전건 PASS. L3(브레드크럼/EditionSwitcher 경계 #1/#11/null) + W4(glossary/courts/community/profile-activity) + postId 277 `'지역방어'` decode 검증. 임시파일(`_tmp-smoke-2026-04-22.spec.ts` + config + quick-check) 완료 후 삭제. 시작 시 `/organizations/*` 500 → PID 46100 kill + `.next` 삭제 + 재기동(PID 78736)으로 복구(Turbopack worker crash 재발) | ✅ 60/60 PASS (수빈 재확인 권장 3건: M6 알림·M5 온보딩·M7 팀 가입 = 로그인 필수) |
 | 04-22 | developer | **any 4건 명시 타입화** — home-sidebar(SWR fallback 3건 → TeamData/PostData 재사용) + members/route.ts(Prisma.RefereeWhereInput). 예외 13건(kakao/HOF/SW) 유지. right-sidebar-logged-in 타입 `export` 추가 | ✅ `3f54daa` |
-| 04-22 | pm | **knowledge 3파일 갱신 + docs planning 지연 커밋** — conventions +2(any 예외 + color-mix 문법) / lessons +1(영역 단위 정비 교훈) / index 갱신 + Dev/advancement-roadmap/weekly-status 04-20 커밋 | ✅ `ab46ae2` + `9023236` |
-| 04-22 | developer | **하드코딩 색상 5차 — 잔존 정비 (5파일 7건) + 예외 2건 명시** — referee/signup(에러) + referee/login(2건) + verify(warning) + teams/[id]/manage(해산 버튼 hover solid+tone-down) + teams/new(2건). 예외: live orange 스피너(accent TODO) / tm-org-new dark:페어(단일 토큰 검증 전). **하드코딩 색상 audit 실질 완결** | ✅ `6a7569b` |
