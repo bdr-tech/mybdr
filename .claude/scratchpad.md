@@ -203,6 +203,13 @@
 - **About 파트너 로고 8건** — 시안 텍스트 8건(NIKE/ADIDAS/MOLTEN/SPALDING/UNDER ARMOUR/BODY FRIEND/11번가/BDR STUDIO). 실제 협력사 자산 확정 + SVG 로고 → next/image 교체
 - **회원가입 페이지 신설** — 현재 `/login`만 정상이고 `/signup` 별도 시안 존재. About CTA "지금 가입하기"는 PM 지시로 일단 `/login` 매핑. 추후 `/signup` 페이지(시안 SignUp.jsx) 구현 시 분리
 
+### Phase 5 Achievements (커밋 대기, 2026-04-22)
+> 시안 Achievements.jsx 16종 배지 그리드 + 필터 + "최근 획득" 4건 v2 재구성 완료. `/profile/achievements` 신규. **API/Prisma/서비스 0 변경**. `prisma.user_badges` 직접 호출 (Phase 1 패턴). DB 미지원 메타는 정적 카탈로그(`_v2/badge-catalog.ts`)로 보강 + tier/category/icon/desc 폴백.
+- **rarity (희소도) 측정** — 시안 "상위 N%" 라벨. 현재 모든 배지 "—" 폴백. 전체 사용자 대비 해당 배지 보유 비율 집계 + 캐싱 (배지 발급량이 변할 때마다 재계산 필요 → 일 1회 cron 또는 user_badges INSERT 트리거)
+- **진행도 추적 (progress / total)** — 시안 잠금 상태에서 "47 / 100" 진행 바. 현재 모든 미획득 배지 "0 / —" + 0% 바 + tooltip "측정 준비 중". 신규 `user_badges_progress` 테이블 (user_id+badge_type+current_value+target_value+updated_at) 또는 활동별 카운트 컬럼 추가 후 매핑
+- **배지 자동 발급 트리거** — 현재 `user_badges` 는 운영자/cron 수동 INSERT 의존. 경기 종료/연승/게시글 N건/팀 창단 등 이벤트 핸들러에서 조건 충족 시 자동 발급(중복 방지는 `@@unique([user_id, badge_type])` 활용). Phase 5 Stats 와 연계
+- **배지 카탈로그 DB화 (`badge_definitions` 테이블)** — 현재 `_v2/badge-catalog.ts` 정적 상수 16+12종. 운영팀이 배지를 추가하려면 코드 수정 필요. 신규 테이블(`badge_type` PK + tier/category/icon/desc/name/target_value) 도입 후 카탈로그 → DB 조회로 교체. 다국어/이미지(SVG) 자산도 동시에 모델링
+
 ### 공통 처리 원칙
 - UI는 **배치만 하고 동작 없음** → `alert("준비 중인 기능입니다")` 또는 `disabled` + `title="준비 중"`
 - 빈 데이터는 "준비 중" 텍스트 + 회색 placeholder
@@ -1990,6 +1997,7 @@ DB tournamentTeam.status | 대회 시작일 | → RegStatus
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-22 | developer | **Phase 5 Achievements — /profile/achievements v2 신규 (시안 16종 배지 그리드 + 필터 + 최근4 + 정적 카탈로그)** — 신규 3 (`achievements/_v2/badge-catalog.ts` 16+12종 카탈로그(BadgeMeta tier/category/icon/desc/name) + TIER_COLOR/TIER_LABEL/CATEGORY_LABEL 상수 + resolveBadgeMeta() 폴백(bronze/milestone/🏅) + SIGNATURE_ORDER 시안 16키 순서 / `achievements/_v2/achievements-content.tsx` "use client" useState filter + Breadcrumb(홈›프로필›업적) + Header 통계 3셀(획득/전체/달성률) + 최근획득 4셀 카드(borderLeft tier색) + 필터칩 8개(전체/획득/진행중/경기/팀/커뮤니티/시즌/마일스톤) + 4열 배지 그리드(tier 라벨우상단/이모지48px/잠금시🔒+grayscale/desc 32px minHeight/획득시✓날짜+상위 —, 미획득시 0%바+0/— title="측정 준비 중") / `achievements/page.tsx` 서버컴포넌트 force-dynamic + getWebSession + 비로그인 안내(person_off) + prisma.user_badges.findMany earned_at desc + BigInt→string + Date→ISO 직렬화 + AchievementsContent 렌더). **API/Prisma/서비스 0 변경. 신규 fetch 0건**. 카페 세션 무관. 시안 16종 SIGNATURE_ORDER 우선 + DB 발급 시안외 배지(court_explorer/streak/mvp 등) 끝에 추가. DB 미지원 메타(rarity/progress/total) 전부 "—" / "0 / —" / 0% 폴백 + var(--ink-dim) 약하게. 추후 구현 Phase 5 Achievements 4건 신설(rarity 측정 cron / user_badges_progress 테이블 / 자동 발급 트리거 / badge_definitions DB화). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
 | 04-22 | developer | **Phase 5 Settings — /profile/settings v2 6 섹션 재구성 (시안 옵션 A: 인라인 9필드 폼)** — 신규 8 (`_components_v2/section-key.ts` SectionKey 유니언 + resolveSection 폴백 / `settings-side-nav-v2.tsx` 220px sticky 6 버튼 nav(Material Symbols person/sports_basketball/notifications/lock/credit_card/warning) / `settings-ui.tsx` 공용 SettingsHeader+SettingsRow+SettingsToggle (토큰 var(--*) 전용·하드코딩 색 0) / `account-section-v2.tsx` 5행 Row(이메일·비밀번호 동작 + 연결된 계정·2FA·로그인기기 disabled) / `profile-section-v2.tsx` **시안 인라인 9필드 폼**(닉네임 2~20 검증 / 실명 / 포지션 / 키 / 몸무게 / 도시 / 활동지역구 / 생년월일 / 자기소개) + PATCH `/api/web/profile` 호출 + 낙관적 onSaved 콜백 / `notify-section-v2.tsx` 5 동작 토글(push/game/community/team/tournament) + 4 disabled(이메일·D-3·좋아요·마케팅) + 낙관적 PATCH 롤백 / `privacy-section-v2.tsx` 5 disabled "준비 중" 토글 / `billing-section-v2.tsx` 시안 그라디언트 카드(유료=cafe-blue, 무료=alt) + 4행 Row(결제수단/결제내역→/profile/payments/세금계산서/구독관리→/profile/subscription) + 하단 2버튼(플랜변경→/pricing / 구독취소) / `danger-section-v2.tsx` 3 카드(데이터내보내기·비활성화 disabled / 계정삭제 inline 비밀번호 모달 → DELETE `/api/web/auth/withdraw`)) + 1 전면재작성 (`page.tsx` `?section=`/`?tab=` 폴백 + 좌 sticky nav + 우 카드 + GET /api/web/profile + GET /api/web/profile/subscription 병렬 마운트 fetch / 비활성 섹션 unmount). **API route.ts / Prisma / 서비스 / 컴포넌트 0 변경. 신규 fetch 0건** (활용: profile/notification-settings/subscription/auth/withdraw 전부 기존 라우트). 기존 6 페이지(notification-settings/preferences/payments/subscription/billing/edit) 삭제 0. 추후 구현 Phase 5 Settings 11건 신설(2FA/세션 관리/이메일 알림/D-3·좋아요·마케팅/privacy 5 토글 JSONB/GDPR ZIP/soft deactivate/PG 카드 토큰/세금계산서 자동/jersey_number+dominant_hand/소셜 연동 UI). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
 | 04-22 | developer | **Phase 5 Rank — /rankings v2 재구성 (a 토글 3종: 팀/선수/외부BDR)** — 신규 3 (`_components/v2-podium.tsx` 1·2·3등 카드 [2등/1등/3등] 배치 + 가운데 1등 translateY(-12px) + display 폰트 #N / `v2-team-board.tsx` 6열 보드(순위·팀색배지·이름링크·레이팅(=wins임시)·승[ok색]·패·승률) / `v2-player-board.tsx` 8열 보드 + 정렬pills 4종(레이팅/PPG/APG/RPG) + 클라 정렬 + PPG=avg_points / APG=total_assists/games_played / RPG=total_rebounds/games_played / 레이팅·변동 "—") + 수정 2 (`_components/rankings-content.tsx` 전면 교체: theme-switch 3종(팀/선수/외부BDR) + eyebrow + h1 "2026 시즌 랭킹" + V2Podium + V2TeamBoard/V2PlayerBoard 분기 + 외부BDR 탭은 `<BdrRankingTable>` + 일반/대학 부 토글 / `loading.tsx` v2 톤 가볍게 .page+.eyebrow+.board 8행). 보존 1 (`_components/bdr-ranking-table.tsx` 0수정, 외부BDR 탭에서 그대로 호출). **API/Prisma/서비스 0 변경** (/api/web/rankings?type=team\|player + /api/web/rankings/bdr 그대로). 시안 Rank.jsx 충실. globals.css `.page/.eyebrow/.theme-switch/.board/.card` + 변수 `--accent/--ok/--cafe-blue/--cafe-blue-soft/--cafe-blue-deep/--bg-elev/--bg-alt/--ink-mute/--ink-dim/--ink-soft/--ff-display/--ff-mono/--border/--radius-chip` 전부 기존 정의 활용. 추후 구현 Phase 5 Rank 5건 신설(teams.rating ELO / users.rating+trend / PPG·APG·RPG 정규화 / 시즌 갱신 cron / 포디움 메타 포맷). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
 | 04-22 | developer | **Phase 4 PostWrite — /community/new v2 재구성 (with-aside 2열 + 시안 카드 폼)** — 1파일 전면 재작성(`(web)/community/new/page.tsx`). 단독 Card → `.page > .with-aside` (좌 `CommunityAsideNav activeCategory={null}` 재사용 + 우 main). 시안 그대로 헤더(h1 "글쓰기" + 우 "임시저장 · 자동저장 준비 중") + 본문 카드 6섹션: ①게시판 선택+제목 160px/1fr 그리드 ②툴바 12버튼 모두 disabled "준비 중"(D3 — B/I/U/S 시각 힌트 유지+H1/H2/인용/목록/사진/링크/영상/미리보기) ③textarea 상단 radius 0 으로 툴바와 시각 연결+ minHeight 340 + 글자수 카운터 ④체크박스 3개(댓글허용/비밀글/공감표시) 모두 disabled (D4) + 글자수/20000 카운터 ⑤이미지 URL 첨부 섹션 보존(D5 — 실 동작, 시안 톤만 정돈, `<img>` → `next/image fill unoptimized` 교체) ⑥액션 3버튼(취소 router.back / 임시저장 disabled / 등록 submit). **카테고리 select 4→7개**(D1: notice 제외, recruit/qna 신설). **createPostAction / useActionState / `name="images"` hidden JSON / pending / state.error 0 변경**. v2 글로벌 클래스 활용(.label/.select/.input/.textarea/.btn/.btn--sm/.btn--primary 전부 globals.css 정의 확인). 추후 구현 Phase 4 PostWrite 4건 신설(community_post_drafts 임시저장/자동저장 · TipTap 또는 Lexical 리치 에디터 · allow_comments/is_private/show_reactions 컬럼 · Supabase Storage 직접 업로드). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
@@ -2008,6 +2016,46 @@ DB tournamentTeam.status | 대회 시작일 | → RegStatus
 | 04-22 | developer | **Phase 3 Court 상세 — /courts/[id] v2 재구성 (헤더+혼잡도+Side KakaoMap)** — 신규 1 (`_components/court-detail-v2.tsx`: 시안 브레드크럼+area eyebrow+30px h1+image placeholder(자동태그)+desc / 오늘 혼잡도(시간대 12슬롯 빈+첫슬롯만 현재 활성카운트 단일 막대+"시간대별 분포 데이터 준비 중" 캡션) / Side sticky(KakaoMap 180px 단일마커+길찾기/지도열기 / 시설 정보 2col 그리드(샤워/락커/연락처 "정보 없음") / 모집 글쓰기 alert / MiniStat 3통계 흡수)) + `page.tsx` 수정(import 1 + courtV2Data 직렬화 + `<CourtDetailV2>` 1줄 + (구) 메인정보카드 218줄/이용현황 24줄/InfoBadge·StatBlock 헬퍼 2개 제거 + QR버튼만 시안 외 운영 핵심으로 별도 보존). **API/Prisma/하단 클라컴포넌트 8종 0 변경**(CourtCheckin/Ambassador/Pickups/Events/Rankings/Reviews/Reports/EditSuggest 전부 보존). courts.tags/operating_hours/shower/locker/phone/시간대별 집계 DB 미지원 → 자동 폴백 + "정보 없음"/"준비 중" 처리. tsc --noEmit EXIT=0 / `/courts/100` 200 (135KB). HTML: 오늘의 혼잡도·시설 정보·이곳에서 모집 글쓰기·시간대별 분포·COURT PHOTO·준비 중·농구장 목록 마커 전부 렌더 확인 | ✅ (커밋 대기) |
 | 04-22 | developer | **Phase 3 TeamCreate — /teams/new v2 4스텝 멀티스텝 폼 (B 옵션: 영문 팀명 보존)** — `_v2/` 6 신규(team-form 메인+useActionState/state6키hidden제출/약관미체크 차단 / stepper 36px원형+연결선 4스텝 / step-basic 한글명·영문명·대표언어토글·팀태그(시안신규UIonly)·팀소개 / step-emblem 10팔레트+미리보기160×160+엠블럼업로더(BDR+준비중)+secondary색상보존 / step-activity 홈코트·실력6단계·요일7토글·공개3종 모두 "준비중" / step-review 7행검토표+약관2개체크 차단) + `new-team-form.tsx` 슬림화(`<TeamFormV2/>` import 1줄). **createTeamAction / createTeamSchema / Prisma 0 변경**. FormData 키 6개(name/name_en/name_primary/description/primary_color/secondary_color) 그대로. 시안 신규 5필드(tag/home/level/days/privacy/엠블럼) UI 만 + "준비 중". 추후 구현 목록에 Phase 3 TeamCreate 7건 신규. tsc --noEmit EXIT=0 PASS / `/teams/new` 200 (Next 15 Turbopack dev 특성, 운영 307 정상) / 런타임 에러 0 | ✅ (커밋 대기, PM 처리) |
 | 04-22 | developer | **Phase 5 More — NotFound + About v2 적용 (X 옵션)** — `not-found.tsx` 전면 재작성(시안 More.jsx L3-20 충실 — 거대 404 120px ff-display+accent / "에어볼!" 농구 메타포 / 3버튼 .btn--primary→홈 + 검색→/search Phase 2 + 도움말→/help/glossary). 신규 1 `(web)/about/page.tsx`(시안 More.jsx L22-115 6 섹션: Hero(eyebrow+h1 42px+리드) / 통계 4셀(20년/48,000+/320+/1,240회 "예시" 캡션) / "우리가 만드는 것" 6 카드(공정매치/투명기록/지역연결/열린커뮤니티/공정운영/지속가능성) / 운영진 6 이니셜아바타 "예시" 캡션 / 파트너 8 mono fontFamily / CTA 가입·로그인 둘 다 /login + 경기둘러보기 /games). app-nav.tsx 1줄 수정(L117 `/` → `/about` + 폴백 주석 제거). **API/Prisma/서비스 0 변경**. 추후 구현 Phase 5 More 4건 신설(통계 4건 동적/운영진 명단/파트너 로고/회원가입 페이지 분리). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
+
+---
+
+## 구현 기록 — Phase 5 Achievements — /profile/achievements v2 신규 [2026-04-22]
+
+📝 구현한 기능: BDR v2 시안 `screens/Achievements.jsx` 의 16종 배지 그리드 + 5종 카테고리 필터 + "최근 획득" 4건 카드 + 통계 헤더(획득/전체/달성률) 를 그대로 이식한 신규 라우트 `/profile/achievements`. **API / Prisma / 서비스 / 컴포넌트 0 변경. 신규 fetch 0건**. Phase 1 패턴(prisma.user_badges 직접 호출) 동일. 카페 세션 무관. DB 미지원 메타(tier/category/icon/desc/rarity/progress/total) 는 정적 카탈로그(`_v2/badge-catalog.ts`) 로 보강하고, 카탈로그 매핑 실패는 bronze/milestone/🏅 폴백.
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| `src/app/(web)/profile/achievements/_v2/badge-catalog.ts` | 정적 카탈로그 16종(시안) + 12종(DB 발급용 court_explorer/streak_*/mvp 등) = 총 28종. `BadgeMeta { tier, category, icon, desc, name? }` 인터페이스 + `TIER_COLOR/TIER_LABEL/CATEGORY_LABEL/CATEGORY_COLOR` 상수 4개 + `resolveBadgeMeta()` 폴백 헬퍼(bronze/milestone/🏅) + `SIGNATURE_ORDER` 시안 16키 순서 배열 export. 시안 `Achievements.jsx` L14-31 의 더미 16종(double_triple_double/ten_win_streak/thirty_plus_game/hundred_threes/team_founder/team_captain/writer_lv1/issue_maker/comment_master/season_mvp_candidate/perfect_attendance/hundred_games_club/one_year_anniversary/early_bird/perfect_game/archive_master) 그대로 이식 | 신규 |
+| `src/app/(web)/profile/achievements/_v2/achievements-content.tsx` | "use client" + useState filter (`"all" \| "earned" \| "locked" \| BadgeCategory`). useMemo 4개로 통합 리스트(SIGNATURE_ORDER 우선 + DB 발급 시안외 배지 추가) / earnedItems / lockedItems / categoryCounts / shownBadges / recent4 계산. 6 섹션 렌더: ①Breadcrumb(홈›프로필›업적) ②Header 카드(.eyebrow "ACHIEVEMENTS" + h1 32px "내가 걸어온 기록" + 부제 + 통계 3셀: 획득=accent / 전체=ink / 달성률%=ok, 32px ff-display) ③최근 획득 4셀 (earned 1+ 일 때만, .card + borderLeft 3px tier색 + icon 32px + name + 날짜) ④필터 칩 8개(전체/획득/진행중/경기/팀/커뮤니티/시즌/마일스톤, .btn--sm + 활성 .btn--primary) ⑤4열 배지 그리드(.card + tier 라벨 우상단 + icon 48px + 잠금시 🔒 grayscale + 이름 14px + 설명 11.5px minHeight 32 + earned 푸터 var(--bg-alt) ✓날짜 + 상위 — , locked 푸터 0% bar + "0 / —" + title="측정 준비 중") ⑥필터 결과 0건 빈 상태. 매 셀 색상은 var(--*) 토큰 + TIER_COLOR(시안 코드 그대로) | 신규 |
+| `src/app/(web)/profile/achievements/page.tsx` | 서버 컴포넌트 + `export const dynamic = "force-dynamic"`. getWebSession() → 비로그인이면 person_off + "로그인" 버튼 안내 화면. 로그인 시 `prisma.user_badges.findMany` 본인 전체(orderBy earned_at desc) → BigInt → string + Date → ISO 직렬화 → `<AchievementsContent earnedBadges={...} />` 렌더. catch(() => []) 폴백 → DB 실패해도 카탈로그-only locked 그리드 정상 표시 | 신규 |
+| `.claude/scratchpad.md` | "🚧 추후 구현 목록"에 "Phase 5 Achievements" 4건 신설 (rarity 측정 cron / user_badges_progress 진행도 테이블 / 자동 발급 트리거 / badge_definitions DB화) + 작업 로그 1줄 추가 | 수정 |
+
+💡 tester 참고:
+- **테스트 방법**:
+  1. **로그인 후** `/profile/achievements` 진입 → 헤더 통계 3셀 (획득/전체/달성률) + 16종 그리드 + 필터 8칩 렌더 확인
+  2. **비로그인** 진입 → person_off 아이콘 + "로그인이 필요합니다" + 로그인 버튼 (기존 /profile UX 와 동일)
+  3. **필터 토글**: "획득" → earned 만 / "진행중" → locked 만 / "경기" → category=game 필터링 / "전체" → 16+@ 전체. 각 칩 라벨에 카운트 표시 (`전체 · 16` 등)
+  4. **최근 획득 4건**: earned 0개면 섹션 자체 미렌더. earned 1+ 일 때 earned_at desc 상위 4건. tier 색 좌측 borderLeft 확인
+  5. **DB 미지원 폴백**: 모든 잠금 배지에서 "0 / —" + 0% 바 표시 + tooltip "측정 준비 중". 모든 획득 배지에서 "상위 —" + tooltip "희소도 측정 준비 중"
+  6. **시안외 배지(예: court_explorer)**: 운영자가 user_badges INSERT 한 경우, 시안 16종 후미에 추가 표시. tier=bronze + category=milestone + icon=🏟️
+- **정상 동작**:
+  - tsc --noEmit EXIT=0 통과
+  - 신규 fetch 0건 (페이지에서 prisma 직접 호출만, API 라우트 미사용)
+  - 모든 색상은 var(--*) 토큰 (TIER_COLOR/CATEGORY_COLOR 일부 hex 직접 — 시안 충실)
+  - 카탈로그-only(locked) 배지도 시안 SIGNATURE_ORDER 순서 보존
+- **주의할 입력**:
+  - badge_type 이 카탈로그에 없는 배지 발급 시: tier=bronze / category=milestone / icon=🏅 폴백. badge_name 은 DB 값 그대로 표시
+  - earned_at 이 invalid Date 면 "-" 폴백
+  - earnedBadges 가 빈 배열이어도 카탈로그 16종이 잠금 상태로 표시됨
+
+⚠️ reviewer 참고:
+- **API 0 변경 원칙 준수**: route.ts / Prisma / lib/services 0 수정. 신규 fetch 0건. 카페 세션 무관. Phase 1 D-P8 패턴(profile/page.tsx 의 user_badges 직접 호출) 동일
+- **카탈로그 위치**: `_v2/badge-catalog.ts` — 정적 상수 + 헬퍼. 추후 `badge_definitions` DB 테이블 도입 시 그대로 마이그레이션 가능 (인터페이스 동일 유지)
+- **시안 충실도**: TIER_COLOR(#7DD3FC/#F59E0B/#94A3B8/#C2765A) / CATEGORY_COLOR(#DC2626/#0F5FCC/#10B981/#F59E0B/#8B5CF6) 는 시안 hex 그대로. 다크/라이트 토큰화는 추후 작업 (현재는 시각적 동일성 우선)
+- **미획득 progress 0% 폴백**: PM 결정. 시안의 "47/100" 같은 가데이터 노출 대신 "0 / —" + tooltip 으로 "측정 준비 중" 명시. 사용자 혼란 방지
+- **rarity "—"**: 시안의 "상위 0.8%" 같은 가데이터 노출 대신 "—" + dim 색 + tooltip "희소도 측정 준비 중"
+- **TypeScript**: `tsc --noEmit` PASS (출력 없음)
+- **navigation**: app-nav.tsx 등에 `/profile/achievements` 진입점은 추가하지 않음 — 별도 작업으로 처리 가능. 직접 URL 접근 + 추후 /profile 사이드 카드에 "전체 보기" 링크 추가 검토
 
 ---
 
