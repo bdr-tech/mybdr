@@ -174,6 +174,14 @@
 - **댓글 허용 / 비밀글 / 공감 표시 옵션** — 시안 체크박스 3개. 현재 disabled. `community_posts` 테이블에 컬럼 추가 필요(`allow_comments` BOOLEAN DEFAULT true, `is_private` BOOLEAN DEFAULT false, `show_reactions` BOOLEAN DEFAULT true). 비밀글은 PostDetail 접근 권한 가드까지 동시 작업
 - **이미지 직접 업로드** — 시안 툴바 "사진" 버튼 + 본문 인라인 삽입. 현재 URL 첨부 섹션만 보존(외부 호스팅 URL 입력). Supabase Storage 버킷(`community-uploads`) + 기존 image-uploader 재사용 + presigned URL 발급 API + content 안 마크다운/블록 인라인 삽입까지 묶어서 도입
 
+### Phase 5 Rank (커밋 대기, 2026-04-22)
+> 시안 Rank.jsx 기반 토글 3종(팀/선수/외부BDR) 재구성. /api/web/rankings · /api/web/rankings/bdr 0 변경. 외부BDR 탭은 기존 BdrRankingTable 보존.
+- **`teams.rating` ELO 컬럼** — 시안 팀 보드 "레이팅" 칸 (예: 1684). 현재 wins로 임시 대체. 매주 월요일 시즌 갱신 cron으로 ELO 재계산
+- **`users.rating` ELO + trend (지난주 대비)** — 시안 선수 보드 "레이팅"·"변동" 칸. 현재 둘 다 "—" 표시. trend는 `users.rating_last_week` snapshot 또는 `user_rating_history` 테이블로 계산
+- **PPG/APG/RPG 정규화 컬럼** — 현재 `match_player_stat` 집계 후 클라에서 `total / games_played`로 계산. 정렬/조회 성능 위해 `users.avg_points` / `avg_assists` / `avg_rebounds` 정규화 컬럼 검토 (시즌 갱신 cron 시 동시 갱신)
+- **시즌 갱신 cron** — 매주 월요일 자동 ELO/PPG/APG/RPG 재계산. Vercel Cron 또는 GitHub Actions 스케줄러
+- **포디움 데이터 메타** — 현재 팀 포디움 메타는 "{도시} · {wins}승", 선수는 "{팀} · {avg_points} PPG"로 임시 표시. teams.rating / users.rating 도입 시 시안의 "{tag} · {rating}" 포맷으로 교체
+
 ### 공통 처리 원칙
 - UI는 **배치만 하고 동작 없음** → `alert("준비 중인 기능입니다")` 또는 `disabled` + `title="준비 중"`
 - 빈 데이터는 "준비 중" 텍스트 + 회색 placeholder
@@ -1961,6 +1969,7 @@ DB tournamentTeam.status | 대회 시작일 | → RegStatus
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-22 | developer | **Phase 5 Rank — /rankings v2 재구성 (a 토글 3종: 팀/선수/외부BDR)** — 신규 3 (`_components/v2-podium.tsx` 1·2·3등 카드 [2등/1등/3등] 배치 + 가운데 1등 translateY(-12px) + display 폰트 #N / `v2-team-board.tsx` 6열 보드(순위·팀색배지·이름링크·레이팅(=wins임시)·승[ok색]·패·승률) / `v2-player-board.tsx` 8열 보드 + 정렬pills 4종(레이팅/PPG/APG/RPG) + 클라 정렬 + PPG=avg_points / APG=total_assists/games_played / RPG=total_rebounds/games_played / 레이팅·변동 "—") + 수정 2 (`_components/rankings-content.tsx` 전면 교체: theme-switch 3종(팀/선수/외부BDR) + eyebrow + h1 "2026 시즌 랭킹" + V2Podium + V2TeamBoard/V2PlayerBoard 분기 + 외부BDR 탭은 `<BdrRankingTable>` + 일반/대학 부 토글 / `loading.tsx` v2 톤 가볍게 .page+.eyebrow+.board 8행). 보존 1 (`_components/bdr-ranking-table.tsx` 0수정, 외부BDR 탭에서 그대로 호출). **API/Prisma/서비스 0 변경** (/api/web/rankings?type=team\|player + /api/web/rankings/bdr 그대로). 시안 Rank.jsx 충실. globals.css `.page/.eyebrow/.theme-switch/.board/.card` + 변수 `--accent/--ok/--cafe-blue/--cafe-blue-soft/--cafe-blue-deep/--bg-elev/--bg-alt/--ink-mute/--ink-dim/--ink-soft/--ff-display/--ff-mono/--border/--radius-chip` 전부 기존 정의 활용. 추후 구현 Phase 5 Rank 5건 신설(teams.rating ELO / users.rating+trend / PPG·APG·RPG 정규화 / 시즌 갱신 cron / 포디움 메타 포맷). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
 | 04-22 | developer | **Phase 4 PostWrite — /community/new v2 재구성 (with-aside 2열 + 시안 카드 폼)** — 1파일 전면 재작성(`(web)/community/new/page.tsx`). 단독 Card → `.page > .with-aside` (좌 `CommunityAsideNav activeCategory={null}` 재사용 + 우 main). 시안 그대로 헤더(h1 "글쓰기" + 우 "임시저장 · 자동저장 준비 중") + 본문 카드 6섹션: ①게시판 선택+제목 160px/1fr 그리드 ②툴바 12버튼 모두 disabled "준비 중"(D3 — B/I/U/S 시각 힌트 유지+H1/H2/인용/목록/사진/링크/영상/미리보기) ③textarea 상단 radius 0 으로 툴바와 시각 연결+ minHeight 340 + 글자수 카운터 ④체크박스 3개(댓글허용/비밀글/공감표시) 모두 disabled (D4) + 글자수/20000 카운터 ⑤이미지 URL 첨부 섹션 보존(D5 — 실 동작, 시안 톤만 정돈, `<img>` → `next/image fill unoptimized` 교체) ⑥액션 3버튼(취소 router.back / 임시저장 disabled / 등록 submit). **카테고리 select 4→7개**(D1: notice 제외, recruit/qna 신설). **createPostAction / useActionState / `name="images"` hidden JSON / pending / state.error 0 변경**. v2 글로벌 클래스 활용(.label/.select/.input/.textarea/.btn/.btn--sm/.btn--primary 전부 globals.css 정의 확인). 추후 구현 Phase 4 PostWrite 4건 신설(community_post_drafts 임시저장/자동저장 · TipTap 또는 Lexical 리치 에디터 · allow_comments/is_private/show_reactions 컬럼 · Supabase Storage 직접 업로드). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
 | 04-26 | developer | **Phase 4 PostDetail — /community/[id] v2 재구성 (시안 PostDetail.jsx + 좌 CommunityAside 재사용)** — 신규 1(`_components/community-aside-nav.tsx` RSC↔클라 경계 우회용 useRouter 래퍼: 클릭 시 `/community?category=...` push) + `[id]/page.tsx` 전면 재구성(grid 12열 → `.page > .with-aside`. 시안 4섹션: badge--soft 카테고리 + 24px 제목 + cafe-blue-soft 이니셜 작성자 + 우측 메타(날짜·조회·댓글·추천) + Body padding 28/26·fs15·lh1.8 + Reactions 가운데정렬 좋아요/공유/스크랩(disabled "준비 중") + Nav 이전/다음글 placeholder "준비 중"). D1-c: 우측 PostDetailSidebar 그대로 호출 + `marginTop:32`로 본문 하단 1열 누적 (작성자카드/실시간 인기글/이벤트 배너 3블록 보존). D2: 홈›카테고리›글 상세. D3: split <p> 유지(h3/img X). D4: 이전/다음 placeholder. D5: LikeButton+ShareButton 그대로+스크랩 disabled. D6+D7: CommentForm/CommentList 그대로 호출(카페 댓글 병합 보존). **API/Prisma/Server Action/decodeHtmlEntities/cache(getPost)/병렬 likes·follow 0 변경. 컴포넌트 6개(LikeButton/ShareButton/PostActions/PostDetailSidebar/CommentForm/CommentList) 0 수정**. 추후 구현 Phase 4 PostDetail 5건(이전/다음 글 Prisma 쿼리·users.xp LevelBadge·작성글 수 헤더·Body block type 분기·스크랩 community_post_bookmarks). tsc --noEmit EXIT=0 / `/community/<recruit-id>` 200(207KB,2.2s) + `/community/<review-id>` 200(213KB) + `/community/<general-id>` 200(223KB) / HTML: with-aside 1·page 1·badge--soft 1(카테고리별 동적)·aside__link 8·cafe-blue-soft 1·thumb_up 1·>댓글< 1·>스크랩< 1·이전글/다음글 1·실시간 인기글 1·작성자 정보 1·View Detail 1 전부 렌더 확인 | ✅ (커밋 대기, PM 처리) |
 | 04-22 | developer | **Phase 4 BoardList — /community v2 재구성 (시안 BoardList.jsx + 그룹 트리 사이드바, 페이지당 20개)** — 신규 2 (`src/components/bdr-v2/v2-pager.tsx` 재사용 페이저 컴포넌트 + 윈도우 슬라이딩 / `src/app/(web)/community/_components/community-aside.tsx` 좌측 그룹 트리: 메인(공지/자유) · 플레이(팀원/대회후기/장터) · 이야기(질문/정보) — 글 수 카운트 "—" + title="준비 중") + `community-content.tsx` 전면 교체(.page + .with-aside 2열 + 헤더 eyebrow+제목+전체글수+검색+글쓰기 + 정렬 4종(최신/인기/댓글/조회) 클라 토글 + .board 테이블(번호/제목/작성자/날짜/조회/추천) + 공지(category=notice) 자동 핀 상단 + 새글 24h badge--new "N" + has_image false 고정). **API `/api/web/community` 호출 / SSR fallbackPosts / preferFilter Context / searchParams 동기화 / decodeHtmlEntities 100% 보존**. 페이지당 20개(PM 결정, 시안 충실). 추후 구현 Phase 4 BoardList 6건 신설(is_pinned/has_image/카테고리별 글수 API/LevelBadge/글 번호 채번/게시판 내 검색 라벨). tsc --noEmit EXIT=0 / `/community` 200(0.86s) + `?category=general/notice` 200 + `?q=test` 200 / HTML 마커: with-aside 1 / board__head 1 / board__row 20 / aside__ 16 / pager 5 / eyebrow 1 / btn--primary 2 전부 렌더 확인 | ✅ (커밋 대기, PM 처리) |
@@ -1976,7 +1985,49 @@ DB tournamentTeam.status | 대회 시작일 | → RegStatus
 | 04-25 | developer | **Phase 3 Orgs — /organizations v2 재구성 (단체 등록 라벨 + 필터 chip)** — `_components/` 2 신규(org-card-v2 그라디언트 헤더+태그 자동 생성+가입 신청 alert / orgs-list-v2 클라 컨테이너+종류 chip 4종 "전체"만 동작·"리그/협회/동호회" 클릭 시 alert+opacity0.55) + `page.tsx` 재작성(.page eyebrow+h1+부제+"단체 등록" 버튼 라벨 변경). DB 미지원 3필드 자동 폴백(`color`=id 해시→6색 팔레트 / `tag`=이름 첫 2글자/영문이면 대문자 4글자 / `kind`="단체" 고정 배지). 데이터 패칭 0 변경(prisma.organizations.findMany 그대로). 추후 구현 목록에 Phase 3 Orgs 5건 신규(kind/brand_color/tag 필드 + 가입 신청 API + teams 집계). tsc EXIT=0 / `/organizations` 200(0.98s, 55KB). HTML: `단체 · ORGANIZATIONS` + `리그 · 협회 · 동호회` + `단체 등록` + `준비 중` + `orgs-list-v2` 마커 전부 렌더 확인 | ✅ (커밋 대기) |
 | 04-22 | developer | **Phase 3 Court 상세 — /courts/[id] v2 재구성 (헤더+혼잡도+Side KakaoMap)** — 신규 1 (`_components/court-detail-v2.tsx`: 시안 브레드크럼+area eyebrow+30px h1+image placeholder(자동태그)+desc / 오늘 혼잡도(시간대 12슬롯 빈+첫슬롯만 현재 활성카운트 단일 막대+"시간대별 분포 데이터 준비 중" 캡션) / Side sticky(KakaoMap 180px 단일마커+길찾기/지도열기 / 시설 정보 2col 그리드(샤워/락커/연락처 "정보 없음") / 모집 글쓰기 alert / MiniStat 3통계 흡수)) + `page.tsx` 수정(import 1 + courtV2Data 직렬화 + `<CourtDetailV2>` 1줄 + (구) 메인정보카드 218줄/이용현황 24줄/InfoBadge·StatBlock 헬퍼 2개 제거 + QR버튼만 시안 외 운영 핵심으로 별도 보존). **API/Prisma/하단 클라컴포넌트 8종 0 변경**(CourtCheckin/Ambassador/Pickups/Events/Rankings/Reviews/Reports/EditSuggest 전부 보존). courts.tags/operating_hours/shower/locker/phone/시간대별 집계 DB 미지원 → 자동 폴백 + "정보 없음"/"준비 중" 처리. tsc --noEmit EXIT=0 / `/courts/100` 200 (135KB). HTML: 오늘의 혼잡도·시설 정보·이곳에서 모집 글쓰기·시간대별 분포·COURT PHOTO·준비 중·농구장 목록 마커 전부 렌더 확인 | ✅ (커밋 대기) |
 | 04-22 | developer | **Phase 3 TeamCreate — /teams/new v2 4스텝 멀티스텝 폼 (B 옵션: 영문 팀명 보존)** — `_v2/` 6 신규(team-form 메인+useActionState/state6키hidden제출/약관미체크 차단 / stepper 36px원형+연결선 4스텝 / step-basic 한글명·영문명·대표언어토글·팀태그(시안신규UIonly)·팀소개 / step-emblem 10팔레트+미리보기160×160+엠블럼업로더(BDR+준비중)+secondary색상보존 / step-activity 홈코트·실력6단계·요일7토글·공개3종 모두 "준비중" / step-review 7행검토표+약관2개체크 차단) + `new-team-form.tsx` 슬림화(`<TeamFormV2/>` import 1줄). **createTeamAction / createTeamSchema / Prisma 0 변경**. FormData 키 6개(name/name_en/name_primary/description/primary_color/secondary_color) 그대로. 시안 신규 5필드(tag/home/level/days/privacy/엠블럼) UI 만 + "준비 중". 추후 구현 목록에 Phase 3 TeamCreate 7건 신규. tsc --noEmit EXIT=0 PASS / `/teams/new` 200 (Next 15 Turbopack dev 특성, 운영 307 정상) / 런타임 에러 0 | ✅ (커밋 대기, PM 처리) |
-| 04-22 | developer | **코트 대관(Booking) Phase A — MVP 무료 대관 11파일 일괄 구현** — schema.prisma 수정(court_bookings 신규 모델 + court_infos 2컬럼 booking_mode/booking_fee_per_hour + User 백릴레이션 1줄) / `prisma/migrations/manual/court_booking_phase_a.sql` 신규(자동 실행 X 보존만, 운영 DB 위험) / `lib/courts/court-manager-guard.ts` 신규(D-B1=a + D-B2=a — court_infos.user_id == session.sub + court_rental 활성 구독 동시검사) / `lib/courts/booking-conflict.ts` 신규(pg_advisory_xact_lock + checkConflict 시간겹침 + validateBookingTime 1시간단위/1~4h/과거차단) / API 3 신규(`courts/[id]/bookings` GET 슬롯조회+POST 트랜잭션락+즉시confirmed / `courts/[id]/manage/bookings` GET 운영자대시보드+POST blocked / `bookings/[id]` GET+DELETE 본인or운영자) / 페이지 3 신규(`courts/[id]/booking` 시안 CourtBooking.jsx 기반 7일 날짜+16시간 슬롯+이용시간1~4+목적4종+무료확정 / `courts/[id]/manage` 차단슬롯폼+예약테이블+개별취소 / `profile/bookings` 90일내 본인예약+취소액션) / `_components/court-detail-v2.tsx` 수정(booking_mode 분기 CTA — internal=Link / external+rental_url=외부링크 / 그외=disabled "대관 미지원"). page.tsx 수정(courtV2Data 에 booking_mode/rental_url 2필드 추가). **결제 X (Phase A 무료 final_amount=0)** + status 즉시 confirmed. **prisma generate EPERM(dev server PID 102232 lock)으로 미실행** — schema validate ✅ + tsc --noEmit EXIT=0 PASS (기존 generate된 타입 포함, 다음 dev 재시작 시 generate 자동 갱신). DB 변경 위험 → SQL 파일 보존만 | ✅ (커밋 대기) |
+
+---
+
+## 구현 기록 — Phase 5 Rank — /rankings v2 재구성 [2026-04-22]
+
+📝 구현한 기능: BDR v2 시안 `screens/Rank.jsx` 기반으로 `/rankings` 페이지를 재구성. **(a) 토글 3종**(팀/선수/외부BDR)으로 시안의 2종 토글에 외부BDR을 추가. 팀/선수 탭은 시안 충실(eyebrow + h1 "2026 시즌 랭킹" + theme-switch + V2Podium + V2TeamBoard/V2PlayerBoard). 외부BDR 탭은 기존 `BdrRankingTable`을 그대로 호출 + 일반/대학 부 토글 추가. **API/Prisma/서비스 0 변경**.
+
+| # | 파일 경로 | 변경 내용 | 신규/수정 |
+|---|----------|----------|----------|
+| 1 | `src/app/(web)/rankings/_components/v2-podium.tsx` | 1·2·3등 카드. 시안 [1,0,2] 인덱스 → [2등, 1등, 3등] 배치 + 1등 가운데 카드 translateY(-12px) + display 폰트 #N + accent 색상 borderTop. 데이터 3개 미만 시 자동 생략 | 신규 |
+| 2 | `src/app/(web)/rankings/_components/v2-team-board.tsx` | 6열 보드(64px/1fr/90×4): 순위·팀(색배지+이름링크)·레이팅(=wins 임시)·승[ok색]·패·승률. 1~3위 accent 강조. resolveColor()로 흰색팀 보조색 fallback | 신규 |
+| 3 | `src/app/(web)/rankings/_components/v2-player-board.tsx` | 정렬 pills 4종(레이팅/PPG/APG/RPG) + 8열 보드(56/1fr/72×4/80/64): 순위·선수(이니셜+이름링크)·팀·PPG·APG·RPG·레이팅("—")·변동("—"). PPG=avg_points, APG/RPG=클라 계산(total/games_played, 0 가드). 정렬 pill 클릭 시 클라 정렬 + 활성 컬럼 강조(fontWeight 800 + ink 색상) | 신규 |
+| 4 | `src/app/(web)/rankings/_components/rankings-content.tsx` | 전면 교체. theme-switch 3종(팀/선수/외부BDR) + eyebrow "랭킹 · LEADERBOARD" + h1 "2026 시즌 랭킹" + 부제 "공식전 · 프리시즌 반영 · 매주 월요일 갱신" + V2Podium + V2TeamBoard/V2PlayerBoard 분기. 외부BDR 탭은 일반/대학 부 토글 + `<BdrRankingTable>` 그대로. 기존 토스 컴포넌트(TossCard/TossListItem/Pagination/TeamRankingList/PlayerRankingList) 전부 제거 | 수정 |
+| 5 | `src/app/(web)/rankings/loading.tsx` | shadcn Skeleton 기반 → v2 톤(.page + .eyebrow + .board 8행). globals.css `--bg-alt` 단색 placeholder | 수정 |
+| 6 | `src/app/(web)/rankings/_components/bdr-ranking-table.tsx` | **0수정 보존** (외부BDR 탭에서 그대로 호출) | 보존 |
+
+💡 tester 참고:
+- 테스트 방법:
+  1. `/rankings` 진입 → 기본 "팀" 탭 활성 → 포디움 3카드 + 6열 보드 렌더 확인
+  2. theme-switch "선수" 클릭 → API 재호출(`/api/web/rankings?type=player`) → 포디움 3카드(이니셜) + 8열 보드 + 정렬 pills 4개 렌더
+  3. 정렬 pill "득점/어시/리바" 차례 클릭 → 클라 정렬 적용 + 해당 컬럼 강조(굵게+ink색상)
+  4. theme-switch "외부BDR" 클릭 → 일반/대학 부 토글 노출 + 기존 BdrRankingTable(시즌 드롭다운/검색/메달 등) 그대로 동작
+  5. 외부BDR "대학부" 클릭 → `/api/web/rankings/bdr?division=university` 호출
+- 정상 동작:
+  - 팀 보드: 1~3위 순위 숫자가 BDR 레드(`var(--accent)`)로 강조
+  - 선수 보드: 레이팅/변동 컬럼은 항상 "—" (DB 컬럼 없음)
+  - 포디움: 1등 카드만 살짝 위로(transform translateY(-12px)) + 가운데 1.1fr
+  - 외부BDR 탭: BdrRankingTable이 자체 fetch — 다른 변화 없음
+  - 데이터 0건: "등록된 ~ 랭킹이 없습니다" 빈 상태(Material Symbols icon)
+- 주의할 입력:
+  - 데이터 3건 미만일 때 V2Podium 자동 생략 → 보드만 표시 (정상)
+  - games_played=0인 선수: PPG/APG/RPG 모두 0 표시 (NaN 방지 가드)
+  - primary_color="#FFFFFF"인 팀: secondary_color로 fallback (시인성 유지)
+
+⚠️ reviewer 참고:
+- 특별히 봐줬으면 하는 부분:
+  - `rankings-content.tsx` podiumItems IIFE: mode별 가공 로직이 IIFE라 useMemo로 메모하지 않음. 데이터 변경 빈도 낮아 충분하다고 판단 — 검토 요청
+  - `v2-player-board.tsx` 클라 정렬: API rank를 무시하고 i+1을 순위로 표시 → 정렬 변경 시 순위가 즉시 재계산. 시안과 동일 동작이지만 백엔드 rank와 다를 수 있음
+  - 외부BDR 탭: 모드 변경 시 BdrRankingTable 컴포넌트가 mount/unmount되며 매번 fetch. 캐싱 SWR로 바꿀지 검토 가능
+- 시안 충실도:
+  - 시안에 없는 신규 요소: theme-switch 3번째 버튼 "외부BDR" + 그 안의 부 토글
+  - 시안에 있지만 DB 미지원 → 임시 표시: 팀 레이팅(=wins), 선수 레이팅(="—"), 변동(="—")
+  - 추후 구현 5건 scratchpad "Phase 5 Rank"에 기록
 
 ---
 
