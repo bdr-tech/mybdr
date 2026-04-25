@@ -182,6 +182,20 @@
 - **시즌 갱신 cron** — 매주 월요일 자동 ELO/PPG/APG/RPG 재계산. Vercel Cron 또는 GitHub Actions 스케줄러
 - **포디움 데이터 메타** — 현재 팀 포디움 메타는 "{도시} · {wins}승", 선수는 "{팀} · {avg_points} PPG"로 임시 표시. teams.rating / users.rating 도입 시 시안의 "{tag} · {rating}" 포맷으로 교체
 
+### Phase 5 Settings (커밋 대기, 2026-04-22)
+> 시안 Settings.jsx 6 섹션(account/profile/notify/privacy/billing/danger) v2 재구성. /api/web/profile · notification-settings · subscription · auth/withdraw 0 변경. 신규 fetch 0건. 기존 페이지(notification-settings/preferences/payments/subscription/billing/edit) 보존.
+- **2단계 인증 (2FA)** — account 섹션 Row "2단계 인증" 자리는 disabled. TOTP 또는 SMS OTP 모듈 도입 + `users.two_factor_secret`/`users.two_factor_enabled` 필드 + 백업 코드 테이블 추가
+- **로그인 기기 관리** — account 섹션 Row "로그인 기기" disabled. `sessions` 테이블 + 기기·IP·브라우저·최근 활동 시각 기록 + 원격 로그아웃 API
+- **이메일 알림** — notify 섹션 disabled. SMTP/SendGrid 메일 발송 워커 + 알림별 채널 매트릭스 (web push / email / sms 분리)
+- **D-3 알림 / 좋아요 알림 / 마케팅 수신** — notify 섹션 3 토글 disabled. notification-settings PATCH 키 확장 + cron 발송 룰
+- **공개 범위 5 토글 (privacy_settings JSONB)** — privacy 섹션 5 토글 모두 disabled. `users.privacy_settings JSONB` + 프로필/스탯/타임라인/실명/DM 권한 가드 추가
+- **데이터 내보내기 (GDPR)** — danger 섹션 disabled. 비동기 ZIP 생성 워커 + 진행 상태 + 다운로드 링크 메일 발송
+- **계정 비활성화 (soft deactivate)** — danger 섹션 disabled. `users.deactivated_at` + 30일 hide cron + 로그인 시 자동 복구
+- **결제수단 관리** — billing 섹션 Row "결제수단" disabled. PG 토큰화 카드 등록 + `payment_methods` 테이블 + 자동결제 카드 변경 플로우
+- **세금계산서 발급 자동화** — billing 섹션 Row "영수증·세금계산서" disabled. 사업자 정보 등록 + 토스페이먼츠 영수증 API 연동 + 월말 자동 발행
+- **시안 등번호 / 주로 뛰는 손 필드** — profile 섹션 시안에는 있으나 PATCH 미지원. `users.jersey_number` / `users.dominant_hand` 필드 추가 + PATCH 확장
+- **연결된 계정(소셜) 관리 UI** — account 섹션 Row "연결된 계정" 은 /profile/edit 로 이동만. 카카오/구글 연동 상태 조회 + 연결/해제 API + UI 추가
+
 ### 공통 처리 원칙
 - UI는 **배치만 하고 동작 없음** → `alert("준비 중인 기능입니다")` 또는 `disabled` + `title="준비 중"`
 - 빈 데이터는 "준비 중" 텍스트 + 회색 placeholder
@@ -1969,6 +1983,7 @@ DB tournamentTeam.status | 대회 시작일 | → RegStatus
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-22 | developer | **Phase 5 Settings — /profile/settings v2 6 섹션 재구성 (시안 옵션 A: 인라인 9필드 폼)** — 신규 8 (`_components_v2/section-key.ts` SectionKey 유니언 + resolveSection 폴백 / `settings-side-nav-v2.tsx` 220px sticky 6 버튼 nav(Material Symbols person/sports_basketball/notifications/lock/credit_card/warning) / `settings-ui.tsx` 공용 SettingsHeader+SettingsRow+SettingsToggle (토큰 var(--*) 전용·하드코딩 색 0) / `account-section-v2.tsx` 5행 Row(이메일·비밀번호 동작 + 연결된 계정·2FA·로그인기기 disabled) / `profile-section-v2.tsx` **시안 인라인 9필드 폼**(닉네임 2~20 검증 / 실명 / 포지션 / 키 / 몸무게 / 도시 / 활동지역구 / 생년월일 / 자기소개) + PATCH `/api/web/profile` 호출 + 낙관적 onSaved 콜백 / `notify-section-v2.tsx` 5 동작 토글(push/game/community/team/tournament) + 4 disabled(이메일·D-3·좋아요·마케팅) + 낙관적 PATCH 롤백 / `privacy-section-v2.tsx` 5 disabled "준비 중" 토글 / `billing-section-v2.tsx` 시안 그라디언트 카드(유료=cafe-blue, 무료=alt) + 4행 Row(결제수단/결제내역→/profile/payments/세금계산서/구독관리→/profile/subscription) + 하단 2버튼(플랜변경→/pricing / 구독취소) / `danger-section-v2.tsx` 3 카드(데이터내보내기·비활성화 disabled / 계정삭제 inline 비밀번호 모달 → DELETE `/api/web/auth/withdraw`)) + 1 전면재작성 (`page.tsx` `?section=`/`?tab=` 폴백 + 좌 sticky nav + 우 카드 + GET /api/web/profile + GET /api/web/profile/subscription 병렬 마운트 fetch / 비활성 섹션 unmount). **API route.ts / Prisma / 서비스 / 컴포넌트 0 변경. 신규 fetch 0건** (활용: profile/notification-settings/subscription/auth/withdraw 전부 기존 라우트). 기존 6 페이지(notification-settings/preferences/payments/subscription/billing/edit) 삭제 0. 추후 구현 Phase 5 Settings 11건 신설(2FA/세션 관리/이메일 알림/D-3·좋아요·마케팅/privacy 5 토글 JSONB/GDPR ZIP/soft deactivate/PG 카드 토큰/세금계산서 자동/jersey_number+dominant_hand/소셜 연동 UI). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
 | 04-22 | developer | **Phase 5 Rank — /rankings v2 재구성 (a 토글 3종: 팀/선수/외부BDR)** — 신규 3 (`_components/v2-podium.tsx` 1·2·3등 카드 [2등/1등/3등] 배치 + 가운데 1등 translateY(-12px) + display 폰트 #N / `v2-team-board.tsx` 6열 보드(순위·팀색배지·이름링크·레이팅(=wins임시)·승[ok색]·패·승률) / `v2-player-board.tsx` 8열 보드 + 정렬pills 4종(레이팅/PPG/APG/RPG) + 클라 정렬 + PPG=avg_points / APG=total_assists/games_played / RPG=total_rebounds/games_played / 레이팅·변동 "—") + 수정 2 (`_components/rankings-content.tsx` 전면 교체: theme-switch 3종(팀/선수/외부BDR) + eyebrow + h1 "2026 시즌 랭킹" + V2Podium + V2TeamBoard/V2PlayerBoard 분기 + 외부BDR 탭은 `<BdrRankingTable>` + 일반/대학 부 토글 / `loading.tsx` v2 톤 가볍게 .page+.eyebrow+.board 8행). 보존 1 (`_components/bdr-ranking-table.tsx` 0수정, 외부BDR 탭에서 그대로 호출). **API/Prisma/서비스 0 변경** (/api/web/rankings?type=team\|player + /api/web/rankings/bdr 그대로). 시안 Rank.jsx 충실. globals.css `.page/.eyebrow/.theme-switch/.board/.card` + 변수 `--accent/--ok/--cafe-blue/--cafe-blue-soft/--cafe-blue-deep/--bg-elev/--bg-alt/--ink-mute/--ink-dim/--ink-soft/--ff-display/--ff-mono/--border/--radius-chip` 전부 기존 정의 활용. 추후 구현 Phase 5 Rank 5건 신설(teams.rating ELO / users.rating+trend / PPG·APG·RPG 정규화 / 시즌 갱신 cron / 포디움 메타 포맷). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
 | 04-22 | developer | **Phase 4 PostWrite — /community/new v2 재구성 (with-aside 2열 + 시안 카드 폼)** — 1파일 전면 재작성(`(web)/community/new/page.tsx`). 단독 Card → `.page > .with-aside` (좌 `CommunityAsideNav activeCategory={null}` 재사용 + 우 main). 시안 그대로 헤더(h1 "글쓰기" + 우 "임시저장 · 자동저장 준비 중") + 본문 카드 6섹션: ①게시판 선택+제목 160px/1fr 그리드 ②툴바 12버튼 모두 disabled "준비 중"(D3 — B/I/U/S 시각 힌트 유지+H1/H2/인용/목록/사진/링크/영상/미리보기) ③textarea 상단 radius 0 으로 툴바와 시각 연결+ minHeight 340 + 글자수 카운터 ④체크박스 3개(댓글허용/비밀글/공감표시) 모두 disabled (D4) + 글자수/20000 카운터 ⑤이미지 URL 첨부 섹션 보존(D5 — 실 동작, 시안 톤만 정돈, `<img>` → `next/image fill unoptimized` 교체) ⑥액션 3버튼(취소 router.back / 임시저장 disabled / 등록 submit). **카테고리 select 4→7개**(D1: notice 제외, recruit/qna 신설). **createPostAction / useActionState / `name="images"` hidden JSON / pending / state.error 0 변경**. v2 글로벌 클래스 활용(.label/.select/.input/.textarea/.btn/.btn--sm/.btn--primary 전부 globals.css 정의 확인). 추후 구현 Phase 4 PostWrite 4건 신설(community_post_drafts 임시저장/자동저장 · TipTap 또는 Lexical 리치 에디터 · allow_comments/is_private/show_reactions 컬럼 · Supabase Storage 직접 업로드). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
 | 04-26 | developer | **Phase 4 PostDetail — /community/[id] v2 재구성 (시안 PostDetail.jsx + 좌 CommunityAside 재사용)** — 신규 1(`_components/community-aside-nav.tsx` RSC↔클라 경계 우회용 useRouter 래퍼: 클릭 시 `/community?category=...` push) + `[id]/page.tsx` 전면 재구성(grid 12열 → `.page > .with-aside`. 시안 4섹션: badge--soft 카테고리 + 24px 제목 + cafe-blue-soft 이니셜 작성자 + 우측 메타(날짜·조회·댓글·추천) + Body padding 28/26·fs15·lh1.8 + Reactions 가운데정렬 좋아요/공유/스크랩(disabled "준비 중") + Nav 이전/다음글 placeholder "준비 중"). D1-c: 우측 PostDetailSidebar 그대로 호출 + `marginTop:32`로 본문 하단 1열 누적 (작성자카드/실시간 인기글/이벤트 배너 3블록 보존). D2: 홈›카테고리›글 상세. D3: split <p> 유지(h3/img X). D4: 이전/다음 placeholder. D5: LikeButton+ShareButton 그대로+스크랩 disabled. D6+D7: CommentForm/CommentList 그대로 호출(카페 댓글 병합 보존). **API/Prisma/Server Action/decodeHtmlEntities/cache(getPost)/병렬 likes·follow 0 변경. 컴포넌트 6개(LikeButton/ShareButton/PostActions/PostDetailSidebar/CommentForm/CommentList) 0 수정**. 추후 구현 Phase 4 PostDetail 5건(이전/다음 글 Prisma 쿼리·users.xp LevelBadge·작성글 수 헤더·Body block type 분기·스크랩 community_post_bookmarks). tsc --noEmit EXIT=0 / `/community/<recruit-id>` 200(207KB,2.2s) + `/community/<review-id>` 200(213KB) + `/community/<general-id>` 200(223KB) / HTML: with-aside 1·page 1·badge--soft 1(카테고리별 동적)·aside__link 8·cafe-blue-soft 1·thumb_up 1·>댓글< 1·>스크랩< 1·이전글/다음글 1·실시간 인기글 1·작성자 정보 1·View Detail 1 전부 렌더 확인 | ✅ (커밋 대기, PM 처리) |
@@ -1985,6 +2000,52 @@ DB tournamentTeam.status | 대회 시작일 | → RegStatus
 | 04-25 | developer | **Phase 3 Orgs — /organizations v2 재구성 (단체 등록 라벨 + 필터 chip)** — `_components/` 2 신규(org-card-v2 그라디언트 헤더+태그 자동 생성+가입 신청 alert / orgs-list-v2 클라 컨테이너+종류 chip 4종 "전체"만 동작·"리그/협회/동호회" 클릭 시 alert+opacity0.55) + `page.tsx` 재작성(.page eyebrow+h1+부제+"단체 등록" 버튼 라벨 변경). DB 미지원 3필드 자동 폴백(`color`=id 해시→6색 팔레트 / `tag`=이름 첫 2글자/영문이면 대문자 4글자 / `kind`="단체" 고정 배지). 데이터 패칭 0 변경(prisma.organizations.findMany 그대로). 추후 구현 목록에 Phase 3 Orgs 5건 신규(kind/brand_color/tag 필드 + 가입 신청 API + teams 집계). tsc EXIT=0 / `/organizations` 200(0.98s, 55KB). HTML: `단체 · ORGANIZATIONS` + `리그 · 협회 · 동호회` + `단체 등록` + `준비 중` + `orgs-list-v2` 마커 전부 렌더 확인 | ✅ (커밋 대기) |
 | 04-22 | developer | **Phase 3 Court 상세 — /courts/[id] v2 재구성 (헤더+혼잡도+Side KakaoMap)** — 신규 1 (`_components/court-detail-v2.tsx`: 시안 브레드크럼+area eyebrow+30px h1+image placeholder(자동태그)+desc / 오늘 혼잡도(시간대 12슬롯 빈+첫슬롯만 현재 활성카운트 단일 막대+"시간대별 분포 데이터 준비 중" 캡션) / Side sticky(KakaoMap 180px 단일마커+길찾기/지도열기 / 시설 정보 2col 그리드(샤워/락커/연락처 "정보 없음") / 모집 글쓰기 alert / MiniStat 3통계 흡수)) + `page.tsx` 수정(import 1 + courtV2Data 직렬화 + `<CourtDetailV2>` 1줄 + (구) 메인정보카드 218줄/이용현황 24줄/InfoBadge·StatBlock 헬퍼 2개 제거 + QR버튼만 시안 외 운영 핵심으로 별도 보존). **API/Prisma/하단 클라컴포넌트 8종 0 변경**(CourtCheckin/Ambassador/Pickups/Events/Rankings/Reviews/Reports/EditSuggest 전부 보존). courts.tags/operating_hours/shower/locker/phone/시간대별 집계 DB 미지원 → 자동 폴백 + "정보 없음"/"준비 중" 처리. tsc --noEmit EXIT=0 / `/courts/100` 200 (135KB). HTML: 오늘의 혼잡도·시설 정보·이곳에서 모집 글쓰기·시간대별 분포·COURT PHOTO·준비 중·농구장 목록 마커 전부 렌더 확인 | ✅ (커밋 대기) |
 | 04-22 | developer | **Phase 3 TeamCreate — /teams/new v2 4스텝 멀티스텝 폼 (B 옵션: 영문 팀명 보존)** — `_v2/` 6 신규(team-form 메인+useActionState/state6키hidden제출/약관미체크 차단 / stepper 36px원형+연결선 4스텝 / step-basic 한글명·영문명·대표언어토글·팀태그(시안신규UIonly)·팀소개 / step-emblem 10팔레트+미리보기160×160+엠블럼업로더(BDR+준비중)+secondary색상보존 / step-activity 홈코트·실력6단계·요일7토글·공개3종 모두 "준비중" / step-review 7행검토표+약관2개체크 차단) + `new-team-form.tsx` 슬림화(`<TeamFormV2/>` import 1줄). **createTeamAction / createTeamSchema / Prisma 0 변경**. FormData 키 6개(name/name_en/name_primary/description/primary_color/secondary_color) 그대로. 시안 신규 5필드(tag/home/level/days/privacy/엠블럼) UI 만 + "준비 중". 추후 구현 목록에 Phase 3 TeamCreate 7건 신규. tsc --noEmit EXIT=0 PASS / `/teams/new` 200 (Next 15 Turbopack dev 특성, 운영 307 정상) / 런타임 에러 0 | ✅ (커밋 대기, PM 처리) |
+
+---
+
+## 구현 기록 — Phase 5 Settings — /profile/settings v2 6 섹션 재구성 [2026-04-22]
+
+📝 구현한 기능: BDR v2 시안 `screens/Settings.jsx` 의 6 섹션 구조(account/profile/notify/privacy/billing/danger) 를 그대로 이식한 Settings 허브. **옵션 A: 시안 인라인 9 필드 프로필 폼**. 신규 fetch 0건 (이미 시스템에 있던 GET /api/web/profile + GET /api/web/profile/subscription + GET /api/web/profile/notification-settings + DELETE /api/web/auth/withdraw 만 사용). 기존 페이지 6개 (notification-settings / preferences / payments / subscription / billing / edit) 보존 — 삭제 0.
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| `src/app/(web)/profile/settings/page.tsx` | 전면 재작성. `?section=` 우선 / `?tab=preferences|notifications` 폴백 / 좌 sticky nav + 우 카드 / GET profile + subscription 병렬 마운트 / 비활성 섹션 unmount | 수정 |
+| `src/app/(web)/profile/settings/_components_v2/section-key.ts` | SectionKey 유니언 + VALID_SECTIONS + resolveSection (?tab=preferences→profile, ?tab=notifications→notify, 기본 account) | 신규 |
+| `src/app/(web)/profile/settings/_components_v2/settings-side-nav-v2.tsx` | 220px sticky nav. 6 버튼 (계정/프로필/알림/개인정보·공개/결제·멤버십/계정 관리). Material Symbols Outlined (lucide-react 금지 규칙). active 시 var(--bg-alt) + var(--ink), 비활성 var(--ink-soft) | 신규 |
+| `src/app/(web)/profile/settings/_components_v2/settings-ui.tsx` | 6 섹션 공용 빌딩 블록 — SettingsHeader / SettingsRow (라벨+값+우측 액션, disabled 시 "준비 중") / SettingsToggle (라벨+설명+스위치, disabled 시 "준비 중" 배지). 색상 토큰 var(--*) 전용 | 신규 |
+| `src/app/(web)/profile/settings/_components_v2/account-section-v2.tsx` | 5 Row: 이메일(→/profile/edit)/비밀번호(→/reset-password)/연결된 계정(→/profile/edit)/2단계 인증(disabled)/로그인 기기(disabled) | 신규 |
+| `src/app/(web)/profile/settings/_components_v2/profile-section-v2.tsx` | **시안 인라인 9 필드 폼** (nickname/name/position/height/weight/city/district/birth_date/bio) + 닉네임 2~20자 클라 검증 + PATCH `/api/web/profile` (기존 시그니처) + 낙관적 onSaved 콜백 + success/error 메시지 + 저장 중 disabled | 신규 |
+| `src/app/(web)/profile/settings/_components_v2/notify-section-v2.tsx` | 동작 5 토글 (push/game/community/team/tournament) + disabled 4 토글 (이메일/D-3/좋아요/마케팅). 마운트 시 GET notification-settings → 클릭 시 낙관적 PATCH → 실패 롤백. saving Set 으로 동시 PATCH 추적 | 신규 |
+| `src/app/(web)/profile/settings/_components_v2/privacy-section-v2.tsx` | 시안 5 토글 (프로필 검색/경기 기록/타임라인/실명/DM) 전부 disabled "준비 중". 시각적 defaultChecked 보존 | 신규 |
+| `src/app/(web)/profile/settings/_components_v2/billing-section-v2.tsx` | 상단 그라디언트 카드 (유료=`linear-gradient(135deg, var(--cafe-blue), var(--cafe-blue-deep))` / 무료=var(--bg-alt)) + 플랜명/캡션/4행 Row (결제수단 disabled / 결제 내역→/profile/payments / 세금계산서 disabled / 구독 관리→/profile/subscription) + 하단 2버튼 (플랜 변경→/pricing / 구독 취소→/profile/subscription disabled-when-free) | 신규 |
+| `src/app/(web)/profile/settings/_components_v2/danger-section-v2.tsx` | 3 Danger 카드 (데이터 내보내기 disabled / 계정 비활성화 disabled / 계정 삭제 accent 강조). 계정 삭제 클릭 → inline 모달 (비밀번호 input + 취소/삭제 버튼) → DELETE `/api/web/auth/withdraw` (body.password) → 성공 시 router.replace("/login") | 신규 |
+
+💡 tester 참고:
+- **테스트 방법**:
+  1. 로그인 후 `/profile/settings` 진입 → ?section= 없으면 account 섹션 활성 확인
+  2. 좌측 nav 6개 클릭 → URL `?section=account|profile|notify|privacy|billing|danger` 으로 변경 + 우측 패널 교체 + 스크롤 점프 없음
+  3. 외부 링크 폴백: `/profile/settings?tab=preferences` 진입 → profile 섹션 활성 / `?tab=notifications` → notify 섹션 활성
+  4. **profile 섹션 9 필드 폼**: 기존 데이터 prefill 확인 → 닉네임 1자/21자 입력 후 저장 → "닉네임은 2자 이상 20자 이하" 에러 / 정상 입력 후 저장 → "프로필이 저장되었습니다" + 새로고침 후에도 값 유지 (PATCH /api/web/profile 그대로 호출)
+  5. notify 섹션: 5 동작 토글 클릭 → 낙관적 즉시 반영 + Network 탭에서 PATCH 200 / disabled 4 토글 클릭 무반응 + "준비 중" 배지
+  6. billing 섹션: 무료 사용자 → "BDR 베이직 / 무료 플랜 사용 중" + 그라디언트 미적용 + 구독 취소 disabled / 유료 사용자 → cafe-blue 그라디언트 + 플랜명 + "다음 결제 YYYY.MM.DD"
+  7. danger 섹션: "계정 삭제" 클릭 → 모달 표시 → 빈 비밀번호로 삭제 클릭 → "비밀번호를 입력해주세요" → 잘못된 비밀번호 → 401 메시지 표시 → 정상 비밀번호 → /login 으로 redirect
+- **정상 동작**:
+  - tsc --noEmit EXIT=0 통과
+  - 기존 호출 4개만 fetch (신규 0건). DevTools Network 에서 `/api/web/profile`, `/api/web/profile/subscription`, `/api/web/profile/notification-settings` (notify 섹션 진입 시), `/api/web/auth/withdraw` (계정 삭제 시) 4 종만 확인
+  - 모든 색상은 var(--*) 토큰 — 다크/라이트 테마 토글 시 자연스럽게 따라감
+- **주의할 입력**:
+  - profile 섹션 height/weight 입력 — 숫자 외 문자 자동 제거 (`replace(/[^0-9]/g, "")`)
+  - profile 섹션 birth_date — `<input type="date">` YYYY-MM-DD 직렬화 → 서버에서 `new Date()` 변환
+  - 빈 문자열 저장 시 서버는 null 로 저장 (route.ts: `value as string || null`)
+
+⚠️ reviewer 참고:
+- **API 0 변경 원칙 준수**: route.ts / Prisma / lib/services 0 수정. 신규 fetch 0건. 기존 페이지 6개 보존
+- **하드코딩 색상 0**: 모든 색상은 `var(--*)` 토큰 (CLAUDE.md 규칙). 시안의 `--cafe-blue/--cafe-blue-deep/--bg-alt/--ink-mute/--ink/--ink-soft/--accent/--accent-soft/--border/--ok` 활용
+- **Material Symbols Outlined**: 좌측 nav 아이콘 6개 — lucide-react 0 사용 (CLAUDE.md 규칙)
+- **시안 미지원 2 필드 (등번호/주로 뛰는 손)**: PATCH /api/web/profile 가 받지 않아 UI 미배치. scratchpad "🚧 Phase 5 Settings" 11건에 기록
+- **subscription 응답 파싱**: `is_usable` 필드(=active OR (cancelled AND expires_at>now))로 활성 구독 1건 추출. 활성 구독이 있으면 plan.name + plan.price 표시
+- **계정 삭제 안전 장치**: 시안은 단순 버튼이지만 비밀번호 확인 inline 모달 추가 (DELETE /api/web/auth/withdraw 가 password 검증 요구). 모달 dim 배경 클릭 + 취소 버튼으로 닫기 + submitting 중에는 닫기 차단
+- **반응형**: 모바일 1열 스택, 768px+ 에서 220px nav + 우측 카드 2열 (`@media (min-width: 768px)` styled-jsx)
 
 ---
 

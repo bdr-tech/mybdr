@@ -1,330 +1,243 @@
 "use client";
 
 /* ============================================================
- * ProfileSettingsPage — 설정 허브 (맞춤 설정 + 알림 설정 탭 통합)
+ * ProfileSettingsPage — Settings v2 허브 (시안 6 섹션 + 좌측 sticky nav)
  *
- * 왜 (M1 Day 8):
- *  - 기존 /profile/preferences + /profile/notification-settings 두 페이지가 좌측 네비 "설정" 하나로
- *    묶여 있었는데 실제 페이지는 각각 따로 열려 사용자 탐색이 분리됐음.
- *  - 한 페이지 안에서 탭으로 서브 섹션을 전환하도록 통합해 네비 항목과 실제 페이지 단위를 1:1로 맞춘다.
- *  - 구 경로 2개는 redirect()로 보존 → 외부 링크/북마크 호환.
+ * 왜 (Phase 5):
+ *  - BDR v2 시안 Settings.jsx 의 6 섹션 구조(account/profile/notify/privacy/billing/danger)를
+ *    그대로 이식해 흩어진 설정 진입점을 한 페이지에 통합한다.
+ *  - 기존 ?tab=preferences|notifications 외부 링크/북마크는 ?section= 로 폴백.
+ *  - API/Prisma/서비스는 0 변경 — 신규 fetch도 추가하지 않고 이미 있던 호출만 사용.
  *
  * 어떻게:
- *  - 탭 상태는 URL 쿼리 ?tab= 으로 관리 (새로고침/공유/뒤로가기 보존).
- *  - 기본값은 "preferences". 유효하지 않은 값은 "preferences"로 fallback.
- *  - 탭 클릭 시 router.replace(..., { scroll: false }) 로 히스토리 누적 없이 URL만 바꿈.
- *  - 비활성 탭 섹션은 조건부 렌더 → 해당 서브 섹션의 API 호출을 하지 않아 네트워크/렌더 절약.
- *  - 탭 컴포넌트는 이번엔 페이지 내부 inline (후속에 공용 Tabs 컴포넌트로 승격 검토).
- *  - 개별 서브 페이지 헤더 제거 + 이 허브에 "설정" 단일 헤더만.
+ *  - 활성 섹션은 URL ?section=... 으로 관리 (새로고침/공유/뒤로가기 보존).
+ *  - 좌측 220px sticky nav + 우측 카드. 모바일에서는 1열 스택.
+ *  - 페이지 마운트 시 GET /api/web/profile + GET /api/web/profile/subscription 만 호출
+ *    (notify 섹션은 내부에서 GET notification-settings 1회 — v1 동일 패턴).
+ *  - 비활성 섹션은 조건부 렌더 안 함(=mount 안 함) 으로 무거운 sub fetch 회피.
  * ============================================================ */
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PreferenceForm } from "@/components/shared/preference-form";
 
-/* 탭 키. "preferences" = 맞춤 설정, "notifications" = 알림 설정 */
-type TabKey = "preferences" | "notifications";
+import { SettingsSideNavV2 } from "./_components_v2/settings-side-nav-v2";
+import { resolveSection, type SectionKey } from "./_components_v2/section-key";
+import { AccountSectionV2 } from "./_components_v2/account-section-v2";
+import {
+  ProfileSectionV2,
+  type ProfileFormUser,
+} from "./_components_v2/profile-section-v2";
+import { NotifySectionV2 } from "./_components_v2/notify-section-v2";
+import { PrivacySectionV2 } from "./_components_v2/privacy-section-v2";
+import {
+  BillingSectionV2,
+  type BillingSummary,
+} from "./_components_v2/billing-section-v2";
+import { DangerSectionV2 } from "./_components_v2/danger-section-v2";
 
-const VALID_TABS: TabKey[] = ["preferences", "notifications"];
+// 섹션 사이에 공유되는 사용자 요약 (account/profile/billing 에 사용)
+interface ProfileApiUser extends ProfileFormUser {
+  email?: string | null;
+}
 
-/* 알림 유형 메타 정보 (아이콘/라벨/설명) — 기존 notification-settings 페이지에서 이식 */
-const NOTIFICATION_TYPES = [
-  {
-    key: "game",
-    icon: "sports_basketball",
-    label: "경기 알림",
-    description: "경기 신청, 승인, 취소, 리마인더",
-  },
-  {
-    key: "tournament",
-    icon: "emoji_events",
-    label: "대회 알림",
-    description: "대회 접수, 대진표 발표, 결과 안내",
-  },
-  {
-    key: "team",
-    icon: "groups",
-    label: "팀 알림",
-    description: "팀 가입 신청, 승인, 공지사항",
-  },
-  {
-    key: "community",
-    icon: "forum",
-    label: "커뮤니티 알림",
-    description: "댓글, 좋아요, 답글 알림",
-  },
-  {
-    key: "push",
-    icon: "notifications_active",
-    label: "웹 푸시 알림",
-    description: "브라우저 푸시 알림 수신 (꺼도 인앱 알림은 유지)",
-  },
-] as const;
+// 단일 정수 → "₩4,900" 같은 표시 — Intl 사용 (브라우저 내장)
+function formatKRW(value: number): string {
+  return new Intl.NumberFormat("ko-KR", {
+    style: "currency",
+    currency: "KRW",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
 
-type Settings = Record<string, boolean>;
-
-const DEFAULT_NOTIFICATION_SETTINGS: Settings = {
-  game: true,
-  tournament: true,
-  team: true,
-  community: true,
-  push: true,
-};
+// 만료일 ISO → "YYYY.MM.DD"
+function formatYMD(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}.${m}.${day}`;
+}
 
 export default function ProfileSettingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  /* 현재 활성 탭 결정
-   * - URL 쿼리 ?tab=X 우선
-   * - 값이 VALID_TABS에 없거나 없으면 "preferences" 기본 */
+  // 활성 섹션: ?section= 우선, ?tab= 폴백, 기본 account
+  const rawSection = searchParams.get("section");
   const rawTab = searchParams.get("tab");
-  const activeTab: TabKey =
-    rawTab && (VALID_TABS as string[]).includes(rawTab)
-      ? (rawTab as TabKey)
-      : "preferences";
+  const activeSection: SectionKey = resolveSection(rawSection, rawTab);
 
-  /* 탭 클릭 핸들러
-   * - router.replace: 같은 URL 히스토리에 쌓지 않음 (뒤로가기가 이전 탭으로 돌아가지 않게)
-   * - scroll: false: 탭 전환 시 페이지 맨 위로 스크롤 점프 방지 */
-  const handleTabChange = useCallback(
-    (tab: TabKey) => {
-      router.replace(`/profile/settings?tab=${tab}`, { scroll: false });
+  const handleSectionChange = useCallback(
+    (id: SectionKey) => {
+      // history 누적 방지 + 스크롤 점프 방지
+      router.replace(`/profile/settings?section=${id}`, { scroll: false });
     },
-    [router]
+    [router],
   );
 
-  return (
-    <div className="min-h-screen bg-[var(--color-background)] text-[var(--color-text-primary)]">
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        {/* ============ 허브 단일 헤더 (개별 페이지 헤더는 제거됨) ============ */}
-        <h1 className="text-2xl font-bold mb-6">설정</h1>
+  /* ----------- 공유 데이터 (account/profile/billing 사용) ----------- */
+  const [user, setUser] = useState<ProfileApiUser | null>(null);
+  const [billing, setBilling] = useState<BillingSummary | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
-        {/* ============ 탭 바 (border-b-2 절제형) ============ */}
-        <div
-          role="tablist"
-          aria-label="설정 카테고리"
-          className="flex gap-6 border-b mb-6"
-          style={{ borderColor: "var(--color-border-subtle)" }}
-        >
-          <TabButton
-            label="맞춤 설정"
-            active={activeTab === "preferences"}
-            onClick={() => handleTabChange("preferences")}
-            controls="panel-preferences"
-          />
-          <TabButton
-            label="알림 설정"
-            active={activeTab === "notifications"}
-            onClick={() => handleTabChange("notifications")}
-            controls="panel-notifications"
-          />
-        </div>
-
-        {/* ============ 탭 패널 (조건부 렌더로 비활성 탭의 API 호출/무거운 렌더 방지) ============ */}
-        {activeTab === "preferences" && (
-          <div
-            role="tabpanel"
-            id="panel-preferences"
-            aria-labelledby="tab-preferences"
-          >
-            <p className="text-[var(--color-text-secondary)] mb-6 text-sm">
-              관심 종별, 경기 유형, 게시판을 설정하면 맞춤 콘텐츠를 받아볼 수 있습니다
-            </p>
-            {/* 기존 /profile/preferences 와 동일한 폼 — settings 모드 (스킵 버튼 없음) */}
-            <PreferenceForm mode="settings" />
-          </div>
-        )}
-
-        {activeTab === "notifications" && (
-          <div
-            role="tabpanel"
-            id="panel-notifications"
-            aria-labelledby="tab-notifications"
-          >
-            <NotificationsSection />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ============================================================
- * TabButton — border-b-2 절제형 탭 버튼
- *
- * 활성 시: text-primary + border-b-2 border-primary
- * 비활성 시: text-muted + border-transparent
- * ============================================================ */
-function TabButton({
-  label,
-  active,
-  onClick,
-  controls,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-  controls: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      aria-controls={controls}
-      onClick={onClick}
-      className="relative -mb-px py-3 text-sm font-semibold transition-colors"
-      style={{
-        color: active
-          ? "var(--color-primary)"
-          : "var(--color-text-secondary)",
-        borderBottom: active
-          ? "2px solid var(--color-primary)"
-          : "2px solid transparent",
-      }}
-    >
-      {label}
-    </button>
-  );
-}
-
-/* ============================================================
- * NotificationsSection — 알림 설정 서브 섹션
- *
- * 기존 /profile/notification-settings 페이지의 UI/로직을 그대로 이식.
- * (페이지 헤더 h1 "알림 설정"은 제거 — 허브 탭 라벨이 역할 대체)
- * ============================================================ */
-function NotificationsSection() {
-  const [settings, setSettings] = useState<Settings>(DEFAULT_NOTIFICATION_SETTINGS);
-  const [loading, setLoading] = useState(true);
-  // 현재 저장 중인 키 (낙관적 업데이트 중 disabled 처리용)
-  const [saving, setSaving] = useState<string | null>(null);
-
-  // 마운트 시 현재 설정 로드
   useEffect(() => {
-    fetch("/api/web/profile/notification-settings", { credentials: "include" })
-      .then(async (r) => {
-        if (r.ok) {
-          const data = await r.json();
-          setSettings(data.settings ?? DEFAULT_NOTIFICATION_SETTINGS);
+    let aborted = false;
+
+    // 두 GET 병렬. 신규 추가 fetch 0건 — 이미 시스템에 있던 라우트.
+    Promise.all([
+      fetch("/api/web/profile", { credentials: "include" })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
+      fetch("/api/web/profile/subscription", { credentials: "include" })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
+    ]).then(([profileData, subData]) => {
+      if (aborted) return;
+
+      // 1) profile 응답 파싱 — apiSuccess 가 snake_case 직렬화
+      if (profileData?.user) {
+        const u = profileData.user as Record<string, unknown>;
+        setUser({
+          email: (u.email as string | null) ?? null,
+          nickname: (u.nickname as string | null) ?? null,
+          name: (u.name as string | null) ?? null,
+          position: (u.position as string | null) ?? null,
+          height: (u.height as number | null) ?? null,
+          weight: (u.weight as number | null) ?? null,
+          city: (u.city as string | null) ?? null,
+          district: (u.district as string | null) ?? null,
+          birth_date: (u.birth_date as string | null) ?? null,
+          bio: (u.bio as string | null) ?? null,
+        });
+      }
+
+      // 2) subscription 응답 파싱 — 활성/유효한 구독 1건 추출
+      if (subData?.subscriptions && Array.isArray(subData.subscriptions)) {
+        type SubItem = {
+          plan: { name: string; price?: number | null };
+          status: string;
+          expires_at: string | null;
+          is_usable: boolean;
+        };
+        const items = subData.subscriptions as SubItem[];
+        // is_usable 인 것 중 가장 최근. 없으면 무료 플랜 표기.
+        const usable = items.find((s) => s.is_usable);
+        if (usable) {
+          const priceStr =
+            typeof usable.plan.price === "number"
+              ? `${formatKRW(usable.plan.price)}/월 · `
+              : "";
+          const ymd = formatYMD(usable.expires_at);
+          const caption = `${priceStr}${ymd ? `다음 결제 ${ymd}` : "활성 구독"}`;
+          setBilling({
+            plan_label: usable.plan.name,
+            next_billing_caption: caption,
+            is_paid_member: true,
+            payment_method_masked: null, // DB 미지원
+          });
+        } else {
+          setBilling({
+            plan_label: "BDR 베이직",
+            next_billing_caption: "무료 플랜 사용 중",
+            is_paid_member: false,
+            payment_method_masked: null,
+          });
         }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      } else {
+        setBilling({
+          plan_label: "BDR 베이직",
+          next_billing_caption: "무료 플랜 사용 중",
+          is_paid_member: false,
+          payment_method_masked: null,
+        });
+      }
+
+      setLoaded(true);
+    });
+
+    return () => {
+      aborted = true;
+    };
   }, []);
 
-  // 토글 클릭 → 낙관적 업데이트 → PATCH → 실패 시 롤백
-  const handleToggle = async (key: string) => {
-    const newValue = !settings[key];
-    setSettings((prev) => ({ ...prev, [key]: newValue }));
-    setSaving(key);
-    try {
-      const res = await fetch("/api/web/profile/notification-settings", {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [key]: newValue }),
-      });
-      if (!res.ok) {
-        setSettings((prev) => ({ ...prev, [key]: !newValue }));
-      }
-    } catch {
-      setSettings((prev) => ({ ...prev, [key]: !newValue }));
-    } finally {
-      setSaving(null);
-    }
-  };
+  // profile 섹션 저장 후 화면 동기화 (header email 등은 유지)
+  const handleProfileSaved = useCallback((next: ProfileFormUser) => {
+    setUser((prev) => (prev ? { ...prev, ...next } : prev));
+  }, []);
 
   return (
-    <div className="space-y-6">
-      {/* 설명 (기존 h1 대체) */}
-      <p
-        className="text-sm"
-        style={{ color: "var(--color-text-muted)" }}
-      >
-        받고 싶은 알림 유형을 선택해주세요
-      </p>
-
-      {/* 알림 유형별 토글 카드 */}
-      <div
-        className="overflow-hidden rounded-md"
-        style={{
-          backgroundColor: "var(--color-card)",
-          boxShadow: "var(--shadow-card)",
-        }}
-      >
-        {NOTIFICATION_TYPES.map((type, index) => (
-          <div
-            key={type.key}
-            className={`flex items-center justify-between px-5 py-4 ${
-              index < NOTIFICATION_TYPES.length - 1
-                ? "border-b border-[var(--color-border-subtle)]"
-                : ""
-            }`}
+    <div className="page" style={{ minHeight: "100vh" }}>
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 16px 80px" }}>
+        {/* ============== 페이지 헤더 (시안 eyebrow + h1 + 캡션) ============== */}
+        <div style={{ marginBottom: 20 }}>
+          <div className="eyebrow">설정 · SETTINGS</div>
+          <h1
+            style={{
+              margin: "6px 0 2px",
+              fontSize: 28,
+              fontWeight: 800,
+              letterSpacing: "-0.015em",
+            }}
           >
-            {/* 좌측: 아이콘 + 라벨 + 설명 */}
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md"
-                style={{ backgroundColor: "var(--color-surface)" }}
-              >
-                <span
-                  className="material-symbols-outlined text-xl"
-                  style={{ color: "var(--color-text-secondary)" }}
-                >
-                  {type.icon}
-                </span>
-              </div>
-              <div>
-                <p
-                  className="text-sm font-semibold"
-                  style={{ color: "var(--color-text-primary)" }}
-                >
-                  {type.label}
-                </p>
-                <p
-                  className="mt-0.5 text-xs"
-                  style={{ color: "var(--color-text-muted)" }}
-                >
-                  {type.description}
-                </p>
-              </div>
-            </div>
-
-            {/* 우측: 토글 스위치 */}
-            <button
-              onClick={() => handleToggle(type.key)}
-              disabled={loading || saving === type.key}
-              className="relative h-7 w-12 shrink-0 rounded-full transition-colors duration-200"
-              style={{
-                backgroundColor: settings[type.key]
-                  ? "var(--color-primary)"
-                  : "var(--color-border)",
-                opacity: loading ? 0.5 : 1,
-              }}
-              aria-label={`${type.label} ${settings[type.key] ? "끄기" : "켜기"}`}
-            >
-              <span
-                className="absolute top-0.5 block h-6 w-6 rounded-full bg-white shadow-sm transition-transform duration-200"
-                style={{
-                  transform: settings[type.key]
-                    ? "translateX(22px)"
-                    : "translateX(2px)",
-                }}
-              />
-            </button>
+            환경 설정
+          </h1>
+          <div style={{ fontSize: 13, color: "var(--ink-mute)" }}>
+            계정, 알림, 공개 범위를 관리합니다
           </div>
-        ))}
+        </div>
+
+        {/* ============== 좌측 sticky nav + 우측 카드 ============== */}
+        <div
+          style={{
+            display: "grid",
+            // 시안: 220 1fr. 모바일에서는 1열 스택.
+            gridTemplateColumns: "minmax(0, 1fr)",
+            gap: 24,
+            alignItems: "flex-start",
+          }}
+          className="settings-grid-v2"
+        >
+          <SettingsSideNavV2
+            activeSection={activeSection}
+            onSectionChange={handleSectionChange}
+          />
+
+          <div
+            className="card"
+            style={{ padding: "24px 28px", minWidth: 0 }}
+            // 우측 카드: 시안의 padding 24/28
+          >
+            {/* 비활성 섹션은 mount 안 함 → 불필요한 fetch/렌더 회피 */}
+            {activeSection === "account" && (
+              // user 가 아직 도착 안 했으면 자리 표시
+              <AccountSectionV2 user={loaded ? user : null} />
+            )}
+            {activeSection === "profile" && (
+              <ProfileSectionV2
+                user={loaded ? user : null}
+                onSaved={handleProfileSaved}
+              />
+            )}
+            {activeSection === "notify" && <NotifySectionV2 />}
+            {activeSection === "privacy" && <PrivacySectionV2 />}
+            {activeSection === "billing" && (
+              <BillingSectionV2 summary={loaded ? billing : null} />
+            )}
+            {activeSection === "danger" && <DangerSectionV2 />}
+          </div>
+        </div>
       </div>
 
-      {/* 하단 안내 문구 */}
-      <p
-        className="text-center text-xs"
-        style={{ color: "var(--color-text-disabled)" }}
-      >
-        웹 푸시를 꺼도 앱 내 알림은 정상적으로 수신됩니다
-      </p>
+      {/* ============== 반응형: 768px+ 에서 2열로 ============== */}
+      <style jsx>{`
+        @media (min-width: 768px) {
+          .settings-grid-v2 {
+            grid-template-columns: 220px minmax(0, 1fr);
+          }
+        }
+      `}</style>
     </div>
   );
 }
