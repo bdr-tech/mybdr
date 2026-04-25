@@ -130,6 +130,15 @@
 - 단체별 팀 수 집계 — series→teams 조인 쿼리. 카드는 series_count로 대체. **상세 Teams 탭은 빈 상태** ("준비 중 (집계 예정)")
 - 임원 직책 세분화 — 현재 organization_members.role 은 owner/admin/member 3종만. 시안 회장/부회장/총무/심판장 등으로 세분화 필요. Members 탭은 "주최자/운영진/멤버" 한국어 라벨로 fallback
 
+### Phase 3 TeamInvite (보류, 04-25)
+> v2 시안 205줄. mybdr 라우트/DB 모두 부재 → CourtBooking 시안과 동일 처리.
+- 시안 정체: 팀장이 사용자에게 초대 발송 → 사용자 수락 (Push 방향). 현재 mybdr은 사용자 신청 → 팀장 승인 (Pull 방향)이라 워크플로우 반대
+- DB 부재: `team_invites` 테이블, 초대 코드, 만료 cron, 알림 — 모두 신규 구축 필요
+- 비즈니스 결정 대기: "기존팀 자동 탈퇴 + 30일 재변경 불가" 같은 정책
+- 진행 조건: 정책 확정 + 별도 Phase 풀스택 구현 (스키마 + API 5+ + 페이지 + cron + 알림)
+- UI 시안: `Dev/design/BDR v2/screens/TeamInvite.jsx` 보존
+- 대안: `/teams/[id]/manage`에 "멤버 초대" 버튼만 disabled 추가 (소규모, 별도 작업으로 가능)
+
 ### 공통 처리 원칙
 - UI는 **배치만 하고 동작 없음** → `alert("준비 중인 기능입니다")` 또는 `disabled` + `title="준비 중"`
 - 빈 데이터는 "준비 중" 텍스트 + 회색 placeholder
