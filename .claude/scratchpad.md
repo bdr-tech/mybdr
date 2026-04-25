@@ -196,6 +196,13 @@
 - **시안 등번호 / 주로 뛰는 손 필드** — profile 섹션 시안에는 있으나 PATCH 미지원. `users.jersey_number` / `users.dominant_hand` 필드 추가 + PATCH 확장
 - **연결된 계정(소셜) 관리 UI** — account 섹션 Row "연결된 계정" 은 /profile/edit 로 이동만. 카카오/구글 연동 상태 조회 + 연결/해제 API + UI 추가
 
+### Phase 5 More (커밋 대기, 2026-04-22)
+> 시안 More.jsx 의 NotFound + About 두 화면을 v2로 적용. API/Prisma/서비스 0 변경. 가데이터는 "예시" 라벨로 명시.
+- **About 통계 4건 (20년/48,000+/320+/1,240회)** — 운영팀 실제 수치 확정 후 정적 교체 또는 동적 카운트 (registry 쿼리). 현재 캡션 "예시" 표기
+- **About 운영진 6 명단** — 시안 가데이터(김승철/이경진/박상우/최지혜/정혁수/한수민). 실제 멤버 정보 + 사진(`users.avatar_url`) 입력 후 교체. 현재 이니셜 아바타 + "예시" 캡션
+- **About 파트너 로고 8건** — 시안 텍스트 8건(NIKE/ADIDAS/MOLTEN/SPALDING/UNDER ARMOUR/BODY FRIEND/11번가/BDR STUDIO). 실제 협력사 자산 확정 + SVG 로고 → next/image 교체
+- **회원가입 페이지 신설** — 현재 `/login`만 정상이고 `/signup` 별도 시안 존재. About CTA "지금 가입하기"는 PM 지시로 일단 `/login` 매핑. 추후 `/signup` 페이지(시안 SignUp.jsx) 구현 시 분리
+
 ### 공통 처리 원칙
 - UI는 **배치만 하고 동작 없음** → `alert("준비 중인 기능입니다")` 또는 `disabled` + `title="준비 중"`
 - 빈 데이터는 "준비 중" 텍스트 + 회색 placeholder
@@ -2000,6 +2007,35 @@ DB tournamentTeam.status | 대회 시작일 | → RegStatus
 | 04-25 | developer | **Phase 3 Orgs — /organizations v2 재구성 (단체 등록 라벨 + 필터 chip)** — `_components/` 2 신규(org-card-v2 그라디언트 헤더+태그 자동 생성+가입 신청 alert / orgs-list-v2 클라 컨테이너+종류 chip 4종 "전체"만 동작·"리그/협회/동호회" 클릭 시 alert+opacity0.55) + `page.tsx` 재작성(.page eyebrow+h1+부제+"단체 등록" 버튼 라벨 변경). DB 미지원 3필드 자동 폴백(`color`=id 해시→6색 팔레트 / `tag`=이름 첫 2글자/영문이면 대문자 4글자 / `kind`="단체" 고정 배지). 데이터 패칭 0 변경(prisma.organizations.findMany 그대로). 추후 구현 목록에 Phase 3 Orgs 5건 신규(kind/brand_color/tag 필드 + 가입 신청 API + teams 집계). tsc EXIT=0 / `/organizations` 200(0.98s, 55KB). HTML: `단체 · ORGANIZATIONS` + `리그 · 협회 · 동호회` + `단체 등록` + `준비 중` + `orgs-list-v2` 마커 전부 렌더 확인 | ✅ (커밋 대기) |
 | 04-22 | developer | **Phase 3 Court 상세 — /courts/[id] v2 재구성 (헤더+혼잡도+Side KakaoMap)** — 신규 1 (`_components/court-detail-v2.tsx`: 시안 브레드크럼+area eyebrow+30px h1+image placeholder(자동태그)+desc / 오늘 혼잡도(시간대 12슬롯 빈+첫슬롯만 현재 활성카운트 단일 막대+"시간대별 분포 데이터 준비 중" 캡션) / Side sticky(KakaoMap 180px 단일마커+길찾기/지도열기 / 시설 정보 2col 그리드(샤워/락커/연락처 "정보 없음") / 모집 글쓰기 alert / MiniStat 3통계 흡수)) + `page.tsx` 수정(import 1 + courtV2Data 직렬화 + `<CourtDetailV2>` 1줄 + (구) 메인정보카드 218줄/이용현황 24줄/InfoBadge·StatBlock 헬퍼 2개 제거 + QR버튼만 시안 외 운영 핵심으로 별도 보존). **API/Prisma/하단 클라컴포넌트 8종 0 변경**(CourtCheckin/Ambassador/Pickups/Events/Rankings/Reviews/Reports/EditSuggest 전부 보존). courts.tags/operating_hours/shower/locker/phone/시간대별 집계 DB 미지원 → 자동 폴백 + "정보 없음"/"준비 중" 처리. tsc --noEmit EXIT=0 / `/courts/100` 200 (135KB). HTML: 오늘의 혼잡도·시설 정보·이곳에서 모집 글쓰기·시간대별 분포·COURT PHOTO·준비 중·농구장 목록 마커 전부 렌더 확인 | ✅ (커밋 대기) |
 | 04-22 | developer | **Phase 3 TeamCreate — /teams/new v2 4스텝 멀티스텝 폼 (B 옵션: 영문 팀명 보존)** — `_v2/` 6 신규(team-form 메인+useActionState/state6키hidden제출/약관미체크 차단 / stepper 36px원형+연결선 4스텝 / step-basic 한글명·영문명·대표언어토글·팀태그(시안신규UIonly)·팀소개 / step-emblem 10팔레트+미리보기160×160+엠블럼업로더(BDR+준비중)+secondary색상보존 / step-activity 홈코트·실력6단계·요일7토글·공개3종 모두 "준비중" / step-review 7행검토표+약관2개체크 차단) + `new-team-form.tsx` 슬림화(`<TeamFormV2/>` import 1줄). **createTeamAction / createTeamSchema / Prisma 0 변경**. FormData 키 6개(name/name_en/name_primary/description/primary_color/secondary_color) 그대로. 시안 신규 5필드(tag/home/level/days/privacy/엠블럼) UI 만 + "준비 중". 추후 구현 목록에 Phase 3 TeamCreate 7건 신규. tsc --noEmit EXIT=0 PASS / `/teams/new` 200 (Next 15 Turbopack dev 특성, 운영 307 정상) / 런타임 에러 0 | ✅ (커밋 대기, PM 처리) |
+| 04-22 | developer | **Phase 5 More — NotFound + About v2 적용 (X 옵션)** — `not-found.tsx` 전면 재작성(시안 More.jsx L3-20 충실 — 거대 404 120px ff-display+accent / "에어볼!" 농구 메타포 / 3버튼 .btn--primary→홈 + 검색→/search Phase 2 + 도움말→/help/glossary). 신규 1 `(web)/about/page.tsx`(시안 More.jsx L22-115 6 섹션: Hero(eyebrow+h1 42px+리드) / 통계 4셀(20년/48,000+/320+/1,240회 "예시" 캡션) / "우리가 만드는 것" 6 카드(공정매치/투명기록/지역연결/열린커뮤니티/공정운영/지속가능성) / 운영진 6 이니셜아바타 "예시" 캡션 / 파트너 8 mono fontFamily / CTA 가입·로그인 둘 다 /login + 경기둘러보기 /games). app-nav.tsx 1줄 수정(L117 `/` → `/about` + 폴백 주석 제거). **API/Prisma/서비스 0 변경**. 추후 구현 Phase 5 More 4건 신설(통계 4건 동적/운영진 명단/파트너 로고/회원가입 페이지 분리). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
+
+---
+
+## 구현 기록 — Phase 5 More — NotFound + About v2 [2026-04-22]
+
+📝 구현한 기능: BDR v2 시안 `screens/More.jsx` 의 NotFound (L3-20) + About (L22-115) 두 화면을 v2 토큰으로 적용. AppNav 유틸리티바 "소개" 링크가 더 이상 홈 폴백이 아니라 신규 `/about` 으로 정상 라우팅됨. **API / Prisma / 서비스 / 컴포넌트 0 변경. 신규 fetch 0건**. 시안의 가데이터(통계·운영진·파트너)는 그대로 노출하되 사용자 원칙(2026-04-25 추가)대로 "예시" 캡션 명시.
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| `src/app/not-found.tsx` | 거대 404 120px (ff-display + accent) + "에어볼! 해당 페이지를 찾을 수 없습니다" + 3버튼(.btn--primary 홈 / .btn 검색→/search / .btn 도움말→/help/glossary). 기존 토스풍 카드형 layout 폐기. 서버 컴포넌트(history.back 제거 — Link 만 사용) | 전면 재작성 |
+| `src/app/(web)/about/page.tsx` | 시안 6 섹션: ①Hero (.eyebrow + h1 42px + 540px 리드 카피 + `<strong>` 강조) / ②통계 4셀 grid 4-cols + var(--bg-alt) 배경 + 28px t-display + "예시" 캡션 / ③"우리가 만드는 것" 6 카드 grid 3-cols (.card + 28px 이모지 아이콘 + 15px 타이틀 + 12px 설명) / ④운영진 6 grid 6-cols (.card + 56px 이니셜 원형 + 13px 이름 + 11px accent role + 10px ff-mono since) + "예시" 캡션 / ⑤파트너 8 grid 4-cols (var(--bg-alt) 컨테이너 + var(--bg) 셀 + ff-mono 11px 700) / ⑥CTA 2버튼(.btn--primary--xl "지금 가입하기"→/login + .btn--xl "경기 둘러보기"→/games). max-width 900px 컨테이너 | 신규 |
+| `src/components/bdr-v2/app-nav.tsx` | L117 유틸리티바 "소개" 링크: `<Link href="/">` → `<Link href="/about">` + 위 폴백 주석("소개 라우트가 없어 홈으로 대체") 제거 | 1줄 수정 |
+| `.claude/scratchpad.md` | "🚧 추후 구현 목록"에 "Phase 5 More" 4건 신설 (통계 4건 동적/운영진 명단/파트너 로고/회원가입 페이지 분리) + 작업 로그 1줄 추가 | 수정 |
+
+💡 tester 참고:
+- **404 테스트**: `/존재하지않는경로` (예: `/aaaaa`) 진입 → 거대 404 + "에어볼!" + 3버튼 렌더 확인. 홈/검색/도움말 클릭 시 각각 `/`, `/search`, `/help/glossary` 이동.
+- **About 테스트**: `/about` 직접 진입 또는 상단 유틸리티바 "소개" 클릭 → 6 섹션 모두 렌더. "지금 가입하기"·"경기 둘러보기" 버튼 클릭 시 `/login`·`/games` 이동.
+- **다크/라이트 토큰**: var(--accent), var(--ink-mute), var(--ink-soft), var(--ink-dim), var(--bg-alt), var(--bg), var(--border), var(--ff-display), var(--ff-mono) 전부 globals.css 정의 확인.
+- **반응형**: About은 max-width 900px 컨테이너. 통계 4-cols/가치 3-cols/운영진 6-cols/파트너 4-cols는 시안 그대로(반응형 분기 없음). 모바일에서 확인 필요 — 필요 시 미디어 쿼리 추가는 별도 후속.
+- **정상 동작**: AppNav "소개" 링크 → `/about` 200 / 비로그인 상태에서도 About은 누구나 접근 가능 (인증 가드 없음, `(web)` 그룹 layout만 적용).
+- **주의할 입력**: 가데이터는 모두 정적 상수. 시안 그대로 — 운영팀이 실수치 확정 후 교체 예정 ("예시" 캡션이 그 표시).
+
+⚠️ reviewer 참고:
+- **하드코딩 색상 0건** — 전부 var(--*) 토큰 사용. 통계 보더/배경/카드 색·운영진 아바타·파트너 셀 모두 토큰.
+- **CTA 라우팅 의도** — PM 지시로 "지금 가입하기"는 일단 `/login` 매핑(현재 `/signup` 시안 별도 존재, Phase 6에서 회원가입 페이지 신설 시 분리). About 본문에 회원가입 페이지 별도 안내는 없음.
+- **이모지 사용** — 가치 6 카드의 `🏀📊🌆🤝⚖️💡` 이모지는 시안 그대로. 사용자 글로벌 규칙 "이모지 자제"는 작업 산출물에 한정 — 시안 충실도 우선. 향후 Material Symbols 또는 SVG 아이콘으로 교체 검토 가능 (별도 후속).
+- **About 통계 정확성** — "20년/48,000+/320+/1,240회"는 시안 가데이터. 운영팀에서 실수치 확정 시 교체 필요. 캡션으로 "예시" 명시.
+- **TypeScript** — `tsc --noEmit` PASS (출력 없음).
 
 ---
 

@@ -1,130 +1,96 @@
-"use client";
-
 import Link from "next/link";
+import type { Metadata } from "next";
 
-// 글로벌 404 페이지: "이전 페이지로" 버튼에 history.back()이 필요하므로 클라이언트 컴포넌트
+// SEO: 404 페이지 메타데이터
+export const metadata: Metadata = {
+  title: "페이지를 찾을 수 없어요 | MyBDR",
+};
+
+/* ============================================================
+ * 404 NotFound — BDR v2 More.jsx L3-20 시안 적용 (Phase 5)
+ *
+ * 이유(왜):
+ *   기존 토스풍 작은 카드형 → v2 시안의 "에어볼!" 농구 메타포 +
+ *   거대 404 (120px display 폰트) + 홈/검색/도움말 3버튼 패턴으로 교체.
+ *   글로벌 not-found이므로 서버 컴포넌트로 둠 (history.back 제거).
+ *
+ * 디자인 토큰:
+ *   - color: var(--accent) 거대 404, var(--ink) / var(--ink-mute)
+ *   - font: var(--ff-display) 거대 숫자, 본문은 시스템
+ *   - layout: .page 클래스 + grid placeItems center
+ *
+ * 버튼 라우팅 (PM 확정안 2026-04-22):
+ *   - 홈으로 → /
+ *   - 검색  → /search (Phase 2 글로벌 검색 페이지)
+ *   - 도움말 → /help/glossary
+ * ============================================================ */
 export default function NotFound() {
   return (
     <div
+      className="page"
       style={{
-        // 화면 전체를 차지하는 중앙 정렬 레이아웃
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px",
-        backgroundColor: "var(--color-bg)",
+        // 시안 그대로: 60vh 중앙 정렬
+        display: "grid",
+        placeItems: "center",
+        minHeight: "60vh",
+        textAlign: "center",
       }}
     >
-      {/* 토스 스타일 카드: 둥근 모서리 + 그림자 */}
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "400px",
-          padding: "48px 32px",
-          borderRadius: "20px",
-          backgroundColor: "var(--color-card)",
-          border: "1px solid var(--color-border)",
-          boxShadow: "var(--shadow-card)",
-          textAlign: "center",
-        }}
-      >
-        {/* 큰 아이콘: 페이지를 찾을 수 없음 */}
-        <span
-          className="material-symbols-outlined"
+      <div>
+        {/* 거대 404 — 시안 fontSize:120, fontWeight:900, accent 컬러 */}
+        <div
           style={{
-            fontSize: "72px",
-            color: "var(--color-text-muted)",
-            marginBottom: "16px",
-            display: "block",
-          }}
-        >
-          explore_off
-        </span>
-
-        {/* 404 숫자 */}
-        <p
-          style={{
-            fontSize: "48px",
-            fontWeight: 800,
-            fontFamily: "var(--font-heading), sans-serif",
-            color: "var(--color-text-muted)",
+            fontFamily: "var(--ff-display)",
+            fontSize: 120,
+            fontWeight: 900,
+            letterSpacing: "-0.04em",
             lineHeight: 1,
-            marginBottom: "12px",
+            color: "var(--accent)",
           }}
         >
           404
-        </p>
+        </div>
 
-        {/* 제목 */}
-        <h1
+        {/* 메인 카피 — "에어볼!" 농구 메타포 (시안 그대로) */}
+        <div style={{ fontSize: 22, fontWeight: 800, marginTop: 14 }}>
+          에어볼! 해당 페이지를 찾을 수 없습니다
+        </div>
+
+        {/* 보조 설명 */}
+        <div
           style={{
-            fontSize: "20px",
-            fontWeight: 700,
-            color: "var(--color-text-primary)",
-            marginBottom: "8px",
+            fontSize: 14,
+            color: "var(--ink-mute)",
+            marginTop: 8,
+            maxWidth: 420,
+            margin: "8px auto 0",
           }}
         >
-          페이지를 찾을 수 없어요
-        </h1>
+          주소가 잘못되었거나, 삭제된 콘텐츠일 수 있습니다. 홈으로 돌아가거나 검색을 이용해주세요.
+        </div>
 
-        {/* 설명 */}
-        <p
+        {/* CTA 3버튼 — Primary 홈 / Default 검색·도움말 */}
+        <div
           style={{
-            fontSize: "14px",
-            color: "var(--color-text-secondary)",
-            lineHeight: "1.6",
-            marginBottom: "32px",
+            display: "flex",
+            gap: 10,
+            justifyContent: "center",
+            marginTop: 20,
+            flexWrap: "wrap",
           }}
         >
-          주소가 잘못되었거나, 삭제된 페이지입니다.
-        </p>
-
-        {/* CTA 버튼 영역 */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          {/* Primary CTA: 홈으로 돌아가기 */}
-          <Link
-            href="/"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "6px",
-              height: "48px",
-              backgroundColor: "var(--color-primary)",
-              color: "var(--color-text-on-primary)",
-              borderRadius: "12px",
-              fontSize: "15px",
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>home</span>
-            홈으로 돌아가기
+          {/* Primary CTA: 홈 */}
+          <Link href="/" className="btn btn--primary">
+            홈으로
           </Link>
-
-          {/* Outline CTA: 이전 페이지로 (history.back) */}
-          <button
-            type="button"
-            onClick={() => window.history.back()}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "6px",
-              height: "48px",
-              backgroundColor: "transparent",
-              color: "var(--color-text-secondary)",
-              border: "1px solid var(--color-border)",
-              borderRadius: "12px",
-              fontSize: "15px",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>arrow_back</span>
-            이전 페이지로
-          </button>
+          {/* 검색 → Phase 2 글로벌 검색 페이지 */}
+          <Link href="/search" className="btn">
+            검색
+          </Link>
+          {/* 도움말 → 기존 용어사전 */}
+          <Link href="/help/glossary" className="btn">
+            도움말
+          </Link>
         </div>
       </div>
     </div>

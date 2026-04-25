@@ -113,8 +113,7 @@ export function AppNav({ user, unreadCount }: AppNavProps) {
         <div className="app-nav__utility-inner">
           <span>MyBDR 커뮤니티</span>
           <span className="sep" />
-          {/* 소개 라우트가 없어 홈으로 대체 */}
-          <Link href="/">소개</Link>
+          <Link href="/about">소개</Link>
           <span className="sep" />
           <Link href="/pricing">요금제</Link>
           <span className="sep" />
