@@ -244,6 +244,15 @@
 - **사진 라이트박스/캐러셀** — 시안 "📷 사진 N장" 표기만. 현재 photos JSON 카운트만 노출. court_reviews.photos URL 배열을 클릭 시 라이트박스로 펼치는 컴포넌트 도입 (court_reviews/[id] 상세 또는 모달)
 - **리뷰 페이지네이션** — 현재 60건 take 한계. 무한 스크롤 또는 페이지네이션 (Phase 5 Reviews 트래픽 증가 시 도입)
 
+### Phase 6 Pricing (커밋 대기, 2026-04-22)
+> 시안 Pricing.jsx 박제(FREE/BDR+/PRO 3종 등급 모델). 기존 plans 테이블은 feature_key 4종(team_create/pickup_game/court_rental/tournament_create)을 1회/월간 단위 결제로 운영 — 시안의 등급 모델과 구조가 다름. 시안 박제 + 모든 CTA `alert("준비 중")` + /pricing/checkout 라우트 자체는 보존(소스 0 변경) 결정. tier 등급제 도입 시 본 항목 일괄 처리.
+- **plans 등급 모델 도입** — 시안 FREE/BDR+/PRO 3종을 plans.tier enum 으로 추가하거나 별도 `plan_tiers` 테이블 신설. 현재 plans 는 feature_key 단건 결제(team_create 등). 등급 = 여러 feature_key 를 패키지로 묶은 상위 모델. user_subscriptions 도 tier_id 컬럼 추가 필요
+- **yearly/monthly 가격 분기 동작** — 시안 토글 시 BDR+ 가 ₩4,900 → ₩3,900 으로 변경(연간 2개월 할인). 현재 토글은 UI 표시만 — 실제 결제 진입점에 cycle 파라미터 전달해야 함. plans 테이블에 `yearly_price` 컬럼 또는 `plan_id_yearly` 별도 row
+- **BDR+/PRO CTA 결제 진입점 연결** — 현재 모든 CTA `alert("준비 중")`. /pricing/checkout 라우트 + 토스페이먼츠 흐름은 살아있으므로, tier 모델 도입 후 `/pricing/checkout?tier=plus&cycle=yearly` 형태로 라우팅 + payment confirm 단에서 user_subscriptions 발급 분기
+- **feature_key 4종 결제 진입점 통합** — 기존 4종(team_create / pickup_game / court_rental / tournament_create)은 시안 등급 모델로는 BDR+/PRO 에 포함된 기능(팀 3개·코트 대관·대회 생성). 마이그레이션 전략: ①신규 등급제로 통합 후 기존 4종 결제는 deprecate ②또는 두 모델 병행(등급=구독, feature_key=일회성) ③또는 기존 4종 → BDR+/PRO 패키지 자동 매핑. PM 결정 필요
+- **"가장 인기" 강조 처리 동적화** — 시안 BDR+ 카드 highlight=true 박제. 추후 plans 테이블에 `is_recommended` 컬럼 추가 시 동적 분기 가능
+- **결제 문의 메일 → 1:1 문의 모달 전환** — 현재 푸터 mailto:bdr.wonyoung@gmail.com 박제. Phase 6 Help 의 inquiries 모델 도입 시 통합
+
 ### 공통 처리 원칙
 - UI는 **배치만 하고 동작 없음** → `alert("준비 중인 기능입니다")` 또는 `disabled` + `title="준비 중"`
 - 빈 데이터는 "준비 중" 텍스트 + 회색 placeholder
@@ -2031,6 +2040,7 @@ DB tournamentTeam.status | 대회 시작일 | → RegStatus
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-22 | developer | **Phase 6 Pricing — /pricing v2 시안 박제 (server wrapper + client content 분리)** — 1전면재작성(`(web)/pricing/page.tsx` server wrapper 슬림화: metadata + revalidate=300 보존, prisma/getWebSession/feature_key 4종 카드 전부 제거, `<PricingContent/>` 단일 호출) + 1신규(`(web)/pricing/_v2/pricing-content.tsx` "use client" useState<"monthly"\|"yearly"> 시안 Pricing.jsx 90줄 박제 — 헤더 eyebrow+h1 36px+부제+theme-switch 월간/연간 토글(연간=2개월 할인 ok색) + 카드 3종(FREE/BDR+/PRO) extras-data.jsx PRICING 박제: highlight 카드 BDR+ 만 translateY(-8px)+2px accent border+sh-lg+상단 "가장 인기" 라운드 뱃지 / 가격 ff-display 40px / 연간 토글 시 BDR+ 만 ₩4,900→₩3,900 분기(시안 L42 동작) / btn--accent btn--xl CTA / 기능 ✓ 6항목 list / 비교표 7행 .board 4열(기능/FREE/BDR+/PRO) BDR+ 컬럼 ○ 시 accent / 결제 문의 mailto 푸터). **결정 B: 모든 CTA `alert("준비 중입니다.")` — /pricing/checkout 라우트 자체는 0 변경(소스 보존). 결정 C: 시안 그대로 박제(기존 plans/user_subscriptions 동적 데이터 0 활용)**. 카페 세션 무관. 기존 FAQ 3건 / 광고 문의 박스 제거(Help로 통합됨). globals.css `.page/.card/.btn/.btn--accent/.btn--xl/.theme-switch/.theme-switch__btn/.eyebrow/.board/.board__head/.board__row` + 변수 `--accent/--ok/--ink/--ink-mute/--ink-dim/--ink-soft/--ff-display/--sh-lg` 전부 기존 정의 활용. 추후 구현 Phase 6 Pricing 6건 신설(plans 등급 모델 / yearly_price 분기 / BDR+·PRO 결제 진입점 연결 / feature_key 4종 통합 마이그레이션 / is_recommended 동적 / 결제 문의 → inquiries 모달). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
 | 04-22 | developer | **Phase 6 Help — /help v2 신규 (시안 86줄 박제 + 탭 3종 + 검색 + 정책 6카드 + 1:1 문의)** — 신규 1 (`src/app/(web)/help/page.tsx` "use client" useState tab/q + 헤더(eyebrow+h1 32px+검색 input padding-left:38 Material Symbols search 아이콘) + 탭 3종(faq/glossary/policy) cafe-blue 3px 하단 라인 + FAQ 6건 시안 박제 `<details>` 아코디언 Q번호 accent+mono + 용어집 16건 시안 박제 200/1fr 그리드 + GLOSSARY 검색 필터(term/desc 부분일치 toLowerCase) + 결과 0건 안내 + "전체 용어 사전 보기 →" Link `/help/glossary` + 정책 6카드 1fr 1fr 그리드(terms/privacy 활성 Link, 운영정책/환불/광고제휴/저작권 4종 비활성 opacity 0.55 + "준비 중" badge bg-alt) + 하단 1:1 문의 카드 mailto:bdrbasket@gmail.com?subject=%5BMyBDR%20문의%5D btn--primary). **API/Prisma/서비스 0 변경. 신규 fetch 0건. 기존 /help/glossary 0 변경**(링크만 연결). 카페 세션 무관. globals.css `.page/.card/.input/.btn/.btn--primary/.eyebrow` + 변수 `--cafe-blue/--ink/--ink-soft/--ink-mute/--ink-dim/--accent/--border/--bg-alt/--ff-mono` 전부 기존 정의 활용. 추후 구현 Phase 6 Help 4건 신설(FAQ DB 박제→운영자 편집 / 1:1 문의 Inquiry 모델+답변 워크플로 / 운영정책·환불·광고제휴·저작권 정책 페이지 / FAQ 검색 — 현재 GLOSSARY만 검색). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
 | 04-22 | developer | **Phase 5 Achievements — /profile/achievements v2 신규 (시안 16종 배지 그리드 + 필터 + 최근4 + 정적 카탈로그)** — 신규 3 (`achievements/_v2/badge-catalog.ts` 16+12종 카탈로그(BadgeMeta tier/category/icon/desc/name) + TIER_COLOR/TIER_LABEL/CATEGORY_LABEL 상수 + resolveBadgeMeta() 폴백(bronze/milestone/🏅) + SIGNATURE_ORDER 시안 16키 순서 / `achievements/_v2/achievements-content.tsx` "use client" useState filter + Breadcrumb(홈›프로필›업적) + Header 통계 3셀(획득/전체/달성률) + 최근획득 4셀 카드(borderLeft tier색) + 필터칩 8개(전체/획득/진행중/경기/팀/커뮤니티/시즌/마일스톤) + 4열 배지 그리드(tier 라벨우상단/이모지48px/잠금시🔒+grayscale/desc 32px minHeight/획득시✓날짜+상위 —, 미획득시 0%바+0/— title="측정 준비 중") / `achievements/page.tsx` 서버컴포넌트 force-dynamic + getWebSession + 비로그인 안내(person_off) + prisma.user_badges.findMany earned_at desc + BigInt→string + Date→ISO 직렬화 + AchievementsContent 렌더). **API/Prisma/서비스 0 변경. 신규 fetch 0건**. 카페 세션 무관. 시안 16종 SIGNATURE_ORDER 우선 + DB 발급 시안외 배지(court_explorer/streak/mvp 등) 끝에 추가. DB 미지원 메타(rarity/progress/total) 전부 "—" / "0 / —" / 0% 폴백 + var(--ink-dim) 약하게. 추후 구현 Phase 5 Achievements 4건 신설(rarity 측정 cron / user_badges_progress 테이블 / 자동 발급 트리거 / badge_definitions DB화). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
 | 04-22 | developer | **Phase 5 Settings — /profile/settings v2 6 섹션 재구성 (시안 옵션 A: 인라인 9필드 폼)** — 신규 8 (`_components_v2/section-key.ts` SectionKey 유니언 + resolveSection 폴백 / `settings-side-nav-v2.tsx` 220px sticky 6 버튼 nav(Material Symbols person/sports_basketball/notifications/lock/credit_card/warning) / `settings-ui.tsx` 공용 SettingsHeader+SettingsRow+SettingsToggle (토큰 var(--*) 전용·하드코딩 색 0) / `account-section-v2.tsx` 5행 Row(이메일·비밀번호 동작 + 연결된 계정·2FA·로그인기기 disabled) / `profile-section-v2.tsx` **시안 인라인 9필드 폼**(닉네임 2~20 검증 / 실명 / 포지션 / 키 / 몸무게 / 도시 / 활동지역구 / 생년월일 / 자기소개) + PATCH `/api/web/profile` 호출 + 낙관적 onSaved 콜백 / `notify-section-v2.tsx` 5 동작 토글(push/game/community/team/tournament) + 4 disabled(이메일·D-3·좋아요·마케팅) + 낙관적 PATCH 롤백 / `privacy-section-v2.tsx` 5 disabled "준비 중" 토글 / `billing-section-v2.tsx` 시안 그라디언트 카드(유료=cafe-blue, 무료=alt) + 4행 Row(결제수단/결제내역→/profile/payments/세금계산서/구독관리→/profile/subscription) + 하단 2버튼(플랜변경→/pricing / 구독취소) / `danger-section-v2.tsx` 3 카드(데이터내보내기·비활성화 disabled / 계정삭제 inline 비밀번호 모달 → DELETE `/api/web/auth/withdraw`)) + 1 전면재작성 (`page.tsx` `?section=`/`?tab=` 폴백 + 좌 sticky nav + 우 카드 + GET /api/web/profile + GET /api/web/profile/subscription 병렬 마운트 fetch / 비활성 섹션 unmount). **API route.ts / Prisma / 서비스 / 컴포넌트 0 변경. 신규 fetch 0건** (활용: profile/notification-settings/subscription/auth/withdraw 전부 기존 라우트). 기존 6 페이지(notification-settings/preferences/payments/subscription/billing/edit) 삭제 0. 추후 구현 Phase 5 Settings 11건 신설(2FA/세션 관리/이메일 알림/D-3·좋아요·마케팅/privacy 5 토글 JSONB/GDPR ZIP/soft deactivate/PG 카드 토큰/세금계산서 자동/jersey_number+dominant_hand/소셜 연동 UI). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
@@ -2595,4 +2605,54 @@ DB tournamentTeam.status | 대회 시작일 | → RegStatus
 2. **1:1 문의 모델**: `inquiries` 테이블 (사용자/제목/본문/상태/답변) + 운영자 답변 워크플로 + 사용자 알림
 3. **정책 페이지 4종 신설**: `/operating-policy`, `/refund-policy`, `/advertising-inquiry`, `/copyright` (현재는 "준비 중" 배지)
 4. **FAQ 검색**: 현재 GLOSSARY만 검색. FAQ q/a 동시 검색 + 통합 검색(FAQ + 용어 결합) 검토
+
+---
+
+## 구현 기록 — Phase 6 Pricing [2026-04-22]
+
+📝 구현한 기능: `/pricing` 페이지 BDR v2 시안 박제(FREE/BDR+/PRO 3종 + 월간/연간 토글 + 비교표 7행). server wrapper(metadata 보존) + client content(useState 토글) 분리. 모든 CTA `alert("준비 중")`. /pricing/checkout 라우트 0 변경.
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| `src/app/(web)/pricing/page.tsx` | 전면 재작성. **server wrapper 로 슬림화** — metadata+revalidate 보존, prisma/getWebSession/feature_key 4종 카드/FAQ/광고 문의 전부 제거. `<PricingContent/>` 단일 호출 | 수정(전면 재작성) |
+| `src/app/(web)/pricing/_v2/pricing-content.tsx` | "use client" useState<"monthly"\|"yearly">. 시안 Pricing.jsx 90줄 박제 — 헤더(eyebrow+h1 36px+부제) + theme-switch 월간/연간 토글(연간=2개월 할인 ok색) + 카드 3종(FREE/BDR+/PRO) PRICING 상수 박제(BDR+ highlight + translateY-8px + 2px accent border + sh-lg + "가장 인기" 라운드 뱃지) + 연간 토글 시 BDR+ 만 ₩4,900→₩3,900 분기(시안 L42 동작) + 기능 ✓ list + 비교표 7행 `.board` 4열 + 결제 문의 mailto 푸터 | 신규 |
+| `src/app/(web)/pricing/checkout/page.tsx` | 0 변경 (보존) | — |
+
+💡 tester 참고:
+- **테스트 URL**: `http://localhost:3001/pricing`
+- **시안 비교**: `Dev/design/BDR v2/screens/Pricing.jsx` (90줄)
+- **정상 동작**:
+  1. 메타데이터: HTML `<title>` "요금제 \| MyBDR" 노출 (server wrapper 보존)
+  2. 헤더: `eyebrow` "요금제 · PRICING" + h1 36px ("더 자주 뛰는 사람들을 위한 BDR+" — BDR+ 만 var(--accent) 강조) + 부제 1줄
+  3. **월간/연간 토글**: 클릭 시 `data-active="true"` 전환 + BDR+ 가격만 ₩4,900 ↔ ₩3,900 변경. FREE / PRO 가격은 고정
+  4. 카드 3종: FREE(highlight=false 평면) / BDR+(highlight=true 4px translateY 위로 + 2px accent border + 상단 "가장 인기" 둥근 뱃지) / PRO(평면). 가격은 ff-display 40px + 900 weight
+  5. 모든 ✓ 마크: BDR+ 카드는 var(--accent) 빨강, FREE/PRO 카드는 var(--ok) 초록
+  6. **모든 CTA 버튼 클릭 시**: `alert("준비 중입니다.")` 표시. 페이지 이동 X.
+     - FREE "지금 시작" / BDR+ "14일 무료 체험" / PRO "문의하기"
+  7. 비교표 7행 (`.board`): 기능 / FREE / BDR+ / PRO 4컬럼. BDR+ 컬럼 ○ 셀은 var(--accent) 빨강 강조
+  8. 푸터: `bdr.wonyoung@gmail.com` mailto 링크 클릭 시 메일 클라이언트 호출
+  9. **다크 모드**: var(--*) 토큰 자동 대응 (border-strong 2px / accent-soft 등 다크 페어 작동)
+- **주의 입력**:
+  - `/pricing/checkout?planId=X` 직접 URL 입력 시: 기존 결제 플로우 그대로 작동 (라우트 보존). 단, /pricing 페이지에서 진입할 방법이 alert 차단되어 사실상 비활성
+  - 비로그인 / 로그인 두 상태 모두 동일 화면 (세션 분기 없음)
+  - 기존 user_subscriptions "구독 중" 배지 표시 X (시안 박제로 동적 데이터 비활용)
+- **tsc --noEmit 통과 확인** (EXIT=0)
+
+⚠️ reviewer 참고:
+- **server wrapper / client content 분리 패턴**: Awards / Reviews / Saved / Achievements 등 다른 v2 페이지와 동일한 패턴. metadata export 유지 + useState 인터랙션 클라 분리.
+- **시안 충실도**: Pricing.jsx 90줄 1:1 박제. setRoute prop 제거 / `Icon` 제거 (시안 외 사용 안함) / yearlyPrice 필드만 시안 L42 inline 분기를 명시적 데이터로 추출 (가독성).
+- **인라인 style vs Tailwind**: 시안이 인라인 style을 쓰고 globals.css의 `.card/.btn/.btn--accent/.btn--xl/.theme-switch/.eyebrow/.board` 클래스가 BDR v2 토큰 기반 — 일관성을 위해 시안 그대로 인라인 style 유지(Login·Help·BoardList 등 다른 v2 페이지와 동일 패턴).
+- **결정 B 처리**: alert 단일 함수 `handleCta` 로 통합. 추후 tier 결제 진입점 연결 시 이 함수만 교체하면 됨. /pricing/checkout 라우트는 살아있으나 진입점만 차단 — 토스페이먼츠 흐름 / payments 테이블 / user_subscriptions 발급 0 영향.
+- **결정 C 처리**: 기존 page.tsx 의 동적 plans/subscribedFeatures 쿼리 제거. 시안의 등급 모델(FREE/BDR+/PRO)은 현재 plans 의 feature_key 모델(team_create/pickup_game/court_rental/tournament_create)과 구조가 달라 동적 매핑 불가. tier 모델 도입(추후 구현 #1) 시 동적 데이터 복원.
+- **이미지/이모지**: 시안 그대로 ✓ 텍스트 마크 사용 (CLAUDE.md "lucide-react 금지" + Material Symbols Outlined 컨벤션 무관 — Material Symbols 도입 검토 가능하나 시안 충실도 우선).
+- **다크모드**: 모든 색상 var(--*) 토큰 사용으로 자동 대응 (accent / accent-soft / ink-* / ok / sh-lg 다크 페어 globals.css 에 정의됨).
+- **추후 구현 신설**: Phase 6 Pricing 6건(plans 등급 모델 / yearly_price 분기 / BDR+·PRO 결제 진입점 / feature_key 4종 통합 마이그레이션 / is_recommended 동적 / 결제 문의 inquiries 모달).
+
+🚧 추후 구현 — Phase 6 Pricing (PM 의뢰 기록):
+1. **plans 등급 모델**: FREE/BDR+/PRO 3종을 plans.tier enum 또는 plan_tiers 테이블 신설. user_subscriptions.tier_id 컬럼 추가
+2. **yearly/monthly 가격 분기 동작**: plans.yearly_price 또는 plan_id_yearly 별도 row + cycle 파라미터 결제 진입점 전달
+3. **BDR+/PRO CTA 결제 진입점 연결**: `/pricing/checkout?tier=plus&cycle=yearly` 라우팅 + confirm 단에서 user_subscriptions 발급 분기
+4. **feature_key 4종 통합 마이그레이션**: 기존 4종(team_create/pickup_game/court_rental/tournament_create) ↔ 등급 모델(BDR+/PRO 패키지) 통합. PM 결정 필요 (deprecate / 병행 / 자동 매핑)
+5. **is_recommended 동적 처리**: 현재 BDR+ highlight=true 박제. plans.is_recommended 컬럼 추가 시 동적 분기
+6. **결제 문의 mailto → inquiries 모달**: Phase 6 Help inquiries 모델 도입 시 통합
 
