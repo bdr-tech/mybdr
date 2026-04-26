@@ -2040,6 +2040,7 @@ DB tournamentTeam.status | 대회 시작일 | → RegStatus
 ## 작업 로그 (최근 10건)
 | 날짜 | 담당 | 작업 | 결과 |
 |------|------|------|------|
+| 04-27 | developer | **Phase 7 이모지 정책 점검 + 최종 tsc 통과** — PM 지시("시안 인라인 이모지 그대로 박제, Material Symbols 강제 변환 X") 따라 TournamentEnroll(★ 시안 더미 컬럼 미사용, 💡 enroll-step-docs L133, ⚠️ page.tsx L1275 박제 확인) + GuestApps(⚡🎯🏆📅📍💳 박제 확인 + 주석 명시 L221) 양쪽 모두 시안 충실 박제 일관성 유지. 코드 수정 0. tsc --noEmit EXIT=0. | ✅ (커밋 금지 — PM 처리) |
 | 04-27 | developer | **Phase 7-1 TournamentEnroll v2 박제** — `/tournaments/[id]/join` 전면 재작성 + `_v2/` 4 신규(enroll-poster/enroll-stepper/enroll-aside/enroll-step-docs). API/Prisma 0 변경, 보존 9건(팀선택/대표자/디비전/유니폼/선수/카테고리/입금계좌/완료/대기) 동작 유지, 5-step(hasCategories=true)/4-step adaptive, 서류 step "준비 중" 박제, 결제 step 입금 안내 흐름 유지(토스 미연결), 우측 sticky aside(포스터 placeholder + D-카운터 정적 + 환불 정책 mock). tsc --noEmit EXIT=0. | ✅ (커밋 대기, PM 처리) |
 | 04-27 | developer | **Phase 6 Pricing 1차 수정 — /pricing/checkout v2 정렬 (PM 미해결 4건 일괄)** — 1파일 전면 수정(`src/app/(web)/pricing/checkout/page.tsx`). ①breadcrumb 추가(홈›요금제›결제, `@/components/shared/breadcrumb`) ②약관 4종 라벨 카드(결제 대행/개인정보 제3자/구독·환불 정책/마케팅 선택, UI 박제 — 결제 차단 X) ③`/api/web/me` useEffect fetch 후 email·이름 readOnly input 노출(빈 값 placeholder "(미등록)" + var(--ink-dim), 실패 시 무시) ④plan_type 라벨 기존 그대로(monthly→"월 구독 (30일)", 그 외→"1회 구매") ⑤loading/error/Suspense fallback 모두 v2 spinner(`var(--accent)`)+`.card` 정렬(기존 tailwind --color-* alias 제거). **토스 SDK `toss.requestPayment({ method, amount, orderId, orderName, successUrl, failUrl, customerEmail, customerName })` 인자 한 글자도 변경 X**. handlePay 흐름·SDK 로드 useEffect·planId 가드·router·useSearchParams 보존. tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
 | 04-22 | developer | **Phase 6 Pricing — /pricing v2 시안 박제 (server wrapper + client content 분리)** — 1전면재작성(`(web)/pricing/page.tsx` server wrapper 슬림화: metadata + revalidate=300 보존, prisma/getWebSession/feature_key 4종 카드 전부 제거, `<PricingContent/>` 단일 호출) + 1신규(`(web)/pricing/_v2/pricing-content.tsx` "use client" useState<"monthly"\|"yearly"> 시안 Pricing.jsx 90줄 박제 — 헤더 eyebrow+h1 36px+부제+theme-switch 월간/연간 토글(연간=2개월 할인 ok색) + 카드 3종(FREE/BDR+/PRO) extras-data.jsx PRICING 박제: highlight 카드 BDR+ 만 translateY(-8px)+2px accent border+sh-lg+상단 "가장 인기" 라운드 뱃지 / 가격 ff-display 40px / 연간 토글 시 BDR+ 만 ₩4,900→₩3,900 분기(시안 L42 동작) / btn--accent btn--xl CTA / 기능 ✓ 6항목 list / 비교표 7행 .board 4열(기능/FREE/BDR+/PRO) BDR+ 컬럼 ○ 시 accent / 결제 문의 mailto 푸터). **결정 B: 모든 CTA `alert("준비 중입니다.")` — /pricing/checkout 라우트 자체는 0 변경(소스 보존). 결정 C: 시안 그대로 박제(기존 plans/user_subscriptions 동적 데이터 0 활용)**. 카페 세션 무관. 기존 FAQ 3건 / 광고 문의 박스 제거(Help로 통합됨). globals.css `.page/.card/.btn/.btn--accent/.btn--xl/.theme-switch/.theme-switch__btn/.eyebrow/.board/.board__head/.board__row` + 변수 `--accent/--ok/--ink/--ink-mute/--ink-dim/--ink-soft/--ff-display/--sh-lg` 전부 기존 정의 활용. 추후 구현 Phase 6 Pricing 6건 신설(plans 등급 모델 / yearly_price 분기 / BDR+·PRO 결제 진입점 연결 / feature_key 4종 통합 마이그레이션 / is_recommended 동적 / 결제 문의 → inquiries 모달). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
@@ -2067,7 +2068,6 @@ DB tournamentTeam.status | 대회 시작일 | → RegStatus
 | 04-22 | developer | **Phase 5 Reviews — /reviews v2 신규 (C안 Saved 패턴 응용 + 4탭 분리, 글로벌 톱레벨)** — 신규 2 (`reviews/page.tsx` 서버 컴포넌트 force-dynamic + 비로그인 허용(공개 콘텐츠) + `prisma.court_reviews.findMany({where:{status:"published"}, include:{court_infos:select(id/name/city/district/address) + users:select(id/nickname/name)}, orderBy:{created_at:"desc"}, take:60})` + splitTitleBody(content) "첫 줄=title 나머지=body, 60자 초과 한 줄은 50자 컷+'…'" + countPhotos(JSON 배열 길이) + targetSub city+district→address 폴백 + author=nickname→name→"익명" 폴백 + authorLevel="L.—" placeholder + likes=helpful=likes_count 매핑(helpful_count 컬럼 분리 전) + verified=is_checkin + BigInt→string + Date→ISO 직렬화 / `reviews/_v2/reviews-content.tsx` "use client" useState<TabId>("all")+useState<SortId>("recent") + 4탭(전체/대회/코트/팀/심판, court 만 실데이터) + 정렬 3종(최신/별점/도움) + 시안 Reviews.jsx 충실: ①Breadcrumb(홈›리뷰) ②Header 2열 그리드 minmax(0,1fr) 360px(좌:eyebrow+h1 32px+부제 / 우:요약 카드 평균별점 44px ff-display+StarRow+ "{total}개 리뷰 · 인증 {verified}"+5★~1★ 분포바 grid 20px/1fr/32px, 4-5★=ok/3★=accent/1-2★=err) ③Controls 카드 좌:타입 5버튼 chip(active=btn--primary, count opacity 0.7 ff-mono) 우:정렬 select+"+ 리뷰 쓰기" disabled "코트 상세 페이지에서…" ④카드 grid 180px/1fr/auto: 좌(코트 상세 Link → `/courts/{courtId}` + 시안 typeColor.court=cafe-blue 라벨 + 코트명 + targetSub mono) 중(StarRow 14px + b 제목 15px + 본문 5줄 line-clamp + 📷 사진 N장 + 작성자 b/L.— 뱃지/날짜 mono) 우(👍 도움됨 + 🚩 신고 transparent + ♥ likes — 모두 disabled "준비 중") ⑤미지원 3탭(대회/팀/심판) construction 48px + "리뷰 시스템 준비 중" + 탭별 메시지 ⑥coiurts 0건(rate_review 48px) "아직 등록된 코트 리뷰가 없습니다"). **API route.ts / Prisma 스키마 / 서비스 0 변경. 신규 fetch 0건**. 카페 세션 무관. 비로그인도 열람 가능(공개). status='published' 만 노출. `eyebrow/badge--ok/badge--soft/btn--primary/btn--accent/btn--sm/input/card/badge--ok` 기존 globals.css 정의 활용. 추후 구현 Phase 5 Reviews 11건 신설(tournament_reviews/team_reviews/referee_reviews 모델 / helpful_count 분리 + court_review_helpfuls 토글 / 리뷰 태그 / User 레벨 LevelBadge / 통합 작성 폼 / 신고 기능 / 본문 line-clamp 토글 / 사진 라이트박스 / 페이지네이션). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
 | 04-22 | developer | **Phase 6 Login — /login v2 리디자인 (시안 Login.jsx + 탭 2종 + 인라인 폼)** — 1파일 전면 재작성(`(web)/login/page.tsx` 288→362줄). UI 교체만, 인증 로직/서버 액션/OAuth href/InfoDialog/Dev 자동 로그인 0 변경. 헤더 `MyBDR.` 대형 ff-display 36px + `.` accent + 부제 "서울 3x3 농구 커뮤니티". `.card` + 탭 2종(로그인/회원가입) cafe-blue 3px 하단 라인 + bg-elev/bg-alt 토글. 로그인 탭: `.label`+`.input` 2필드(email/password) + 자동로그인 체크박스 disabled+title="준비 중"+우측 "준비 중" 뱃지(D4) + 비밀번호 찾기 button → `router.push("/forgot-password")` + `.btn--primary .btn--xl` "로그인" + "또는" divider + 카카오/네이버 grid(네이버 disabled+title) + Google OAuth 추가 행(시안 외 PM 결정 유지). 회원가입 탭: cafe-blue-soft 안내 뱃지("준비 중") + 5필드 모두 disabled(아이디/비번/비번확인/닉네임/활동지역) + 약관 체크 disabled + 가입하기 button → `router.push("/signup")`. 푸터: `← 홈으로 돌아가기` button → `/`. Dev 자동 로그인 별도 카드(NODE_ENV !== production, .btn--sm). **보존**: `loginAction`/`devLoginAction`/`useActionState`/`name="email"/"password"/"redirect"` hidden input/`isValidRedirect`/`OAUTH_ERRORS`/`REDIRECT_BANNERS`/`InfoDialog 2종`(redirectBanner+OAuth error). **삭제**: 이메일 모달(`showEmailModal`), 눈 아이콘 토글(`showPassword`), `<style jsx global>` slide-up/fade-in (인라인 폼으로 대체). 모든 색상 BDR v2 토큰(var(--cafe-blue)/--ink/--ink-mute/--ink-dim/--bg-elev/--bg-alt/--border/--accent/--accent-soft/--cafe-blue-soft/--cafe-blue-deep/--danger/--link). globals.css `.card`/`.input`/`.label`/`.select`/`.btn`/`.btn--primary`/`.btn--xl`/`.btn--sm` 그대로 활용. **layout.tsx 0 변경**(getWebSession 가드 유지). 추후 구현 Phase 6 Login 3건 신설(자동 로그인 토큰 시스템 / 회원가입 인라인 폼 / 네이버 OAuth 활성화). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
 | 04-22 | developer | **Phase 5 Saved — /saved v2 신규 (옵션 C + 7탭 분리, 글로벌 톱레벨)** — 신규 2 (`saved/page.tsx` 서버 컴포넌트 force-dynamic + getWebSession + 비로그인 시 인라인 로그인 카드(`bookmark` 아이콘+`/login?redirect=/saved` btn--accent) + Promise.all 2병렬: `prisma.board_favorites.findMany select(id/category/position/created_at) orderBy[position asc, created_at asc]` + `prisma.user_favorite_courts.findMany include:{courts select(id/public_id/name/city/district/indoor/rental_fee/opening_hours)} orderBy[last_used_at desc, created_at desc]` + CATEGORY_LABEL 7매핑(notice/general/recruit/review/marketplace/qna/info → 한글) + courts.public_id 폴백 + city+district 합쳐 area + last_used_at→created_at 폴백 + BigInt→string + Date→ISO 직렬화 / `saved/_v2/saved-content.tsx` "use client" useState<TabId> + 7탭(전체/게시글/게시판/경기/대회/팀/코트, count fontFamily mono) + 활성 시 var(--accent) 2px underline + 시안 Saved.jsx Breadcrumb(홈›보관함) + Header eyebrow "Saved · Bookmarks"+h1 32px+부제 + 액션 2버튼 disabled "준비 중"(내보내기/폴더 관리, opacity 0.5 cursor not-allowed) + 게시판 섹션(forum 아이콘 + auto-fill minmax(220px,1fr) Link 카드 → `/community?category={category}` + 🔖 bookmark var(--accent) 우상단 + 저장일 ff-mono) + 코트 섹션(place 아이콘 + auto-fill minmax(260px,1fr) Link 카드 → `/courts/{public_id}` + nickname 우선 본명 보조표기 + area + opening_hours/rental_fee(0=무료)/indoor 메타 + 사용 N회 + 저장일) + 미지원 4탭 안내(construction 아이콘 + "게시글/경기/대회/팀 북마크 기능은 곧 추가됩니다") + 전체+0건 글로벌 빈상태(bookmark_border 48px) + 게시판 0건/코트 0건 탭별 안내). **API route.ts / Prisma 스키마 / 서비스 0 변경. 신규 fetch 0건**. 카페 세션 무관. 세션 userId 기반 본인 데이터만(IDOR 없음). 추후 구현 Phase 5 Saved 6건 신설(community_post_bookmarks / game_bookmarks / tournament_bookmarks / team_follows(Phase 3 Teams 통합) / saved_folders / 내보내기 CSV·PDF). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
-| 04-22 | developer | **Phase 6 Signup — /signup v2 3-step 위저드 (BDR v2 시안 박제)** — 1파일 전면 재작성(`(web)/signup/page.tsx` 90→약 470줄). "use client" + useState<1\|2\|3>(step) + useState 5개(email/password/passwordConfirm/agreed/nickname) + useActionState(signupAction). Step indicator(원 1·2·3 + 진행선 cafe-blue) + "회원가입 · N/3" 캡션 + 단계별 헤딩 28px ff-display(계정 만들기/선수 프로필/활동 환경) + 부제. **Step 1 (실작동)**: email/password/password_confirm controlled input + 약관·개인정보 Link 체크 + OAuth 3종(시안 외 보존, 카카오/네이버/Google grid 3열). **Step 2**: 닉네임만 실작동(name="nickname") + 포지션 5종(가드/슈가/스포/파포/센터) + 키 + 등번호 모두 disabled+title="준비 중"+라벨 옆 회색 뱃지. **Step 3**: 지역 8종(강남/강북/강서/강동/분당/일산/수원/인천) + 실력 5단계 + 관심 경기 유형 5종(픽업/게스트/스크림/대회/정기팀) 모두 disabled+"준비 중". 진입 가드 (Step 1→2: isValidEmail+비번 8자+비번/확인 일치+약관 체크 / Step 2→3: 닉네임 2~20자). 에러 표시 3종(OAuth 쿼리 / stepError 클라 가드 / serverState.error signupAction 반환). Step 3 "시작하기 →" type=submit → form action(signupAction). **signupAction 0 변경**(email/nickname/password/password_confirm 4필드만 사용, /verify?missing=phone 리다이렉트 보존). **layout.tsx 0 변경**(metadata 보존). globals.css `.card/.input/.label/.btn/.btn--sm/.btn--primary/.btn--xl` + 변수 `--cafe-blue/--bg-alt/--ink-dim/--ink-mute/--ink/--ff-mono/--border/--accent-soft/--danger` 전부 기존 정의 활용. 추후 구현 Phase 6 Signup 6건 신설(User.position / User.height·jersey_number / User.regions JSONB / User.skill_level / User.preferred_game_types / 3-step 데이터 hidden field). tsc --noEmit EXIT=0 PASS | ✅ (커밋 대기, PM 처리) |
 
 ---
 
@@ -2754,4 +2754,132 @@ DB tournamentTeam.status | 대회 시작일 | → RegStatus
 ## 구현 기록 — Phase 7-1 TournamentEnroll v2 박제 [2026-04-27]
 - `/tournaments/[id]/join` page.tsx v2 시안(`screens/TournamentEnroll.jsx`) 박제. API/Prisma 0 변경 + 보존 9건(팀선택/대표자/디비전/유니폼/선수/카테고리/입금계좌/완료/대기) 동작 유지. 5-step(hasCategories=true)/4-step adaptive stepper, 서류 step "준비 중" 박제, 결제 step은 입금 안내 흐름 유지(토스 미연결), 우측 sticky aside(포스터 placeholder + D-카운터 정적 + 환불 정책).
 - 신규 4파일: `_v2/enroll-poster.tsx` `_v2/enroll-stepper.tsx` `_v2/enroll-aside.tsx` `_v2/enroll-step-docs.tsx` / 수정 1파일: `page.tsx` 전면 재작성. tsc --noEmit 통과(에러 0).
+
+## 구현 기록 — Phase 7 GuestApps v2 박제 [2026-04-27]
+
+📝 구현한 기능: 게스트 지원 현황 신규 라우트 `/guest-apps` — 시안(GuestApps.jsx 273줄) 박제. DB 미지원 → UI 미리보기 (실 동작 0).
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| `src/app/(web)/guest-apps/page.tsx` | 시안 박제 + 더미 상수 외부화 + Link/useState | 신규 |
+
+핵심 결정:
+- **API/Prisma 0 변경** — DB 모델 0% 지원. 정적 더미만 (ACTIVE 3건/PAST 3건/MY_STATS/RELIABILITY_TIPS).
+- **상단 안내 1줄** — "현재 게스트 신청 관리는 준비 중입니다. UI 미리보기로만 동작합니다." (사용자 지침)
+- **시안 GAMES 의존 제거** — 시안 `GAMES[1]/[7]/[4]` 참조를 인라인 game 객체로 박제 (화면 자체 완결).
+- **setRoute → Link 매핑**: home→/, profile→/profile, games→/games, gameDetail→/games, teamDetail→/teams.
+- **이모지 유지** — ⚡🎯🏆📅📍💳 시안 그대로 (Material Symbols로 강제 변환 안 함, lucide 미사용).
+- **TS strict 타입**: ActiveApp/PastApp 분리 + GuestApp 합집합 + 탭별 좁히기. `"role" in a` / `"teamReview" in a` 등 in 연산자 가드.
+- **status 5종**: accepted/pending/shortlist (active 전용) + completed/declined (past 전용). STATUS_MAP에 통합.
+- **CSS 토큰**: `var(--bdr-red)`, `var(--cafe-blue/-deep/-soft)`, `var(--ok)`, `var(--warn)`, `var(--danger)`, `var(--ink/-soft/-mute/-dim)`, `var(--bg-alt)`, `var(--border)`, `var(--accent)`, `var(--ff-mono/-display)` — globals.css BDR v2 토큰만 사용. 하드코딩 색상 0 (단, 팀 컬러는 시안 박제값 #F59E0B/#6B7280/#0EA5E9/#8B5CF6/#10B981 — 데이터 속성).
+- **시안 클래스 활용**: `.page`, `.card`, `.btn`, `.btn--sm`, `.btn--primary`, `.badge`, `.badge--ghost`, `.badge--red` — 추가 스타일 0.
+
+🚧 추후 구현 — Phase 7 GuestApps DB 연동 (백로그):
+1. **guest_applications 모델**: user_id + game_id(또는 host_team_id) + status(accepted/pending/shortlist/completed/declined) + role + fee + paid + applied_at + decided_at + declined_reason
+2. **guest_messages 모델**: application_id + author(user/team) + body + created_at — 지원 메시지/팀 답신 양방향
+3. **guest_reviews 모델**: application_id + rating(1~5) + body + created_at — 경기 후 팀 → 게스트 평점/한줄평
+4. **User.guest_stats 집계**: total_apps / accepted / win_rate / mvp_count / avg_rating / reliability — 백그라운드 잡 또는 view로 계산
+5. **버튼 액션 5종 활성화**: 경기 상세(/games/[id])·팀과 채팅(DM 또는 팀 채널)·참가 취소(status=cancelled)·지원 철회(soft delete)·후기 남기기(POST /api/web/guest-reviews)
+6. **신뢰도 산식**: 응답시간 평균 + 출석률 + 평점 가중합 → reliability% 자동 계산
+
+💡 tester 참고:
+- **테스트 URL**: `http://localhost:3001/guest-apps` (또는 dev 프리뷰 `/guest-apps`)
+- **시안 비교**: `Dev/design/BDR v2/screens/GuestApps.jsx` (273줄)
+- **정상 동작**:
+  1. 진입 시 브레드크럼(홈 › 마이페이지 › 게스트 지원 현황) + h1 + "준비 중" 안내 노출
+  2. 게스트 프로필 카드 — RDM 이니셜 + 신뢰도 94% 빨간 뱃지 + 통계 5종(총18/수락12/승률67%/MVP2/★4.6) 가로 배치
+  3. "게스트 찾기 →" 클릭 → /games 이동
+  4. 신뢰도 팁 3개 카드(빠른 응답/수락률 향상/게스트 뱃지) 가로 그리드
+  5. 탭 2개 — 진행 중 (3) / 완료·종료 (3). 클릭 시 cafe-blue 하단 라인 + bold + 카운트 표시
+  6. **진행 중 탭** 카드 3장:
+     - SWEEP (수락됨/포워드) — 결제완료 · 내 메시지 + 팀 답신 2건 노출, 우측 액션 3개(경기 상세[Link]/팀과 채팅/참가 취소[red])
+     - IRON WOLVES (응답 대기/8h 경과/가드) — 미결제 · 내 메시지만, 우측 액션 2개(팀에 문의/지원 철회[red])
+     - 3POINT (고려 중/옵저버) — 관람 무료 · 내 메시지 + 팀 답신, 우측 액션 2개(팀과 채팅/지원 철회[red])
+  7. **완료·종료 탭** 카드 3장:
+     - KINGS CREW (경기 완료/MVP 빨간 뱃지) — 3전 2승 1패 · 결제완료 · 팀 평가 ★★★★★ 5점 노출, 액션(후기 남기기[primary]/다시 지원[Link])
+     - THE ZONE (거절) — 미결제 · 거절 사유 italic 표시, 액션 1개(팀 보기[Link])
+     - BLOCK (경기 완료) — 4전 3승 1패 · 결제완료 · 팀 평가 ★★★★☆ 4점, 액션(후기 남기기[primary]/다시 지원[Link])
+  8. 모든 버튼 클릭 시 API 호출 0 (UI만). Link 3개(`/games`, `/teams` 2건)는 정상 라우팅
+- **주의 입력**:
+  - 다크모드 토글 시 모든 토큰 자동 대응 확인 (var(--bg-alt) 등)
+  - 좁은 화면(<768px)에서 grid `repeat(3,1fr)` 팁 카드와 `auto 1fr auto` 카드 레이아웃 깨짐 가능성 — 반응형은 시안 따라 추가 작업 안 함
+  - rating이 0인 PastApp이 들어오면 ★ 0개 + ☆ 5개 표시 (현재 데이터 없음)
+- **tsc --noEmit 통과 확인** (EXIT=0, 에러 0)
+
+⚠️ reviewer 참고:
+- **시안 충실도**: GuestApps.jsx 273줄 1:1 박제. `setRoute` prop 추상화는 Next.js Link/Router로 대체. `GAMES[i]` 배열 의존은 인라인 game 객체로 직접 박제 (다른 페이지의 GAMES와 결합 회피).
+- **인라인 style vs Tailwind**: 시안이 인라인 style을 쓰고 있어 Safety/Help/Login 등 다른 BDR v2 페이지와 동일한 패턴 유지. globals.css의 .card/.btn/.badge 클래스가 BDR v2 토큰 기반이므로 시안 충실도 우선.
+- **타입 분리**: ActiveApp/PastApp을 union으로 합쳐 GuestApp 정의. status별 좁히기는 `a.status === "completed"` + `(a as PastApp)` 캐스트 또는 `"role" in a` in 연산자 가드 사용. TS strict 통과.
+- **이모지 유지 (Material Symbols 변환 안 함)**: 시안에 이모지(⚡🎯🏆📅📍💳)가 명시되어 있고, BDR v2 시안 의도가 그러함. 다른 BDR v2 페이지(Safety 등)도 이모지 유지. lucide-react 미사용 (CLAUDE.md 준수).
+- **버튼 vs Link**: 라우팅이 있는 액션(경기 상세/다시 지원/팀 보기/게스트 찾기)은 `<Link>` + `.btn` 클래스 조합. 단순 액션(팀과 채팅/참가 취소/팀에 문의/지원 철회/후기 남기기)은 `<button type="button">` (현재 동작 0, 추후 핸들러 추가).
+- **다크모드**: 모든 색상 var(--*) 토큰 사용으로 자동 대응. 단 팀 컬러(teamColor/teamInk)는 데이터 속성이므로 다크/라이트 모두 동일.
+- **접근성**: 메시지 따옴표는 `&quot;` 엔티티로 escape (react/no-unescaped-entities 회피).
+
+## 구현 기록 — Phase 7 Calendar v2 박제 [2026-04-27]
+
+📝 구현한 기능: 내 일정 신규 라우트 `/calendar` — 시안(Calendar.jsx 279줄) 박제. DB 미지원 → UI 미리보기 (실 동작 0).
+
+| 파일 경로 | 변경 내용 | 신규/수정 |
+|----------|----------|----------|
+| `src/app/(web)/calendar/page.tsx` | 시안 박제 + 더미 EVENTS 17건 외부화 + 월/리스트/주(준비중) 3뷰 + 필터 6종(전체/픽업/게스트/스크림/대회/완료) + 사이드 다가오는 일정·이번 달 통계·TIP 3카드 | 신규 |
+
+핵심 결정:
+- **API/Prisma 0 변경** — DB 모델 0% 지원. 정적 더미만 (EVENTS 17건/TODAY '2026-04-23'/DOWS).
+- **시안 색 키 중복 버그 수정** — 시안 L153/L157 객체 리터럴 `color` 키 중복(JS는 마지막 값 유지). 단일 `color`로 통합 (isToday=#fff / dow=0=err / dow=6=cafe-blue / 기본=ink). 의도 보존.
+- **이벤트 클릭 noop** — PM 지시. `cursor: e.hasRoute ? "pointer" : "default"`만 시안 그대로. setRoute 호출 제거. 시안 L10의 `route:'gameDetail'`만 hasRoute=true로 변환(첫 번째 픽업 이벤트만 cursor pointer).
+- **'오늘' 버튼 시안 하드코딩 유지** — `setMonth({ y: 2026, m: 4 })` 그대로 (PM 지시). 실 환경 today 추출 로직 미적용.
+- **week 뷰 "준비 중" 박스** — 시안 L269~L273 그대로 박제 (`view==='week'` 시 카드 1개 + 안내 텍스트).
+- **+ 일정 등록 / ↗ ICS 내보내기 noop** — `disabled + title="준비 중"` (PM 지시). 시안 원본은 `<button>`만 있음.
+- **6주 42칸 캘린더 그리드** — 시안 L31~L51 박제(prev tail / current / next head). isToday 셀 accent 6% 배경 + 일자 배지 accent 원형 흰글씨.
+- **이벤트 칩 최대 3개 + "+N건"** — 시안 L162~L174 박제. color-mix 18%/20% 배경 + borderLeft 2px.
+- **CSS 토큰**: `var(--cafe-blue)`, `var(--accent)`, `var(--ok)`, `var(--err)`, `var(--ink/-soft/-mute/-dim)`, `var(--bg/-alt)`, `var(--border)`, `var(--ff-mono/-display)` — globals.css BDR v2 토큰만 사용. 하드코딩 색상 2건(스크림 #8B5CF6 / 대회 #F59E0B)은 시안 박제값.
+- **시안 클래스 활용**: `.page`, `.card`, `.btn`, `.btn--sm`, `.btn--primary`, `.theme-switch`, `.theme-switch__btn`, `.eyebrow`, `.badge`, `.badge--ok`, `.badge--ghost` — 추가 스타일 0.
+- **Link 매핑**: 시안 setRoute('home')만 사용 → `<Link href="/">홈</Link>` 1건. 그 외는 noop.
+
+🚧 추후 구현 — Phase 7 Calendar DB 연동 (백로그):
+1. **사용자별 일정 집계 API** `/api/web/calendar?from=YYYY-MM-DD&to=...` — game_applications + guest_applications + tournament_matches + scrim_matches 통합 쿼리
+2. **이벤트 5종 분류 정형화** — pickup/guest/scrim/tournament/done. status 기반(scheduled→pickup·guest·scrim, completed→done, tournament_matches→tournament)
+3. **이벤트 클릭 라우팅 활성화** — pickup/guest→/games/[id], scrim→/teams/[id]/scrims/[matchId], tournament→/tournaments/[id]
+4. **+ 일정 등록 모달** — 사용자 정의 일정 모델 `user_calendar_events` (id, user_id, date, time, title, court, type, color, created_at). 외부 일정(농구장 답사 등) 메모 기능
+5. **ICS 내보내기** — text/calendar 응답 + UID/DTSTART/DTEND/SUMMARY/LOCATION/DESCRIPTION. /api/web/calendar/export.ics 라우트
+6. **주(week) 뷰 본구현** — Mon~Sun 7컬럼 + 시간대(00~23) 24행 그리드 + 이벤트 블록 절대위치 (높이=duration). 현재 "준비 중" 박스
+7. **친구 일정 겹쳐보기 (BDR+ 멤버 전용)** — TIP 카드 시안 문구. friends 모델 + view='week' 색상 분기
+8. **이번 달 통계 동적화** — 현재 EVENTS 상수 기반 카운트. 사용자별 실데이터 + 전월 대비 trend
+
+💡 tester 참고:
+- **테스트 URL**: `http://localhost:3001/calendar` (또는 dev 프리뷰 `/calendar`)
+- **시안 비교**: `Dev/design/BDR v2/screens/Calendar.jsx` (279줄)
+- **정상 동작**:
+  1. 진입 시 브레드크럼(홈 › 내 일정) + eyebrow "My Calendar · 2026" + h1 "내 일정"
+  2. 우상단 뷰 토글(월/주/리스트) + "+ 일정 등록"(disabled) + "↗ 내보내기 (ICS)"(disabled)
+  3. 필터 6종 칩 — 전체(17)/픽업(5)/게스트(3)/스크림(1)/대회(6)/완료(4). 클릭 시 btn--primary 활성화 + 색 점 8x8
+  4. **월(month) 뷰** — 좌측 6주 42칸 그리드 + 우측 320px 사이드(다가오는 일정·통계·TIP)
+  5. 월 헤더 — ‹ / 오늘 / › / "2026년 4월" + 우측 N건 카운터
+  6. 요일 헤더 — 일(빨강)/월~금(회색)/토(cafe-blue)
+  7. 셀 — `2026-04-23` (today)는 accent 6% 배경 + 일자 accent 원형 흰글씨. 다른 달은 opacity 0.35 + bg-alt
+  8. 이벤트 칩 — 최대 3개 + "+N건". HH:MM + 제목 ellipsis. 첫 픽업(미사강변)만 cursor pointer, 나머지 default
+  9. ‹/› 클릭 시 월 이동, "오늘" 클릭 시 2026-04 강제 복귀 (PM 지시)
+  10. **리스트(list) 뷰** — 카드 1개 안 "예정 (N)" + "완료 (N)" 2섹션. 80px(날짜·시간) / 1fr(타입칩+제목+장소) / auto(badge 확정/완료)
+  11. **주(week) 뷰** — 시안대로 "주간 뷰는 준비 중입니다. 월간 또는 리스트 뷰를 이용해주세요." 단일 박스
+  12. 다가오는 일정 카드 — TODAY 이후 done 제외 6건. 44px 날짜(MM월/DD) + title + time·court. borderLeft 3px 이벤트 컬러
+  13. 이번 달 통계 카드 — 2x2 (경기/대회/완료/예정) 큰 숫자 + 라벨
+  14. TIP 카드 — bg-alt 배경 + ICS 안내 1줄
+  15. 모든 클릭 액션 noop (cursor pointer만). 브레드크럼 "홈"만 Link 정상 동작
+- **주의 입력**:
+  - 좁은 화면(<768px)에서 grid `minmax(0,1fr) 320px` 깨짐 가능성 — 반응형은 시안 따라 추가 작업 안 함
+  - 다크모드 토글 시 var(--*) 토큰 자동 대응 (스크림 #8B5CF6 / 대회 #F59E0B는 정적이므로 동일)
+  - 시안의 today '2026-04-23'은 EVENTS 중간 시점. 월 변경 시 다른 달에는 isToday 셀 없음
+- **tsc --noEmit 통과 확인** (EXIT=0)
+
+⚠️ reviewer 참고:
+- **시안 충실도**: Calendar.jsx 279줄 1:1 박제. `setRoute` prop은 noop + cursor pointer만 (PM 지시). `Icon` 미사용.
+- **시안 버그 수정**: L141~L160 일자 배지 인라인 style 객체에서 `color` 키가 L153과 L157에 두 번 정의됨 — JS spec상 마지막 값(L157)이 적용됨. 두 키 모두 같은 의미였으므로 동작에는 차이 없으나, 시안 그대로 옮기면 lint(no-dupe-keys) 경고. 단일 키로 통합하면서 의도 보존(isToday=#fff / dow별 색).
+- **인라인 style vs Tailwind**: 시안이 인라인 style을 쓰고 있어 GuestApps/Help/Login 등 다른 BDR v2 페이지와 동일한 패턴 유지. globals.css의 .card/.btn/.theme-switch/.eyebrow/.badge 클래스가 BDR v2 토큰 기반이므로 시안 충실도 우선.
+- **타입 정의**: EventType union (5종) + FilterId = "all" | EventType + ViewMode = "month" | "week" | "list". hasRoute는 optional boolean (시안 route 키 noop화).
+- **EVENTS 상수 위치**: 컴포넌트 외부(모듈 스코프)에 17건 박제. 시안 L9~L27 동일.
+- **'오늘' 버튼 동작**: 시안 L120 `setMonth({y:2026, m:4})` 그대로 (PM 지시). 실 환경 `new Date()` 기반 today 산정은 추후 구현 시점에 함께 처리(현재 today='2026-04-23' 박제와 일관성 유지).
+- **week 뷰 미구현**: 시안도 박스 1개로 "준비 중" 표시. PM 지시대로 시안 그대로 박제.
+- **다크모드**: 모든 var(--*) 토큰 자동 대응. 스크림 #8B5CF6 / 대회 #F59E0B는 데이터 속성이므로 다크/라이트 동일 (시안 박제값).
+- **+ 일정 등록 / ICS 내보내기 disabled 처리**: 시안 원본은 단순 `<button>`이지만 PM 지시로 `disabled + title="준비 중"` 추가하여 인터랙션 차단 명시.
+- **추후 구현 8건 백로그 등록** — 일정 집계 API / 5종 분류 정형화 / 클릭 라우팅 / 일정 등록 모달 / ICS / 주(week) 뷰 본구현 / 친구 일정 겹쳐보기 / 이번 달 통계 동적화
 
