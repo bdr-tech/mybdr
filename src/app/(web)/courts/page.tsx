@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db/prisma";
-import { CourtsContent } from "./_components/courts-content";
+// Phase 3 Court v2 시안 적용: CourtsContent → CourtsContentV2 교체
+// 기존 CourtsContent (courts-content.tsx) 는 보존 — 필요 시 import 1줄만 되돌리면 즉시 롤백
+import { CourtsContentV2 } from "./_components/courts-content-v2";
 
 // SEO: 코트 찾기 페이지 메타데이터
 export const metadata: Metadata = {
@@ -143,7 +145,7 @@ export default async function CourtsPage() {
 
   return (
     <Suspense fallback={null}>
-      <CourtsContent courts={courts} cities={cities} />
+      <CourtsContentV2 courts={courts} cities={cities} />
     </Suspense>
   );
 }

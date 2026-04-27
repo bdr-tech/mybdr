@@ -28,6 +28,8 @@ const STATUS_LABEL: Record<string, string> = {
   failed: "실패",
   cancelled: "취소",
   refunded: "환불",
+  // 부분 환불 — 결제 일부만 환불된 상태 (refund-policy: D-2~D-1 50% 등)
+  partial_refunded: "부분 환불",
 };
 
 const STATUS_COLOR: Record<string, string> = {
@@ -36,6 +38,8 @@ const STATUS_COLOR: Record<string, string> = {
   failed: "text-[var(--color-error)] bg-[var(--color-error)]/10",
   cancelled: "text-[var(--color-text-muted)] bg-[var(--color-elevated)]",
   refunded: "text-[var(--color-info)] bg-[var(--color-info)]/10",
+  // 부분 환불은 환불(info)과 같은 톤 유지 — 시각적 일관성
+  partial_refunded: "text-[var(--color-info)] bg-[var(--color-info)]/10",
 };
 
 interface Props {

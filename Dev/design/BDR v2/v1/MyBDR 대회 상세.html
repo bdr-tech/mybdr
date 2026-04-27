@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=1440"/>
+<title>MyBDR · 대회 상세 시안</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css"/>
+<style>
+  /* Phone frame */
+  .phone {
+    width: 360px; height: 720px; position: relative;
+    border: 3px solid var(--border-hard);
+    border-radius: 36px;
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: var(--sh-hard-lg);
+  }
+  .phone__notch {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    width: 100px; height: 18px; background: #000; border-radius: 0 0 10px 10px; z-index: 10;
+  }
+  .phone__screen { position: absolute; inset: 0; overflow: auto; }
+
+  /* Variations row */
+  .variant-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;
+    align-items: flex-start;
+  }
+  .variant-grid > * { min-width: 0; }
+  .variant-label {
+    display: inline-block;
+    font-family: var(--ff-display); font-weight: 900;
+    font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+    background: #000; color: #fff; padding: 6px 10px;
+    border: 2px solid var(--border-hard);
+    margin-bottom: 14px;
+  }
+  .variant-label--red { background: var(--bdr-red); }
+
+  /* State chip row */
+  .state-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
+  .state-chip {
+    padding: 10px 14px; font-family: var(--ff-display); font-weight: 800;
+    font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
+    border: 2px solid var(--border-hard); background: var(--bg-card); color: var(--ink);
+    cursor: pointer;
+  }
+  .state-chip[data-active="true"] { background: var(--bdr-red); color: #fff; }
+
+  /* Detail layout */
+  .detail-grid {
+    display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 32px; align-items: flex-start;
+  }
+  .detail-grid .sticky-wrap { position: sticky; top: 88px; }
+
+  @keyframes bdrmarquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes bdrpulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Note block */
+  .note {
+    border-left: 4px solid var(--bdr-red);
+    background: var(--bg-elev);
+    padding: 14px 18px;
+    font-size: 13px; color: var(--ink-mute);
+    margin-bottom: 24px;
+    border-top: 2px solid var(--border);
+    border-right: 2px solid var(--border);
+    border-bottom: 2px solid var(--border);
+  }
+  .note strong { color: var(--ink); font-family: var(--ff-display); letter-spacing: 0.04em; }
+
+  /* Side-by-side mobile row */
+  .mobiles { display: flex; gap: 32px; flex-wrap: wrap; justify-content: center; }
+</style>
+</head>
+<body>
+
+<!-- Fixed top nav (MyBDR style) -->
+<nav class="app-nav">
+  <div class="app-nav__inner">
+    <div class="app-nav__logo">
+      <img src="assets/bdr-logo.png" alt="BDR"/>
+      <span>MyBDR</span>
+    </div>
+    <div class="app-nav__tabs">
+      <button class="app-nav__tab">홈</button>
+      <button class="app-nav__tab" data-active="true">대회</button>
+      <button class="app-nav__tab">팀</button>
+      <button class="app-nav__tab">코트</button>
+      <button class="app-nav__tab">랭킹</button>
+      <button class="app-nav__tab">알림</button>
+    </div>
+    <div class="app-nav__spacer"></div>
+    <div style="font-size:12px;color:var(--ink-dim);font-family:var(--ff-mono)">Design Draft · 2026</div>
+  </div>
+</nav>
+
+<div id="root"></div>
+
+<!-- Tweaks panel -->
+<div id="tweaks" class="tweaks">
+  <div class="tweaks__title">TWEAKS <button id="tweaks-close" style="background:transparent;border:0;color:inherit;cursor:pointer;font-size:14px">×</button></div>
+  <div class="tweaks__lbl">배경 톤</div>
+  <div class="tweaks__row" data-group="bg">
+    <button class="tweaks__btn" data-val="dark" data-active="true">다크</button>
+    <button class="tweaks__btn" data-val="mid">미드</button>
+    <button class="tweaks__btn" data-val="light">라이트</button>
+  </div>
+  <div class="tweaks__lbl">Sticky 카드 Variation</div>
+  <div class="tweaks__row" data-group="variant">
+    <button class="tweaks__btn" data-val="A" data-active="true">A 표준</button>
+    <button class="tweaks__btn" data-val="B">B 임팩트</button>
+    <button class="tweaks__btn" data-val="C">C 실험</button>
+  </div>
+</div>
+
+<!-- Editmode config -->
+<script>
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "bg": "dark",
+    "variant": "A"
+  }/*EDITMODE-END*/;
+</script>
+
+<!-- React + Babel -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="components.jsx"></script>
+<script type="text/babel" src="screens/StickyApply.jsx"></script>
+<script type="text/babel" src="screens/DetailTabs.jsx"></script>
+<script type="text/babel" src="screens/TournamentList.jsx"></script>
+<script type="text/babel" src="screens/ApplyFlow.jsx"></script>
+<script type="text/babel" src="screens/MobileDetail.jsx"></script>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const STATES = [
+  ['open', '접수중'],
+  ['closing', '마감임박'],
+  ['closed', '접수마감·대기'],
+  ['live', '진행중'],
+  ['ended', '종료'],
+  ['applied', '내가 신청함'],
+  ['no-team', '팀 없음'],
+  ['preparing', '접수예정'],
+];
+
+function Slide({ label, title, subtitle, children }) {
+  return (
+    <section className="slide" data-screen-label={label}>
+      <header className="slide__head">
+        <div>
+          <div className="slide__title">{title}</div>
+          {subtitle && <div className="slide__sub">{subtitle}</div>}
+        </div>
+        <div style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--ink-dim)' }}>{label}</div>
+      </header>
+      <div className="slide__body">{children}</div>
+    </section>
+  );
+}
+
+function App() {
+  const [state, setState] = useState('open');
+  const [variant, setVariant] = useState('A');
+  const [bg, setBg] = useState('dark');
+  const [applyOpen, setApplyOpen] = useState(false);
+
+  const main = TOURNAMENTS[0]; // BDR Challenge Spring 2026
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-bg', bg);
+  }, [bg]);
+
+  // Tweaks protocol
+  useEffect(() => {
+    const panel = document.getElementById('tweaks');
+    const closeBtn = document.getElementById('tweaks-close');
+    const handler = (e) => {
+      if (e.data?.type === '__activate_edit_mode') panel.setAttribute('data-open', 'true');
+      if (e.data?.type === '__deactivate_edit_mode') panel.setAttribute('data-open', 'false');
+    };
+    window.addEventListener('message', handler);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+
+    closeBtn.onclick = () => panel.setAttribute('data-open', 'false');
+
+    panel.querySelectorAll('[data-group]').forEach(row => {
+      const group = row.getAttribute('data-group');
+      row.querySelectorAll('.tweaks__btn').forEach(btn => {
+        btn.onclick = () => {
+          row.querySelectorAll('.tweaks__btn').forEach(b => b.setAttribute('data-active', 'false'));
+          btn.setAttribute('data-active', 'true');
+          const val = btn.getAttribute('data-val');
+          if (group === 'bg') setBg(val);
+          if (group === 'variant') setVariant(val);
+          window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { [group]: val } }, '*');
+        };
+      });
+    });
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  return (
+    <main>
+      <div className="page page--wide">
+
+        {/* ======== Intro ======== */}
+        <section style={{ marginBottom: 48, padding: '48px 0 24px', borderBottom: '3px solid var(--border-hard)' }}>
+          <div className="eyebrow">MYBDR · 대회 상세 시안</div>
+          <h1 className="t-display" style={{ fontSize: 'clamp(48px, 6vw, 88px)', margin: '12px 0 8px', lineHeight: 0.95 }}>
+            참가까지 한 번에,<br/>
+            <span style={{ color: 'var(--bdr-red)' }}>우측 고정 신청 카드</span>
+          </h1>
+          <p style={{ fontSize: 16, color: 'var(--ink-mute)', maxWidth: 720 }}>
+            브루탈리즘 스포츠 포스터 톤. 3가지 sticky 신청 카드 variation과 8가지 상태, 목록 페이지 · 신청 플로우 · 모바일 화면을 포함합니다.
+            상단 툴바에서 <strong style={{color:'var(--ink)'}}>Tweaks</strong>를 켜면 배경 톤과 variation을 바꿔 볼 수 있습니다.
+          </p>
+        </section>
+
+        {/* ======== 01 · 대회 목록 ======== */}
+        <Slide label="01 대회 목록" title="01 · 대회 목록 카드" subtitle="진입점 — 상태별 컬러/배지/CTA가 달라집니다">
+          <div className="note"><strong>디자인 원칙</strong> · 좌측 포스터 썸네일 + 중앙 메타 + 우측 D-Day/잔여/CTA 레일. 상태(접수중·마감임박·진행중·종료·접수예정)별로 우측 레일 숫자·색·CTA가 자동 변경됩니다.</div>
+          <TournamentList/>
+        </Slide>
+
+        {/* ======== 02 · Sticky Variations ======== */}
+        <Slide label="02 Sticky Variations" title="02 · 우측 Sticky 신청 카드 — 3 Variations" subtitle="같은 데이터, 다른 무게감">
+          <div className="note">
+            <strong>A 표준</strong> · 2열 숫자 블록, 자격 체크리스트 · <strong>B 임팩트</strong> · 거대 D-Day 블록, 참가비×상금 1열 대비 · <strong>C 실험</strong> · 라이브 티커, 플립 카운터, 최근 신청 팀 스트림
+          </div>
+          <div className="variant-grid">
+            <div>
+              <span className="variant-label variant-label--red">A · 표준</span>
+              <StickyApply t={main} variant="A" state={state}/>
+            </div>
+            <div>
+              <span className="variant-label variant-label--red">B · 임팩트</span>
+              <StickyApply t={main} variant="B" state={state}/>
+            </div>
+            <div>
+              <span className="variant-label variant-label--red">C · 실험</span>
+              <StickyApply t={main} variant="C" state={state}/>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 32, paddingTop: 24, borderTop: '2px solid var(--border)' }}>
+            <div className="eyebrow" style={{ marginBottom: 14 }}>상태 전환 (카드에 반영)</div>
+            <div className="state-row">
+              {STATES.map(([k, l]) => (
+                <button key={k} className="state-chip" data-active={state === k} onClick={() => setState(k)}>{l}</button>
+              ))}
+            </div>
+          </div>
+        </Slide>
+
+        {/* ======== 03 · 대회 상세 전체 (실제 레이아웃) ======== */}
+        <Slide label="03 대회 상세 페이지" title="03 · 대회 상세 페이지 — 실제 레이아웃" subtitle="히어로 배너 → 탭 콘텐츠 + 우측 고정 신청 카드">
+          <div style={{ border: '3px solid var(--border-hard)', background: 'var(--bg-elev)' }}>
+            <HeroBanner t={main} state={state} height={420}/>
+            <div style={{ padding: '32px 32px 48px' }}>
+              <div className="detail-grid">
+                <div>
+                  <DetailTabs t={main}/>
+                </div>
+                <div className="sticky-wrap">
+                  <StickyApply t={main} variant={variant} state={state} onApply={() => setApplyOpen(true)}/>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Slide>
+
+        {/* ======== 04 · 신청 플로우 ======== */}
+        <Slide label="04 신청 플로우" title="04 · 신청 플로우 — 2단계" subtitle="기존 4단계에서 압축 · 팀/선수 선택 → 결제">
+          <div className="note"><strong>핵심 변화</strong> · 팀 선택은 이미 프로필에 등록된 팀이 자동 선택됨. 선수 체크박스와 약관 동의를 한 화면에 묶고, 결제까지 2클릭으로 완료.</div>
+          <div style={{ maxWidth: 920 }}>
+            <ApplyFlow t={main} onClose={() => {}}/>
+          </div>
+        </Slide>
+
+        {/* ======== 05 · Mobile ======== */}
+        <Slide label="05 모바일 뷰" title="05 · 모바일 뷰 — 확장 하단 Sticky" subtitle="D-Day + 잔여석 바 위에 CTA 버튼">
+          <div className="mobiles">
+            <div>
+              <span className="variant-label">접수중</span>
+              <MobileDetail t={main} state="open"/>
+            </div>
+            <div>
+              <span className="variant-label variant-label--red">마감임박</span>
+              <MobileDetail t={main} state="closing"/>
+            </div>
+            <div>
+              <span className="variant-label">내가 신청함</span>
+              <MobileDetail t={main} state="applied"/>
+            </div>
+          </div>
+        </Slide>
+
+        {/* ======== 06 · State Matrix Close-up ======== */}
+        <Slide label="06 상태 매트릭스" title="06 · 상태별 Sticky 카드 — 전체 8 states" subtitle="현재 선택된 variation 기준">
+          <div className="note"><strong>확인 포인트</strong> · 각 상태에서 CTA 문구, 색, 비활성 여부, 보조 메시지가 일관되게 표현되는지 검토. 위 2번 섹션에서 variation을 전환하면 여기도 함께 바뀝니다.</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+            {STATES.map(([k, l]) => (
+              <div key={k}>
+                <span className="variant-label">{l}</span>
+                <div style={{ transform: 'scale(0.9)', transformOrigin: 'top left', width: '111%' }}>
+                  <StickyApply t={main} variant={variant} state={k}/>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Slide>
+
+        <div style={{ padding: '48px 0', textAlign: 'center', color: 'var(--ink-dim)', fontFamily: 'var(--ff-mono)', fontSize: 12, borderTop: '2px solid var(--border)' }}>
+          END · MyBDR 대회 상세 시안 v1 · 2026
+        </div>
+      </div>
+    </main>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

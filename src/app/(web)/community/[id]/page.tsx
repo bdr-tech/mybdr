@@ -6,10 +6,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { CommentForm } from "./comment-form";
 import { PostDetailSidebar } from "./_components/post-detail-sidebar";
-import { ShareButton } from "./_components/share-button";
-import { LikeButton } from "./_components/like-button";
+// v2 박제: 기존 ShareButton/LikeButton 대신 시안 .btn.btn--lg 모양의 v2 버튼 사용
+// 데이터 로직(Server Action / 클립보드)은 v1 과 100% 동일 — UI 만 교체
+import { ShareButtonV2 } from "./_components/share-button-v2";
+import { LikeButtonV2 } from "./_components/like-button-v2";
 import { PostActions } from "./_components/post-actions";
 import { CommentList } from "./_components/comment-list";
+import { CommunityAsideNav } from "../_components/community-aside-nav";
 import { getWebSession } from "@/lib/auth/web-session";
 // [2026-04-22] 카페 원문 HTML entity 디코드 — Stage A 확장 후속
 import { decodeHtmlEntities } from "@/lib/utils/decode-html";
@@ -33,7 +36,7 @@ const getPost = cache(async (publicId: string) => {
   }).catch(() => null);
 });
 
-// 카페 댓글 타입
+// 카페 댓글 타입 (images JSONB 안에 cafe_comments 배열로 저장됨)
 interface CafeComment {
   nickname: string;
   text: string;
@@ -50,7 +53,7 @@ function getCafeComments(images: unknown): CafeComment[] {
   return comments.filter((c): c is CafeComment => !!c && typeof c === "object" && "text" in c);
 }
 
-// 카테고리 라벨 매핑 (브레드크럼 표시용)
+// 카테고리 라벨 매핑 (브레드크럼 + badge--soft 표시용)
 const categoryLabelMap: Record<string, string> = {
   general: "자유게시판",
   info: "정보공유",
@@ -61,7 +64,7 @@ const categoryLabelMap: Record<string, string> = {
   notice: "공지사항",
 };
 
-// 상대 시간 포맷
+// 상대 시간 포맷 (시안은 "2025.04.22" 형식이지만 운영 일관성 위해 기존 상대시간 유지)
 function formatRelativeTime(date: Date): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -165,199 +168,302 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
     comments = await commentsQuery;
   }
 
-  const categoryLabel = categoryLabelMap[post.category ?? ""] ?? post.category ?? "기타";
+  const categoryKey = post.category ?? "";
+  const categoryLabel = categoryLabelMap[categoryKey] ?? categoryKey ?? "기타";
+  // DB 댓글 + 카페 댓글 합산 (시안 헤더 카운트 + 본문 헤더 메타에서 사용)
+  const totalCommentsCount = comments.filter((c) => c.status !== "deleted").length + cafeComments.length;
+  // 좋아요 / 조회수 — null 방어
+  const likesCount = post.likes_count ?? 0;
+  const viewsCount = post.view_count ?? 0;
 
   return (
-    <div>
-      {/* 브레드크럼: 커뮤니티 > 카테고리명 */}
-      <nav className="flex items-center gap-2 text-xs font-medium mb-6" style={{ color: "var(--color-text-muted)" }}>
-        <Link href="/community" className="transition-colors" style={{ color: "var(--color-text-muted)" }}>
-          커뮤니티
-        </Link>
-        <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <span style={{ color: "var(--color-primary)" }}>{categoryLabel}</span>
-      </nav>
+    // 시안 .page > .with-aside (좌 CommunityAside + 우 main) — BoardList 와 동일 레이아웃
+    <div className="page">
+      <div className="with-aside">
+        {/* 좌측: 게시판 그룹 트리 (BoardList 와 동일 컴포넌트 재사용)
+            PostDetail 에는 활성 카테고리 개념이 없으므로 "전체글" 활성. 항목 클릭 시 /community 로 이동 */}
+        <CommunityAsideNav activeCategory={null} />
 
-      {/* 2열 레이아웃: 좌측 본문+댓글 / 우측 사이드바 */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
-        {/* 좌측: 본문 + 댓글 */}
-        <div className="lg:col-span-8">
-          {/* 게시글 본문 카드 */}
-          <article
-            className="rounded-lg p-4 sm:p-6 md:p-8 border overflow-hidden"
-            style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
+        <main>
+          {/* 1. 브레드크럼 — 시안 그대로 (홈 › 카테고리 › 글 상세) */}
+          <nav
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 12,
+              color: "var(--ink-mute)",
+              marginBottom: 10,
+              whiteSpace: "nowrap",
+              flexWrap: "wrap",
+            }}
           >
-            {/* 제목 */}
-            <header className="mb-6 sm:mb-8">
-              <h2
-                className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 leading-tight"
-                style={{ color: "var(--color-text-primary)" }}
+            <Link href="/" style={{ color: "var(--ink-mute)" }}>홈</Link>
+            <span>›</span>
+            {/* 카테고리 → /community?category=... 이동 */}
+            <Link
+              href={categoryKey ? `/community?category=${categoryKey}` : "/community"}
+              style={{ color: "var(--ink-mute)" }}
+            >
+              {categoryLabel}
+            </Link>
+            <span>›</span>
+            <span style={{ color: "var(--ink)" }}>글 상세</span>
+          </nav>
+
+          {/* 2. 본문 카드 — 시안 .card padding:0 + 헤더/Body/Reactions/Nav 4섹션 */}
+          <article className="card" style={{ padding: 0, overflow: "hidden" }}>
+            {/* 2-1. 헤더 — badge--soft + 제목 + 작성자/메타 */}
+            <header style={{ padding: "22px 26px 18px", borderBottom: "1px solid var(--border)" }}>
+              {/* 카테고리 배지 (시안 badge--soft) */}
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
+                <span className="badge badge--soft">{categoryLabel}</span>
+              </div>
+              {/* 제목 — 시안 24px / 700 / lh 1.3 */}
+              <h1
+                style={{
+                  margin: "0 0 14px",
+                  fontSize: 24,
+                  fontWeight: 700,
+                  letterSpacing: "-0.01em",
+                  lineHeight: 1.3,
+                  color: "var(--ink)",
+                }}
               >
                 {decodeHtmlEntities(post.title)}
-              </h2>
+              </h1>
 
-              {/* 작성자 정보 + 공유/북마크 아이콘 */}
+              {/* 작성자 + 메타 (시안 좌: 작성자 우: 날짜·조회·댓글·좋아요) */}
               <div
-                className="flex flex-wrap items-center justify-between gap-4 border-b pb-6"
-                style={{ borderColor: "var(--color-border)" }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  fontSize: 13,
+                  color: "var(--ink-mute)",
+                  flexWrap: "wrap",
+                }}
               >
-                {/* 작성자 */}
-                <div className="flex items-center gap-3">
-                  {/* 아바타 */}
+                {/* 작성자 박스 */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                   {post.users?.profile_image_url ? (
                     <Image
                       src={post.users.profile_image_url}
                       alt={post.users.nickname ?? ""}
-                      width={40}
-                      height={40}
-                      className="w-10 h-10 rounded-full object-cover"
+                      width={32}
+                      height={32}
+                      style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
                     />
                   ) : (
+                    // 시안 패턴: cafe-blue 톤 이니셜 박스
                     <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white"
-                      style={{ backgroundColor: "var(--color-primary)" }}
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: "50%",
+                        background: "var(--cafe-blue-soft)",
+                        color: "var(--cafe-blue-deep)",
+                        display: "grid",
+                        placeItems: "center",
+                        fontWeight: 700,
+                        fontSize: 13,
+                        flexShrink: 0,
+                      }}
                     >
                       {displayNickname.charAt(0)}
                     </div>
                   )}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="text-sm font-semibold"
-                        style={{ color: "var(--color-text-primary)" }}
-                      >
-                        {decodeHtmlEntities(displayNickname)}
-                      </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center", whiteSpace: "nowrap" }}>
+                      <b style={{ color: "var(--ink)" }}>{decodeHtmlEntities(displayNickname)}</b>
+                      {/* LevelBadge 자리 — DB users.xp 기반 등급 미구현. 추후 구현 목록에 기록 */}
                     </div>
-                    <div
-                      className="flex items-center gap-3 mt-1 text-xs"
-                      style={{ color: "var(--color-text-muted)" }}
-                    >
-                      <span>{formatRelativeTime(post.created_at)}</span>
-                      <span
-                        className="w-1 h-1 rounded-full"
-                        style={{ backgroundColor: "var(--color-text-muted)" }}
-                      />
-                      <span>조회 {(post.view_count ?? 0).toLocaleString()}</span>
-                    </div>
+                    {/* 작성글 수: 시안에 있지만 사이드바 PostDetailSidebar 에 이미 노출되므로 여기는 시각적 부담 줄여 생략 */}
                   </div>
                 </div>
 
-                {/* 공유/북마크/더보기 아이콘 */}
-                <div className="flex items-center gap-2">
-                  <ShareButton />
-                  <button
-                    className="p-2 transition-colors"
-                    style={{ color: "var(--color-text-muted)" }}
-                    title="북마크 (준비 중)"
-                  >
-                    <span className="material-symbols-outlined">bookmark</span>
-                  </button>
-                  {/* 본인 게시글이면 수정/삭제 드롭다운, 아니면 빈 more_vert */}
-                  {isPostOwner ? (
+                {/* 우측 메타 — flex:1 spacer 후 우정렬
+                    시안: Icon.eye / Icon.msg / Icon.heart Material Symbols 로 박제 */}
+                <span style={{ flex: 1 }} />
+                <span>{formatRelativeTime(post.created_at)}</span>
+                <span>·</span>
+                <span title="조회수" style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: -3 }}>
+                    visibility
+                  </span>
+                  {viewsCount.toLocaleString()}
+                </span>
+                <span>·</span>
+                <span title="댓글수" style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: -3 }}>
+                    chat_bubble
+                  </span>
+                  {totalCommentsCount}
+                </span>
+                <span>·</span>
+                <span title="좋아요수" style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: -3 }}>
+                    favorite
+                  </span>
+                  {likesCount}
+                </span>
+
+                {/* 본인 게시글이면 수정/삭제 드롭다운만 추가 (시안에는 없지만 운영 필수) */}
+                {isPostOwner && (
+                  <span style={{ marginLeft: 4 }}>
                     <PostActions postPublicId={id} />
-                  ) : (
-                    <button
-                      className="p-2 transition-colors"
-                      style={{ color: "var(--color-text-muted)" }}
-                    >
-                      <span className="material-symbols-outlined">more_vert</span>
-                    </button>
-                  )}
-                </div>
+                  </span>
+                )}
               </div>
             </header>
 
-            {/* 본문 */}
+            {/* 2-2. Body — 시안 padding 28px 26px / fs 15 / lh 1.8 / color ink-soft.
+                   D3 결정: DB가 block type 미지원 → 줄바꿈 split <p> 그대로 (h3/img 미적용) */}
             <div
-              className="prose prose-invert max-w-none text-sm leading-relaxed space-y-4"
-              style={{ color: "var(--color-text-secondary)" }}
+              style={{
+                padding: "28px 26px",
+                fontSize: 15,
+                lineHeight: 1.8,
+                color: "var(--ink-soft)",
+              }}
             >
-              {/* 본문을 줄바꿈 기준으로 렌더링 (카페 원문 HTML entity 디코드 후 split) */}
               {decodeHtmlEntities(post.content)?.split("\n").map((line, i) => (
-                <p key={i}>{line}</p>
+                <p key={i} style={{ margin: "0 0 14px" }}>{line}</p>
               ))}
             </div>
 
-            {/* 좋아요 버튼: 실제 동작하는 클라이언트 컴포넌트 */}
-            <LikeButton
-              postPublicId={id}
-              initialLiked={isLiked}
-              initialCount={post.likes_count ?? 0}
-              isLoggedIn={isLoggedIn}
-            />
-          </article>
+            {/* 2-3. Reactions — 시안 좋아요/공유/스크랩 3버튼 가로 정렬 (.btn.btn--lg 통일)
+                   v2 박제: LikeButtonV2 + ShareButtonV2 (데이터 로직은 기존과 100% 동일, UI 만 시안 박제)
+                   스크랩은 DB 미지원 → disabled "준비 중" 유지 */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 10,
+                padding: "18px 26px",
+                borderTop: "1px solid var(--border)",
+                flexWrap: "wrap",
+              }}
+            >
+              {/* 좋아요 — v2 박제 (시안 .btn.btn--lg minWidth:140) */}
+              <LikeButtonV2
+                postPublicId={id}
+                initialLiked={isLiked}
+                initialCount={likesCount}
+                isLoggedIn={isLoggedIn}
+              />
+              {/* 공유 — v2 박제 (시안 .btn.btn--lg) */}
+              <ShareButtonV2 />
+              {/* 스크랩 — 시안에 있으나 DB 미지원 → disabled "준비 중" (.btn.btn--lg 톤 통일) */}
+              <button
+                disabled
+                title="스크랩 준비 중"
+                className="btn btn--lg"
+                style={{ cursor: "not-allowed", opacity: 0.55 }}
+              >
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: 18, verticalAlign: -3, marginRight: 6 }}
+                >
+                  bookmark
+                </span>
+                스크랩
+              </button>
+            </div>
 
-          {/* 댓글 섹션 */}
-          <section
-            className="mt-8 rounded-lg border overflow-hidden"
-            style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}
-          >
-            <div className="p-4 sm:p-6 md:p-8">
-              {/* 댓글 수 헤더 (DB 댓글 + 카페 댓글 합산) */}
-              <div className="flex items-center gap-2 mb-6 sm:mb-8">
-                <span className="text-lg font-bold" style={{ color: "var(--color-text-primary)" }}>
-                  댓글
-                </span>
-                <span className="font-bold" style={{ color: "var(--color-primary)" }}>
-                  {comments.length + cafeComments.length}
-                </span>
+            {/* 2-4. Nav — 시안 이전/다음 글 (D4 결정: DB 쿼리 추가 X → placeholder "준비 중") */}
+            <div style={{ display: "flex", borderTop: "1px solid var(--border)" }}>
+              <div
+                style={{
+                  flex: 1,
+                  padding: "14px 18px",
+                  borderRight: "1px solid var(--border)",
+                  fontSize: 13,
+                  color: "var(--ink-dim)",
+                }}
+                title="준비 중"
+              >
+                ← 이전글: 준비 중
               </div>
-
-              {/* 댓글 입력 폼 */}
-              <CommentForm postId={id} />
-
-              {/* 댓글 리스트: DB 댓글 + 카페 댓글을 하나로 합침 */}
-              <div className="mt-8">
-                <CommentList
-                  comments={[
-                    // 카페 댓글 (크롤링 원본 — 먼저 표시, HTML entity 디코드 적용)
-                    ...cafeComments.map((c, i) => ({
-                      id: `cafe-${i}`,
-                      userId: "",
-                      content: decodeHtmlEntities(c.text),
-                      likesCount: 0,
-                      createdAt: c.date || "",
-                      isPostAuthor: false,
-                      nickname: decodeHtmlEntities(c.nickname) || "익명",
-                      profileImage: null as string | null,
-                      isReply: c.is_reply,
-                    })),
-                    // DB 댓글 (사이트에서 직접 작성)
-                    ...comments
-                      .filter((c) => c.status !== "deleted")
-                      .map((c) => ({
-                        id: c.id.toString(),
-                        userId: c.user_id.toString(),
-                        content: c.content,
-                        likesCount: c.likes_count,
-                        createdAt: c.created_at.toISOString(),
-                        isPostAuthor: c.user_id === post.user_id,
-                        nickname: c.users?.nickname ?? "익명",
-                        profileImage: c.users?.profile_image_url ?? null,
-                      })),
-                  ]}
-                  postPublicId={id}
-                  currentUserId={currentUserId}
-                />
+              <div
+                style={{
+                  flex: 1,
+                  padding: "14px 18px",
+                  fontSize: 13,
+                  color: "var(--ink-dim)",
+                  textAlign: "right",
+                }}
+                title="준비 중"
+              >
+                다음글: 준비 중 →
               </div>
             </div>
-          </section>
-        </div>
+          </article>
 
-        {/* 우측: 사이드바 */}
-        <div className="lg:col-span-4">
-          <PostDetailSidebar
-            authorId={post.user_id}
-            authorNickname={displayNickname}
-            authorImage={post.users?.profile_image_url ?? null}
-            isFollowing={isFollowing}
-            isLoggedIn={isLoggedIn}
-            currentUserId={currentUserId}
-          />
-        </div>
+          {/* 3. 댓글 섹션 — 시안 헤더(댓글 + accent N) + CommentForm + CommentList */}
+          <section style={{ marginTop: 24 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 12 }}>
+              <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "var(--ink)" }}>댓글</h3>
+              <span style={{ color: "var(--accent)", fontWeight: 800, fontSize: 16 }}>
+                {totalCommentsCount}
+              </span>
+            </div>
+
+            {/* 댓글 입력 — 기존 컴포넌트 그대로 (D6) */}
+            <CommentForm postId={id} />
+
+            {/* 댓글 리스트 — DB 댓글 + 카페 댓글 합쳐서 한 번에 (D7) */}
+            <div style={{ marginTop: 24 }}>
+              <CommentList
+                comments={[
+                  // 카페 댓글 (크롤링 원본 — 먼저 표시, HTML entity 디코드 적용)
+                  ...cafeComments.map((c, i) => ({
+                    id: `cafe-${i}`,
+                    userId: "",
+                    content: decodeHtmlEntities(c.text),
+                    likesCount: 0,
+                    createdAt: c.date || "",
+                    isPostAuthor: false,
+                    nickname: decodeHtmlEntities(c.nickname) || "익명",
+                    profileImage: null as string | null,
+                    isReply: c.is_reply,
+                  })),
+                  // DB 댓글 (사이트에서 직접 작성)
+                  ...comments
+                    .filter((c) => c.status !== "deleted")
+                    .map((c) => ({
+                      id: c.id.toString(),
+                      userId: c.user_id.toString(),
+                      content: c.content,
+                      likesCount: c.likes_count,
+                      createdAt: c.created_at.toISOString(),
+                      isPostAuthor: c.user_id === post.user_id,
+                      nickname: c.users?.nickname ?? "익명",
+                      profileImage: c.users?.profile_image_url ?? null,
+                    })),
+                ]}
+                postPublicId={id}
+                currentUserId={currentUserId}
+              />
+            </div>
+          </section>
+
+          {/* 4. 본문 하단 누적 사이드 항목들 (D1-c)
+                 — 기존 PostDetailSidebar 컴포넌트 그대로 호출. 기존 grid 12열 우측 컬럼이 아니라
+                   main 안에서 1열 누적 형태로 노출. 작성자 카드 / 실시간 인기글 / 이벤트 배너 3블록 */}
+          <div style={{ marginTop: 32 }}>
+            <PostDetailSidebar
+              authorId={post.user_id}
+              authorNickname={displayNickname}
+              authorImage={post.users?.profile_image_url ?? null}
+              isFollowing={isFollowing}
+              isLoggedIn={isLoggedIn}
+              currentUserId={currentUserId}
+            />
+          </div>
+        </main>
       </div>
     </div>
   );
 }
-

@@ -1958,10 +1958,71 @@ IVHA/Dilr는 혼재 글 많으므로 parser 재분류 유지.
 
 ---
 
+## 🔴 열린 결정 — 쿠키 자동 갱신 경로 (수빈 고민 중, 2026-04-24)
+
+### 상황 스냅샷
+
+카카오 통합 로그인이 2026-04 기준 "로그인 상태 유지" 옵션을 제거했고, 다음은 1시간 무활동 자동 로그아웃 정책. 결과: **세션 쿠키 수명 ~1일 / 장기 토큰 경로 없음 / 매일 재발급 필요**.
+
+실측 쿠키 역할 분류:
+| 쿠키 | 도메인 | 역할 | 인증 필수? |
+|------|--------|------|------------|
+| `LSID / ALID` | `.daum.net` | 로그인 세션 ID | ✅ |
+| `_T_ / _T_SECURE` | `.daum.net` | 서버 세션 토큰 | ✅ |
+| `TIARA` | `.tiara.*.com` | Tiara 분석 트래커 | ✅ (서버가 세션 일관성 검증) |
+| `DID` | — | 디바이스 식별 | ✅ (위와 동일) |
+| `_T_ANO` | `.daum.net` / `.kakao.com` | 익명 추적 | ❌ (400일 쿠키지만 인증 무관) |
+| `TSID / _SUID / _ISUID` | `.tiara.*.com` | Tiara 세션 추적 | 부수적 |
+
+### 시도 이력
+
+| 시도 | 결과 | 비고 |
+|------|------|------|
+| Claude Cowork recurring task | ❌ | Cowork 은 Anthropic 클라우드 Linux 샌드박스 실행 — 로컬 Chrome/파일시스템 접근 불가. `browserType.launch: Executable doesn't exist` 실패 확인. `Dev/cafe-cowork-setup.md` 에 폐기 아카이브 보존 |
+| 방법 B: `launchPersistentContext` + `channel:"chrome"` + `.auth/chrome-profile/` | ⚠️ 부분 실패 | 로그인·쿠키 수집은 동작, 하지만 **전용 프로필이라 `TIARA` / `DID` 가 수집 안 됨** → IVHA 본문 fetch 403 지속. 로컬 `scripts/cafe-login.ts` 수정본 미커밋 유지(수빈 고민용) |
+| 이전 방식 (기본 Playwright chromium, headed) | ✅ 검증됨 | 2026-04-22 실측 `TIARA/DID` 포함 쿠키 수집 → IVHA 본문 200 성공. 수동 30초 필요 |
+
+### 남은 선택지 (수빈 결정 대기)
+
+| 옵션 | 자동화 | 성공 가능성 | 작업량 |
+|------|--------|-----------|--------|
+| **Z** 이전 방식 복귀 + 매일 수동 30초 | 없음 | 확실 | 로컬 `scripts/cafe-login.ts` revert 만 |
+| **X** 방법 B 개선 — 로그인 후 IVHA 목록 체류 + 글 클릭까지 강제하여 Tiara JS 완전 실행 후 쿠키 캡처 | 완전 | 중 (Tiara 탐지 회피 불확실) | 30분~1h |
+| **Y** 시스템 Chrome `userDataDir = %LOCALAPPDATA%\Google\Chrome\User Data\Default` 직접 사용 | 완전 | 높음 | Chrome 탭 락 충돌 리스크 |
+
+추천 기본값: **Z** (안전, 30초/일). 현실적으로 카카오 정책이 자동화 배제 방향이라 기술 우회 시 계정 리스크.
+
+### 현재 로컬 상태 (2026-04-24 세션 마감 시점)
+
+- `scripts/cafe-login.ts`: **방법 B 버전 (미커밋, M)** — 수빈 고민 후 결정 전까지 그대로 보존
+- `.auth/cafe-state.json`: 방법 B 로 생성된 쿠키 (LSID/ALID 있음, TIARA/DID 없음)
+- `.auth/chrome-profile/`: 방법 B 프로필 디렉토리 (.gitignore 로 보호)
+- `.auth/logs/`: 스크립트 로그 디렉토리 (.gitignore 로 보호)
+- GitHub Secret `DAUM_CAFE_STORAGE_STATE_B64`: 방법 B 쿠키 (15:28 갱신) — **운영상 IVHA 본문 fetch 실패 지속**
+
+### 재개 시 조치 요약
+
+수빈이 Z 선택 시:
+```bash
+# 1. 로컬 cafe-login.ts 되돌리기 (HEAD 의 d67461c 버전)
+git checkout HEAD -- scripts/cafe-login.ts
+# 2. 기본 Playwright 방식으로 재로그인
+npx tsx scripts/cafe-login.ts --push-secret
+# 3. 매일 KST 08:10 verify 메일 받아서 alert 뜨면 위 명령 반복
+```
+
+수빈이 X/Y 선택 시:
+- 로컬 `scripts/cafe-login.ts` 그대로 유지
+- 추가 수정 작업 진행
+- 성공 시 커밋 + PR 머지, 실패 시 Z 로 복귀
+
+---
+
 ## 📜 작업 로그 (카페 sync 전용, 최근 10건)
 
 | 날짜 | 작업 | 커밋 |
 |------|------|------|
+| 04-24 | **쿠키 자동 갱신 조사 + 방법 B 실험** — Cowork 폐기(클라우드 Linux 샌드박스 제약 확인), 방법 B(launchPersistentContext + Chrome 채널) 시도 but TIARA/DID 미수집으로 IVHA 본문 403 지속. Kakao/Daum 쿠키 정책 조사(1시간 무활동 로그아웃 + "로그인 유지" UI 제거). 결정 열린 상태 — Z/X/Y 선택지 scratchpad 상단 "열린 결정" 참조. `.gitignore` 에 chrome-profile/logs 추가(실수 push 방지) | `.gitignore` 만 커밋 예정 |
 | 04-21 | **7게시판 확장 + 전체 이전 설계안 (planner-architect)** — 신규 4게시판 grpid=IGaj 실측 ✅ + articles.push 구조 동일 ✅ + IVd2 writerNickname="" 실측. 영향 파일 5 수정 + 2 신규 + Prisma 마이그레이션 0. 카페 봇 유저 seed + upsertCommunityPostFromCafe + images 객체형(cafe_source_id 에 board 포함) + sync-cafe board.target 분기 + backfill-cafe-community 스크립트 + Q1~Q4 PM 결정 전부 반영. Stage A 4h / B 30분 / C 1~2h. developer 착수 가능 | (설계만) |
 | 04-21 | **game_type 오분류 수정** — 3게시판 전면 board 강제 + `buildMetadataHints()` 헬퍼 export + mixed_type_hint/parser_game_type 키 기록 + IVHA 7건 백필 (1→0) + smoke 통과. 검증 쿼리 3게시판 × game_type 혼재 0건, vitest upsert 4/4 + parser 59/59 유지 | `4fd75e4` + `013bef6` |
 | 04-21 | **검증봇 복구 (Revert #3)** — 터미널 병행 작업 중 생긴 분리 커밋 531879a 를 revert. verify-cafe-sync.ts + cafe-sync-verify.yml 복구, scratchpad 검증봇 기록 복원 | (revert 예정) |

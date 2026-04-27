@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MyBDR · 사이트 스케치</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bdr:#E31B23;
+    --bg:#F6F5F1;            /* paper */
+    --ink:#1A1A1A;
+    --ink-2:#3D3D3D;
+    --ink-3:#6E6E6E;
+    --ink-4:#A5A5A5;
+    --ink-5:#D9D7D1;
+    --paper:#FFFDF8;
+    --hi:#FFE88A;
+    --bad:#E24C4B;
+    --ok:#3FB27F;
+    --info:#0079B9;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum"}
+  body{
+    /* paper dots */
+    background-image: radial-gradient(rgba(0,0,0,.05) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+
+  .wrap{max-width:1280px;margin:0 auto;padding:56px 32px 140px}
+  @media (max-width:720px){.wrap{padding:28px 16px 80px}}
+
+  /* Header */
+  .head{margin-bottom:40px;position:relative}
+  .head .stamp{position:absolute;right:0;top:0;border:2px solid var(--bdr);color:var(--bdr);padding:8px 14px;font-weight:700;letter-spacing:.08em;font-size:11px;transform:rotate(4deg);background:var(--paper);box-shadow:2px 2px 0 rgba(227,27,35,.25)}
+  .head .kicker{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);letter-spacing:.14em;margin-bottom:10px;text-transform:uppercase}
+  .head h1{font-size:clamp(30px,4vw,46px);margin:0 0 10px;line-height:1.08;letter-spacing:-.02em;font-weight:800;text-wrap:balance}
+  .head h1 mark{background:var(--hi);color:inherit;padding:0 6px;border-radius:3px}
+  .head p{max-width:60ch;color:var(--ink-2);font-size:16px;margin:0;text-wrap:pretty}
+  .head .meta{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+  .m-chip{font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 10px;border:1.5px solid var(--ink);border-radius:999px;background:var(--paper)}
+
+  /* Section head */
+  section{margin-top:64px}
+  .sh{display:flex;align-items:flex-end;gap:14px;margin-bottom:18px;border-bottom:2px dashed var(--ink-5);padding-bottom:12px}
+  .sh .n{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ink-3)}
+  .sh h2{font-size:22px;margin:0;letter-spacing:-.015em;font-weight:800}
+  .sh .tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);letter-spacing:.1em;text-transform:uppercase}
+
+  /* Sitemap tree */
+  .tree{background:var(--paper);border:2px solid var(--ink);border-radius:10px;padding:22px 26px;box-shadow:4px 4px 0 var(--ink);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.95;color:var(--ink-2);overflow-x:auto}
+  .tree .root{color:var(--ink);font-weight:700;font-size:14px;margin-bottom:6px}
+  .tree .lvl{margin-left:0}
+  .tree b{color:var(--ink);font-weight:700}
+  .tree .new{color:var(--bdr);font-weight:700}
+  .tree .gone{color:var(--ink-4);text-decoration:line-through}
+  .tree .note{color:var(--ink-3)}
+  .tree .badge{display:inline-block;font-size:10px;padding:1px 6px;border-radius:3px;margin-left:6px;font-family:'JetBrains Mono',monospace;vertical-align:1px;letter-spacing:.04em}
+  .b-new{background:var(--bdr);color:#fff}
+  .b-keep{background:var(--ink-5);color:var(--ink-2)}
+  .b-del{background:var(--ink-4);color:#fff;text-decoration:line-through}
+  .b-301{background:#1A1A1A;color:#fff}
+
+  /* Legend */
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend .dot{width:10px;height:10px;border-radius:2px;display:inline-block}
+
+  /* Screen grid */
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px}
+  .col-12{grid-column:span 12}
+  .col-8{grid-column:span 8}
+  .col-6{grid-column:span 6}
+  .col-5{grid-column:span 5}
+  .col-4{grid-column:span 4}
+  .col-7{grid-column:span 7}
+  @media (max-width:1020px){.col-8,.col-7,.col-6,.col-5,.col-4{grid-column:span 12}}
+
+  /* Screen/frame card */
+  .screen{background:var(--paper);border:2px solid var(--ink);border-radius:10px;box-shadow:4px 4px 0 var(--ink);display:flex;flex-direction:column;overflow:hidden}
+  .screen .cap{padding:12px 16px;border-bottom:2px solid var(--ink);display:flex;align-items:center;gap:10px;background:#fff}
+  .screen .cap .code{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--ink);color:#fff;padding:3px 8px;border-radius:3px;letter-spacing:.05em}
+  .screen .cap .title{font-weight:700;font-size:14px;letter-spacing:-.01em}
+  .screen .cap .dev{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);letter-spacing:.1em}
+  .screen .body{padding:18px;display:flex;flex-direction:column;gap:10px}
+  .screen .note{padding:10px 16px;border-top:1px dashed var(--ink-5);background:#FDFBF5;font-size:12px;color:var(--ink-3);line-height:1.6}
+  .screen .note b{color:var(--ink)}
+
+  /* Primitive wireframe parts */
+  .bar{border:1.5px solid var(--ink);border-radius:4px;padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);background:#fff;display:flex;align-items:center;gap:8px}
+  .bar.dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .box{border:1.5px solid var(--ink);border-radius:6px;padding:12px;background:#fff;position:relative}
+  .box .lbl{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+  .box h4{margin:0 0 4px;font-size:13px;font-weight:700}
+  .box .sub{font-size:11px;color:var(--ink-3)}
+  .box.dashed{border-style:dashed;background:transparent}
+  .box.hi{background:var(--hi);border-color:var(--ink)}
+  .box.dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .box.dark .lbl{color:#B8B8B8}
+
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid var(--ink);border-radius:4px;font-size:12px;font-weight:700;background:#fff;font-family:'Pretendard'}
+  .btn.primary{background:var(--bdr);color:#fff;border-color:var(--bdr);box-shadow:2px 2px 0 var(--ink)}
+  .btn.ghost{background:transparent}
+  .btn.dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .tabs{display:flex;gap:0;border-bottom:2px solid var(--ink)}
+  .tabs .t{padding:8px 14px;font-size:12px;font-weight:600;color:var(--ink-3);border:2px solid transparent;border-bottom:0;margin-bottom:-2px;font-family:'Pretendard'}
+  .tabs .t.on{background:#fff;border-color:var(--ink);color:var(--ink);border-radius:4px 4px 0 0}
+  .tabs .t.new{background:var(--bdr);color:#fff;border-color:var(--bdr);border-radius:4px 4px 0 0}
+
+  .row{display:flex;gap:8px}
+  .row.wrap{flex-wrap:wrap}
+  .row.between{justify-content:space-between}
+  .row.middle{align-items:center}
+
+  .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .cards.c3{grid-template-columns:repeat(3,1fr)}
+  .cards.c4{grid-template-columns:repeat(4,1fr)}
+
+  /* Skeleton placeholder */
+  .sk{background:repeating-linear-gradient(135deg,#EEE 0 8px,#F6F6F6 8px 16px);border-radius:3px;height:10px}
+  .sk.sm{height:7px;width:60%}
+  .sk.lg{height:14px;width:80%}
+  .sk.xl{height:22px;width:70%}
+  .sk.img{height:80px;width:100%}
+  .sk.img.sq{aspect-ratio:1/1;height:auto}
+
+  /* Phone frame */
+  .phone{width:100%;max-width:300px;margin:0 auto;border:2px solid var(--ink);border-radius:26px;background:#fff;box-shadow:6px 6px 0 var(--ink);overflow:hidden;display:flex;flex-direction:column}
+  .phone .status{height:22px;border-bottom:1px solid var(--ink-5);display:flex;align-items:center;padding:0 14px;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3)}
+  .phone .viewport{padding:12px;display:flex;flex-direction:column;gap:8px;min-height:440px}
+  .phone .tabbar{border-top:2px solid var(--ink);padding:8px 8px 12px;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;background:#fff}
+  .phone .tabbar .tb{font-size:9px;font-weight:600;color:var(--ink-3);text-align:center;padding:4px 2px;border-radius:4px}
+  .phone .tabbar .tb .ic{display:block;width:18px;height:18px;background:var(--ink-5);border-radius:3px;margin:0 auto 3px}
+  .phone .tabbar .tb.on{color:var(--ink)}
+  .phone .tabbar .tb.on .ic{background:var(--ink)}
+  .phone .tabbar .tb.new .ic{background:var(--bdr)}
+  .phone .tabbar .tb.new{color:var(--bdr)}
+
+  /* Annotation callouts */
+  .callouts{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+  @media (max-width:820px){.callouts{grid-template-columns:1fr}}
+  .co{border:2px solid var(--ink);background:var(--paper);border-radius:8px;padding:16px;box-shadow:3px 3px 0 var(--ink);position:relative}
+  .co .hook{position:absolute;left:-10px;top:14px;width:16px;height:16px;background:var(--bdr);border:2px solid var(--ink);border-radius:50%;font-family:'JetBrains Mono',monospace;font-size:10px;color:#fff;display:grid;place-items:center;font-weight:700}
+  .co h4{margin:0 0 6px;font-size:14px;font-weight:700}
+  .co p{margin:0;font-size:12px;color:var(--ink-3);line-height:1.6}
+
+  /* Flow diagram */
+  .flow{background:var(--paper);border:2px solid var(--ink);border-radius:10px;box-shadow:4px 4px 0 var(--ink);padding:22px;display:grid;grid-template-columns:repeat(5,1fr);gap:18px;align-items:center}
+  @media (max-width:820px){.flow{grid-template-columns:1fr}}
+  .step{border:2px solid var(--ink);border-radius:6px;background:#fff;padding:12px;position:relative;font-size:12px}
+  .step .n{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);margin-bottom:4px;letter-spacing:.1em}
+  .step h4{margin:0 0 2px;font-size:13px;font-weight:700}
+  .step .sub{font-size:11px;color:var(--ink-3)}
+  .step.hi{background:var(--hi)}
+  .step .arr{position:absolute;right:-15px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--ink);font-weight:700;z-index:2}
+  @media (max-width:820px){.step .arr{display:none}}
+
+  /* Footer */
+  .foot{margin-top:80px;padding-top:22px;border-top:2px dashed var(--ink-5);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+
+  .handwritten{font-family:'Caveat','Pretendard',cursive;transform:rotate(-1.5deg)}
+
+  /* small utility */
+  .lhs{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <div class="stamp">LO-FI · v0.1</div>
+    <div class="kicker">MyBDR · Site Sketch</div>
+    <h1>개선 방향을 반영한 <mark>사이트 스케치</mark> 먼저</h1>
+    <p>점검 보고서의 3축(참여·개최·신뢰)과 8개 핵심 이슈를 사이트 구조에 반영한 저충실도 와이어프레임. 상세 디자인 전, <b>어디에 무엇이 놓이는지</b>만 확정하기 위한 문서입니다.</p>
+    <div class="meta">
+      <span class="m-chip">01 · Sitemap</span>
+      <span class="m-chip">02 · Global Nav (PC + Mobile)</span>
+      <span class="m-chip">03 · Key Screens × 6</span>
+      <span class="m-chip">04 · Onboarding Flow</span>
+    </div>
+  </header>
+
+  <!-- 01 Sitemap -->
+  <section>
+    <div class="sh"><span class="n">01</span><h2>사이트맵 — 정리된 후의 전체 구조</h2><span class="tag">After cleanup</span></div>
+    <div class="tree">
+<pre style="margin:0;white-space:pre-wrap;line-height:1.95">
+<span class="root">mybdr.com</span>  <span class="note">(web) 메인 사이트</span>
+├─ /                                     <span class="badge b-keep">KEEP</span>  <span class="note">홈 — 1열 세로 스택</span>
+├─ /games                                <span class="badge b-keep">KEEP</span>  <span class="note">경기 (픽업·게스트·팀대결 탭)</span>
+│  └─ /games/[id]                        <span class="badge b-keep">KEEP</span>
+├─ /tournaments                          <span class="badge b-keep">KEEP</span>  <span class="note">대회 목록</span>
+│  └─ /tournaments/[id]                  <span class="badge b-keep">KEEP</span>  <span class="note">4탭 + 우측 sticky 신청 카드</span>
+│     ├─ <span class="gone">/bracket</span>                    <span class="badge b-301">301</span>  <span class="note">→ /tournaments/[id]#bracket</span>
+│     ├─ <span class="gone">/schedule</span>                   <span class="badge b-301">301</span>
+│     ├─ <span class="gone">/standings</span>                  <span class="badge b-301">301</span>
+│     └─ <span class="gone">/teams</span>                      <span class="badge b-301">301</span>
+├─ /series                               <span class="badge b-keep">KEEP</span>  <span class="note">시리즈 허브</span>
+│  └─ /series/[slug]/[editionNumber]     <span class="badge b-keep">KEEP</span>
+├─ <span class="gone">/tournament-series</span>                <span class="badge b-301">301</span>  <span class="note">→ /series</span>
+├─ /organizations                        <span class="badge b-keep">KEEP</span>
+├─ /teams                                <span class="badge b-keep">KEEP</span>
+│  └─ /teams/[id]                        <span class="badge b-keep">KEEP</span>  <span class="note">+ 팀장에게 [팀 관리 ⚙] 버튼 노출</span>
+│     └─ /teams/[id]/manage              <span class="badge b-keep">KEEP</span>
+├─ /courts                               <span class="badge b-keep">KEEP</span>  <span class="note">+ 지도/리스트 토글 (신규 뷰)</span>
+├─ /rankings                             <span class="badge b-keep">KEEP</span>
+├─ /community                            <span class="badge b-keep">KEEP</span>
+├─ /search                               <span class="badge b-keep">KEEP</span>
+├─ /notifications                        <span class="badge b-keep">KEEP</span>  <span class="note">+ 카테고리 탭 · 모두 읽음</span>
+├─ /pricing                              <span class="badge b-keep">KEEP</span>  <span class="note">결제 단일 입구</span>
+├─ <span class="gone">/upgrade</span>                          <span class="badge b-301">301</span>  <span class="note">→ /pricing?reason=...</span>
+├─ /profile                              <span class="new">REDESIGN</span>  <span class="badge b-new">M1</span>  <span class="note">좌측 6항목 네비 + 본인/타인 통합</span>
+│  ├─ /profile (내 정보)
+│  ├─ /profile/basketball
+│  ├─ /profile/growth
+│  ├─ /profile/activity                  <span class="badge b-new">NEW</span>  <span class="note">내가 신청한 경기/대회·가입 팀</span>
+│  ├─ /profile/settings                  <span class="note">preferences + 알림</span>
+│  └─ /profile/billing                   <span class="note">subscription + payments 통합</span>
+├─ /users/[id]                           <span class="new">MERGE</span>  <span class="note">/profile과 같은 레이아웃, 공개 모드</span>
+├─ /signup → /verify → /onboarding       <span class="new">SLIM</span>  <span class="badge b-new">M6</span>  <span class="note">4단계 → 2단계 + 점진적 공개</span>
+└─ /terms /privacy /invite               <span class="badge b-keep">KEEP</span>
+
+<span class="root">{slug}.mybdr.com</span>  <span class="note">_site 대회 서브사이트</span>
+├─ /                       ·  /schedule  ·  /teams
+├─ /results                ·  /registration            <span class="badge b-keep">KEEP</span>
+└─ /[[...path]]                                        <span class="note">+ 모바일 sticky 신청 CTA (신규)</span>
+</pre>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--bdr)"></span>NEW · 신규 또는 재설계</span>
+      <span><span class="dot" style="background:var(--ink)"></span>301 · 리다이렉트로 통합</span>
+      <span><span class="dot" style="background:var(--ink-5)"></span>KEEP · 현재 유지</span>
+    </div>
+  </section>
+
+  <!-- 02 Global Nav -->
+  <section>
+    <div class="sh"><span class="n">02</span><h2>글로벌 네비 — PC와 모바일의 대칭성 회복</h2><span class="tag">F-07</span></div>
+    <div class="grid">
+      <!-- PC -->
+      <div class="col-7">
+        <div class="screen">
+          <div class="cap"><span class="code">DESKTOP</span><span class="title">1280px+ 레이아웃</span><span class="dev">xl</span></div>
+          <div class="body" style="gap:12px">
+            <div class="bar dark" style="justify-content:space-between">
+              <div class="row middle" style="gap:12px">
+                <div style="width:22px;height:22px;background:var(--bdr);border-radius:3px"></div>
+                <b style="color:#fff">MyBDR</b>
+              </div>
+              <div class="bar" style="flex:1;max-width:360px;margin:0 16px">🔍 &nbsp; 경기 · 팀 · 유저 · 코트 검색…</div>
+              <div class="row middle" style="gap:10px;color:#fff">
+                <span>★ 맞춤</span>
+                <span style="position:relative">🔔 <span style="position:absolute;top:-6px;right:-8px;background:var(--bdr);color:#fff;font-size:9px;padding:1px 5px;border-radius:999px;font-family:'JetBrains Mono',monospace">5</span></span>
+                <span>👤</span>
+              </div>
+            </div>
+
+            <div class="row" style="gap:12px">
+              <!-- side -->
+              <div style="flex:0 0 180px;display:flex;flex-direction:column;gap:4px">
+                <div class="lhs">sideNav · 8</div>
+                <div class="bar" style="background:var(--ink);color:#fff">🏠 홈</div>
+                <div class="bar">🏀 경기</div>
+                <div class="bar">🏆 대회</div>
+                <div class="bar">🏢 단체</div>
+                <div class="bar">👥 팀</div>
+                <div class="bar">📍 코트</div>
+                <div class="bar">📊 랭킹</div>
+                <div class="bar">💬 커뮤니티</div>
+              </div>
+              <!-- main -->
+              <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+                <div class="lhs">main feed</div>
+                <div class="sk xl"></div>
+                <div class="sk lg"></div>
+                <div class="cards c3" style="margin-top:6px">
+                  <div class="box"><div class="lbl">추천경기</div><div class="sk img"></div><div class="sk sm" style="margin-top:8px"></div></div>
+                  <div class="box"><div class="lbl">추천대회</div><div class="sk img"></div><div class="sk sm" style="margin-top:8px"></div></div>
+                  <div class="box"><div class="lbl">영상</div><div class="sk img"></div><div class="sk sm" style="margin-top:8px"></div></div>
+                </div>
+              </div>
+              <!-- right -->
+              <div style="flex:0 0 140px;display:flex;flex-direction:column;gap:6px">
+                <div class="lhs">right · xl</div>
+                <div class="box dashed"><div class="lbl">주목 팀</div><div class="sk"></div><div class="sk sm" style="margin-top:6px"></div></div>
+                <div class="box dashed"><div class="lbl">최근 활동</div><div class="sk"></div><div class="sk sm" style="margin-top:6px"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="note"><b>유지</b> · PC 8개 사이드 네비는 그대로. 헤더 알림 배지에 <b>미확인 숫자</b>(Q5)와 검색 자동완성(현행) 유지.</div>
+        </div>
+      </div>
+
+      <!-- Mobile -->
+      <div class="col-5">
+        <div class="screen">
+          <div class="cap"><span class="code">MOBILE</span><span class="title">하단 탭 — “전체”로 라벨 변경</span><span class="dev">Q4</span></div>
+          <div class="body" style="align-items:center">
+            <div class="phone">
+              <div class="status"><span>9:41</span><span>● ● ●</span></div>
+              <div class="viewport">
+                <div class="bar" style="justify-content:space-between"><b>MyBDR</b> <span style="color:var(--bdr)">🔔 5</span></div>
+                <div class="box hi"><div class="lbl">💡 처음이신가요?</div><div style="font-size:12px">단체 · 팀 · 코트 · 랭킹은 <b>[전체]</b> 탭 안에 있어요</div></div>
+                <div class="sk lg"></div>
+                <div class="box"><div class="lbl">추천 경기</div><div class="sk img"></div><div class="sk sm" style="margin-top:6px"></div></div>
+                <div class="box"><div class="lbl">추천 대회</div><div class="sk img"></div><div class="sk sm" style="margin-top:6px"></div></div>
+              </div>
+              <div class="tabbar">
+                <div class="tb on"><span class="ic"></span>홈</div>
+                <div class="tb"><span class="ic"></span>경기</div>
+                <div class="tb"><span class="ic"></span>대회</div>
+                <div class="tb"><span class="ic"></span>커뮤</div>
+                <div class="tb new"><span class="ic"></span>전체<sup style="font-size:8px;color:var(--bdr);margin-left:2px">+4</sup></div>
+              </div>
+            </div>
+          </div>
+          <div class="note"><b>변경</b> · “더보기” → “전체” + <b>+4 배지</b>. 최초 1회 툴팁으로 숨은 4개(단체·팀·코트·랭킹) 예고.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callouts">
+      <div class="co"><div class="hook">1</div><h4>검색/알림 위치 유지</h4><p>자동완성 6카테고리 · localStorage 최근 검색은 잘 작동. 배지만 개수로 교체.</p></div>
+      <div class="co"><div class="hook">2</div><h4>라벨 통일</h4><p>슬라이드 메뉴의 “경기찾기” → “경기”로 맞춤 (Q6).</p></div>
+      <div class="co"><div class="hook">3</div><h4>맞춤 필터 토글</h4><p>헤더 ★ 아이콘 현행 유지. on/off 색 대비 강화.</p></div>
+    </div>
+  </section>
+
+  <!-- 03 Key screens -->
+  <section>
+    <div class="sh"><span class="n">03</span><h2>핵심 화면 6개 — 개선을 반영한 와이어</h2></div>
+
+    <div class="grid">
+
+      <!-- Home -->
+      <div class="col-6">
+        <div class="screen">
+          <div class="cap"><span class="code">HOME</span><span class="title">홈 · 1열 세로 스택 (유지)</span><span class="dev">/</span></div>
+          <div class="body">
+            <div class="bar" style="justify-content:space-between"><b>안녕하세요, 수빈님 👋</b><span>Lv.18</span></div>
+            <div class="box"><div class="lbl">오늘의 행동</div>
+              <div class="row wrap" style="gap:6px;margin-top:4px">
+                <span class="btn primary">가까운 픽업 보기</span>
+                <span class="btn">내 신청 현황</span>
+                <span class="btn ghost">팀 만들기</span>
+              </div>
+            </div>
+            <div class="lhs">recommended games · horizontal scroll</div>
+            <div class="cards c3">
+              <div class="box"><div class="sk img"></div><div class="sk sm" style="margin-top:6px"></div><div class="sk sm"></div></div>
+              <div class="box"><div class="sk img"></div><div class="sk sm" style="margin-top:6px"></div><div class="sk sm"></div></div>
+              <div class="box"><div class="sk img"></div><div class="sk sm" style="margin-top:6px"></div><div class="sk sm"></div></div>
+            </div>
+            <div class="lhs">recommended tournaments</div>
+            <div class="cards">
+              <div class="box"><div class="sk lg"></div><div class="sk sm" style="margin-top:6px"></div></div>
+              <div class="box"><div class="sk lg"></div><div class="sk sm" style="margin-top:6px"></div></div>
+            </div>
+          </div>
+          <div class="note"><b>소폭 개선</b> · 로그인 직후 “오늘의 행동” 카드 1개 신설 — 다음에 할 일을 1탭으로.</div>
+        </div>
+      </div>
+
+      <!-- Tournament detail -->
+      <div class="col-6">
+        <div class="screen">
+          <div class="cap"><span class="code">TOURNAMENT</span><span class="title">대회 상세 · 우측 sticky 신청 카드</span><span class="dev">M2</span></div>
+          <div class="body">
+            <div class="sk xl"></div>
+            <div class="row" style="gap:12px;align-items:flex-start">
+              <div style="flex:1">
+                <div class="tabs">
+                  <div class="t on">대회정보</div>
+                  <div class="t">대진표</div>
+                  <div class="t">일정</div>
+                  <div class="t">참가팀</div>
+                </div>
+                <div class="box" style="border-top:0;border-radius:0 0 6px 6px;margin-top:-1px">
+                  <div class="sk lg"></div>
+                  <div class="sk" style="margin-top:6px"></div>
+                  <div class="sk sm" style="margin-top:6px"></div>
+                  <div class="sk" style="margin-top:6px"></div>
+                </div>
+              </div>
+              <div style="flex:0 0 180px">
+                <div class="box dark">
+                  <div class="lbl">참가신청 · sticky</div>
+                  <div style="font-size:11px;color:#FFD7A3;margin-bottom:2px">마감 D-3</div>
+                  <h4 style="color:#fff">잔여 12 / 32</h4>
+                  <div class="sub" style="color:#C8C8C8">참가비 50,000원</div>
+                  <div style="margin-top:10px"><span class="btn primary" style="width:100%;justify-content:center">신청하기</span></div>
+                  <div style="margin-top:6px;font-size:10px;color:#B8B8B8">✓ 이미 신청 · <u>내 신청 보기</u></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note"><b>핵심</b> · 4탭은 URL 탭 파라미터로 유지(301 수용). PC 1024px+에서 우측 sticky, 모바일은 현행 하단 CTA 유지.</div>
+        </div>
+      </div>
+
+      <!-- Team detail -->
+      <div class="col-6">
+        <div class="screen">
+          <div class="cap"><span class="code">TEAM</span><span class="title">팀 상세 · 팀장 전용 관리 버튼</span><span class="dev">F-03 / Q4</span></div>
+          <div class="body">
+            <div class="box" style="background:#111;color:#fff;border-color:#111">
+              <div class="row between middle">
+                <div>
+                  <div class="lbl" style="color:#aaa">team hero</div>
+                  <h4 style="color:#fff">열혈농구단 SEASON2</h4>
+                  <div class="sub" style="color:#aaa">서울 송파 · 남자 D3 · 멤버 14명</div>
+                </div>
+                <div class="btn primary">팀 관리 ⚙</div>
+              </div>
+            </div>
+            <div class="tabs"><div class="t on">개요</div><div class="t">로스터</div><div class="t">경기기록</div><div class="t">대회이력</div></div>
+            <div class="cards">
+              <div class="box"><div class="lbl">최근 승률</div><div class="sk xl" style="margin-top:4px;width:40%"></div></div>
+              <div class="box"><div class="lbl">다음 경기</div><div class="sk" style="width:80%"></div><div class="sk sm" style="margin-top:4px"></div></div>
+            </div>
+          </div>
+          <div class="note"><b>신규</b> · <code style="background:#eee;padding:1px 5px;border-radius:3px">owner_id === me</code>일 때만 노출. 모바일은 히어로 아래로 이동.</div>
+        </div>
+      </div>
+
+      <!-- Profile redesign -->
+      <div class="col-6">
+        <div class="screen">
+          <div class="cap"><span class="code">PROFILE</span><span class="title">프로필 · 좌측 6항목 네비 + 타인과 공유 레이아웃</span><span class="dev">M1</span></div>
+          <div class="body">
+            <div class="row" style="gap:10px;align-items:stretch">
+              <div style="flex:0 0 140px;display:flex;flex-direction:column;gap:4px">
+                <div class="lhs">profile nav</div>
+                <div class="bar dark">내 정보</div>
+                <div class="bar">농구</div>
+                <div class="bar">성장</div>
+                <div class="bar">내 활동<sup style="color:var(--bdr);font-size:9px;margin-left:3px">NEW</sup></div>
+                <div class="bar">설정</div>
+                <div class="bar">결제</div>
+              </div>
+              <div style="flex:1">
+                <div class="box" style="margin-bottom:8px">
+                  <div class="row between middle">
+                    <div>
+                      <div class="lbl">hero</div>
+                      <h4>수빈 · 센터 · 서울 강남</h4>
+                      <div class="sub">Lv.18 · 팔로워 124 · 팔로잉 89</div>
+                    </div>
+                    <div class="btn">편집</div>
+                  </div>
+                </div>
+                <div class="cards">
+                  <div class="box"><div class="lbl">기본 정보</div><div class="sk" style="margin-top:4px"></div><div class="sk sm" style="margin-top:4px"></div></div>
+                  <div class="box"><div class="lbl">팀 / 대회</div><div class="sk" style="margin-top:4px"></div><div class="sk sm" style="margin-top:4px"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note"><b>통합</b> · /users/[id]와 같은 레이아웃 · 타인 뷰는 편집 버튼 대신 “팔로우 · 메시지”. 9 평면 서브페이지 → 6항목.</div>
+        </div>
+      </div>
+
+      <!-- Courts map -->
+      <div class="col-6">
+        <div class="screen">
+          <div class="cap"><span class="code">COURTS</span><span class="title">코트 · 리스트 ↔ 지도 토글</span><span class="dev">M5</span></div>
+          <div class="body">
+            <div class="row between middle">
+              <div class="row" style="gap:0">
+                <div class="btn dark" style="border-radius:4px 0 0 4px">리스트</div>
+                <div class="btn" style="border-radius:0 4px 4px 0">지도</div>
+              </div>
+              <div class="bar">📍 내 주변 5km</div>
+            </div>
+            <div style="position:relative;border:1.5px solid var(--ink);border-radius:6px;height:180px;background:
+              linear-gradient(90deg,transparent 49%,#E4E2DB 49%,#E4E2DB 51%,transparent 51%),
+              linear-gradient(transparent 49%,#E4E2DB 49%,#E4E2DB 51%,transparent 51%),
+              #F3F1EB;background-size:40px 40px">
+              <div style="position:absolute;left:24%;top:32%;width:18px;height:18px;background:var(--bdr);border:2px solid var(--ink);border-radius:50%;box-shadow:2px 2px 0 var(--ink)"></div>
+              <div style="position:absolute;left:56%;top:58%;width:18px;height:18px;background:var(--bdr);border:2px solid var(--ink);border-radius:50%;box-shadow:2px 2px 0 var(--ink)"></div>
+              <div style="position:absolute;left:72%;top:22%;width:18px;height:18px;background:var(--bdr);border:2px solid var(--ink);border-radius:50%;box-shadow:2px 2px 0 var(--ink)"></div>
+              <div style="position:absolute;left:18%;top:70%;width:18px;height:18px;background:var(--bdr);border:2px solid var(--ink);border-radius:50%;box-shadow:2px 2px 0 var(--ink)"></div>
+            </div>
+            <div class="cards">
+              <div class="box"><div class="lbl">코트</div><h4>올림픽공원 체육관</h4><div class="sub">송파 · 실내 · 무료</div></div>
+              <div class="box"><div class="lbl">코트</div><h4>한강 농구코트</h4><div class="sub">여의도 · 야외 · 무료</div></div>
+            </div>
+          </div>
+          <div class="note"><b>신규</b> · 카카오맵 SDK 기존 사용. 위치 권한 없을 때 “전체 보기”로 폴백.</div>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="col-6">
+        <div class="screen">
+          <div class="cap"><span class="code">NOTIF</span><span class="title">알림 · 카테고리 탭 + 미확인 배지</span><span class="dev">F-04 / Q5 / M6</span></div>
+          <div class="body">
+            <div class="row between middle">
+              <h4 style="margin:0">알림</h4>
+              <span class="btn ghost">모두 읽음 ✓</span>
+            </div>
+            <div class="row wrap" style="gap:6px">
+              <span class="btn dark">전체 <b>5</b></span>
+              <span class="btn">대회 2</span>
+              <span class="btn">경기 1</span>
+              <span class="btn">팀 1</span>
+              <span class="btn">커뮤 1</span>
+              <span class="btn ghost">시스템 0</span>
+            </div>
+            <div class="box" style="border-left:4px solid var(--bdr)"><div class="row middle" style="gap:10px"><span>🏀</span><div style="flex:1"><b>김민수</b>님이 픽업 게임 신청 <span style="color:var(--ink-3);font-size:11px">· 10분 전</span><div class="sub">강남 · 3 on 3</div></div></div></div>
+            <div class="box" style="border-left:4px solid var(--bdr)"><div class="row middle" style="gap:10px"><span>🏆</span><div style="flex:1">BDR 챌린지 SPRING <b>접수 D-3</b> <span style="color:var(--ink-3);font-size:11px">· 1시간 전</span></div></div></div>
+            <div class="box"><div class="row middle" style="gap:10px"><span>💬</span><div style="flex:1">내 게시글에 새 댓글 3 <span style="color:var(--ink-3);font-size:11px">· 2시간 전</span></div></div></div>
+          </div>
+          <div class="note"><b>연결</b> · DB·UI는 이미 있음. API 7개에 <code style="background:#eee;padding:1px 5px;border-radius:3px">createNotification()</code> 호출 추가 + 헤더 배지 개수(Q5).</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 04 Onboarding flow -->
+  <section>
+    <div class="sh"><span class="n">04</span><h2>온보딩 압축 — 4단계 → 2단계 + 점진적 공개</h2><span class="tag">M6</span></div>
+
+    <div class="lhs">현재</div>
+    <div class="flow" style="margin-bottom:14px">
+      <div class="step"><div class="n">01</div><h4>signup</h4><div class="sub">이메일/OAuth</div><div class="arr">→</div></div>
+      <div class="step"><div class="n">02</div><h4>verify</h4><div class="sub">전화 · 이메일</div><div class="arr">→</div></div>
+      <div class="step"><div class="n">03</div><h4>complete</h4><div class="sub">12필드</div><div class="arr">→</div></div>
+      <div class="step"><div class="n">04</div><h4>preferences</h4><div class="sub">맞춤 설정</div><div class="arr">→</div></div>
+      <div class="step"><div class="n">05</div><h4>홈</h4><div class="sub">도착</div></div>
+    </div>
+
+    <div class="lhs">변경 후</div>
+    <div class="flow">
+      <div class="step hi"><div class="n">01</div><h4>signup + verify</h4><div class="sub">합친 2필드 (전화 필수)</div><div class="arr">→</div></div>
+      <div class="step hi"><div class="n">02</div><h4>미니 프로필</h4><div class="sub">닉네임 · 포지션 · 지역 3필드</div><div class="arr">→</div></div>
+      <div class="step"><div class="n">03</div><h4>홈</h4><div class="sub">즉시 매치 추천 경험</div><div class="arr">→</div></div>
+      <div class="step"><div class="n">04</div><h4>배너 진행률</h4><div class="sub">●●●○○○ 2/6</div><div class="arr">→</div></div>
+      <div class="step"><div class="n">05</div><h4>점진 완성</h4><div class="sub">맞춤 설정은 1주 뒤 알림</div></div>
+    </div>
+
+    <div class="callouts">
+      <div class="co"><div class="hook">A</div><h4>“나중에” 제거</h4><p>미니 프로필은 필수 3필드만. 이후 완성은 홈 배너가 점진 유도 (Q9 도트 진행률).</p></div>
+      <div class="co"><div class="hook">B</div><h4>OAuth 보정</h4><p>카카오/구글 가입자는 이메일 인증 스킵, 전화만 받는다. 중복 검증 없애 마찰 ↓.</p></div>
+      <div class="co"><div class="hook">C</div><h4>미완료 회복 경로</h4><p>“나중에”를 눌러도 /profile의 [내 정보]에 빨간 점으로 누락 필드 표시 + 1탭 완료.</p></div>
+    </div>
+  </section>
+
+  <div class="foot">
+    <div>MyBDR · Site Sketch v0.1 · 2026-04-19</div>
+    <div>다음 단계 → 시안 확정 후 컴포넌트별 하이파이 디자인</div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -158,6 +158,9 @@ model User {
   partner_members                                                           partner_members[]
   // 심판 플랫폼: 1:1 (User 하나당 Referee 0~1). back-relation 1줄만 추가.
   referee                                                                   Referee?
+  // 코트 대관 (Phase A): 회원이 예약한 코트 슬롯 + 운영자가 등록한 블록(차단) 슬롯 모두 포함
+  // 운영자가 차단 슬롯을 등록할 때도 본 user_id 에 운영자 본인이 들어간다 (status="blocked")
+  court_bookings                                                            court_bookings[]
 
   @@unique([provider, uid], map: "index_users_on_provider_and_uid")
   @@index([createdAt], map: "index_users_on_created_at")
@@ -944,6 +947,12 @@ model court_infos {
   has_parking            Boolean?                 @default(false) // 주차장 유무
   rental_available       Boolean?                 @default(false) // 대관 가능 여부
   rental_url             String?                  @db.VarChar // 대관 신청 URL
+  // 코트 대관 (Phase A): "none"=대관 미지원, "external"=rental_url 외부 안내, "internal"=시스템 내 예약
+  // 기본값 "none" 으로 기존 코트는 모두 대관 미지원 상태 유지
+  booking_mode           String                   @default("none") @db.VarChar
+  // 시간당 대관료 (원 단위). null 이면 운영자가 미설정 → UI에서 "요금 미설정" 표시
+  // 기존 fee 필드는 "전체 대관" 의미였을 수 있으므로 분리 (Phase A 는 항상 final_amount=0 무료)
+  booking_fee_per_hour   Decimal?                 @db.Decimal(10, 0)
   kakao_place_id         String?                  @db.VarChar // 카카오 장소 ID
   kakao_place_url        String?                  @db.VarChar // 카카오 장소 URL
   avg_rating             Float? // 카카오 평균 평점
@@ -961,6 +970,8 @@ model court_infos {
   pickup_games           pickup_games[]
   court_ambassadors      court_ambassadors[]
   court_events           court_events[]
+  // 코트 대관 (Phase A): 본 코트의 모든 예약/블록 슬롯
+  court_bookings         court_bookings[]
 
   @@index([average_rating], map: "index_court_infos_on_average_rating")
   @@index([city], map: "index_court_infos_on_city")
@@ -971,6 +982,46 @@ model court_infos {
   @@index([status], map: "index_court_infos_on_status")
   @@index([court_type, is_free], map: "index_court_infos_on_type_and_free")
   @@index([user_id], map: "index_court_infos_on_user_id")
+}
+
+// 코트 대관 (Phase A — MVP 무료 대관)
+// status 흐름:
+//   pending(슬롯 잠금, 결제 도입 시 사용) → confirmed(예약 확정) → cancelled / refunded / completed(이용 종료)
+//   blocked = 운영자가 직접 차단(점검·우천 등)한 슬롯. user_id 에 운영자 본인이 들어감
+// Phase A 는 결제 미도입 → POST 시점에 즉시 confirmed 로 생성
+// Phase B 에서 토스페이먼츠 결제 도입 시 pending 잠금 + payment_id 연결
+model court_bookings {
+  id                  BigInt    @id @default(autoincrement())
+  court_info_id       BigInt
+  user_id             BigInt // 예약자(또는 blocked 슬롯의 운영자)
+  start_at            DateTime  @db.Timestamp(6) // 시작 (1시간 단위 권장)
+  end_at              DateTime  @db.Timestamp(6) // 종료 (start_at + duration_hours * 1h)
+  duration_hours      Int // 1~4 (시안)
+  // 이용 목적: pickup(픽업경기) | team(팀 훈련) | scrim(스크림) | private(개인연습) | block(운영자 차단)
+  purpose             String    @default("pickup") @db.VarChar
+  expected_count      Int? // 예상 인원 (시안: 1~30)
+  amount              Decimal   @default(0) @db.Decimal(10, 0) // 기본 대관료 (원)
+  discount_amount     Decimal?  @default(0) @db.Decimal(10, 0) // BDR+ 할인 등 (Phase D)
+  final_amount        Decimal   @default(0) @db.Decimal(10, 0) // 최종 결제 금액 (Phase A=0)
+  platform_fee        Decimal?  @default(0) @db.Decimal(10, 0) // 플랫폼 수수료 (Phase B)
+  status              String    @default("confirmed") @db.VarChar
+  payment_id          BigInt? // payments.id FK (Phase B 에서 결제 연결)
+  cancellation_reason String?
+  cancelled_at        DateTime? @db.Timestamp(6)
+  refunded_at         DateTime? @db.Timestamp(6)
+  created_at          DateTime  @default(now()) @db.Timestamp(6)
+  updated_at          DateTime  @updatedAt @db.Timestamp(6)
+
+  court court_infos @relation(fields: [court_info_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user  User        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  // 슬롯 충돌 검사용 핵심 인덱스 — (court, start_at) 범위 쿼리 가속
+  @@index([court_info_id, start_at])
+  // 내 예약 목록 조회용
+  @@index([user_id, status])
+  // 운영자 대시보드용
+  @@index([status, created_at])
+  @@map("court_bookings")
 }
 
 model court_reviews {

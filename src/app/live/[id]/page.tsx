@@ -4,6 +4,9 @@ import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
 // 헤더 우측에 테마 토글 버튼을 배치하기 위해 공통 컴포넌트 재사용
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+// 2026-04-22: GameResult v2 — finished/completed 상태일 때 이 컴포넌트로 전체 렌더 갈아끼움.
+// 기존 라이브/진행중 UI 코드(약 1800줄)는 0 수정. 아래 분기 3줄만 추가.
+import { GameResultV2, type MatchDataV2 } from "./_v2/game-result";
 
 // 2026-04-16: 프린트 옵션 타입 — 팀별로 "누적 / 1~5쿼터"를 개별 체크 가능
 // "5"는 OT(연장) 1쿼터(이후 OT는 현재 단일 키로 단순화: 있으면 전체 OT 포함)
@@ -98,6 +101,18 @@ interface MatchData {
   // 2026-04-16: 쿼터별 이벤트 기반 상세 스탯 존재 여부
   // false면 Flutter "최종 스탯 입력 모드"로 기록된 경기 → 쿼터 필터 활성 시 안내 배너 + 스탯 "-" 처리
   has_quarter_event_detail: boolean;
+  // 2026-04-22: GameResult v2 — MVP 선수 + play_by_plays (API 신규 필드)
+  // 기존 v1 렌더 경로에서는 참조하지 않음. v2 분기에서만 사용.
+  mvp_player?: {
+    id: number;
+    jersey_number: number | null;
+    name: string;
+    team_id: number;
+    pts: number; reb: number; ast: number; stl: number; blk: number;
+    plus_minus: number;
+    fgm: number; fga: number; tpm: number; tpa: number; ftm: number; fta: number;
+    game_score: number;
+  } | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -606,6 +621,12 @@ export default function LiveBoxScorePage() {
       away: qa?.ot?.[i] ?? 0,
     })),
   ];
+
+  // 2026-04-22: 종료된 경기는 v2 GameResult 컴포넌트로 전체 렌더 교체
+  // 기존 라이브/진행중 UI 코드는 0 수정. finished/completed 외 상태는 기존 그대로 렌더.
+  if (match.status === "finished" || match.status === "completed") {
+    return <GameResultV2 match={match as unknown as MatchDataV2} />;
+  }
 
   return (
     // 페이지 최상단 컨테이너 — 배경/글자 기본색은 모두 CSS 변수 사용 (테마 전환 대응)

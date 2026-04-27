@@ -2,6 +2,18 @@
 <!-- 담당: planner-architect, developer | 최대 30항목 -->
 <!-- 프로젝트의 폴더 구조, 파일 역할, 핵심 패턴을 기록 -->
 
+### [2026-04-25] 코트 대관(Booking) 시스템 설계 — feature_key=court_rental 재활용 + 신규 1테이블 MVP
+- **분류**: architecture
+- **발견자**: planner-architect
+- **내용**: 코트 대관 시스템 4 Phase 기획. **기존 인프라 80% 재활용**: (1) `plans.feature_key="court_rental"` 이미 존재 (admin/plans/page.tsx + pricing/page.tsx 라벨 등록), (2) `/api/web/payments/confirm` 토스페이먼츠 승인 + `user_subscriptions` 30일 자동 발급 흐름 가동, (3) `payments.payable_type` 다형성 ("Plan"만 사용 중 → "CourtBooking" 추가 가능), (4) `court_infos.user_id` 등록자 추적 가능, (5) `court_infos.rental_available/rental_url/fee` 외부 링크 안내 수준 존재, (6) `partners`+`/partner-admin/venue` 광고용 별개 시스템 — 멤버십과 무관하므로 코트 운영자에 사용 X. **신규 필요**: court_bookings 테이블 1개 + court_infos에 booking_mode/booking_fee_per_hour 2컬럼 + User 백릴레이션 1줄. **운영자 ↔ 코트 매핑 단순화**: court_managers N:M 신규 모델 보류 → court_infos.user_id(1:1) + user_subscriptions(feature_key=court_rental, status=active) 검사 조합으로 충분. **가드 헬퍼**: `src/lib/courts/court-manager-guard.ts`(referee admin-guard 패턴 재사용). **동시성**: $transaction + FOR UPDATE + partial unique index(WHERE status='confirmed') + 슬롯 잠금 status=pending(15분 만료). **4 Phase**: A=무료 MVP(8~12h, final_amount=0) / B=토스결제(6~8h, payments 다형성 활용) / C=정산+자동환불+수익 대시보드(8~10h, court_settlements 신규 1테이블) / D=BDR+할인+운영자 신청 승인+court_managers N:M(6~8h). **사용자 결정 7건(D-B1~D-B7)**: 운영자 자격(추천 court_rental 구독자만) / 매핑 모델(추천 1:1) / 외부vs자체 토글(추천 booking_mode 토글) / 수수료(MVP 0%) / 정산(추천 출금 신청형) / 환불(MVP 수동승인) / KYC(MVP 생략). **Phase A 산출 파일 10개**: 신규 8(court-manager-guard.ts/booking-conflict.ts/api 3 route/page 3) + 수정 2(schema.prisma/court-detail-v2.tsx). **시안 위치**: Dev/design/BDR v2/screens/CourtBooking.jsx(199줄, 회원 관점만 — 운영자용 시안 없음 → Phase A에서 BDR v2 토큰 기반 신규 디자인 필요).
+- **참조횟수**: 0
+
+### [2026-04-24] BDR v2 전체 로드맵 — design_v2 브랜치, 74 페이지 10 Phase
+- **분류**: architecture
+- **발견자**: planner-architect
+- **내용**: v2 48 시안 × 기존 88 페이지 매핑 완료. 3 버킷 분류 — A) 1:1 직접 매핑 18건(Home/Games/Profile/Teams/Tournaments/Community/Courts/Login/Pricing/Settings/Help/Search/Orgs/Referee 등 코어 라우트), B) v2 전용 16건(Shop/Stats/Safety/Reviews/Gallery/Coaches/Rank/Achievements/Awards/Saved/Scrim/GuestApps/TeamInvite/TournamentEnroll/Messages/Calendar — 대부분 DB 모델 없음, 보류/흡수/정적 페이지화), C) 기존 전용 17건(tournament-admin 13 + partner-admin 4 + profile/growth·weekly-report·notification-settings·complete 등 — 옵션 2 "토큰만 교체" 추천). **10 Phase 구성**: 0(토큰+폰트+responsive, 2h) → 1(Home/Games/GameDetail/Live/Profile 8-10h) → 2(CreateGame/Result/MyGames/Noti/Search 6-8h) → 3(팀·대회 12페이지 18-22h) → 4(커뮤니티 4페이지 5-6h) → 5(프로필/랭킹 7페이지 8-10h) → 6(인증·결제 12페이지 10-12h) → 7(코트·Settings 10페이지 10-12h) → 8(admin 토큰 교체 19페이지 6-8h) → 9(정리+PR 4-6h). 총 77~94h (단축 시 62h). **공통 컴포넌트 위치**: `src/components/bdr-v2/` 신규 폴더, Phase 0에 AppNav/Drawer/Sidebar/Avatar/PromoCard/StatsStrip 6개 선제 추출, 이후 Phase별 점진 추출(3회 사용 기준). **PR 전략 C 혼합**: Phase 0+1 선 머지 → Phase 2~9 매주 rolling PR(6회) → 최종 정리 PR. 매주 design_v2 ← dev rebase. **전제 완화**: "API/데이터 패칭 절대 변경 금지" 규칙을 백엔드(route.ts)·Prisma 한정으로 좁힘. 클라이언트 페칭/상태/props shape는 v2 맞춤 조정 허용. **사용자 결정 8건** 중 D1(primary 반전)·D2(brutalist radius)·D8(PR 전략)만 Phase 0 착수 전 필수.
+- **참조횟수**: 0
+
 ### [2026-04-21] L2 본 설계 — 공용 컴포넌트 3종 + `/users/[id]` 본인 분기 + 티어 제거
 - **분류**: architecture
 - **발견자**: planner-architect

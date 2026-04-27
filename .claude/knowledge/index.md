@@ -1,12 +1,12 @@
 # 프로젝트 지식 목차
-> 최종 갱신: 2026-04-22 (세션 분리 원칙 재정의 — 기본=일반 / 카페는 선언형 · conventions.md 2건 승격: Tailwind v4 color-mix 문법 + any 예외 규칙 · 하드코딩 색상/any audit 실질 완결)
+> 최종 갱신: 2026-04-25 (코트 대관 시스템 설계 — architecture +1, decisions +2)
 
 ## 파일별 요약
 | 파일 | 항목 수 | 최종 업데이트 | 설명 |
 |------|--------|------------|------|
-| architecture.md | 30 | 2026-04-20 | 페이지 구조, 대회/대진표, 팀명 2필드, Referee 시스템, Flutter API 호환, **L3 다음 단위(EditionSwitcher/SeriesCard)** |
+| architecture.md | 31 | 2026-04-25 | 페이지 구조, 대회/대진표, 팀명 2필드, Referee 시스템, Flutter API 호환, L3 다음 단위, **코트 대관 시스템 설계(2026-04-25)** |
 | conventions.md | 27 | 2026-04-22 | 디자인/색상/경기집계/sticky/프린트CSS/공식 기록 가드/에이전트 호출 기준/스크립트 템플릿 재사용/세션 분리 원칙/**Tailwind v4 color-mix 언더스코어 문법(04-22)**/**any 예외 규칙 kakao·HOF·SW(04-22)** |
-| decisions.md | 78 | 2026-04-21 | 기술 결정 (KBL 순위/대진표/userId 연결/Referee v2/헬스체크 cron/공식 기록 가드/카페 정규식 파서/운영 DB 직접 연결/카페 dataid tie-break / 공지 방어 가드 / 과거 글 시분 원천 미제공 확정 / Phase 3 #6 Pagination / L3 Organization 기존 라우트 활용 / EditionSwitcher 동작 규약 / 카페 3게시판 전면 board 강제 + parser 힌트 metadata화 / **세션 역할 재정의 — 본 세션 = 카페 sync 전용**) |
+| decisions.md | 80 | 2026-04-25 | 기술 결정 (KBL 순위/대진표/userId 연결/Referee v2/헬스체크 cron/공식 기록 가드/카페 정규식 파서/운영 DB 직접 연결/카페 dataid tie-break / 공지 방어 가드 / 과거 글 시분 원천 미제공 확정 / Phase 3 #6 Pagination / L3 Organization 기존 라우트 활용 / EditionSwitcher 동작 규약 / 카페 3게시판 전면 board 강제 + parser 힌트 metadata화 / 세션 역할 재정의 — 본 세션 = 카페 sync 전용 / **코트 대관 court_managers N:M 보류(2026-04-25) / 코트 대관 payments.payable_type 재활용(2026-04-25)**) |
 | errors.md | 18 | 2026-04-20 | 에러 패턴 (sticky, @page Hancom PDF, th/td 정렬, DB 사고, add 누락, next/image 외부 호스트, apiSuccess 미들웨어 6회 재발, **카페 상세 HTML 시간 소스 `.num_subject` 단일**) |
 | lessons.md | 20 | 2026-04-22 | 교훈 (프린트 API, 모바일 zoom, 브랜치 drift, Flutter 테스트 오염, 팀 병합 logo, 동명이인, HTTP 5xx, API 미들웨어 재발 4회, 다음카페 정규식 파서 95%, 개발 DB라 믿은 .env가 운영 DB, parser 키워드보다 운영자 명시 신호(게시판)가 1순위, **점진 정비는 영역 단위로 묶어야 커밋 중복 비용 안 발생**) |
 | toss-design-analysis.md | 10 | 2026-03-28 | 토스 디자인 시스템 심층 분석 |
@@ -14,6 +14,9 @@
 | project-structure-audit.md | 10 | 2026-03-28 | 전체 구조 분석 |
 
 ## 최근 추가된 지식 (최근 10건)
+- [04-25] architecture: **코트 대관(Booking) 시스템 설계 — feature_key=court_rental 재활용 + 신규 1테이블 MVP** — plans/court_rental + 토스결제 + payments 다형성 + court_infos.user_id 모두 기존 자산. court_bookings 1테이블 + court_infos 2컬럼 + User 백릴레이션 1줄로 Phase A MVP 가능. 4 Phase(A 무료 8~12h / B 결제 6~8h / C 정산 8~10h / D BDR+할인 6~8h). 사용자 결정 7건 도출(D-B1~D-B7)
+- [04-25] decisions: **코트 대관 court_managers N:M 모델 보류** — court_infos.user_id(1:1) + user_subscriptions(feature_key=court_rental, status=active) AND 검사로 단순화. Phase D에서 다중 운영자 요구 시 도입 + 가드만 교체
+- [04-25] decisions: **코트 대관 payments.payable_type 다형성 재활용** — "Plan"만 사용 중인 다형성에 "CourtBooking" 추가. 신규 booking_payments 모델 미생성. 환불·토스 응답 필드 그대로 재활용 + admin/payments 통합 조회 유지
 - [04-22] lessons: **점진 정비는 "영역 단위"로 묶어야 커밋 중복 비용 안 발생** — 오늘 tm 영역 6파일을 3차(3파일)+4차(3파일)로 쪼갠 실수. "파일 경로 prefix 공통성" 체크 후 같은 영역은 한 커밋으로 몰아가기. 건수 균등 < 영역 완결성
 - [04-22] conventions: **`any` 타입 예외 허용 규칙 (audit 재발 방지)** — kakao SDK 9 / Next.js HOF 3 / Service Worker 1은 예외. 정비 우선순위: API 응답 → Prisma WhereInput → props/SWR fallback → unsafe cast. 신규 예외는 PM 판단 후 여기 추가
 - [04-22] conventions: **Tailwind v4 arbitrary value color-mix 언더스코어 문법** — 공백을 `_`로 치환하면 hover/focus 의사클래스도 토큰화 가능. `hover:bg-[color-mix(in_srgb,var(--color-error)_20%,transparent)]`. hover 있으면 Tailwind arbitrary / 없으면 인라인 style. `hover:opacity-80` 대체 금지(희미해짐 = 의도 반대). next build PASS로 검증 완료
@@ -104,6 +107,7 @@
 | 전체 구조, 90개 페이지 | 전체 페이지 구조 분석 |
 | 현장등록, Flutter, TournamentTeamPlayer | 대회 선수 등록 및 userId 연결 흐름 분석 |
 | 경기기록, match_events, MatchPlayerStat, 기록원 | 경기 기록 입력 시스템 전체 구조 분석 |
+| 대관, booking, court_bookings, court_rental, 멤버십 운영자 | 코트 대관(Booking) 시스템 설계 (2026-04-25) |
 
 ### 디자인/코딩 규칙을 알고 싶을 때 → conventions.md
 | 키워드 | 항목 제목 |

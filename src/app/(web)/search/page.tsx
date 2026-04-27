@@ -1,54 +1,81 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db/prisma";
-import Link from "next/link";
+import { SearchClient } from "./_components/search-client";
 
 // SEO: 검색 페이지 메타데이터
 export const metadata: Metadata = {
   title: "검색 - MyBDR",
-  description: "경기, 대회, 팀, 코트, 유저를 통합 검색하세요.",
+  description: "경기, 대회, 팀, 코트, 유저, 커뮤니티를 통합 검색하세요.",
 };
 
 /* ============================================================
- * /search?q=키워드 — 통합 검색 결과 페이지
+ * /search?q=키워드 — 통합 검색 결과 페이지 (BDR v2 재구성)
  *
- * 서버 컴포넌트에서 Prisma로 5개 테이블 직접 검색.
- * API를 거치지 않고 서버에서 바로 쿼리하여 응답 속도 최적화.
- * 카테고리별(경기/대회/팀/커뮤니티) 섹션으로 결과 표시.
+ * 왜 서버 + 클라 분리 구조인가:
+ * - Prisma 쿼리는 서버에서 직접 실행해야 보안/성능상 이점이 있다 (이전 버전 유지).
+ * - 검색 input controlled + 탭 전환(클라이언트 필터)은 "use client"가 필요하다.
+ * - 따라서 page.tsx(서버)는 Prisma로 6테이블 동시 검색 후 직렬화하여
+ *   search-client.tsx에 props 로 전달한다.
+ *
+ * v2 변경점:
+ * - .page 쉘 + inline maxWidth 유지 (Phase 1/2 일관)
+ * - 탭 7개(전체/팀/경기/대회/커뮤니티/코트/유저) — 사용자 원칙: 데이터 있으면 표시
+ * - controlled form + URL push (Enter/submit 시 router.push)
+ *
+ * 불변:
+ * - 기존 Prisma 쿼리 6종 그대로 유지 (API/서비스 변경 없음)
+ * - 6종 데이터(games/tournaments/teams/posts/users/courts) 전부 화면 노출
  * ============================================================ */
 
-// 경기 유형 한글 매핑
-const GAME_TYPE_LABELS: Record<number, string> = {
-  0: "픽업게임",
-  1: "팀매치",
-  2: "대회경기",
-};
-
-// 커뮤니티 카테고리 한글 매핑
-const CATEGORY_LABELS: Record<string, string> = {
-  general: "자유",
-  question: "질문",
-  info: "정보",
-  recruit: "모집",
-  trade: "거래",
-  review: "후기",
-};
-
-// 대회 상태 한글 매핑 (4종 통일 규칙)
-const STATUS_LABELS: Record<string, string> = {
-  draft: "준비중",
-  upcoming: "준비중",
-  registration: "접수중",
-  active: "접수중",
-  open: "접수중",
-  in_progress: "진행중",
-  live: "진행중",
-  ongoing: "진행중",
-  completed: "종료",
-  ended: "종료",
-  cancelled: "종료",
-};
-
 export const dynamic = "force-dynamic";
+
+// 직렬화된 검색 결과 타입 — 클라로 넘길 때 BigInt/Date 불가능하므로 문자열화
+export interface SerializedGame {
+  id: string;
+  title: string | null;
+  game_type: number;
+  venue_name: string | null;
+  city: string | null;
+  scheduled_at: string | null;
+}
+export interface SerializedTournament {
+  id: string;
+  name: string;
+  status: string | null;
+  city: string | null;
+  start_date: string | null;
+  teams_count: number | null;
+  max_teams: number | null;
+}
+export interface SerializedTeam {
+  id: string;
+  name: string;
+  city: string | null;
+  members_count: number | null;
+}
+export interface SerializedPost {
+  id: string;
+  title: string;
+  category: string | null;
+  comments_count: number;
+  created_at: string | null;
+}
+export interface SerializedUser {
+  id: string;
+  nickname: string | null;
+  name: string | null;
+  position: string | null;
+  city: string | null;
+}
+export interface SerializedCourt {
+  id: string;
+  name: string;
+  address: string | null;
+  city: string | null;
+  district: string | null;
+  court_type: string;
+  average_rating: number | null;
+}
 
 interface SearchPageProps {
   searchParams: Promise<{ q?: string }>;
@@ -58,27 +85,22 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
   const q = params.q?.trim() || "";
 
-  // 검색어가 없으면 안내 메시지만 표시
+  // 검색어가 없으면 input만 있는 빈 상태로 클라에 위임 (탭/결과는 빈 배열)
   if (!q) {
     return (
-      <div className="py-20 text-center">
-        <span
-          className="material-symbols-outlined mb-4 block text-5xl"
-          style={{ color: "var(--color-text-disabled)" }}
-        >
-          search
-        </span>
-        <p className="text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
-          검색어를 입력해주세요
-        </p>
-        <p className="mt-2 text-sm" style={{ color: "var(--color-text-muted)" }}>
-          경기, 대회, 팀, 코트, 커뮤니티 글을 한번에 검색할 수 있어요
-        </p>
-      </div>
+      <SearchClient
+        q=""
+        games={[]}
+        tournaments={[]}
+        teams={[]}
+        posts={[]}
+        users={[]}
+        courts={[]}
+      />
     );
   }
 
-  // 6개 테이블 동시 검색 (서버 컴포넌트이므로 Prisma 직접 사용)
+  // 6개 테이블 동시 검색 (서버 컴포넌트이므로 Prisma 직접 사용) — 기존 로직 그대로
   const [games, tournaments, teams, posts, users, courts] = await Promise.all([
     prisma.games.findMany({
       where: { title: { contains: q, mode: "insensitive" } },
@@ -151,7 +173,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         city: true,
       },
     }),
-
     // 코트: name 또는 address에서 키워드 검색
     prisma.court_infos.findMany({
       where: {
@@ -175,340 +196,66 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     }),
   ]);
 
-  // 코트 유형 한글 매핑
-  const COURT_TYPE_LABELS: Record<string, string> = {
-    outdoor: "야외",
-    indoor: "실내",
-    rooftop: "옥상",
-  };
-
-  // 포지션 한글 매핑
-  const POSITION_LABELS: Record<string, string> = {
-    PG: "포인트가드",
-    SG: "슈팅가드",
-    SF: "스몰포워드",
-    PF: "파워포워드",
-    C: "센터",
-  };
-
-  // 전체 결과가 0건인지 확인
-  const totalCount = games.length + tournaments.length + teams.length + posts.length + courts.length + users.length;
+  // BigInt / Date 직렬화 — 클라에 전달하려면 plain object 필수
+  const sGames: SerializedGame[] = games.map((g) => ({
+    id: g.id.toString(),
+    title: g.title,
+    game_type: g.game_type,
+    venue_name: g.venue_name,
+    city: g.city,
+    scheduled_at: g.scheduled_at ? g.scheduled_at.toISOString() : null,
+  }));
+  const sTournaments: SerializedTournament[] = tournaments.map((t) => ({
+    id: t.id,
+    name: t.name,
+    status: t.status,
+    city: t.city,
+    start_date: t.startDate ? t.startDate.toISOString() : null,
+    teams_count: t.teams_count ?? null,
+    max_teams: t.maxTeams ?? null,
+  }));
+  const sTeams: SerializedTeam[] = teams.map((tm) => ({
+    id: tm.id.toString(),
+    name: tm.name,
+    city: tm.city,
+    members_count: tm.members_count ?? null,
+  }));
+  const sPosts: SerializedPost[] = posts.map((p) => ({
+    id: p.id.toString(),
+    title: p.title,
+    category: p.category,
+    // comments_count 는 스키마상 Int — nullable 처리 안전하게
+    comments_count: p.comments_count ?? 0,
+    created_at: p.created_at ? p.created_at.toISOString() : null,
+  }));
+  const sUsers: SerializedUser[] = users.map((u) => ({
+    id: u.id.toString(),
+    nickname: u.nickname,
+    name: u.name,
+    position: u.position,
+    city: u.city,
+  }));
+  const sCourts: SerializedCourt[] = courts.map((c) => ({
+    id: c.id.toString(),
+    name: c.name,
+    address: c.address,
+    city: c.city,
+    district: c.district,
+    court_type: c.court_type,
+    // Decimal → number (소수점 한 자리 표시용). null 가능성 처리
+    average_rating:
+      c.average_rating != null ? Number(c.average_rating) : null,
+  }));
 
   return (
-    <div className="space-y-6">
-      {/* 검색 헤더 */}
-      <div className="pb-2">
-        <h1
-          className="text-xl font-bold"
-          style={{ color: "var(--color-text-primary)" }}
-        >
-          &ldquo;{q}&rdquo; 검색 결과
-        </h1>
-        <p className="mt-1 text-sm" style={{ color: "var(--color-text-muted)" }}>
-          총 {totalCount}건
-        </p>
-      </div>
-
-      {/* 결과가 없을 때 */}
-      {totalCount === 0 && (
-        <div className="py-16 text-center">
-          <span
-            className="material-symbols-outlined mb-4 block text-5xl"
-            style={{ color: "var(--color-text-disabled)" }}
-          >
-            search_off
-          </span>
-          <p className="text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
-            검색 결과가 없어요
-          </p>
-          <p className="mt-2 text-sm" style={{ color: "var(--color-text-muted)" }}>
-            다른 키워드로 다시 검색해보세요
-          </p>
-        </div>
-      )}
-
-      {/* 경기 섹션 */}
-      {games.length > 0 && (
-        <SearchSection
-          icon="sports_basketball"
-          iconBg="var(--color-primary)"
-          title="경기"
-          count={games.length}
-          moreHref={`/games?q=${encodeURIComponent(q)}`}
-        >
-          {games.map((game) => (
-            <SearchResultItem
-              key={game.id.toString()}
-              href={`/games/${game.id}`}
-              title={game.title || "제목 없음"}
-              subtitle={[
-                GAME_TYPE_LABELS[game.game_type] || "경기",
-                game.venue_name || game.city,
-                game.scheduled_at
-                  ? new Date(game.scheduled_at).toLocaleDateString("ko-KR", {
-                      month: "short",
-                      day: "numeric",
-                    })
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            />
-          ))}
-        </SearchSection>
-      )}
-
-      {/* 대회 섹션 */}
-      {tournaments.length > 0 && (
-        <SearchSection
-          icon="emoji_events"
-          iconBg="var(--color-info)"
-          title="대회"
-          count={tournaments.length}
-          moreHref={`/tournaments`}
-        >
-          {tournaments.map((t) => (
-            <SearchResultItem
-              key={t.id}
-              href={`/tournaments/${t.id}`}
-              title={t.name}
-              subtitle={[
-                STATUS_LABELS[t.status || "draft"] || t.status,
-                t.city,
-                t.teams_count != null && t.maxTeams
-                  ? `${t.teams_count}/${t.maxTeams}팀`
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            />
-          ))}
-        </SearchSection>
-      )}
-
-      {/* 팀 섹션 */}
-      {teams.length > 0 && (
-        <SearchSection
-          icon="groups"
-          iconBg="#6366f1"
-          title="팀"
-          count={teams.length}
-          moreHref={`/teams`}
-        >
-          {teams.map((team) => (
-            <SearchResultItem
-              key={team.id.toString()}
-              href={`/teams/${team.id}`}
-              title={team.name}
-              subtitle={[
-                team.city,
-                team.members_count != null ? `${team.members_count}명` : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            />
-          ))}
-        </SearchSection>
-      )}
-
-      {/* 코트 섹션 */}
-      {courts.length > 0 && (
-        <SearchSection
-          icon="location_on"
-          iconBg="var(--color-info)"
-          title="코트"
-          count={courts.length}
-          moreHref={`/courts`}
-        >
-          {courts.map((court) => (
-            <SearchResultItem
-              key={court.id.toString()}
-              href={`/courts/${court.id}`}
-              title={court.name}
-              subtitle={[
-                COURT_TYPE_LABELS[court.court_type] || court.court_type,
-                court.district || court.city,
-                court.average_rating
-                  ? `${Number(court.average_rating).toFixed(1)}점`
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            />
-          ))}
-        </SearchSection>
-      )}
-
-      {/* 유저 섹션 */}
-      {users.length > 0 && (
-        <SearchSection
-          icon="person"
-          iconBg="#8b5cf6"
-          title="유저"
-          count={users.length}
-          moreHref={`/search?q=${encodeURIComponent(q)}`}
-        >
-          {users.map((user) => (
-            <SearchResultItem
-              key={user.id.toString()}
-              href={`/users/${user.id}`}
-              title={user.nickname || user.name || "알 수 없음"}
-              subtitle={[
-                user.position ? (POSITION_LABELS[user.position] || user.position) : null,
-                user.city,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            />
-          ))}
-        </SearchSection>
-      )}
-
-      {/* 커뮤니티 섹션 */}
-      {posts.length > 0 && (
-        <SearchSection
-          icon="forum"
-          iconBg="#10b981"
-          title="커뮤니티"
-          count={posts.length}
-          moreHref={`/community`}
-        >
-          {posts.map((post) => (
-            <SearchResultItem
-              key={post.id.toString()}
-              href={`/community/${post.id}`}
-              title={post.title}
-              subtitle={[
-                CATEGORY_LABELS[post.category || "general"] || post.category,
-                post.comments_count > 0 ? `댓글 ${post.comments_count}` : null,
-                post.created_at
-                  ? new Date(post.created_at).toLocaleDateString("ko-KR", {
-                      month: "short",
-                      day: "numeric",
-                    })
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            />
-          ))}
-        </SearchSection>
-      )}
-    </div>
-  );
-}
-
-/* ============================================================
- * SearchSection — 카테고리별 검색 결과 섹션
- * TossSectionHeader 패턴: 아이콘 + 제목 + 건수 + 전체보기
- * ============================================================ */
-function SearchSection({
-  icon,
-  iconBg,
-  title,
-  count,
-  moreHref,
-  children,
-}: {
-  icon: string;
-  iconBg: string;
-  title: string;
-  count: number;
-  moreHref: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className="rounded-md p-5"
-      style={{
-        backgroundColor: "var(--color-card)",
-        boxShadow: "var(--shadow-card)",
-      }}
-    >
-      {/* 섹션 헤더: 아이콘 + 제목(건수) + 더보기 링크 */}
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-full"
-            style={{ backgroundColor: iconBg }}
-          >
-            <span className="material-symbols-outlined text-base text-white">
-              {icon}
-            </span>
-          </div>
-          <h3
-            className="text-base font-bold"
-            style={{ color: "var(--color-text-primary)" }}
-          >
-            {title}
-            <span
-              className="ml-1.5 text-sm font-medium"
-              style={{ color: "var(--color-text-muted)" }}
-            >
-              {count}건
-            </span>
-          </h3>
-        </div>
-        <Link
-          href={moreHref}
-          className="flex items-center gap-0.5 text-sm font-medium transition-colors"
-          style={{ color: "var(--color-primary)" }}
-        >
-          더보기
-          <span className="material-symbols-outlined text-sm">
-            chevron_right
-          </span>
-        </Link>
-      </div>
-
-      {/* 결과 리스트 */}
-      <div className="divide-y divide-[var(--color-border-subtle)]">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-/* ============================================================
- * SearchResultItem — 개별 검색 결과 아이템
- * TossListItem 패턴: 제목 + 부가정보 + 화살표
- * ============================================================ */
-function SearchResultItem({
-  href,
-  title,
-  subtitle,
-}: {
-  href: string;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center justify-between gap-3 rounded-lg px-3 py-3.5 transition-colors hover:bg-[var(--color-surface-bright)]"
-    >
-      <div className="min-w-0 flex-1">
-        <p
-          className="truncate text-sm font-semibold"
-          style={{ color: "var(--color-text-primary)" }}
-        >
-          {title}
-        </p>
-        {subtitle && (
-          <p
-            className="mt-0.5 truncate text-xs"
-            style={{ color: "var(--color-text-muted)" }}
-          >
-            {subtitle}
-          </p>
-        )}
-      </div>
-      <span
-        className="material-symbols-outlined shrink-0 text-lg"
-        style={{ color: "var(--color-text-disabled)" }}
-      >
-        chevron_right
-      </span>
-    </Link>
+    <SearchClient
+      q={q}
+      games={sGames}
+      tournaments={sTournaments}
+      teams={sTeams}
+      posts={sPosts}
+      users={sUsers}
+      courts={sCourts}
+    />
   );
 }

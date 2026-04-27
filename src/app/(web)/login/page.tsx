@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useActionState, useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
+import { useState, useActionState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { loginAction, devLoginAction } from "@/app/actions/auth";
 import { InfoDialog } from "@/components/ui/info-dialog";
 
+// OAuth 콜백 에러 코드 → 사용자용 한국어 메시지 매핑
+// (기존 로직 유지 — UI만 교체하므로 동일)
 const OAUTH_ERRORS: Record<string, string> = {
   kakao_token: "카카오 로그인에 실패했습니다.",
   kakao_fail: "카카오 로그인 중 오류가 발생했습니다.",
@@ -33,10 +33,15 @@ function isValidRedirect(path: string): boolean {
 }
 
 export default function LoginPage() {
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  // 탭 상태 — 시안 기준 'login' | 'signup'
+  // 회원가입 탭은 모든 입력이 disabled 상태이며, "가입하기" 버튼만 /signup 페이지로 이동
+  const [tab, setTab] = useState<"login" | "signup">("login");
+
+  // 로그인 폼 상태 (서버 액션 바인딩) — 기존 로직 그대로
   const [loginState, loginFormAction, loginPending] = useActionState(loginAction, null);
+  // 개발 환경 자동 로그인 (NODE_ENV !== production일 때만 노출)
   const [devState, devFormAction, devPending] = useActionState(devLoginAction, null);
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -56,180 +61,382 @@ export default function LoginPage() {
   const redirectBanner = redirectTo ? REDIRECT_BANNERS[redirectTo] : null;
   const [showRedirectDialog, setShowRedirectDialog] = useState<boolean>(!!redirectBanner);
 
-  // 모달 열릴 때 body 스크롤 방지
-  useEffect(() => {
-    if (showEmailModal) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => { document.body.style.overflow = ""; };
-  }, [showEmailModal]);
-
   return (
-    <div className="flex min-h-[80vh] flex-col items-center justify-center px-4 -mt-8">
-      <div className="mb-4 text-center">
-        <Image src="/images/logo.png" alt="BDR" width={208} height={104} className="mx-auto mb-2 w-52 h-auto" />
-        {/* 브랜드 타이틀: 메인 텍스트 색상 */}
-        <p className="text-lg font-bold" style={{ fontFamily: "var(--font-heading)", color: 'var(--color-text-primary)' }}>
-          새로운 BDR의 시작
-        </p>
-        {/* 브랜드 서브타이틀: BDR 이니셜 웜 오렌지 accent */}
-        <p className="mt-1 text-base tracking-[0.12em] font-semibold uppercase" style={{ fontFamily: "var(--font-heading)", color: 'var(--color-text-secondary)' }}>
-          My <span className="font-bold" style={{ color: 'var(--color-accent)' }}>B</span>asketball <span className="font-bold" style={{ color: 'var(--color-accent)' }}>D</span>aily <span className="font-bold" style={{ color: 'var(--color-accent)' }}>R</span>outine
-        </p>
+    // BDR v2 시안 — page 컨테이너 + 상단 여백 확보
+    <div className="page" style={{ maxWidth: 480, paddingTop: 60, margin: "0 auto" }}>
+      {/* 헤더: MyBDR. 대형 타이포 + 서브타이틀 */}
+      <div style={{ textAlign: "center", marginBottom: 28 }}>
+        <div
+          style={{
+            fontFamily: "var(--ff-display)",
+            fontSize: 36,
+            fontWeight: 900,
+            letterSpacing: "-0.02em",
+            color: "var(--ink)",
+          }}
+        >
+          MyBDR<span style={{ color: "var(--accent)" }}>.</span>
+        </div>
+        <div style={{ fontSize: 13, color: "var(--ink-mute)", marginTop: 6 }}>
+          서울 3x3 농구 커뮤니티
+        </div>
       </div>
 
-      <div className="w-full max-w-sm space-y-4">
-        {/* 로그인 필요 안내는 InfoDialog(플로팅)로 노출 — 인라인 배너 제거
-            전역 컨벤션: 확인 버튼/backdrop/ESC 3방식 닫힘 (conventions.md 2026-04-19) */}
-        {/* OAuth 에러도 InfoDialog(플로팅)로 노출 — 인라인 배너 제거 */}
-
-        {/* 간편 로그인 카드: CSS 변수 */}
-        <div className="rounded-[20px] border p-5" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)', boxShadow: 'var(--shadow-card)' }}>
-          <p className="mb-4 text-center text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>간편 로그인</p>
-          <div className="flex flex-col gap-2.5">
-            {/* 카카오: 고유 브랜드 색상 유지 */}
-            <a
-              href={`/api/auth/login?provider=kakao${redirectTo ? `&redirect=${encodeURIComponent(redirectTo)}` : ""}`}
-              className="flex h-12 items-center justify-center gap-2 rounded-[12px] transition-opacity hover:opacity-90"
-              style={{ backgroundColor: "#FEE500", color: "#191919" }}
-            >
-              <svg width="18" height="18" viewBox="0 0 18 18"><path d="M9 1C4.58 1 1 3.8 1 7.2c0 2.2 1.46 4.13 3.66 5.23l-.93 3.42c-.08.3.26.54.52.36L8.1 13.6c.3.03.6.05.9.05 4.42 0 8-2.8 8-6.25S13.42 1 9 1" fill="#191919"/></svg>
-              <span className="whitespace-nowrap text-sm font-semibold">카카오로 시작하기</span>
-            </a>
-            {/* 네이버: 준비 중 (비활성화) */}
-            <div
-              className="flex h-12 items-center justify-center gap-2 rounded-[12px] opacity-40 cursor-not-allowed"
-              style={{ backgroundColor: "#03C75A", color: "#FFFFFF" }}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10.85 8.55L4.92 0H0v16h5.15V7.45L11.08 16H16V0h-5.15v8.55z" fill="white"/></svg>
-              <span className="whitespace-nowrap text-sm font-semibold">네이버 (준비 중)</span>
-            </div>
-            {/* 구글: 테두리/배경 CSS 변수 */}
-            <a
-              href={`/api/auth/login?provider=google${redirectTo ? `&redirect=${encodeURIComponent(redirectTo)}` : ""}`}
-              className="flex h-12 items-center justify-center gap-2 rounded-[12px] border transition-colors"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)' }}
-            >
-              <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
-              <span className="whitespace-nowrap text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>Google로 시작하기</span>
-            </a>
-
-            {/* 이메일 로그인 버튼: primary 색상 */}
+      {/* 카드: 탭 헤더 + 본문 */}
+      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+        {/* 탭 (로그인 / 회원가입) — cafe-blue 하단 라인 */}
+        <div style={{ display: "flex", borderBottom: "1px solid var(--border)" }}>
+          {[
+            ["login", "로그인"] as const,
+            ["signup", "회원가입"] as const,
+          ].map(([k, l]) => (
             <button
+              key={k}
               type="button"
-              onClick={() => setShowEmailModal(true)}
-              className="flex h-12 items-center justify-center gap-2 rounded-[12px] border text-white transition-colors"
-              style={{ backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-primary)' }}
+              onClick={() => setTab(k)}
+              style={{
+                flex: 1,
+                padding: "14px 0",
+                background: tab === k ? "var(--bg-elev)" : "var(--bg-alt)",
+                border: 0,
+                borderBottom:
+                  tab === k ? "3px solid var(--cafe-blue)" : "3px solid transparent",
+                color: tab === k ? "var(--ink)" : "var(--ink-mute)",
+                fontWeight: tab === k ? 700 : 500,
+                fontSize: 14,
+                cursor: "pointer",
+              }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="4" width="20" height="16" rx="2" />
-                <path d="M22 7l-10 7L2 7" />
-              </svg>
-              <span className="whitespace-nowrap text-sm font-semibold">이메일 로그인</span>
+              {l}
             </button>
-          </div>
-
-          {/* 회원가입 / 아이디, 비밀번호 찾기 */}
-          <div className="mt-4 flex items-center justify-center gap-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            <Link href="/signup" className="transition-colors font-medium" style={{ color: 'var(--color-text-secondary)' }}>회원가입</Link>
-            <span style={{ color: 'var(--color-text-muted)' }}>|</span>
-            <Link href="/forgot-password" className="transition-colors font-medium" style={{ color: 'var(--color-text-secondary)' }}>비밀번호 찾기</Link>
-          </div>
+          ))}
         </div>
 
-        {/* Dev 로그인 */}
-        {process.env.NODE_ENV !== "production" && (
-          <form action={devFormAction} className="text-center">
-            <button type="submit" disabled={devPending}
-              className="text-sm underline disabled:opacity-50" style={{ color: 'var(--color-text-muted)' }}>
-              {devPending ? "..." : "Dev 자동 로그인"}
-            </button>
-            {devState?.error && <p className="mt-1 text-sm text-[var(--color-error)]">{devState.error}</p>}
-          </form>
-        )}
+        {/* 본문 패딩 — 시안 기준 24px */}
+        <div style={{ padding: "24px 24px 28px" }}>
+          {tab === "login" ? (
+            // ─────────── 로그인 탭 ───────────
+            <>
+              {/* 서버 액션 에러 메시지 */}
+              {loginState?.error && (
+                <div
+                  style={{
+                    marginBottom: 12,
+                    padding: "10px 12px",
+                    borderRadius: 8,
+                    background: "var(--accent-soft)",
+                    color: "var(--danger)",
+                    fontSize: 13,
+                  }}
+                >
+                  {loginState.error}
+                </div>
+              )}
 
-        <p className="text-center text-xs" style={{ color: 'var(--color-text-muted)' }}>
-          가입 시 <Link href="/terms" className="underline">이용약관</Link> 및{" "}
-          <Link href="/privacy" className="underline">개인정보처리방침</Link>에 동의합니다.
-        </p>
-      </div>
+              {/* 로그인 폼 — 서버 액션은 그대로, 시안 input/label만 적용 */}
+              <form action={loginFormAction}>
+                {/* 로그인 성공 후 복귀할 경로를 hidden input으로 전달 */}
+                {redirectTo && <input type="hidden" name="redirect" value={redirectTo} />}
 
-      {/* 이메일 로그인 플로팅 모달 */}
-      {showEmailModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowEmailModal(false); }}
-        >
-          {/* 모달 카드: CSS 변수 */}
-          <div className="w-full max-w-sm rounded-t-[24px] sm:rounded-[24px] p-6 animate-slide-up sm:animate-fade-in" style={{ backgroundColor: 'var(--color-card)', boxShadow: 'var(--shadow-elevated)' }}>
-            {/* 모달 헤더 */}
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>이메일 로그인</h2>
-              <button
-                type="button"
-                onClick={() => setShowEmailModal(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full transition-colors"
-                style={{ color: 'var(--color-text-muted)' }}
+                <div className="label">이메일</div>
+                <input
+                  className="input"
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="email@example.com"
+                  style={{ marginBottom: 14 }}
+                />
+
+                <div className="label">비밀번호</div>
+                <input
+                  className="input"
+                  name="password"
+                  type="password"
+                  required
+                  placeholder="비밀번호"
+                  style={{ marginBottom: 12 }}
+                />
+
+                {/* 자동 로그인 + 비밀번호 찾기 한 줄 */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    fontSize: 12,
+                    marginBottom: 18,
+                  }}
+                >
+                  {/* 자동 로그인: UI만 배치 + disabled + tooltip ("준비 중")
+                      추후 구현 — Phase 6 Login (token 시스템 필요) */}
+                  <label
+                    style={{
+                      display: "flex",
+                      gap: 6,
+                      alignItems: "center",
+                      cursor: "not-allowed",
+                      color: "var(--ink-dim)",
+                    }}
+                    title="준비 중"
+                  >
+                    <input type="checkbox" disabled />
+                    자동 로그인
+                    <span
+                      style={{
+                        marginLeft: 4,
+                        padding: "1px 6px",
+                        fontSize: 10,
+                        borderRadius: 4,
+                        background: "var(--bg-alt)",
+                        color: "var(--ink-mute)",
+                        border: "1px solid var(--border)",
+                      }}
+                    >
+                      준비 중
+                    </span>
+                  </label>
+                  {/* 비밀번호 찾기 — 기존 /forgot-password 라우트 유지 */}
+                  <button
+                    type="button"
+                    onClick={() => router.push("/forgot-password")}
+                    style={{
+                      background: "transparent",
+                      border: 0,
+                      padding: 0,
+                      color: "var(--link)",
+                      cursor: "pointer",
+                      fontSize: 12,
+                    }}
+                  >
+                    비밀번호 찾기
+                  </button>
+                </div>
+
+                {/* 로그인 제출 버튼 — 시안 .btn--primary .btn--xl */}
+                <button type="submit" className="btn btn--primary btn--xl" disabled={loginPending}>
+                  {loginPending ? "로그인 중..." : "로그인"}
+                </button>
+              </form>
+
+              {/* 또는 divider */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  margin: "18px 0",
+                  color: "var(--ink-dim)",
+                  fontSize: 12,
+                }}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+                <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+                또는
+                <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+              </div>
 
-            {/* 에러 메시지 */}
-            {loginState?.error && (
-              <div className="mb-3 rounded-[10px] bg-[var(--color-error-light)] px-3 py-2 text-sm text-[var(--color-error)]">{loginState.error}</div>
-            )}
-
-            {/* 로그인 폼: 입력 필드 테두리/배경 CSS 변수 */}
-            <form action={loginFormAction} className="space-y-3">
-              {/* 로그인 성공 후 복귀할 경로를 hidden input으로 전달 */}
-              {redirectTo && <input type="hidden" name="redirect" value={redirectTo} />}
-              <input name="email" type="email" required placeholder="이메일"
-                className="w-full rounded-[12px] border px-4 py-3 text-sm focus:outline-none focus:ring-2"
-                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)', color: 'var(--color-text-primary)' }} />
-              <div className="relative">
-                <input name="password" type={showPassword ? "text" : "password"} required placeholder="비밀번호"
-                  className="w-full rounded-[12px] border px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2"
-                  style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)', color: 'var(--color-text-primary)' }} />
+              {/* 카카오 / 네이버 grid (시안) */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {/* 카카오: 정상 동작 — 기존 OAuth 라우트 유지 */}
+                <a
+                  className="btn"
+                  href={`/api/auth/login?provider=kakao${
+                    redirectTo ? `&redirect=${encodeURIComponent(redirectTo)}` : ""
+                  }`}
+                  style={{ background: "#FEE500", borderColor: "#FEE500", color: "#000" }}
+                >
+                  카카오
+                </a>
+                {/* 네이버: 준비 중 (비활성화) — disabled 표시
+                    추후 구현 — Phase 6 Login (네이버 OAuth 활성화) */}
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 transition-colors"
-                  style={{ color: 'var(--color-text-muted)' }}
-                  tabIndex={-1}
+                  className="btn"
+                  disabled
+                  title="준비 중"
+                  style={{ cursor: "not-allowed" }}
                 >
-                  {showPassword ? (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </svg>
-                  ) : (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
+                  네이버 (준비 중)
                 </button>
               </div>
-              {/* 로그인 제출 버튼: primary 색상 */}
-              <button type="submit" disabled={loginPending}
-                className="w-full rounded-[12px] py-3 text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-50"
-                style={{ backgroundColor: 'var(--color-primary)' }}>
-                {loginPending ? "로그인 중..." : "로그인"}
-              </button>
-            </form>
 
-            {/* 회원가입 / 아이디, 비밀번호 찾기 */}
-            <div className="mt-4 flex items-center justify-center gap-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-              <Link href="/signup" className="transition-colors font-medium" onClick={() => setShowEmailModal(false)}>회원가입</Link>
-              <span style={{ color: 'var(--color-text-muted)' }}>|</span>
-              <Link href="/forgot-password" className="transition-colors font-medium" onClick={() => setShowEmailModal(false)}>비밀번호 찾기</Link>
-            </div>
-          </div>
+              {/* Google OAuth — 시안 외 추가 (기능 보존을 위해 유지) */}
+              <a
+                className="btn"
+                href={`/api/auth/login?provider=google${
+                  redirectTo ? `&redirect=${encodeURIComponent(redirectTo)}` : ""
+                }`}
+                style={{ marginTop: 8, display: "flex", justifyContent: "center", gap: 8 }}
+              >
+                {/* Google 컬러 G 로고 */}
+                <svg width="16" height="16" viewBox="0 0 18 18" aria-hidden>
+                  <path
+                    d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"
+                    fill="#4285F4"
+                  />
+                  <path
+                    d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z"
+                    fill="#34A853"
+                  />
+                  <path
+                    d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"
+                    fill="#FBBC05"
+                  />
+                  <path
+                    d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"
+                    fill="#EA4335"
+                  />
+                </svg>
+                Google로 시작하기
+              </a>
+            </>
+          ) : (
+            // ─────────── 회원가입 탭 (모두 disabled + "준비 중" 뱃지) ───────────
+            // 시안 인라인 폼은 노출하되, 입력은 모두 비활성화하고
+            // "가입하기" 버튼은 실제 가입 페이지(/signup)로 라우팅한다.
+            // 추후 구현 — Phase 6 Login (회원가입 인라인 폼)
+            <>
+              {/* 준비 중 안내 뱃지 */}
+              <div
+                style={{
+                  marginBottom: 14,
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  background: "var(--cafe-blue-soft)",
+                  color: "var(--cafe-blue-deep)",
+                  fontSize: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <span
+                  style={{
+                    padding: "2px 8px",
+                    borderRadius: 4,
+                    background: "var(--cafe-blue)",
+                    color: "#fff",
+                    fontWeight: 700,
+                    fontSize: 11,
+                  }}
+                >
+                  준비 중
+                </span>
+                인라인 회원가입은 곧 제공돼요. 우선 기존 가입 페이지로 이동합니다.
+              </div>
+
+              <div className="label">아이디</div>
+              <input
+                className="input"
+                placeholder="영문+숫자 6자 이상"
+                disabled
+                style={{ marginBottom: 14 }}
+              />
+              <div className="label">비밀번호</div>
+              <input
+                className="input"
+                type="password"
+                placeholder="8자 이상"
+                disabled
+                style={{ marginBottom: 14 }}
+              />
+              <div className="label">비밀번호 확인</div>
+              <input
+                className="input"
+                type="password"
+                disabled
+                style={{ marginBottom: 14 }}
+              />
+              <div className="label">닉네임</div>
+              <input
+                className="input"
+                placeholder="커뮤니티에서 표시됩니다"
+                disabled
+                style={{ marginBottom: 14 }}
+              />
+              <div className="label">활동 지역</div>
+              <select className="select" disabled style={{ marginBottom: 18 }}>
+                <option>서울 전체</option>
+                <option>경기</option>
+                <option>인천</option>
+              </select>
+              <label
+                style={{
+                  display: "flex",
+                  gap: 6,
+                  alignItems: "flex-start",
+                  fontSize: 12,
+                  color: "var(--ink-mute)",
+                  marginBottom: 16,
+                }}
+              >
+                <input type="checkbox" disabled />
+                <span>이용약관 및 개인정보처리방침에 동의합니다</span>
+              </label>
+
+              {/* 가입하기 버튼 — 인라인 폼은 disabled, 실제 가입은 /signup으로 이동 */}
+              <button
+                type="button"
+                className="btn btn--primary btn--xl"
+                onClick={() => router.push("/signup")}
+              >
+                가입하기
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* 홈으로 돌아가기 */}
+      <div
+        style={{
+          textAlign: "center",
+          marginTop: 16,
+          fontSize: 12,
+          color: "var(--ink-dim)",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          style={{
+            background: "transparent",
+            border: 0,
+            color: "var(--ink-dim)",
+            cursor: "pointer",
+            fontSize: 12,
+          }}
+        >
+          ← 홈으로 돌아가기
+        </button>
+      </div>
+
+      {/* Dev 자동 로그인 — 별도 카드 (NODE_ENV !== production에서만 노출) */}
+      {process.env.NODE_ENV !== "production" && (
+        <div
+          className="card"
+          style={{
+            marginTop: 16,
+            padding: "12px 16px",
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <form action={devFormAction}>
+            <button
+              type="submit"
+              disabled={devPending}
+              className="btn btn--sm"
+              style={{ minWidth: 160 }}
+            >
+              {devPending ? "..." : "Dev 자동 로그인"}
+            </button>
+            {devState?.error && (
+              <p style={{ marginTop: 6, fontSize: 12, color: "var(--danger)" }}>
+                {devState.error}
+              </p>
+            )}
+          </form>
         </div>
       )}
 
@@ -265,24 +472,6 @@ export default function LoginPage() {
             : "로그인 중 오류가 발생했습니다."
         }
       />
-
-      {/* 모달 애니메이션 스타일 */}
-      <style jsx global>{`
-        @keyframes slide-up {
-          from { transform: translateY(100%); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes fade-in {
-          from { transform: scale(0.95); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-        .animate-slide-up {
-          animation: slide-up 0.3s ease-out;
-        }
-        .animate-fade-in {
-          animation: fade-in 0.2s ease-out;
-        }
-      `}</style>
     </div>
   );
 }

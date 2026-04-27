@@ -2,6 +2,24 @@
 <!-- 담당: planner-architect | 최대 30항목 -->
 <!-- "왜 A 대신 B를 선택했는지" 기술 결정의 배경과 이유를 기록 -->
 
+### [2026-04-25] 코트 대관 — court_managers N:M 모델 보류, court_infos.user_id + user_subscriptions 검사로 단순화
+- **분류**: decision (코트 대관 시스템 Phase A MVP)
+- **결정자**: planner-architect (pm 결정 보고용 추천안)
+- **결정**: 코트 운영자 ↔ 코트 매핑을 위해 신규 `court_managers` N:M 테이블을 만들지 않고, 기존 **`court_infos.user_id`(코트 등록자, 1:1)** + **`user_subscriptions.feature_key="court_rental" status="active"`(멤버십 활성)** 2개 조건의 AND 검사로 운영자 권한 판정. 가드 유틸 `src/lib/courts/court-manager-guard.ts` 1개로 모든 운영자 API에서 호출.
+- **배경**: (1) MVP 단계에 N:M 매핑 수요 0 (1코트=1운영자 충분), (2) Prisma 모델 1개 절감 + 마이그레이션 위험 감소, (3) 멤버십 만료 시 자동 권한 회수(가드만 통과 못함, DB row 정리 불요), (4) 향후 N:M 필요 시 Phase D에서 court_managers 도입 + 가드만 교체하면 페이지·API 수정 0.
+- **대안 배제**: (B) court_managers N:M 신규 테이블 — 1코트=다중운영자/권한 분리(owner/admin/member) 가능하나 MVP 과잉. (C) `users.role` 추가 — 권한 시스템 비대화 + 멤버십 분리 어려움.
+- **영향**: Phase A 신규 테이블 1개(court_bookings)로 한정. court_infos에는 booking_mode + booking_fee_per_hour 2컬럼만 추가. Phase D에서 다중 운영자 요구 발생 시 court_managers 도입 + 가드 교체 (페이지·API 0수정).
+- **참조횟수**: 0
+
+### [2026-04-25] 코트 대관 — payments.payable_type 다형성 재활용 ("CourtBooking" 추가)
+- **분류**: decision (코트 대관 시스템 Phase B 결제 통합)
+- **결정자**: planner-architect
+- **결정**: 코트 예약 결제를 위해 `payments` 모델을 신규 생성하지 않고, 기존 `payable_type` 다형성에 `"CourtBooking"` 값 추가로 처리. 토스페이먼츠 confirm 흐름은 `/api/web/payments/confirm/booking` 신규 라우트(또는 기존 confirm/route.ts 분기)에서 처리. court_bookings.payment_id로 1:1 연결.
+- **배경**: (1) 기존 payments 모델이 이미 `payable_type+payable_id` 인덱스 보유 (현재 "Plan"만 사용, 다형성 의도 명백), (2) 토스 secret key + confirm 호출 + 토스 응답 저장 + 환불 필드 전부 그대로 재활용 가능, (3) 신규 모델 생성 시 환불·실패 처리 등 중복 코드 발생.
+- **대안 배제**: (B) `booking_payments` 신규 테이블 — 환불·토스 응답 필드 중복, 코드 분기 비대화. (C) court_bookings에 결제 필드 직접 임베드 — payments 통합 조회/관리자 페이지 깨짐.
+- **영향**: Phase B에서 confirm 라우트 1개 신규(또는 분기) + payments에 `platform_fee` 1컬럼 추가만. payments 다형성으로 admin/payments 페이지에서도 통합 조회 가능.
+- **참조횟수**: 0
+
 ### [2026-04-21] 세션 역할 재정의 — 본 세션 = 다음카페 sync 전용
 - **분류**: decision (운영 워크플로우)
 - **결정자**: pm + 수빈 (2026-04-21 승인)

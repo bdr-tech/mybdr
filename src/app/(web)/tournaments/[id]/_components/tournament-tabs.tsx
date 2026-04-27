@@ -23,27 +23,28 @@ import { convertKeysToCamelCase } from "@/lib/utils/case";
 import { ScheduleTimeline } from "./schedule-timeline";
 import type { ScheduleMatch, ScheduleTeam } from "./schedule-timeline";
 
-// 대진표 컴포넌트들
-import { BracketView } from "../bracket/_components/bracket-view";
-import { BracketEmpty } from "../bracket/_components/bracket-empty";
+// 대시보드 헤더 (overview 탭에서 사용)
 import { TournamentDashboardHeader } from "../bracket/_components/tournament-dashboard-header";
-import { GroupStandings, type GroupTeam } from "../bracket/_components/group-standings";
 // 팀 카드 (팀 목록 페이지와 UI 통일)
 import { TeamCard } from "../../../teams/_components/team-card";
-import { FinalsSidebar } from "../bracket/_components/finals-sidebar";
-// 풀리그 전용 컴포넌트 (round_robin/full_league/full_league_knockout)
-// 주의: 경기 일정은 "일정" 탭에서 이미 보여주므로 여기서는 LeagueSchedule을 쓰지 않는다.
-import { LeagueStandings, type LeagueTeam } from "../bracket/_components/league-standings";
+
+// 대진표 v2 통합 래퍼 — 헤더/Status/메인트리/사이드 카드 전체를 자체적으로 처리
+// 기존 BracketView/LeagueStandings/GroupStandings/FinalsSidebar/BracketEmpty 등은
+// V2BracketWrapper 내부에서 그대로 호출 (포맷별 분기 보존)
+import { V2BracketWrapper } from "./v2-bracket-wrapper";
+import type { SeriesEdition } from "./v2-bracket-header";
 
 // 탭 타입 정의 (standings는 bracket에 통합 — 백엔드 페이지는 유지)
-export type TabKey = "overview" | "bracket" | "schedule" | "teams";
+// Phase 2 Match: "rules" 탭 추가 (DB tournaments.rules 표시용)
+export type TabKey = "overview" | "schedule" | "bracket" | "teams" | "rules";
 
-// 탭 메타 정보 — 순서: 대회정보 → 대진표 → 일정 → 참가팀
+// 탭 메타 정보 — 시안 Match.jsx L117 순서: 대회소개 → 경기일정 → 대진표 → 참가팀 → 규정
 const TAB_META: { key: TabKey; label: string; icon: string }[] = [
-  { key: "overview", label: "대회정보", icon: "info" },
+  { key: "overview", label: "대회소개", icon: "info" },
+  { key: "schedule", label: "경기일정", icon: "calendar_month" },
   { key: "bracket", label: "대진표", icon: "account_tree" },
-  { key: "schedule", label: "일정", icon: "calendar_month" },
   { key: "teams", label: "참가팀", icon: "groups" },
+  { key: "rules", label: "규정", icon: "gavel" },
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API 응답 구조가 탭마다 다름
@@ -64,9 +65,22 @@ interface TournamentTabsProps {
   tournamentId: string;
   // 개요 탭만 서버에서 렌더링하여 전달
   overviewContent: ReactNode;
+  // Phase 2 Match: 규정 탭 콘텐츠 (서버에서 tournament.rules 프리렌더)
+  // 없으면(null) 빈 상태 카드 렌더 — 탭 자체는 항상 표시
+  rulesContent?: ReactNode;
   // URL의 ?tab= 쿼리로 받은 초기 탭 (redirect된 /bracket, /schedule 등에서 유입 시 사용)
   // 상위 서버 컴포넌트가 searchParams로 파싱해서 넘김 → 잘못된 값은 "overview"로 이미 폴백됨
   initialTab?: TabKey;
+  // ── Bracket 탭 v2 헤더용 메타 (page.tsx에서 서버 props로 전달) ──
+  // 기존 props 변경 0 — 신규 추가만. 이미 서버에서 조회한 필드 그대로 위임.
+  tournamentName: string;
+  editionNumber: number | null;
+  startDate: Date | null;
+  endDate: Date | null;
+  venueName: string | null;
+  // 같은 series_id 내 다른 토너먼트 (시안의 select 라우팅용)
+  // 데이터 부족 시 빈 배열 → V2BracketHeader에서 select 자동 disabled
+  seriesEditions?: SeriesEdition[];
 }
 
 // -- 공통 에러 상태 --
@@ -172,113 +186,44 @@ function OverviewWithDashboard({ tournamentId, overviewContent }: { tournamentId
   );
 }
 
-// -- 대진표 탭 콘텐츠 (API로 lazy load) --
-function BracketTabContent({ tournamentId }: { tournamentId: string }) {
-  const { data, isLoading, error } = useSWR(
-    `/api/web/tournaments/${tournamentId}/public-bracket`,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
+// -- 대진표 탭 콘텐츠 (v2 래퍼) --
+// 기존 BracketTabContent의 포맷별 분기 로직 + 새 헤더/Status/사이드 카드를
+// V2BracketWrapper가 모두 담당. 여기서는 props만 위임한다.
+// API/Prisma/서비스 레이어 변경 없음. SWR 호출도 V2BracketWrapper 내부로 이동.
+//
+// BracketView/LeagueStandings/GroupStandings/FinalsSidebar/BracketEmpty 등
+// 기존 트리 컴포넌트는 V2BracketWrapper 내부에서 그대로 호출됨.
+type BracketTabContentProps = {
+  tournamentId: string;
+  // 헤더/부제 조립용 — page.tsx에서 서버 props로 전달
+  tournamentName: string;
+  editionNumber: number | null;
+  startDate: Date | null;
+  endDate: Date | null;
+  venueName: string | null;
+  // 시리즈 회차 select 옵션 (같은 series_id 다른 토너먼트 라우팅용)
+  seriesEditions: SeriesEdition[];
+};
 
-  if (isLoading) return <TabSkeleton />;
-  if (error) return <TabError message="대진표를 불러오는 중 오류가 발생했습니다." />;
-
-  // apiSuccess()는 .data 래핑 없이 직접 반환 + fetcher가 camelCase 변환 완료
-  const d = data ?? {};
-  const groupTeams: GroupTeam[] = d.groupTeams ?? [];
-  const rounds = d.rounds ?? [];
-
-  // 포맷별 렌더링 분기
-  // - 풀리그(round_robin/full_league/full_league_knockout): 리그 순위표(=조편성 역할) + 4강 토너먼트 트리
-  //   → 경기 일정은 "일정" 탭에 있으므로 대진표 탭에서 제거
-  // - 조별+토너먼트(group_stage_knockout): 기존 GroupStandings + BracketView
-  // - 순수 토너먼트(single_elimination 등): 기존 BracketView만
-  // 정규화: DB 값이 하이픈이나 대소문자가 달라도 매칭 (예: "full-league" → "full_league")
-  const format: string | null = d.format ? (d.format as string).toLowerCase().replace(/-/g, "_") : null;
-  const isLeague =
-    format === "round_robin" ||
-    format === "full_league" ||
-    format === "full_league_knockout";
-  const leagueTeams: LeagueTeam[] = d.leagueTeams ?? [];
-
-  // 리그 순위표는 참가팀만 있어도 표시 (경기 0개여도 조편성 역할)
-  const hasLeagueData = isLeague && leagueTeams.length > 0;
-  // 토너먼트 경기(round_number + bracket_position 설정된 경기)가 이미 생성되어 있는지
-  const hasKnockout = rounds.length > 0;
-
+function BracketTabContent({
+  tournamentId,
+  tournamentName,
+  editionNumber,
+  startDate,
+  endDate,
+  venueName,
+  seriesEditions,
+}: BracketTabContentProps) {
   return (
-    <div>
-      {hasLeagueData ? (
-        <>
-          {/* 리그 순위표: 풀리그 결과 = 4강 진출 조편성 기준 */}
-          <LeagueStandings teams={leagueTeams} tournamentStatus={d.tournamentStatus} />
-
-          {/* 4강 토너먼트 영역: full_league_knockout 포맷에서만 노출
-              - 이미 토너먼트 경기가 생성되어 있으면 BracketView
-              - 아직 생성 전이면 "리그 종료 후 확정" 안내 카드 */}
-          {format === "full_league_knockout" && (
-            hasKnockout ? (
-              <section className="mt-8">
-                <h3
-                  className="mb-4 text-lg font-bold sm:text-xl"
-                  style={{ fontFamily: "var(--font-heading)" }}
-                >
-                  4강 토너먼트
-                </h3>
-                <div className="grid grid-cols-12 gap-4 sm:gap-8">
-                  <div className="col-span-12">
-                    <BracketView rounds={rounds} tournamentId={tournamentId} />
-                  </div>
-                </div>
-              </section>
-            ) : (
-              <section className="mt-8">
-                <div
-                  className="rounded-lg border p-6 text-center"
-                  style={{
-                    borderColor: "var(--color-border)",
-                    backgroundColor: "var(--color-surface)",
-                  }}
-                >
-                  <span
-                    className="material-symbols-outlined mb-2 text-4xl"
-                    style={{ color: "var(--color-text-muted)" }}
-                  >
-                    account_tree
-                  </span>
-                  <h3 className="mb-2 text-base font-bold">토너먼트 대진</h3>
-                  <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
-                    리그 종료 후 1-4위, 2-3위가 맞붙는 4강이 확정됩니다.
-                  </p>
-                </div>
-              </section>
-            )
-          )}
-        </>
-      ) : (
-        <>
-          {/* 기존 분기 유지 (조별+토너먼트 / 순수 토너먼트 / 빈 상태) */}
-          {groupTeams.length > 0 && <GroupStandings teams={groupTeams} />}
-          {hasKnockout ? (
-            <div className="grid grid-cols-12 gap-8">
-              <div className="col-span-12 lg:col-span-8">
-                <BracketView rounds={rounds} tournamentId={tournamentId} />
-              </div>
-              <div className="col-span-12 lg:col-span-4">
-                <FinalsSidebar
-                  finalsDate={d.finalsDate ?? null}
-                  venueName={d.venueName ?? null}
-                  city={d.city ?? null}
-                  entryFee={d.entryFee ?? null}
-                />
-              </div>
-            </div>
-          ) : (
-            <BracketEmpty tournamentId={tournamentId} />
-          )}
-        </>
-      )}
-    </div>
+    <V2BracketWrapper
+      tournamentId={tournamentId}
+      tournamentName={tournamentName}
+      editionNumber={editionNumber}
+      startDate={startDate}
+      endDate={endDate}
+      venueName={venueName}
+      seriesEditions={seriesEditions}
+    />
   );
 }
 
@@ -348,7 +293,14 @@ function TeamsTabContent({ tournamentId }: { tournamentId: string }) {
 export function TournamentTabs({
   tournamentId,
   overviewContent,
+  rulesContent,
   initialTab = "overview",
+  tournamentName,
+  editionNumber,
+  startDate,
+  endDate,
+  venueName,
+  seriesEditions = [],
 }: TournamentTabsProps) {
   // 초기 탭: 서버에서 searchParams로 파싱한 값. 유효하지 않으면 overview로 폴백됨(상위에서 이미 검증)
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
@@ -382,12 +334,25 @@ export function TournamentTabs({
         })}
       </div>
 
-      {/* 탭 콘텐츠: 개요는 서버 렌더링, 나머지는 lazy loading */}
+      {/* 탭 콘텐츠: 개요/규정은 서버 렌더링, 나머지는 lazy loading */}
       <div>
         {activeTab === "overview" && <OverviewWithDashboard tournamentId={tournamentId} overviewContent={overviewContent} />}
-        {activeTab === "bracket" && <BracketTabContent tournamentId={tournamentId} />}
+        {activeTab === "bracket" && (
+          <BracketTabContent
+            tournamentId={tournamentId}
+            tournamentName={tournamentName}
+            editionNumber={editionNumber}
+            startDate={startDate}
+            endDate={endDate}
+            venueName={venueName}
+            seriesEditions={seriesEditions}
+          />
+        )}
         {activeTab === "schedule" && <ScheduleTabContent tournamentId={tournamentId} />}
         {activeTab === "teams" && <TeamsTabContent tournamentId={tournamentId} />}
+        {/* 규정 탭: 서버에서 tournament.rules로 프리렌더된 콘텐츠.
+            데이터 없으면 빈 상태 카드(page.tsx에서 폴백 렌더). 탭 자체는 항상 렌더. */}
+        {activeTab === "rules" && <div>{rulesContent}</div>}
       </div>
     </div>
   );

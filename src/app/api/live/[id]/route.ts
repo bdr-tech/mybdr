@@ -511,6 +511,115 @@ export async function GET(
     });
     const currentQuarter = latestPbp?.quarter ?? null;
 
+    // 2026-04-22: GameResult v2 — MVP 선정 (GameScore 공식 단순화 버전)
+    // 이유: 시안 GameResult.jsx 의 MVP 배너 렌더를 위해 playerStats 기반으로 최고 점수 선수 1명 추출.
+    // 공식: pts + 0.4*fgm - 0.7*fga - 0.4*(fta-ftm) + 0.7*oreb + 0.3*dreb + stl + 0.7*ast + 0.7*blk - 0.4*pf - tov
+    // 출전 기록 전혀 없는 선수(DNP)는 제외. homePlayers+awayPlayers 합친 리스트에서 최고 스코어 선수 1명.
+    type MvpPlayer = {
+      id: number;
+      jersey_number: number | null;
+      name: string;
+      team_id: number;
+      pts: number;
+      reb: number;
+      ast: number;
+      stl: number;
+      blk: number;
+      plus_minus: number;
+      fgm: number;
+      fga: number;
+      tpm: number;
+      tpa: number;
+      ftm: number;
+      fta: number;
+      game_score: number;
+    };
+    const allMvpCandidates: MvpPlayer[] = [];
+    for (const p of [...homePlayers, ...awayPlayers]) {
+      // DNP(완전 출전 없음) 제외
+      if (p.dnp === true) continue;
+      // 득점/시도/기록이 전부 0인 선수는 제외
+      if (p.pts === 0 && p.fga === 0 && p.ast === 0 && p.reb === 0 && p.stl === 0 && p.blk === 0) continue;
+      const gameScore =
+        p.pts
+        + 0.4 * p.fgm
+        - 0.7 * p.fga
+        - 0.4 * (p.fta - p.ftm)
+        + 0.7 * p.oreb
+        + 0.3 * p.dreb
+        + p.stl
+        + 0.7 * p.ast
+        + 0.7 * p.blk
+        - 0.4 * p.fouls
+        - p.to;
+      allMvpCandidates.push({
+        id: p.id,
+        jersey_number: p.jerseyNumber,
+        name: p.name,
+        team_id: p.teamId,
+        pts: p.pts,
+        reb: p.reb,
+        ast: p.ast,
+        stl: p.stl,
+        blk: p.blk,
+        plus_minus: p.plus_minus ?? 0,
+        fgm: p.fgm,
+        fga: p.fga,
+        tpm: p.tpm,
+        tpa: p.tpa,
+        ftm: p.ftm,
+        fta: p.fta,
+        game_score: Math.round(gameScore * 10) / 10,
+      });
+    }
+    // GameScore 내림차순 정렬. 동점이면 득점, 그 다음 어시스트 순.
+    allMvpCandidates.sort((a, b) => {
+      if (b.game_score !== a.game_score) return b.game_score - a.game_score;
+      if (b.pts !== a.pts) return b.pts - a.pts;
+      return b.ast - a.ast;
+    });
+    const mvpPlayer = allMvpCandidates[0] ?? null;
+
+    // 2026-04-22: GameResult v2 — play_by_plays 타임라인 응답
+    // 이유: 시안 timeline 탭을 위해 최근 이벤트 역순 노출. 상위 50건까지만 내림.
+    // 기존 응답 구조(playByPlays: []) 자리에 채워넣음 → 프론트 필드명 불변.
+    // 선수명/팀ID는 allPbps 의 BigInt 만으로는 못 내리므로 roster(TournamentTeamPlayer)로 직접 lookup.
+    // BUG: home_players[].id 는 분기(진행중/종료)에 따라 (a) tournament_team_player.id 또는 (b) match_player_stat.id
+    //      가 되어 PBP의 tournament_team_player_id와 매칭 실패. roster에서 직접 매핑해야 확실히 매칭됨.
+    const playerNameById = new Map<number, { name: string; jersey_number: number | null }>();
+    for (const p of match.homeTeam?.players ?? []) {
+      const name = p.users?.nickname ?? p.users?.name ?? p.player_name ?? `#${p.jerseyNumber ?? "-"}`;
+      playerNameById.set(Number(p.id), { name, jersey_number: p.jerseyNumber });
+    }
+    for (const p of match.awayTeam?.players ?? []) {
+      const name = p.users?.nickname ?? p.users?.name ?? p.player_name ?? `#${p.jerseyNumber ?? "-"}`;
+      playerNameById.set(Number(p.id), { name, jersey_number: p.jerseyNumber });
+    }
+    // allPbps 는 created_at 순서대로 insert 되어 있으므로 quarter + game_clock_seconds 로 정렬.
+    // 농구 게임 클럭은 내려가는 방식(10:00 → 0:00) 이므로 쿼터별로 clock 내림차순 = 발생순.
+    // 최신순 렌더를 위해 여기서는 quarter DESC + clock ASC (쿼터 후반부가 먼저 오도록).
+    const sortedPbp = [...allPbps].sort((a, b) => {
+      if ((b.quarter ?? 0) !== (a.quarter ?? 0)) return (b.quarter ?? 0) - (a.quarter ?? 0);
+      // 같은 쿼터 안에서는 clock 값이 작은 쪽(후반)이 먼저 — 농구 클럭은 10:00→0:00 감소
+      return (a.game_clock_seconds ?? 0) - (b.game_clock_seconds ?? 0);
+    });
+    const playByPlays = sortedPbp.slice(0, 50).map((p, idx) => {
+      const pid = p.tournament_team_player_id ? Number(p.tournament_team_player_id) : null;
+      const playerInfo = pid ? playerNameById.get(pid) : null;
+      return {
+        id: idx, // PBP 자체 id 는 BigInt 라 serialize 이슈 회피용 인덱스
+        quarter: p.quarter ?? 1,
+        game_clock_seconds: p.game_clock_seconds ?? 0,
+        team_id: p.tournament_team_id ? Number(p.tournament_team_id) : 0,
+        jersey_number: playerInfo?.jersey_number ?? null,
+        player_name: playerInfo?.name ?? "",
+        action_type: p.action_type ?? "",
+        action_subtype: p.action_subtype ?? null,
+        is_made: p.is_made ?? null,
+        points_scored: p.points_scored ?? 0,
+      };
+    });
+
     // 경기장명: tournament_matches.venue_name 우선 → 없으면 tournament.venue_name fallback
     const venueName = match.venue_name ?? match.tournament?.venue_name ?? null;
 
@@ -577,7 +686,12 @@ export async function GET(
         },
         homePlayers,
         awayPlayers,
-        playByPlays: [],
+        // 2026-04-22: GameResult v2 — 타임라인 이벤트 (상위 50건, 최신순)
+        // 기존 필드명 유지(playByPlays → snake_case 변환 후 play_by_plays).
+        playByPlays,
+        // 2026-04-22: GameResult v2 — MVP 선수 (GameScore 최고). 없으면 null.
+        // apiSuccess camelCase → snake_case 변환으로 클라이언트는 mvp_player 로 수신.
+        mvpPlayer,
         updatedAt: match.updatedAt.toISOString(),
         ...(debugPayload ? { _debug: debugPayload } : {}),
       },

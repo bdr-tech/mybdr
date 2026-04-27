@@ -1,0 +1,231 @@
+/* ============================================================
+   MyBDR v2 — Responsive (mobile-first overrides)
+   Breakpoint: 720px (phone) · 900px handled inline (with-aside)
+   ============================================================ */
+
+:root { --gutter: 24px; }
+
+@media (max-width: 720px) {
+  :root { --gutter: 14px; }
+
+  /* ---- App nav: collapse tabs into hamburger ---- */
+  .app-nav__utility-inner { gap: 8px; font-size: 11px; padding: 6px var(--gutter); }
+  .app-nav__utility-inner > span:first-child { font-weight: 700; }
+  .app-nav__utility-inner .sep,
+  .app-nav__utility-inner a:not(:last-of-type) { display: none; }
+
+  .app-nav__main {
+    padding: 10px var(--gutter);
+    gap: 10px;
+  }
+  .app-nav__logo { font-size: 18px; gap: 6px; }
+  .app-nav__logo img { height: 22px; }
+
+  /* Hide desktop tab strip; show hamburger */
+  .app-nav__tabs { display: none; }
+  .app-nav__burger {
+    display: inline-flex !important;
+    width: 38px; height: 38px;
+    align-items: center; justify-content: center;
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 8px; color: var(--ink); cursor: pointer;
+    flex: 0 0 auto;
+  }
+  [data-theme="dark"] .app-nav__burger { border-width: 2px; border-color: var(--border-strong); border-radius: 0; }
+
+  /* Theme switch gets compact inside nav */
+  .app-nav__right .theme-switch { padding: 2px; }
+  .app-nav__right .theme-switch__btn { padding: 5px 9px; font-size: 11px; }
+  .app-nav__right .theme-switch__btn span { display: none; }
+
+  /* ---- Mobile drawer ---- */
+  .drawer-backdrop {
+    position: fixed; inset: 0; z-index: 90;
+    background: rgba(8,10,14,.55); backdrop-filter: blur(2px);
+  }
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 91;
+    width: min(320px, 85vw);
+    background: var(--bg-elev);
+    border-left: 1px solid var(--border);
+    box-shadow: -12px 0 40px rgba(0,0,0,.25);
+    display: flex; flex-direction: column;
+    animation: drawerIn .22s ease-out;
+  }
+  [data-theme="dark"] .drawer { border-left: 2px solid var(--border-hard); }
+  @keyframes drawerIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+  .drawer__head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+  }
+  .drawer__head-title {
+    font-family: var(--ff-display); font-weight: 900;
+    font-size: 18px; letter-spacing: -0.01em;
+  }
+  .drawer__head-title .dot { color: var(--accent); }
+  .drawer__close {
+    background: transparent; border: 0; font-size: 22px; line-height: 1;
+    color: var(--ink-mute); cursor: pointer; padding: 4px 8px;
+  }
+  .drawer__body { flex: 1; overflow: auto; padding: 8px 0; }
+  .drawer__item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; font-size: 15px; color: var(--ink);
+    background: transparent; border: 0; width: 100%; text-align: left;
+    cursor: pointer; font-weight: 600;
+  }
+  .drawer__item:hover, .drawer__item:focus { background: var(--bg-alt); }
+  .drawer__item[data-active="true"] {
+    color: var(--cafe-blue-deep); background: var(--cafe-blue-soft);
+  }
+  [data-theme="dark"] .drawer__item {
+    font-family: var(--ff-display); letter-spacing: 0.04em; text-transform: uppercase; font-weight: 700; font-size: 14px;
+  }
+  [data-theme="dark"] .drawer__item[data-active="true"] {
+    color: var(--ink); background: transparent; box-shadow: inset 3px 0 0 var(--accent);
+  }
+  .drawer__divider { height: 1px; background: var(--border); margin: 8px 0; }
+  .drawer__foot {
+    padding: 14px 16px; border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+
+  /* ---- Page shell ---- */
+  .page { padding: 16px var(--gutter) 80px; }
+
+  /* Two-col layouts collapse */
+  .with-aside { grid-template-columns: 1fr !important; gap: 14px; }
+  .aside { display: none; }  /* desktop sidebar hidden; drawer covers it */
+
+  /* ---- Home ---- */
+  /* stat strip: 2x2 */
+  .page > div[style*="grid-template-columns: repeat(4, 1fr)"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  /* two-col (공지/대회) stacks */
+  .page > div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Promo scales down */
+  .promo { padding: 20px 18px; }
+  .promo h2 { font-size: 22px; }
+  .promo p { font-size: 13px; }
+
+  /* ---- Board table → card list on mobile ---- */
+  .board__head { display: none !important; }
+  .board__row {
+    display: block !important;
+    padding: 12px 14px !important;
+    border-bottom: 1px solid var(--border);
+  }
+  .board__row > div {
+    all: unset;
+    display: inline;
+  }
+  .board__row > div.num::before {
+    content: none;
+  }
+  .board__row > div.num {
+    display: inline-block;
+    font-family: var(--ff-mono); font-size: 11px;
+    color: var(--ink-dim); margin-right: 8px;
+  }
+  .board__row > div.title {
+    display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px;
+    font-size: 15px !important; color: var(--ink); font-weight: 500;
+    margin-bottom: 6px;
+  }
+  /* Hide all other cells but make meta line from author+date+views */
+  .board__row > div:nth-child(n+3) {
+    display: inline-block !important;
+    font-size: 11px !important;
+    color: var(--ink-dim) !important;
+    margin-right: 10px;
+  }
+  .board__row > div:nth-child(n+3)::before {
+    content: attr(data-label);
+  }
+
+  /* ---- Match list: 1 col ---- */
+  .page > div[style*="grid-template-columns: repeat(2, 1fr)"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ---- Match detail: sticky bottom bar ---- */
+  .page--wide > div[style*="grid-template-columns: minmax(0,1fr) 340px"] {
+    grid-template-columns: 1fr !important;
+  }
+  .page--wide aside[style*="sticky"] {
+    position: static !important;
+  }
+
+  /* Stat grid auto to 2 col where repeat(3,1fr) was used */
+  [style*="grid-template-columns: repeat(3, 1fr)"]:not(.onb__body):not(.drawer__body) {
+    grid-template-columns: repeat(3, 1fr) !important; /* keep, but smaller gap */
+  }
+
+  /* ---- Court: hide sticky map on mobile ---- */
+  .page > div[style*="grid-template-columns: minmax(0,1fr) 340px"] {
+    grid-template-columns: 1fr !important;
+  }
+  .page > div[style*="grid-template-columns: minmax(0,1fr) 340px"] > aside {
+    order: -1;
+  }
+
+  /* ---- Board list filter row wraps smaller ---- */
+  .page > main > div[style*="board"] { overflow: hidden; }
+
+  /* ---- Buttons: larger tap targets ---- */
+  .btn { padding: 12px 16px; font-size: 14px; }
+  .btn--sm { padding: 7px 10px; font-size: 12px; }
+  .btn--xl { padding: 14px 18px; font-size: 15px; }
+
+  /* ---- Typography tighter ---- */
+  h1[style*="font-size:28px"], h1[style*="fontSize:28"] { font-size: 22px !important; }
+  h1[style*="font-size:24px"], h1[style*="fontSize:24"] { font-size: 20px !important; }
+  .t-display { letter-spacing: -0.02em; }
+
+  /* Hero in match detail */
+  .page--wide > div[style*="linear-gradient"] { padding: 24px 20px !important; }
+  .page--wide > div[style*="linear-gradient"] h1 { font-size: 32px !important; }
+
+  /* ---- Onboarding modal fits phone ---- */
+  .onb__body { grid-template-columns: 1fr; padding: 14px; gap: 10px; }
+  .onb__head { padding: 18px 20px 12px; }
+  .onb__head h2 { font-size: 19px; }
+  .onb__head p { font-size: 13px; }
+  .onb__foot { padding: 12px 16px; }
+
+  /* ---- Tweaks panel fits mobile ---- */
+  .tweaks {
+    left: 10px; right: 10px; bottom: 10px;
+    min-width: 0; max-height: 70vh; overflow: auto;
+  }
+
+  /* Pager */
+  .pager { flex-wrap: wrap; }
+
+  /* Footer */
+  footer { padding: 20px 16px 40px !important; }
+
+  /* Breadcrumb, nav previews get smaller */
+  /* Disable hover transforms on touch */
+  .onb__card:hover { transform: none; }
+}
+
+/* Hamburger hidden on desktop by default */
+.app-nav__burger { display: none; }
+
+/* Medium screens: already handled by .with-aside @ 900px. Add some polish. */
+@media (max-width: 900px) and (min-width: 721px) {
+  .app-nav__tabs { gap: 0; }
+  .app-nav__tab { padding: 10px 10px; font-size: 13px; }
+  .page > div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  .page--wide > div[style*="grid-template-columns: minmax(0,1fr) 340px"] {
+    grid-template-columns: 1fr !important;
+  }
+}

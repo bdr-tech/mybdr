@@ -62,5 +62,7 @@ tmp/
 
 # Playwright storageState (세션 쿠키, 민감) — .gitkeep은 유지
 .auth/*.json
+.auth/chrome-profile/
+.auth/logs/
 !.auth/.gitkeep
 test-results/

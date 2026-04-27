@@ -12,6 +12,8 @@ import { CourtPickups } from "./_components/court-pickups";
 import { CourtQrCode } from "./_components/court-qr-code";
 import { CourtAmbassador } from "./_components/court-ambassador";
 import { CourtEvents } from "./_components/court-events";
+// Phase 3 Court 상세 v2 시안 (헤더 + 시간대별 혼잡도 + Side(KakaoMap+시설+CTA))
+import { CourtDetailV2 } from "./_components/court-detail-v2";
 
 export const revalidate = 300;
 
@@ -96,14 +98,41 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
   }).catch(() => []);
 
   const facilities = Array.isArray(court.facilities) ? court.facilities as string[] : [];
-  const isIndoor = court.court_type === "indoor";
-  const typeLabel = isIndoor ? "실내" : "야외";
   const lat = Number(court.latitude);
   const lng = Number(court.longitude);
 
-  // 카카오맵 URL
-  const kakaoMapUrl = `https://map.kakao.com/link/map/${encodeURIComponent(court.name)},${lat},${lng}`;
-  const kakaoNaviUrl = `https://map.kakao.com/link/to/${encodeURIComponent(court.name)},${lat},${lng}`;
+  // v2 시안 카드용 직렬화 데이터 — page 내부에서만 사용 (BigInt → string, Decimal → number)
+  // 이유: 클라 컴포넌트 props 직렬화 제약 + Prisma Decimal/BigInt 노출 차단
+  const courtV2Data = {
+    id: court.id.toString(),
+    name: court.name,
+    address: court.address,
+    city: court.city,
+    district: court.district,
+    description: court.description,
+    court_type: court.court_type,
+    surface_type: court.surface_type,
+    hoops_count: court.hoops_count,
+    is_free: court.is_free,
+    fee: court.fee !== null ? Number(court.fee) : null,
+    has_lighting: court.has_lighting,
+    lighting_until: court.lighting_until,
+    has_restroom: court.has_restroom,
+    has_parking: court.has_parking,
+    verified: court.verified,
+    data_source: court.data_source,
+    nearest_station: court.nearest_station,
+    facilities,
+    average_rating: court.average_rating !== null ? Number(court.average_rating) : null,
+    reviews_count: court.reviews_count,
+    checkins_count: court.checkins_count,
+    pickup_count: 0, // courts 상세 데이터에는 pickup_count 집계 없음. 0 으로 시작 (CourtPickups 가 SWR 로 별도 패치)
+    latitude: lat,
+    longitude: lng,
+    // Phase A 코트 대관 — booking_mode 분기 CTA 표시용
+    booking_mode: court.booking_mode,
+    rental_url: court.rental_url,
+  };
 
   // 경기 유형 레이블
   const gameTypeLabel = (type: number) => {
@@ -117,7 +146,7 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
 
   return (
     <div>
-      {/* 상단 네비게이션 */}
+      {/* 상단 네비게이션 (보존 — v2 브레드크럼과 별개로 모바일 back 동선 유지) */}
       <Link
         href="/courts"
         className="inline-flex items-center gap-1 text-sm mb-4 transition-colors"
@@ -127,223 +156,19 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
         농구장 목록
       </Link>
 
-      {/* 메인 정보 카드 */}
-      <div
-        className="rounded-md p-5 sm:p-6 mb-4"
-        style={{
-          backgroundColor: "var(--color-card)",
-          boxShadow: "var(--shadow-card)",
-        }}
-      >
-        {/* 코트 이름 + 유형 뱃지 */}
-        <div className="flex items-start gap-3">
-          {/* 유형 아이콘 */}
-          <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full"
-            style={{
-              backgroundColor: isIndoor
-                ? "color-mix(in srgb, var(--color-info) 15%, transparent)"
-                : "color-mix(in srgb, var(--color-success) 15%, transparent)",
-            }}
-          >
-            <span
-              className="material-symbols-outlined text-2xl"
-              style={{ color: isIndoor ? "var(--color-info)" : "var(--color-success)" }}
-            >
-              {isIndoor ? "stadium" : "park"}
-            </span>
-          </div>
+      {/* ─── Phase 3 Court v2 시안 헤더 + 혼잡도 + Side ─── */}
+      {/* 기존 메인 정보 카드(헤더+뱃지+CTA+QR+이용현황) 영역을 v2 시안 1컴포넌트로 교체 */}
+      {/* 단, QR 체크인 버튼은 시안 외 핵심 기능 → 별도 박스로 보존 (아래 CourtCheckin 위) */}
+      <CourtDetailV2 court={courtV2Data} />
 
-          <div className="flex-1">
-            <h1
-              className="text-xl font-extrabold sm:text-2xl"
-              style={{ color: "var(--color-text-primary)" }}
-            >
-              {court.name}
-            </h1>
-            <p
-              className="mt-1 flex items-center gap-1 text-sm"
-              style={{ color: "var(--color-text-muted)" }}
-            >
-              <span className="material-symbols-outlined text-base">location_on</span>
-              {court.address}
-            </p>
-          </div>
+      {/* QR 체크인 버튼 (모달) — 시안 외이지만 운영 핵심 기능이라 보존 */}
+      {lat !== 0 && (
+        <div className="mb-4 flex justify-end">
+          <CourtQrCode courtId={court.id.toString()} courtName={court.name} />
         </div>
+      )}
 
-        {/* 속성 뱃지 그리드 — null인 필드는 표시하지 않음 */}
-        <div className="mt-4 flex flex-wrap gap-1.5 sm:gap-2">
-          {/* 코트 유형 (항상 표시) */}
-          <InfoBadge
-            icon={isIndoor ? "stadium" : "park"}
-            label={court.court_type === "unknown" ? "미분류" : typeLabel}
-            color={court.court_type === "unknown" ? "var(--color-text-muted)" : isIndoor ? "var(--color-info)" : "var(--color-success)"}
-          />
-          {/* 코트 크기 — null이면 숨김 */}
-          {court.court_size && (
-            <InfoBadge
-              icon="square_foot"
-              label={court.court_size === "fullcourt" ? "풀코트" : court.court_size === "halfcourt" ? "하프코트" : "3x3"}
-              color="var(--color-text-secondary)"
-            />
-          )}
-          {/* 바닥재질 — null이면 숨김 */}
-          {court.surface_type && (
-            <InfoBadge icon="texture" label={court.surface_type} color="var(--color-text-secondary)" />
-          )}
-          {/* 골대 수 — null이면 숨김 */}
-          {court.hoops_count != null && (
-            <InfoBadge
-              icon="sports_basketball"
-              label={`골대 ${court.hoops_count}개`}
-              color="var(--color-text-secondary)"
-            />
-          )}
-          {/* 조명 — null(미확인)이면 숨김, true일 때만 표시 */}
-          {court.has_lighting === true && (
-            <InfoBadge
-              icon="lightbulb"
-              label={court.lighting_until ? `조명 ~${court.lighting_until}` : "야간 조명"}
-              color="var(--color-accent)"
-            />
-          )}
-          {/* 요금 — null(미확인)이면 숨김 */}
-          {court.is_free !== null && (
-            <InfoBadge
-              icon={court.is_free ? "money_off" : "payments"}
-              label={
-                court.is_free
-                  ? "무료"
-                  : court.fee
-                  ? `${Number(court.fee).toLocaleString()}원`
-                  : "유료"
-              }
-              color={court.is_free ? "var(--color-success)" : "var(--color-warning)"}
-            />
-          )}
-          {/* 화장실 — null(미확인)이면 숨김, true일 때만 표시 */}
-          {court.has_restroom === true && (
-            <InfoBadge icon="wc" label="화장실" color="var(--color-text-secondary)" />
-          )}
-          {/* 주차장 — null(미확인)이면 숨김, true일 때만 표시 */}
-          {court.has_parking === true && (
-            <InfoBadge icon="local_parking" label="주차" color="var(--color-text-secondary)" />
-          )}
-          {/* 검증 여부 */}
-          {court.verified && (
-            <InfoBadge icon="verified" label="검증됨" color="var(--color-info)" />
-          )}
-          {court.average_rating && Number(court.average_rating) > 0 && (
-            <InfoBadge
-              icon="star"
-              label={`${Number(court.average_rating).toFixed(1)} (${court.reviews_count})`}
-              color="var(--color-primary)"
-            />
-          )}
-        </div>
-
-        {/* 정보 출처 표시 — 데이터가 어디서 왔는지 사용자에게 알림 */}
-        {court.data_source && (
-          <div
-            className="mt-3 flex items-center gap-1.5 text-[11px]"
-            style={{ color: "var(--color-text-disabled)" }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: "13px" }}>
-              info
-            </span>
-            정보 출처: {court.data_source === "manual_curation"
-              ? "관리자 직접 확인"
-              : court.data_source === "kakao_search"
-              ? "카카오맵"
-              : court.data_source === "google_places"
-              ? "구글맵"
-              : court.data_source === "ambassador"
-              ? "앰배서더 직접 수정"
-              : court.data_source}
-            {!court.verified && " (미검증 — 실제와 다를 수 있습니다)"}
-          </div>
-        )}
-
-        {/* 가까운 역 정보 */}
-        {court.nearest_station && (
-          <div
-            className="mt-3 inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm"
-            style={{
-              backgroundColor: "var(--color-surface)",
-              color: "var(--color-text-muted)",
-            }}
-          >
-            <span className="material-symbols-outlined text-base" style={{ color: "var(--color-info)" }}>
-              train
-            </span>
-            {court.nearest_station}
-          </div>
-        )}
-
-        {/* 소개 */}
-        {court.description && (
-          <p
-            className="mt-4 text-sm leading-relaxed"
-            style={{ color: "var(--color-text-muted)" }}
-          >
-            {court.description}
-          </p>
-        )}
-
-        {/* 편의시설 */}
-        {facilities.length > 0 && (
-          <div className="mt-4">
-            <p className="text-xs font-semibold mb-2" style={{ color: "var(--color-text-secondary)" }}>
-              편의시설
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {facilities.map((f, i) => (
-                <span
-                  key={i}
-                  className="rounded-[4px] px-2 py-0.5 text-xs"
-                  style={{
-                    backgroundColor: "var(--color-surface-bright)",
-                    color: "var(--color-text-muted)",
-                  }}
-                >
-                  {f}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 카카오맵 버튼 + QR 체크인 */}
-        {lat !== 0 && (
-          <div className="mt-5 flex flex-wrap gap-1.5 sm:gap-2">
-            <a
-              href={kakaoMapUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-[4px] px-4 py-2.5 text-sm font-semibold transition-colors"
-              style={{
-                backgroundColor: "var(--color-surface-bright)",
-                color: "var(--color-text-primary)",
-              }}
-            >
-              <span className="material-symbols-outlined text-base">map</span>
-              카카오맵에서 보기
-            </a>
-            <a
-              href={kakaoNaviUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-[4px] px-4 py-2.5 text-sm font-semibold text-white transition-colors"
-              style={{ backgroundColor: "var(--color-primary)" }}
-            >
-              <span className="material-symbols-outlined text-base">directions</span>
-              길찾기
-            </a>
-            {/* QR 코드 체크인 버튼 (모달 열기) */}
-            <CourtQrCode courtId={court.id.toString()} courtName={court.name} />
-          </div>
-        )}
-      </div>
+      {/* (구) 메인 정보 카드 영역 — Phase 3 v2 도입으로 CourtDetailV2 컴포넌트로 흡수됨 */}
 
       {/* 체크인 + 혼잡도 (클라이언트 컴포넌트, 30초 갱신) */}
       <CourtCheckin courtId={court.id.toString()} courtLat={lat} courtLng={lng} />
@@ -357,30 +182,7 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
       {/* 3x3 이벤트 섹션 (클라이언트 컴포넌트 — SWR) */}
       <CourtEvents courtId={court.id.toString()} currentUserId={currentUserId} />
 
-      {/* 이용 현황 카드 */}
-      <div
-        className="rounded-md p-5 sm:p-6 mb-4"
-        style={{
-          backgroundColor: "var(--color-card)",
-          boxShadow: "var(--shadow-card)",
-        }}
-      >
-        <h2 className="text-base font-bold mb-3" style={{ color: "var(--color-text-primary)" }}>
-          이용 현황
-        </h2>
-        <div className="grid grid-cols-3 gap-3 text-center">
-          <StatBlock
-            label="평점"
-            value={
-              court.average_rating && Number(court.average_rating) > 0
-                ? Number(court.average_rating).toFixed(1)
-                : "-"
-            }
-          />
-          <StatBlock label="리뷰" value={`${court.reviews_count}개`} />
-          <StatBlock label="체크인" value={`${court.checkins_count}회`} />
-        </div>
-      </div>
+      {/* (구) 이용 현황 3통계 카드 — v2 Side MiniStat 가 흡수. 아래 블록 제거. */}
 
       {/* 체크인 랭킹 TOP 10 (클라이언트 컴포넌트 — SWR 자동 갱신) */}
       <CourtRankings courtId={court.id.toString()} />
@@ -509,35 +311,5 @@ export default async function CourtDetailPage({ params }: { params: Promise<Para
   );
 }
 
-// ─────────────────────────────────────────
-// InfoBadge — 속성 뱃지 (아이콘 + 텍스트)
-// ─────────────────────────────────────────
-function InfoBadge({ icon, label, color }: { icon: string; label: string; color: string }) {
-  return (
-    <span
-      className="inline-flex items-center gap-1 rounded-[4px] px-2.5 py-1 text-xs font-medium"
-      style={{
-        backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)`,
-        color,
-      }}
-    >
-      <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>{icon}</span>
-      {label}
-    </span>
-  );
-}
+// (구) InfoBadge / StatBlock — Phase 3 v2 도입으로 CourtDetailV2 가 흡수. 제거.
 
-// ─────────────────────────────────────────
-// StatBlock — 통계 블록
-// ─────────────────────────────────────────
-function StatBlock({ label, value }: { label: string; value: string }) {
-  return (
-    <div
-      className="rounded-lg p-3"
-      style={{ backgroundColor: "var(--color-surface)" }}
-    >
-      <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>{label}</p>
-      <p className="text-lg font-bold mt-0.5" style={{ color: "var(--color-text-primary)" }}>{value}</p>
-    </div>
-  );
-}

@@ -13,17 +13,19 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import useSWR from "swr";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TOURNAMENT_STATUS_LABEL } from "@/lib/constants/tournament-status";
-import { CATEGORIES } from "@/lib/constants/divisions";
 import { usePreferFilter } from "@/contexts/prefer-filter-context";
-import { formatShortDate } from "@/lib/utils/format-date";
 // 캘린더/주간 뷰 관련 import
 import { ViewToggle, type ViewMode } from "./view-toggle";
 import { CalendarView } from "./calendar-view";
 import { WeekView } from "./week-view";
+// Phase 2 Match v2 래퍼 — 리스트 뷰의 카드·탭만 교체. 필터·API는 기존 유지.
+import {
+  V2TournamentList,
+  deriveV2Status,
+  type V2MatchTab,
+} from "./v2-tournament-list";
 
 // batch API fetcher (기존과 동일)
 const batchPhotoFetcher = (key: string) => {
@@ -61,35 +63,7 @@ interface TournamentsApiResponse {
 
 const TOURNAMENTS_PER_PAGE = 10;
 
-// 상태 배지 배경색 (기존과 동일)
-const STATUS_BG: Record<string, string> = {
-  draft:               "var(--color-text-disabled)",
-  active:              "var(--color-primary)",
-  published:           "var(--color-primary)",
-  registration:        "var(--color-primary)",
-  registration_open:   "var(--color-primary)",
-  registration_closed: "#D97706",
-  in_progress:         "var(--color-primary)",
-  ongoing:             "var(--color-primary)",
-  group_stage:         "var(--color-primary)",
-  completed:           "var(--color-text-disabled)",
-  cancelled:           "#EF4444",
-};
-
-// 대회 유형별 그라디언트+아이콘 (기존과 동일)
-const FORMAT_GRADIENT: Record<string, { gradient: string; icon: string }> = {
-  single_elimination: { gradient: "linear-gradient(135deg, #7f1d1d, #dc2626, #b91c1c)", icon: "emoji_events" },
-  double_elimination: { gradient: "linear-gradient(135deg, #7f1d1d, #dc2626, #b91c1c)", icon: "emoji_events" },
-  round_robin: { gradient: "linear-gradient(135deg, #1e3a5f, #1d4ed8, #312e81)", icon: "leaderboard" },
-  hybrid: { gradient: "linear-gradient(135deg, #312e81, #6d28d9, #4338ca)", icon: "hub" },
-};
-
-const DEFAULT_FORMAT_STYLE = {
-  gradient: "linear-gradient(135deg, #7f1d1d, #dc2626, #b91c1c)",
-  icon: "emoji_events",
-};
-
-/* 스켈레톤: 토스 스타일 */
+/* 스켈레톤: 토스 스타일 (기존과 동일) */
 function TournamentGridSkeleton() {
   return (
     <div className="space-y-6">
@@ -97,114 +71,6 @@ function TournamentGridSkeleton() {
         <Skeleton key={i} className="h-24 rounded-md" />
       ))}
     </div>
-  );
-}
-
-/* ---- 대회 카드: 토스 스타일 (가로 레이아웃) ---- */
-function TournamentCard({ tournament: t, photoUrl }: { tournament: TournamentFromApi; photoUrl?: string | null }) {
-  const st = t.status ?? "draft";
-  const badgeLabel = TOURNAMENT_STATUS_LABEL[st] ?? st.toUpperCase();
-  const badgeBg = STATUS_BG[st] ?? "var(--color-text-disabled)";
-  const maxTeams = t.max_teams ?? 0;
-  const location = t.venue_name ?? t.city ?? "";
-  const hasFee = t.entry_fee && Number(t.entry_fee) > 0;
-  const feeText = hasFee ? `${Number(t.entry_fee).toLocaleString()}원` : "무료";
-  const isFull = maxTeams > 0 && t.team_count >= maxTeams;
-
-  // 종별 라벨
-  const categoryLabels = Object.entries(t.categories ?? {})
-    .filter(([, v]) => v === true)
-    .map(([key]) => CATEGORIES[key as keyof typeof CATEGORIES]?.label ?? key)
-    .filter(Boolean);
-
-  // 디비전
-  const divisionTiers = (t.division_tiers ?? []).filter(Boolean);
-
-  const formatStyle = FORMAT_GRADIENT[t.format ?? ""] ?? DEFAULT_FORMAT_STYLE;
-
-  return (
-    <Link href={`/tournaments/${t.id}`} prefetch={true}>
-      {/* 토스 카드: 둥근 모서리 + 가벼운 그림자 + 가로 배치 */}
-      <div
-        className={`group flex gap-3.5 rounded-md p-3.5 bg-[var(--color-card)] transition-all duration-200 hover:scale-[1.01] hover:shadow-[var(--shadow-elevated)] ${isFull ? "opacity-60" : ""}`}
-        style={{ boxShadow: "var(--shadow-card)" }}
-      >
-        {/* 좌: 이미지/아이콘 (정사각형 80px) */}
-        <div
-          className={`relative w-20 h-20 shrink-0 rounded-md overflow-hidden flex items-center justify-center bg-cover bg-center ${photoUrl === undefined ? "animate-pulse bg-[var(--color-surface)]" : ""}`}
-          style={photoUrl
-            ? { backgroundImage: `url(${photoUrl})` }
-            : photoUrl === null ? { background: formatStyle.gradient } : undefined
-          }
-        >
-          {photoUrl === null && (
-            <span className="material-symbols-outlined text-3xl text-white/30">{formatStyle.icon}</span>
-          )}
-          {/* 상태 뱃지 (좌상단) */}
-          <span
-            className="absolute top-1 left-1 rounded px-1 py-0.5 text-xs font-bold text-white"
-            style={{ backgroundColor: badgeBg }}
-          >
-            {badgeLabel}
-          </span>
-        </div>
-
-        {/* 우: 정보 영역 */}
-        <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-          {/* 상단: 대회명 + 종별/디비전 뱃지 */}
-          <div>
-            <h3 className="text-sm font-bold text-[var(--color-text-primary)] line-clamp-1 mb-0.5">
-              {t.name}
-            </h3>
-            {/* 종별 + 디비전 뱃지 */}
-            {(categoryLabels.length > 0 || divisionTiers.length > 0) && (
-              <div className="flex items-center gap-1 mb-1">
-                {categoryLabels.map((label) => (
-                  <span key={label} className="rounded bg-[var(--color-primary-weak)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary)]">
-                    {label}
-                  </span>
-                ))}
-                {divisionTiers.length > 0 && (
-                  <span className="rounded bg-[var(--color-surface)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-text-muted)]">
-                    {divisionTiers.join("·")}
-                  </span>
-                )}
-              </div>
-            )}
-            {/* 장소 + 날짜 */}
-            <div className="flex items-center gap-3 text-xs text-[var(--color-text-muted)]">
-              {location && (
-                <span className="flex items-center gap-0.5 truncate">
-                  <span className="material-symbols-outlined text-xs">location_on</span>
-                  {location}
-                </span>
-              )}
-              {t.start_date && (
-                <span className="flex items-center gap-0.5 shrink-0">
-                  <span className="material-symbols-outlined text-xs">calendar_today</span>
-                  {formatShortDate(t.start_date)}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* 하단: 참가비 + 팀수 + 참여 버튼 */}
-          <div className="flex items-center justify-between mt-1">
-            <div className="flex items-center gap-2 text-xs">
-              <span className="font-bold text-[var(--color-text-primary)]">{feeText}</span>
-              {maxTeams > 0 && (
-                <span className="text-[var(--color-text-muted)]">{t.team_count}/{maxTeams}팀</span>
-              )}
-            </div>
-            {isFull ? (
-              <span className="text-xs font-bold text-[var(--color-text-disabled)] bg-[var(--color-surface)] px-3 py-1 rounded-lg">마감</span>
-            ) : (
-              <span className="text-xs font-bold text-white bg-[var(--color-primary)] px-3 py-1 rounded-lg">참여</span>
-            )}
-          </div>
-        </div>
-      </div>
-    </Link>
   );
 }
 
@@ -302,8 +168,9 @@ export function TournamentsContent({
   const [genderFilter, setGenderFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [divisionFilter, setDivisionFilter] = useState("all");
-  // 상태 탭 4종: 준비중/접수중/진행중/종료
-  const [statusTab, setStatusTab] = useState<"draft" | "registration" | "in_progress" | "completed">("registration");
+  // Phase 2 Match: 6상태 탭 — 전체/접수중/마감임박/진행중/접수예정/종료
+  // 왜 "접수중"이 기본값인가: 기존 4상태 탭의 기본값도 "접수중"이었음 → UX 연속성 유지.
+  const [v2StatusTab, setV2StatusTab] = useState<V2MatchTab>("접수중");
   const [currentPage, setCurrentPage] = useState(1);
   const { preferFilter } = usePreferFilter();
 
@@ -340,25 +207,18 @@ export function TournamentsContent({
   // 필터 변경 시 1페이지 리셋
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchParams, searchQuery, regionFilter, genderFilter, categoryFilter, divisionFilter, statusTab]);
+  }, [searchParams, searchQuery, regionFilter, genderFilter, categoryFilter, divisionFilter, v2StatusTab]);
 
-  // 상태 탭 매핑 — DB의 다양한 status 값을 4종 탭으로 분류
-  const STATUS_TAB_MAP: Record<string, "draft" | "registration" | "in_progress" | "completed"> = {
-    draft: "draft", upcoming: "draft",
-    registration: "registration", registration_open: "registration", active: "registration",
-    published: "registration", open: "registration", opening_soon: "registration", registration_closed: "registration",
-    in_progress: "in_progress", live: "in_progress", ongoing: "in_progress", group_stage: "in_progress",
-    completed: "completed", ended: "completed", closed: "completed", cancelled: "completed",
-  };
-
-  // 필터 적용 (기존 로직 100% 유지)
+  // 필터 적용 — v2 6상태 탭 반영
+  // 상태 매핑은 deriveV2Status(v2-tournament-list.tsx) 단일 소스에서 계산 →
+  // 카드 배지와 탭 필터가 규칙 불일치 위험 없음.
   const filteredTournaments = useMemo(() => {
     let result = tournaments;
 
-    result = result.filter((t) => {
-      const st = t.status ?? "draft";
-      return (STATUS_TAB_MAP[st] ?? "draft") === statusTab;
-    });
+    // v2 6상태 탭 필터 — "전체"는 통과
+    if (v2StatusTab !== "전체") {
+      result = result.filter((t) => deriveV2Status(t) === v2StatusTab);
+    }
 
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
@@ -383,7 +243,19 @@ export function TournamentsContent({
     }
 
     return result;
-  }, [tournaments, searchQuery, regionFilter, genderFilter, categoryFilter, divisionFilter, statusTab]);
+  }, [tournaments, searchQuery, regionFilter, genderFilter, categoryFilter, divisionFilter, v2StatusTab]);
+
+  // v2 탭별 카운트 — 전체 tournaments 기준 (카테고리/검색 등 다른 필터 무시)
+  // 이유: 탭 라벨 옆 숫자는 "어느 상태에 몇 건이 있나"를 보여주는 용도이므로
+  //      다른 필터와 결합하면 0건만 보여 탭 의미가 퇴색됨.
+  const v2TabCounts = useMemo(() => {
+    const counts: Partial<Record<V2MatchTab, number>> = { "전체": tournaments.length };
+    for (const t of tournaments) {
+      const s = deriveV2Status(t);
+      counts[s] = (counts[s] ?? 0) + 1;
+    }
+    return counts;
+  }, [tournaments]);
 
   const totalPages = Math.max(1, Math.ceil(filteredTournaments.length / TOURNAMENTS_PER_PAGE));
   const paginatedTournaments = filteredTournaments.slice(
@@ -421,16 +293,37 @@ export function TournamentsContent({
     divisionFilter !== "all";
 
   return (
-    <>
-      {/* 헤더: 제목 + 필터 */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-xl font-bold text-[var(--color-text-primary)] shrink-0">
-            대회 찾기
+    <div className="page">
+      {/* 헤더: eyebrow + 대형 제목 + 요약 카운트 (시안 Match.jsx L24~31) */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          marginBottom: 16,
+          flexWrap: "wrap",
+          gap: 10,
+        }}
+      >
+        <div>
+          <div className="eyebrow">대회 · TOURNAMENTS</div>
+          <h1
+            style={{
+              margin: "6px 0 4px",
+              fontSize: 28,
+              fontWeight: 800,
+              letterSpacing: "-0.015em",
+            }}
+          >
+            열린 대회 · 예정 대회
           </h1>
-          {/* 뷰 모드 전환: 리스트/월간/주간 */}
+          <div style={{ fontSize: 13, color: "var(--ink-mute)" }}>
+            접수중 {v2TabCounts["접수중"] ?? 0} · 마감임박 {v2TabCounts["마감임박"] ?? 0} · 진행중 {v2TabCounts["진행중"] ?? 0} · 예정 {v2TabCounts["접수예정"] ?? 0}
+          </div>
+        </div>
+        {/* 뷰 모드 전환 + 필터: 기존 그대로 유지 */}
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
           <ViewToggle current={viewMode} onChange={setViewMode} />
-          <div className="flex-1" />
           <TournamentsFilterComponent
             onSearchChange={handleSearchChange}
             onRegionChange={handleRegionChange}
@@ -441,101 +334,47 @@ export function TournamentsContent({
             selectedGender={genderFilter}
           />
         </div>
-
-        {/* 상태 탭: 리스트 뷰에서만 표시 */}
-        {viewMode === "list" && (
-          <div className="mt-4 flex gap-1 border-b border-[var(--color-border)]">
-            {([
-              { key: "draft" as const, label: "준비중" },
-              { key: "registration" as const, label: "접수중" },
-              { key: "in_progress" as const, label: "진행중" },
-              { key: "completed" as const, label: "종료" },
-            ]).map((tab) => {
-              const isActive = statusTab === tab.key;
-              return (
-                <button
-                  key={tab.key}
-                  type="button"
-                  onClick={() => setStatusTab(tab.key)}
-                  className="relative px-4 py-2.5 text-sm font-medium transition-colors"
-                  style={{
-                    color: isActive ? "var(--color-text-primary)" : "var(--color-text-muted)",
-                    fontWeight: isActive ? 700 : 500,
-                  }}
-                >
-                  {tab.label}
-                  {/* 토스 스타일 밑줄: primary 대신 진한 텍스트 색상 */}
-                  {isActive && (
-                    <span
-                      className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
-                      style={{ backgroundColor: "var(--color-text-primary)" }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
       </div>
 
       {/* 뷰 모드별 콘텐츠 렌더링 */}
       {viewMode === "calendar" ? (
-        /* 월간 캘린더 뷰: 자체 API 호출, 필터만 전달 */
+        /* 월간 캘린더 뷰: 자체 API 호출, 필터만 전달 (기능 보존) */
         <CalendarView categoryFilter={categoryFilter} genderFilter={genderFilter} />
       ) : viewMode === "week" ? (
-        /* 주간 뷰: 자체 API 호출, 필터만 전달 */
+        /* 주간 뷰: 자체 API 호출, 필터만 전달 (기능 보존) */
         <WeekView categoryFilter={categoryFilter} genderFilter={genderFilter} />
       ) : (
-        /* 기존 리스트 뷰: 아래 코드는 기존과 100% 동일 */
+        /* 리스트 뷰: V2TournamentList (시안 Match 목록) — 6상태 칩 + 포스터 카드 */
         <>
-          {/* 로딩 */}
           {loading ? (
             <TournamentGridSkeleton />
           ) : (
             <>
-              {/* 필터 결과 카운트 */}
+              {/* 필터 결과 카운트 — 기타 필터 적용 시 안내 */}
               {hasFilters && (
-                <p className="mb-4 text-sm text-[var(--color-text-muted)]">
+                <p className="mb-4 text-sm" style={{ color: "var(--ink-mute)" }}>
                   검색 결과{" "}
-                  <span className="font-bold text-[var(--color-text-primary)]">
+                  <span style={{ fontWeight: 700, color: "var(--ink)" }}>
                     {filteredTournaments.length}개
                   </span>
                 </p>
               )}
 
-              {/* 대회 리스트: 토스 스타일 세로 스택 */}
-              <div className="space-y-6">
-                {paginatedTournaments.map((t) => (
-                  <TournamentCard
-                    key={t.id}
-                    tournament={t}
-                    photoUrl={photoMap === undefined ? undefined : (photoMap[t.venue_name ?? t.city ?? ""] ?? null)}
-                  />
-                ))}
+              {/* v2 목록 래퍼: 6상태 탭 + 포스터 카드 그리드 */}
+              <V2TournamentList
+                tournaments={paginatedTournaments}
+                photoMap={photoMap}
+                activeTab={v2StatusTab}
+                onTabChange={setV2StatusTab}
+                emptyMessage={
+                  hasFilters
+                    ? "조건에 맞는 대회가 없습니다."
+                    : "등록된 대회가 없습니다."
+                }
+                counts={v2TabCounts}
+              />
 
-                {/* 빈 상태 + CTA */}
-                {filteredTournaments.length === 0 && (
-                  <div className="py-20 text-center">
-                    <span className="material-symbols-outlined text-5xl text-[var(--color-text-disabled)] mb-3 block">
-                      emoji_events
-                    </span>
-                    <p className="text-sm text-[var(--color-text-muted)] mb-4">
-                      {hasFilters ? "조건에 맞는 대회가 없습니다." : "등록된 대회가 없습니다."}
-                    </p>
-                    {/* 빈 상태 액션 버튼: 다른 탭 둘러보기 안내 */}
-                    <Link
-                      href="/tournaments"
-                      className="inline-flex items-center gap-1.5 rounded-md px-5 py-2.5 text-sm font-bold text-white transition-all active:scale-[0.97]"
-                      style={{ backgroundColor: "var(--color-primary)" }}
-                    >
-                      <span className="material-symbols-outlined text-base">search</span>
-                      대회 찾아보기
-                    </Link>
-                  </div>
-                )}
-              </div>
-
-              {/* 페이지네이션 */}
+              {/* 페이지네이션 — 기존 그대로 */}
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
@@ -548,6 +387,6 @@ export function TournamentsContent({
           )}
         </>
       )}
-    </>
+    </div>
   );
 }

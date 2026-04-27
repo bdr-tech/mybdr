@@ -1,41 +1,54 @@
-import { Skeleton } from "@/components/ui/skeleton";
-
-// 랭킹 페이지 로딩 스켈레톤: 테이블 형태
+/**
+ * 랭킹 페이지 로딩 fallback (v2 톤)
+ *
+ * 이유: 시안의 .page / .eyebrow / .theme-switch 톤에 맞춰
+ *      가볍게 헤더 자리만 잡아 깜빡임을 줄인다.
+ *      실제 데이터 로딩 스피너는 RankingsContent 내부의
+ *      BoardSkeleton이 담당.
+ */
 export default function RankingsLoading() {
   return (
-    <div>
-      {/* 헤더 스켈레톤 */}
-      <div className="mb-8">
-        <Skeleton className="h-8 w-28 mb-2" />
-        <Skeleton className="h-4 w-56" />
-      </div>
-
-      {/* 탭 스켈레톤 */}
-      <div className="mb-6 flex gap-2">
-        <Skeleton className="h-10 w-28 rounded" />
-        <Skeleton className="h-10 w-28 rounded" />
-      </div>
-
-      {/* 테이블 스켈레톤 */}
-      <div
-        className="rounded-lg border overflow-hidden"
-        style={{
-          borderColor: "var(--color-border)",
-          backgroundColor: "var(--color-surface)",
-        }}
-      >
-        {/* 테이블 헤더 */}
-        <div className="px-4 py-3" style={{ backgroundColor: "var(--color-elevated)" }}>
-          <Skeleton className="h-4 w-full" />
+    <div className="page">
+      {/* 헤더 자리 — 시안의 eyebrow + h1 + 부제 톤 유지 */}
+      <div style={{ marginBottom: 16 }}>
+        <div className="eyebrow" style={{ opacity: 0.4 }}>
+          랭킹 · LEADERBOARD
         </div>
-        {/* 테이블 행 10개 */}
-        {Array.from({ length: 10 }).map((_, i) => (
+        <div
+          style={{
+            height: 32,
+            width: 220,
+            background: "var(--bg-alt)",
+            borderRadius: 4,
+            marginTop: 8,
+          }}
+        />
+        <div
+          style={{
+            height: 14,
+            width: 280,
+            background: "var(--bg-alt)",
+            borderRadius: 4,
+            marginTop: 8,
+            opacity: 0.6,
+          }}
+        />
+      </div>
+
+      {/* 보드 자리 8행 */}
+      <div className="board">
+        {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            className="px-4 py-3"
-            style={{ borderTop: "1px solid var(--color-border)" }}
+            className="board__row"
+            style={{
+              gridTemplateColumns: "56px 1fr 80px",
+              opacity: 0.4,
+            }}
           >
-            <Skeleton className="h-4 w-full" />
+            <div style={{ height: 14, background: "var(--bg-alt)", borderRadius: 2 }} />
+            <div style={{ height: 14, background: "var(--bg-alt)", borderRadius: 2 }} />
+            <div style={{ height: 14, background: "var(--bg-alt)", borderRadius: 2 }} />
           </div>
         ))}
       </div>

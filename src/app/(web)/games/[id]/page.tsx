@@ -1,56 +1,71 @@
+/* ============================================================
+ * 경기 상세 페이지 — BDR v2 재구성
+ *
+ * 왜 재작성하는가:
+ * 기존 구조는 HeroBanner / PriceCard / PickupDetail·GuestDetail·TeamMatchDetail
+ * / ParticipantsGrid / HostActions / HostApplications 가 각각 떨어져
+ * 시안과 공간 리듬이 맞지 않고, DB의 일부 필드(contact_phone/
+ * requirements/notes/allow_guests/uniform 색상)가 UI에 노출되지
+ * 않는 문제가 있었다. 확정안(안 A)에 따라:
+ *   - SummaryCard       : 2열 info grid + 조건부 행(duration/contact/게스트/유니폼)
+ *   - AboutCard         : description + requirements + notes 흡수
+ *   - ParticipantList   : 이니셜 아바타 + 닉네임/이름 + position
+ *   - ApplyPanel        : 신청/취소/승인 CTA + 한마디/저장/문의(alert)
+ *   - HostPanel         : 수정/취소 + 신청자 관리
+ * 5개 _v2 컴포넌트로 정리. API/route.ts/Prisma/서비스 레이어 변경 0.
+ *
+ * 서버 컴포넌트 — getGame/listGameApplications/getWebSession/getUserGameProfile
+ * 는 기존 그대로 사용. generateMetadata 로직도 유지.
+ * ============================================================ */
+
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getGame, listGameApplications } from "@/lib/services/game";
 import { getUserGameProfile } from "@/lib/services/user";
-import { GameApplyButton } from "./apply-button";
-import { CancelApplyButton } from "./cancel-apply-button";
 import { ProfileIncompleteBanner } from "./profile-banner";
-import { PickupDetail } from "./_sections/pickup-detail";
-import { GuestDetail } from "./_sections/guest-detail";
-import { TeamMatchDetail } from "./_sections/team-match-detail";
-import { HostApplications } from "./_components/host-applications";
-import { HostActions } from "./_components/host-actions";
-import { HeroBanner } from "./_components/hero-banner";
-import { PriceCard } from "./_components/price-card";
-import { HostCard } from "./_components/host-card";
-import { ParticipantsGrid } from "./_components/participants-grid";
 import { getWebSession } from "@/lib/auth/web-session";
 import { getMissingFields } from "@/lib/profile/completion";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/shared/breadcrumb";
-// [2026-04-18 추가] 카페 크롤링 텍스트의 HTML 엔티티를 렌더링 시점에만 디코드.
-// SEO 메타데이터(title/description)와 본문 표시에 공통 적용.
+// 카페 크롤링 텍스트의 HTML 엔티티를 렌더링 시점에만 디코드.
 import { decodeHtmlEntities } from "@/lib/utils/decode-html";
+
+// _v2: 이번 재구성에서 새로 추가한 상세 UI 컴포넌트들
+import { SummaryCard } from "./_v2/summary-card";
+import { AboutCard } from "./_v2/about-card";
+import { ParticipantList } from "./_v2/participant-list";
+import { ApplyPanel } from "./_v2/apply-panel";
+import { HostPanel } from "./_v2/host-panel";
 
 export const revalidate = 30;
 
-// SEO: 경기 상세 동적 메타데이터 — 경기 제목을 DB에서 조회하여 title에 반영
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+// SEO: 경기 상세 동적 메타데이터 — 기존 로직 100% 유지
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
   const { id } = await params;
   const game = await getGame(id);
   if (!game) return { title: "경기 상세 | MyBDR" };
 
-  // [2026-04-18] SEO 메타 디코드 — SNS/검색엔진에 노출되는 title/description에서
-  // &amp; 등이 보이지 않도록. 본문과 동일한 기준으로 변환.
+  // SEO 메타 디코드 — SNS/검색엔진에 노출되는 title/description에서 &amp; 등 방지
   const decodedTitle = decodeHtmlEntities(game.title) || "경기 상세";
-  const decodedDesc = decodeHtmlEntities(game.description)?.slice(0, 100)
-    || "경기 상세 정보를 확인하고 참가 신청하세요.";
+  const decodedDesc =
+    decodeHtmlEntities(game.description)?.slice(0, 100) ||
+    "경기 상세 정보를 확인하고 참가 신청하세요.";
 
   const title = `${decodedTitle} | MyBDR`;
 
   return {
     title,
     description: decodedDesc,
-    /* Open Graph: 카카오톡/페이스북 등 SNS 공유 시 미리보기 카드 */
     openGraph: {
       title: decodedTitle,
       description: decodedDesc,
       type: "website",
       url: `https://mybdr.kr/games/${id}`,
     },
-    /* Twitter Card: 트위터/X 공유 시 카드 */
     twitter: {
       card: "summary",
       title: decodedTitle,
@@ -59,23 +74,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-// 경기 상태 라벨 매핑 (기존 유지)
-const STATUS_LABEL: Record<number, string> = {
-  0: "대기",
-  1: "모집중",
-  2: "마감",
-  3: "진행중",
-  4: "완료",
-  5: "취소",
-};
-
-// 경기 타입 라벨 매핑 (기존 유지, 아이콘은 Material Symbols로 변경)
-const GAME_TYPE_LABEL: Record<number, { label: string; icon: string }> = {
-  0: { label: "픽업", icon: "sports_basketball" },
-  1: { label: "게스트 모집", icon: "group_add" },
-  2: { label: "팀 대결", icon: "emoji_events" },
-};
-
 export default async function GameDetailPage({
   params,
 }: {
@@ -83,24 +81,18 @@ export default async function GameDetailPage({
 }) {
   const { id } = await params;
 
-  // Phase 1: 게임 조회 + 세션 확인 병렬 실행 (기존 로직 100% 유지)
-  const [game, session] = await Promise.all([
-    getGame(id),
-    getWebSession(),
-  ]);
-
+  // Phase 1: 경기 조회 + 세션 확인 병렬 (기존 로직 100% 유지)
+  const [game, session] = await Promise.all([getGame(id), getWebSession()]);
   if (!game) return notFound();
 
-  // Phase 2: 유저 프로필 + 신청자 목록 병렬 조회 (기존 로직 100% 유지)
+  // Phase 2: 유저 프로필 + 신청자 목록 병렬 (기존 로직 100% 유지)
   const [userRecord, applications] = await Promise.all([
-    session
-      ? getUserGameProfile(BigInt(session.sub))
-      : Promise.resolve(null),
+    session ? getUserGameProfile(BigInt(session.sub)) : Promise.resolve(null),
     listGameApplications(game.id).catch(() => []),
   ]);
 
   const isHost = session ? game.organizer_id === BigInt(session.sub) : false;
-  // 로그인 유저의 신청 여부
+  // 로그인 유저의 신청 여부 (status: 0=대기, 1=승인, 2=거절)
   const myApplication = session
     ? applications.find((a) => a.user_id === BigInt(session.sub))
     : null;
@@ -132,226 +124,266 @@ export default async function GameDetailPage({
     }
   }
 
-  const gameTypeInfo = GAME_TYPE_LABEL[game.game_type] ?? GAME_TYPE_LABEL[0];
-  const statusLabel = STATUS_LABEL[game.status] ?? "대기";
-
-  // 승인된 참가자 목록 (아바타 그리드용)
+  // 승인된 참가자 목록 — position 필드도 함께 전달 (ParticipantList 시안)
   const approvedParticipants = applications
     .filter((a) => a.status === 1)
     .map((a) => ({
       id: a.id.toString(),
       nickname: a.users?.nickname ?? null,
       name: a.users?.name ?? null,
+      position: a.users?.position ?? null,
     }));
 
-  return (
-    <div className="space-y-6">
-      {/* 브레드크럼: PC에서만 표시, 모바일은 뒤로가기 버튼이 대신 */}
-      {/* [2026-04-18] 제목 디코드 — 카페 엔티티 표시 방지 */}
-      <Breadcrumb items={[
-        { label: "경기", href: "/games" },
-        { label: decodeHtmlEntities(game.title) || "경기 상세" },
-      ]} />
+  // 호스트 전용 신청자 배열 (HostApplications 원형 그대로)
+  const hostApplicants = applications.map((a) => ({
+    id: a.id.toString(),
+    status: a.status,
+    nickname: a.users?.nickname ?? null,
+    name: a.users?.name ?? null,
+    phone: a.users?.phone ?? null,
+    position: a.users?.position ?? null,
+    city: a.users?.city ?? null,
+    district: a.users?.district ?? null,
+  }));
 
-      {/* 프로필 미완성 안내 배너 (1일 1회) */}
+  // AboutCard 렌더 판단 — 3 필드 중 하나라도 있을 때만
+  const hasAboutContent = Boolean(
+    game.description || game.requirements || game.notes
+  );
+
+  // 카페 댓글 (기존 유지)
+  const meta = game.metadata as Record<string, unknown> | null;
+  const cafeComments = (Array.isArray(meta?.cafe_comments)
+    ? meta!.cafe_comments
+    : []) as Array<{
+    nickname: string;
+    text: string;
+    date: string;
+    is_reply: boolean;
+  }>;
+
+  return (
+    // .page 셸 — v2 전체에서 공통 사용하는 max-width + 중앙정렬 + 상하여백
+    <div className="page">
+      {/* 브레드크럼 — 모바일에선 숨김(컴포넌트 내부 처리) */}
+      <Breadcrumb
+        items={[
+          { label: "경기", href: "/games" },
+          { label: decodeHtmlEntities(game.title) || "경기 상세" },
+        ]}
+      />
+
+      {/* 프로필 미완성 안내 배너 (1일 1회, 기존 로직 유지) */}
       {showProfileBanner && <ProfileIncompleteBanner />}
 
-      {/* 히어로 배너: 경기장 이미지 + 그라디언트 + MATCH DAY 배지 */}
-      <HeroBanner game={game} />
-
-      {/* 경기 타입/상태 배지 */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="material-symbols-outlined text-[var(--color-accent)]">
-          {gameTypeInfo.icon}
-        </span>
-        <Badge variant="default">{gameTypeInfo.label}</Badge>
-        <Badge
-          variant={
-            game.status === 1
-              ? "success"
-              : game.status === 4 || game.status === 5
-              ? "error"
-              : "default"
-          }
-        >
-          {statusLabel}
-        </Badge>
-      </div>
-
-      {/* 경기 제목 */}
-      <h1
-        className="text-2xl font-extrabold uppercase tracking-wide sm:text-3xl text-[var(--color-text-primary)]"
-        style={{ fontFamily: "var(--font-heading)" }}
+      {/* 2컬럼 그리드 — 데스크톱: 1fr + 340px 사이드, 모바일: 단일 컬럼 스택.
+       * CSS 변수 없이 인라인으로 관리(페이지 1곳에서만 사용). */}
+      <div
+        style={{
+          display: "grid",
+          gap: 18,
+          gridTemplateColumns: "minmax(0, 1fr)",
+          marginTop: 14,
+        }}
       >
-        {/* [2026-04-18] 제목 디코드 — "팀&amp;스포츠" 같은 표시 방지 */}
-        {decodeHtmlEntities(game.title)}
-      </h1>
-
-      {/* 호스트 전용: 수정/취소 버튼 */}
-      {isHost && <HostActions gameId={id} />}
-
-      {/* 작성자 (카페 크롤링) */}
-      {/* [2026-04-18] 닉네임 디코드 — 아바타 이니셜까지 디코드 결과 기준으로 */}
-      {game.author_nickname && (() => {
-        const decodedNick = decodeHtmlEntities(game.author_nickname) ?? "";
-        return (
-          <div className="flex items-center gap-2">
-            {/* TODO: --color-navy 토큰 globals.css에 정의되지 않음 (fallback #1B3C87로 동작 중). 별도 토큰 정리 안건 */}
-            <div
-              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
-              style={{ backgroundColor: "var(--color-navy, #1B3C87)" }}
-            >
-              {decodedNick.charAt(0)}
-            </div>
-            <span className="text-sm font-medium text-[var(--color-text-secondary)]">
-              {decodedNick}
-            </span>
-          </div>
-        );
-      })()}
-
-      {/* 설명 */}
-      {/* [2026-04-18] 본문 설명 디코드 — 카페 원문의 엔티티 치환 */}
-      {game.description && (
-        <p className="text-sm text-[var(--color-text-muted)]">{decodeHtmlEntities(game.description)}</p>
-      )}
-
-      {/* 2열 레이아웃: 메인 콘텐츠 + 우측 가격 카드 */}
-      <div className="grid lg:grid-cols-[1fr_360px] gap-6 sm:gap-8">
-        {/* 좌측: 메인 콘텐츠 */}
-        <div className="space-y-6 sm:space-y-8">
-          {/* 게임 타입별 상세 섹션 (Amenities + Rules 스타일) */}
-          {game.game_type === 0 && <PickupDetail game={game} />}
-          {game.game_type === 1 && <GuestDetail game={game} />}
-          {game.game_type === 2 && <TeamMatchDetail game={game} />}
-
-          {/* 참여자 아바타 그리드 (호스트 아닌 경우) */}
-          {!isHost && (
-            <ParticipantsGrid
-              participants={approvedParticipants}
-              maxParticipants={game.max_participants}
-            />
-          )}
-
-          {/* 호스트 신청자 관리 패널 (호스트만 보임) */}
-          {isHost && (
-            <Card>
-              <h2
-                className="mb-4 text-lg font-semibold uppercase tracking-wide"
-                style={{ fontFamily: "var(--font-heading)" }}
-              >
-                신청자 관리{" "}
-                <span className="text-sm font-normal text-[var(--color-text-muted)]">
-                  ({applications.length} / {game.max_participants ?? "~"}명)
-                </span>
-              </h2>
-              <HostApplications
-                gameId={id}
-                applicants={applications.map((a) => ({
-                  id: a.id.toString(),
-                  status: a.status,
-                  nickname: a.users?.nickname ?? null,
-                  name: a.users?.name ?? null,
-                  phone: a.users?.phone ?? null,
-                  position: a.users?.position ?? null,
-                  city: a.users?.city ?? null,
-                  district: a.users?.district ?? null,
-                }))}
-              />
-            </Card>
-          )}
-        </div>
-
-        {/* 우측: 가격 카드 + 호스트 카드 (sticky) */}
-        <div className="space-y-6">
-          <PriceCard game={game}>
-            {/* 신청 버튼: 호스트 제외, 미신청자만 */}
-            {session && !isHost && !myApplication && (
-              <GameApplyButton
-                gameId={id}
-                profileCompleted={profileCompleted}
-                missingFields={missingFields}
-                gameStatus={game.status}
-              />
-            )}
-
-            {/* 신청 취소 버튼: 대기 상태일 때만 */}
-            {session && !isHost && myApplication?.status === 0 && (
-              <CancelApplyButton gameId={id} />
-            )}
-
-            {/* 이미 승인된 경우 */}
-            {session && !isHost && myApplication?.status === 1 && (
-              <div className="flex items-center gap-2 rounded-lg bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 px-4 py-3 text-sm text-[var(--color-success)]">
-                <span className="material-symbols-outlined text-sm">check_circle</span>
-                참가가 승인되었습니다.
-              </div>
-            )}
-
-            {/* 비로그인 상태 안내 */}
-            {!session && (
-              <p className="text-sm text-center text-[var(--color-text-muted)]">
-                로그인 후 신청할 수 있습니다.
-              </p>
-            )}
-          </PriceCard>
-
-          {/* 호스트 프로필 카드 */}
-          {/* HostCard 제거 — 신청 버튼(GameApplyButton)이 이미 존재 */}
-        </div>
-      </div>
-
-      {/* 카페 댓글 */}
-      {(() => {
-        const meta = game.metadata as Record<string, unknown> | null;
-        const cafeComments = (Array.isArray(meta?.cafe_comments) ? meta!.cafe_comments : []) as Array<{nickname: string; text: string; date: string; is_reply: boolean}>;
-        if (cafeComments.length === 0) return null;
-        return (
-          <section className="rounded-lg border overflow-hidden" style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-card)" }}>
-            <div className="p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <span className="text-lg font-bold text-[var(--color-text-primary)]">댓글</span>
-                <span className="font-bold text-[var(--color-primary)]">{cafeComments.length}</span>
-              </div>
-              <div className="space-y-6">
-                {cafeComments.map((c, i) => (
-                  <div key={i} className={`flex gap-3${c.is_reply ? " ml-12 pl-4 border-l-2 border-[var(--color-border)]" : ""}`}>
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0" style={{ backgroundColor: c.is_reply ? "var(--color-text-muted)" : "var(--color-primary)" }}>
-                      {(c.nickname || "?").charAt(0)}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-bold text-[var(--color-text-primary)]">{c.nickname || "익명"}</span>
-                        {c.date && <span className="text-xs text-[var(--color-text-muted)]">{c.date}</span>}
-                      </div>
-                      <p className="text-sm text-[var(--color-text-secondary)]">{c.text}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        );
-      })()}
-
-      {/* 다음 액션 유도: 다른 경기 탐색 + 내 경기 확인 */}
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Link
-          href="/games"
-          className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-elevated)]"
+        {/* 모바일/PC 공통: 좌측 메인 스택 + 우측 신청 패널.
+         * 간결한 반응형을 위해 className 대신 중첩 grid 2개 사용. */}
+        <div
+          style={{
+            display: "grid",
+            gap: 18,
+            // 768px 이상에서만 2열 — Tailwind lg 와 유사한 효과를 미디어쿼리 대신
+            // CSS grid auto-fit 으로 단순화할 수도 있지만, 우측 고정 340px가 필요해
+            // className="game-detail-grid" 도입 대신 inline + global 그리드 쿼리
+            // 생략. 대신 기존 페이지 전체에서 써온 tailwind lg:grid-cols 패턴 적용.
+          }}
+          className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-5"
         >
-          <span className="material-symbols-outlined text-base">sports_basketball</span>
-          다른 경기 보기
-        </Link>
-        {session && (
-          <Link
-            href="/games/my-games"
-            className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-elevated)]"
-          >
-            <span className="material-symbols-outlined text-base">assignment</span>
-            내 경기 보기
-          </Link>
-        )}
+          {/* 좌측 메인 스택 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* 1. SummaryCard — 타이틀/배지/info grid/진행바 */}
+            <SummaryCard game={game} />
+
+            {/* 2. AboutCard — description/requirements/notes (있을 때만) */}
+            {hasAboutContent && (
+              <AboutCard
+                description={game.description}
+                requirements={game.requirements}
+                notes={game.notes}
+              />
+            )}
+
+            {/* 3. 호스트 패널(호스트만) 또는 참가자 리스트(그 외) */}
+            {isHost ? (
+              <HostPanel
+                gameId={id}
+                applicants={hostApplicants}
+                maxParticipants={game.max_participants}
+              />
+            ) : (
+              <ParticipantList
+                participants={approvedParticipants}
+                maxParticipants={game.max_participants}
+              />
+            )}
+
+            {/* 4. 카페 댓글 — 기존 디자인 유지(요청: 유지) */}
+            {cafeComments.length > 0 && (
+              <section
+                className="card"
+                style={{ padding: 0, overflow: "hidden" }}
+              >
+                <div
+                  style={{
+                    padding: "14px 20px",
+                    borderBottom: "1px solid var(--border)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <span style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>
+                    댓글
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "var(--ff-mono)",
+                      fontWeight: 700,
+                      color: "var(--cafe-blue)",
+                    }}
+                  >
+                    {cafeComments.length}
+                  </span>
+                </div>
+                <div style={{ padding: "14px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
+                  {cafeComments.map((c, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: "flex",
+                        gap: 10,
+                        // 대댓글은 좌측 들여쓰기 + 좌측 테두리
+                        marginLeft: c.is_reply ? 32 : 0,
+                        paddingLeft: c.is_reply ? 12 : 0,
+                        borderLeft: c.is_reply ? "2px solid var(--border)" : "none",
+                      }}
+                    >
+                      <div
+                        aria-hidden
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: "50%",
+                          flexShrink: 0,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "#fff",
+                          background: c.is_reply ? "var(--ink-dim)" : "var(--cafe-blue)",
+                        }}
+                      >
+                        {(c.nickname || "?").charAt(0)}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            marginBottom: 2,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 700,
+                              color: "var(--ink)",
+                            }}
+                          >
+                            {c.nickname || "익명"}
+                          </span>
+                          {c.date && (
+                            <span
+                              style={{
+                                fontSize: 11,
+                                color: "var(--ink-dim)",
+                                fontFamily: "var(--ff-mono)",
+                              }}
+                            >
+                              {c.date}
+                            </span>
+                          )}
+                        </div>
+                        <p
+                          style={{
+                            fontSize: 13,
+                            color: "var(--ink-mute)",
+                            lineHeight: 1.55,
+                            margin: 0,
+                            whiteSpace: "pre-wrap",
+                          }}
+                        >
+                          {c.text}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* 5. 하단 이동 버튼 — 다른 경기 / 내 경기 */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+              <Link
+                href="/games"
+                className="btn btn--sm"
+                style={{ textDecoration: "none" }}
+              >
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: 16, marginRight: 4 }}
+                >
+                  sports_basketball
+                </span>
+                다른 경기 보기
+              </Link>
+              {session && (
+                <Link
+                  href="/games/my-games"
+                  className="btn btn--sm"
+                  style={{ textDecoration: "none" }}
+                >
+                  <span
+                    className="material-symbols-outlined"
+                    style={{ fontSize: 16, marginRight: 4 }}
+                  >
+                    assignment
+                  </span>
+                  내 경기 보기
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {/* 우측 사이드 — ApplyPanel (lg 이상에서 340px 고정, 모바일에선 스택 아래) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <ApplyPanel
+              gameId={id}
+              gameStatus={game.status}
+              feePerPerson={game.fee_per_person}
+              entryFeeNote={game.entry_fee_note}
+              maxParticipants={game.max_participants}
+              currentParticipants={game.current_participants}
+              isLoggedIn={Boolean(session)}
+              isHost={isHost}
+              myApplicationStatus={myApplication ? myApplication.status : null}
+              profileCompleted={profileCompleted}
+              missingFields={missingFields}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

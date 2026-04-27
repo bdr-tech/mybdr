@@ -341,3 +341,73 @@ interface PrefetchGamesResult {
     match_reason: string[];
   }>;
 }
+
+/* ============================================================
+ * 5. 열린 대회 프리페치 (BDR v2 Home용)
+ *
+ * 왜 이 함수가 필요한가:
+ * v2 Home 시안의 "Promo Banner" + "열린 대회" 섹션에서 "접수중/진행중"
+ * 상태의 공개 대회를 서버 측에서 미리 조회해 PromoCard / BoardRow에
+ * 주입하기 위함. (기존 RecommendedTournaments는 useSWR 클라이언트 페칭
+ * 방식이라 v2 서버 컴포넌트 배치에 적합하지 않음)
+ *
+ * 기존 `/api/web/tournaments` route.ts는 건드리지 않고, 서비스 레이어에서
+ * 필요한 필드만 간단히 조회한다. is_public=true + 공개 대상 상태만.
+ * ============================================================ */
+export const prefetchOpenTournaments = unstable_cache(async () => {
+  // 공개 + 접수중/진행중 대회만 조회 (private/draft/completed 제외)
+  // 접수중 대회를 우선하도록 status 정렬 후 시작일 오름차순
+  const tournaments = await prisma.tournament.findMany({
+    where: {
+      is_public: true,
+      status: { in: ["registration", "in_progress"] },
+    },
+    orderBy: [{ startDate: "asc" }, { createdAt: "desc" }],
+    take: 10,
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      startDate: true,
+      endDate: true,
+      city: true,
+      venue_name: true,
+      maxTeams: true,
+      edition_number: true,
+      description: true,
+      _count: { select: { tournamentTeams: true } },
+    },
+  });
+
+  // Date 직렬화 + 필드 평탄화 (v2 컴포넌트가 받기 쉬운 형태로)
+  const serialized = tournaments.map((t) => ({
+    id: t.id, // uuid string
+    name: t.name,
+    status: t.status,
+    startDate: t.startDate?.toISOString() ?? null,
+    endDate: t.endDate?.toISOString() ?? null,
+    city: t.city,
+    venueName: t.venue_name,
+    maxTeams: t.maxTeams,
+    editionNumber: t.edition_number,
+    description: t.description,
+    teamCount: t._count.tournamentTeams,
+  }));
+
+  // apiSuccess()와 동일하게 snake_case 변환 (프론트 접근자 일관성)
+  return convertKeysToSnakeCase({ tournaments: serialized }) as {
+    tournaments: Array<{
+      id: string;
+      name: string;
+      status: string | null;
+      start_date: string | null;
+      end_date: string | null;
+      city: string | null;
+      venue_name: string | null;
+      max_teams: number | null;
+      edition_number: number | null;
+      description: string | null;
+      team_count: number;
+    }>;
+  };
+}, ["home-open-tournaments"], { revalidate: 60 });
