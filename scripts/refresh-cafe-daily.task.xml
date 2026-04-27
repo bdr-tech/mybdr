@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-16"?>
+<!--
+  Windows 작업 스케줄러 임포트용 XML
+  ===========================================================
+  용도: 매일 오전 9시에 다음카페 세션 쿠키 자동 갱신
+  임포트 방법 (관리자 PowerShell 1회):
+     schtasks /Create /XML "C:\0. Programing\mybdr\scripts\refresh-cafe-daily.task.xml" /TN "MyBDR\CafeCookieRefresh"
+
+  제거 방법:
+     schtasks /Delete /TN "MyBDR\CafeCookieRefresh" /F
+  ===========================================================
+-->
+<Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Author>MyBDR</Author>
+    <Description>다음카페 세션 쿠키 일일 자동 갱신 (npx tsx scripts/cafe-login.ts)</Description>
+    <URI>\MyBDR\CafeCookieRefresh</URI>
+  </RegistrationInfo>
+  <Triggers>
+    <CalendarTrigger>
+      <StartBoundary>2026-04-24T09:00:00</StartBoundary>
+      <Enabled>true</Enabled>
+      <ScheduleByDay>
+        <DaysInterval>1</DaysInterval>
+      </ScheduleByDay>
+    </CalendarTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>LeastPrivilege</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <AllowHardTerminate>true</AllowHardTerminate>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>true</RunOnlyIfNetworkAvailable>
+    <IdleSettings>
+      <StopOnIdleEnd>false</StopOnIdleEnd>
+      <RestartOnIdle>false</RestartOnIdle>
+    </IdleSettings>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+    <Hidden>false</Hidden>
+    <RunOnlyIfIdle>false</RunOnlyIfIdle>
+    <WakeToRun>false</WakeToRun>
+    <ExecutionTimeLimit>PT30M</ExecutionTimeLimit>
+    <Priority>7</Priority>
+    <RestartOnFailure>
+      <Interval>PT1H</Interval>
+      <Count>3</Count>
+    </RestartOnFailure>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>C:\0. Programing\mybdr\scripts\refresh-cafe-daily.bat</Command>
+      <WorkingDirectory>C:\0. Programing\mybdr</WorkingDirectory>
+    </Exec>
+  </Actions>
+</Task>
